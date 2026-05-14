@@ -25,6 +25,13 @@ export default function AdminPage() {
 
   // SAVE MANGA
   async function saveChanges() {
+    console.log("PAYLOAD:", {
+  coverurl: selected.CoverURL,
+  trama: selected.Trama,
+  volumiposseduti: selected.VolumiPosseduti,
+  volumitotali: selected.VolumiTotali,
+});
+
     if (!selected) return;
 
     try {
