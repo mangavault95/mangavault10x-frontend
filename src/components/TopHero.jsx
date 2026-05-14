@@ -6,7 +6,7 @@ export default function TopHero({ manga }) {
   const latest = (manga || []).slice(0, 3);
 
   useEffect(() => {
-    if (latest.length === 0) return;
+    if (!latest.length) return;
 
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % latest.length);
@@ -20,61 +20,82 @@ export default function TopHero({ manga }) {
   const currentManga = latest[current];
 
   return (
-    <div className="relative w-full h-[360px] rounded-2xl overflow-hidden">
+    <div className="relative w-full h-[380px] rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl">
 
-      {/* ✅ GRADIENT BACKGROUND (come prima) */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black via-zinc-900 to-transparent" />
+      {/* ✅ BACKGROUND IMAGE */}
+      <div
+        className="absolute inset-0 bg-cover bg-center scale-105 transition-all duration-700"
+        style={{
+          backgroundImage: `url(${currentManga?.CoverURL})`,
+        }}
+      />
+
+      {/* ✅ DARK GRADIENT OVERLAY */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
+
+      {/* ✅ GLOW BORDER EFFECT */}
+      <div className="absolute inset-0 rounded-2xl ring-1 ring-white/10" />
 
       {/* ✅ CONTENT */}
       <div className="relative z-10 h-full flex items-center px-10">
 
-        {/* ✅ IMMAGINE SINGOLA */}
-        <img
-          src={
-            currentManga.CoverURL && currentManga.CoverURL !== "NULL"
-              ? currentManga.CoverURL
-              : "https://placehold.co/300x450"
-          }
-          className="w-48 h-[300px] object-cover rounded-xl shadow-lg"
-          alt="cover"
-        />
+        {/* ✅ TEXT */}
+        <div className="max-w-xl">
 
-        {/* ✅ TESTI */}
-        <div className="ml-8 max-w-xl">
-          <h2 className="text-3xl font-bold text-white mb-3">
-            {currentManga.Titolo}
+          <h2 className="text-4xl font-bold text-white mb-4 drop-shadow-lg">
+            {currentManga?.Titolo}
           </h2>
 
-          <p className="text-sm text-zinc-300 mb-4 line-clamp-4">
-            {currentManga.Trama || "Nessuna descrizione disponibile"}
+          <p className="text-sm text-zinc-300 mb-6 line-clamp-4">
+            {currentManga?.Trama || "Nessuna descrizione disponibile"}
           </p>
 
-          <button
-            onClick={() =>
-              (window.location.href = `/manga/${currentManga.ID}`)
-            }
-            className="bg-green-600 px-5 py-2 rounded-lg hover:bg-green-700 transition"
-          >
-            Dettagli
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={() =>
+                (window.location.href = `/manga/${currentManga.ID}`)
+              }
+              className="bg-green-600 hover:bg-green-700 transition px-6 py-3 rounded-xl font-semibold shadow-lg"
+            >
+              ▶ Dettagli
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* ✅ INDICATORI (DOTS) */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+      {/* ✅ FRECCE */}
+      <button
+        onClick={() =>
+          setCurrent((prev) => (prev - 1 + latest.length) % latest.length)
+        }
+        className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 px-3 py-2 rounded-lg text-white"
+      >
+        ‹
+      </button>
+
+      <button
+        onClick={() =>
+          setCurrent((prev) => (prev + 1) % latest.length)
+        }
+        className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 px-3 py-2 rounded-lg text-white"
+      >
+        ›
+      </button>
+
+      {/* ✅ DOTS */}
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2">
         {latest.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            className={`w-3 h-3 rounded-full transition-all ${
+            className={`transition-all rounded-full ${
               i === current
-                ? "bg-white scale-125"
-                : "bg-white/40 hover:bg-white/70"
+                ? "w-4 h-4 bg-white"
+                : "w-3 h-3 bg-white/40 hover:bg-white/70"
             }`}
           />
         ))}
       </div>
-
     </div>
   );
 }
