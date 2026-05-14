@@ -7,25 +7,25 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem("token"));
 
+  // ✅ LOGIN
   async function login(username, password) {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/api/manga/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ username, password }),
-  });
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/manga/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (data.token) {
-    localStorage.setItem("token", data.token);
-    setToken(data.token);
-  } else {
-    alert("Login fallito");
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+      setToken(data.token);
+    } else {
+      alert("Login fallito");
+    }
   }
-}
-
 
   useEffect(() => {
     loadManga();
@@ -33,7 +33,6 @@ export default function AdminPage() {
 
   async function loadManga() {
     setLoading(true);
-
     try {
       const data = await getManga();
       setMangaList(data || []);
@@ -44,15 +43,8 @@ export default function AdminPage() {
     }
   }
 
-  // SAVE MANGA
+  // ✅ SAVE
   async function saveChanges() {
-    console.log("PAYLOAD:", {
-  coverurl: selected.CoverURL,
-  trama: selected.Trama,
-  volumiposseduti: selected.VolumiPosseduti,
-  volumitotali: selected.VolumiTotali,
-});
-
     if (!selected) return;
 
     try {
@@ -63,32 +55,25 @@ export default function AdminPage() {
         {
           method: "PUT",
           headers: {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${token}`,
-},
-
-          
-body: JSON.stringify({
-  coverurl: selected.CoverURL,
-  trama: selected.Trama,
-  volumiposseduti: selected.VolumiPosseduti,
-  volumitotali: selected.VolumiTotali,
-})
-,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            coverurl: selected.CoverURL,
+            trama: selected.Trama,
+            volumiposseduti: selected.VolumiPosseduti,
+            volumitotali: selected.VolumiTotali,
+          }),
         }
       );
 
-      if (!res.ok) {
-        throw new Error("Errore HTTP");
-      }
+      if (!res.ok) throw new Error("Errore HTTP");
 
       const data = await res.json();
 
       if (data.success) {
         alert("Salvato correttamente!");
         await loadManga();
-      } else {
-        alert("Errore salvataggio");
       }
     } catch (err) {
       console.error(err);
@@ -96,109 +81,72 @@ body: JSON.stringify({
     }
   }
 
-  // ENRICH
- async function enrichManga() {
-  if (!selected) return;
+  // ✅ ENRICH (già tradotto dal backend)
+  async function enrichManga() {
+    if (!selected) return;
 
-  try {
-    // 🔹 STEP 1: ENRICH
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
-      {
-        method: "POST",
-        headers: {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${token}`,
-},
-
-        body: JSON.stringify({
-          titolo: selected.Titolo,
-        }),
-      }
-    );
-
-    const enrichData = await res.json();
-
-    console.log("ENRICH:", enrichData);
-
-    // 🔹 STEP 2: TRADUZIONE
-    let tramaTradotta = enrichData.trama;
-
-    if (enrichData.trama) {
-      const trRes = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/translate`,
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
         {
           method: "POST",
-         headers: {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${token}`,
-},
-
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
-            text: enrichData.trama,
-            target: "it",
+            titolo: selected.Titolo,
           }),
         }
       );
 
-      const trData = await trRes.json();
+      const data = await res.json();
 
-      console.log("TRANSLATE:", trData);
+      console.log("ENRICH:", data);
 
-      tramaTradotta = trData.text || enrichData.trama;
+      setSelected({
+        ...selected,
+        Titolo: data.titolo || selected.Titolo,
+        Trama: data.trama || selected.Trama,
+        CoverURL: data.coverurl || selected.CoverURL,
+        VolumiTotali: data.volumitotali || selected.VolumiTotali,
+      });
+
+    } catch (err) {
+      console.error(err);
     }
+  }
 
-    // 🔹 STEP 3: aggiorna UI
-    setSelected({
-      ...selected,
-      Titolo: enrichData.titolo || selected.Titolo,
-      Trama: tramaTradotta || selected.Trama,
-      CoverURL: enrichData.coverurl || selected.CoverURL,
-      VolumiTotali: enrichData.volumitotali || selected.VolumiTotali,
-    });
+  // ✅ BLOCCO LOGIN
+  if (!token) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-black text-white">
+        <div className="bg-zinc-900 p-6 rounded-xl space-y-4">
+          <h2 className="text-xl font-bold">Login Admin</h2>
 
-    if (!token) {
-  return (
-    <div className="h-screen flex items-center justify-center bg-black text-white">
-      <div className="bg-zinc-900 p-6 rounded-xl space-y-4">
-        <h2 className="text-xl font-bold">Login Admin</h2>
+          <input id="user" placeholder="Username" className="w-full p-2 bg-zinc-800" />
+          <input id="pass" type="password" placeholder="Password" className="w-full p-2 bg-zinc-800" />
 
-        <input id="user" placeholder="Username" className="w-full p-2 bg-zinc-800" />
-        <input id="pass" type="password" placeholder="Password" className="w-full p-2 bg-zinc-800" />
-
-        <button
-          onClick={() =>
-            login(
-              document.getElementById("user").value,
-              document.getElementById("pass").value
-            )
-          }
-          className="bg-green-600 px-4 py-2 w-full"
-        >
-          Login
-        </button>
+          <button
+            onClick={() =>
+              login(
+                document.getElementById("user").value,
+                document.getElementById("pass").value
+              )
+            }
+            className="bg-green-600 px-4 py-2 w-full"
+          >
+            Login
+          </button>
+        </div>
       </div>
-    </div>
-  );
-}
-``
+    );
+  }
 
   return (
     <div className="flex">
       {/* SIDEBAR */}
-      <div className="w-72 h-screen bg-black/60 backdrop-blur-xl border-r border-zinc-800 overflow-y-auto">
-        <h1 className="text-2xl font-bold p-5">
-          Admin MangaVault
-        </h1>
-
-        <div className="px-5 pb-3">
-          <button
-            onClick={() => window.location.reload()}
-            className="w-full py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-all text-sm font-semibold"
-          >
-            Torna alla Home
-          </button>
-        </div>
+      <div className="w-72 h-screen bg-black/60 border-r border-zinc-800 overflow-y-auto">
+        <h1 className="text-2xl font-bold p-5">Admin MangaVault</h1>
 
         {loading ? (
           <div className="p-4 text-zinc-400">Caricamento...</div>
@@ -216,80 +164,42 @@ body: JSON.stringify({
       </div>
 
       {/* CONTENT */}
-      <div className="flex-1 p-8 overflow-y-auto">
+      <div className="flex-1 p-8">
         {!selected ? (
-          <div className="text-zinc-400">
-            Seleziona un manga
-          </div>
+          <div className="text-zinc-400">Seleziona un manga</div>
         ) : (
           <>
-            <div className="max-w-5xl">
-              <div className="flex gap-8">
-                <div className="w-64">
-                  <img
-                    src={
-                      selected.CoverURL ||
-                      "https://via.placeholder.com/300x450"
-                    }
-                    className="w-full h-[380px] object-cover rounded-2xl border border-zinc-800"
-                    alt="cover"
-                  />
-                </div>
+            <div className="flex gap-8">
+              <img
+                src={selected.CoverURL || "https://placehold.co/300x450"}
+                className="w-64 h-[380px] object-cover rounded-xl"
+              />
 
-                <div className="flex-1 space-y-4">
-                  <input
-                    className="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-xl"
-                    value={selected.Titolo || ""}
-                    onChange={(e) =>
-                      setSelected({ ...selected, Titolo: e.target.value })
-                    }
-                  />
+              <div className="flex-1 space-y-4">
+                <input
+                  value={selected.Titolo || ""}
+                  onChange={(e) =>
+                    setSelected({ ...selected, Titolo: e.target.value })
+                  }
+                />
 
-                  <input
-                    className="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-xl"
-                    value={selected.Autore || ""}
-                    onChange={(e) =>
-                      setSelected({ ...selected, Autore: e.target.value })
-                    }
-                  />
-
-                  <input
-                    className="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-xl"
-                    value={selected.CoverURL || ""}
-                    onChange={(e) =>
-                      setSelected({
-                        ...selected,
-                        CoverURL: e.target.value,
-                      })
-                    }
-                  />
-
-                  <textarea
-                    className="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl h-56"
-                    value={selected.Trama || ""}
-                    onChange={(e) =>
-                      setSelected({ ...selected, Trama: e.target.value })
-                    }
-                  />
-                </div>
+                <textarea
+                  value={selected.Trama || ""}
+                  onChange={(e) =>
+                    setSelected({ ...selected, Trama: e.target.value })
+                  }
+                />
               </div>
+            </div>
 
-              {/* BUTTONS */}
-              <div className="flex gap-4 mt-6">
-                <button
-                  onClick={saveChanges}
-                  className="bg-green-600 px-6 py-3 rounded-xl"
-                >
-                  Salva
-                </button>
+            <div className="flex gap-4 mt-6">
+              <button onClick={saveChanges} className="bg-green-600 px-6 py-3">
+                Salva
+              </button>
 
-                <button
-                  onClick={enrichManga}
-                  className="bg-blue-600 px-6 py-3 rounded-xl"
-                >
-                  Auto Enrich
-                </button>
-              </div>
+              <button onClick={enrichManga} className="bg-blue-600 px-6 py-3">
+                Auto Enrich
+              </button>
             </div>
           </>
         )}
