@@ -23,94 +23,80 @@ export default function AdminPage() {
     }
   }
 
-  // 🔥 SAVE MANGA (UNCHANGED)
+  // SAVE MANGA
   async function saveChanges() {
-  try {
-    const id = selected.Id || selected.ID;
+    try {
+      const id = selected.Id || selected.ID;
 
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/manga/${id}`,
-      {
-        method: "PUT",
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/manga/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            CoverURL: selected.CoverURL,
+            Trama: selected.Trama,
+            VolumiPosseduti: selected.VolumiPosseduti,
+            VolumiTotali: selected.VolumiTotali,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Salvato correttamente!");
+        await loadManga();
+      } else {
+        alert("Errore salvataggio");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Errore server");
+    }
+  }
+
+  // ENRICH
+  async function enrichManga() {
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/manga/enrich`, {
+        method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          CoverURL: selected.CoverURL,
-          Trama: selected.Trama,
-          VolumiPosseduti: selected.VolumiPosseduti,
-          VolumiTotali: selected.VolumiTotali
-        })
-      }
-    );
+          titolo: selected.Titolo,
+          autore: selected.Autore,
+        }),
+      });
 
-    const data = await res.json();
-
-    if (data.success) {
-      alert("Salvato correttamente!");
+      alert("Auto Enrich completato!");
       await loadManga();
-    } else {
-      alert("Errore salvataggio");
+    } catch (err) {
+      console.error(err);
     }
-
-  } catch (err) {
-    console.error(err);
-    alert("Errore server");
   }
-}
 
-  // 🔥 ENRICH (UNCHANGED)
-  async function enrichManga() {
-  try {
-    await fetch(`${import.meta.env.VITE_API_URL}/api/manga/enrich`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        titolo: selected.Titolo,
-        autore: selected.Autore
-      })
-    });
-
-    alert("Auto Enrich completato!");
-    await loadManga();
-
-  } catch (err) {
-    console.error(err);
-  }
-}
+  return (
+    <div className="flex">
 
       {/* SIDEBAR */}
-      <div className="
-        w-72
-        h-screen
-        bg-black/60
-        backdrop-blur-xl
-        border-r border-zinc-800
-        overflow-y-auto
-      ">
+      <div className="w-72 h-screen bg-black/60 backdrop-blur-xl border-r border-zinc-800 overflow-y-auto">
 
         <h1 className="text-2xl font-bold p-5">
           Admin MangaVault
         </h1>
-		<div className="px-5 pb-3">
-  <button
-    onClick={() => window.location.reload()}
-    className="
-      w-full
-      py-2
-      rounded-lg
-      bg-zinc-800
-      hover:bg-zinc-700
-      transition-all
-      text-sm
-      font-semibold
-    "
-  >
-    Torna alla Home
-  </button>
-</div>
+
+        <div className="px-5 pb-3">
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-all text-sm font-semibold"
+          >
+            Torna alla Home
+          </button>
+        </div>
 
         {loading ? (
           <div className="p-4 text-zinc-400">
@@ -121,18 +107,12 @@ export default function AdminPage() {
             <div
               key={m.Id || m.ID || i}
               onClick={() => setSelected(m)}
-              className="
-                p-3
-                border-b border-zinc-800
-                cursor-pointer
-                hover:bg-zinc-900
-              "
+              className="p-3 border-b border-zinc-800 cursor-pointer hover:bg-zinc-900"
             >
               {m.Titolo}
             </div>
           ))
         )}
-
       </div>
 
       {/* CONTENT */}
@@ -152,6 +132,7 @@ export default function AdminPage() {
                 <img
                   src={selected.CoverURL || "https://via.placeholder.com/300x450"}
                   className="w-full h-[380px] object-cover rounded-2xl border border-zinc-800"
+                  alt="cover"
                 />
               </div>
 
@@ -189,11 +170,9 @@ export default function AdminPage() {
                     setSelected({ ...selected, Trama: e.target.value })
                   }
                 />
-
               </div>
-
             </div>
-if (!selected) return;
+
             {/* BUTTONS */}
             <div className="flex gap-4 mt-6">
 
