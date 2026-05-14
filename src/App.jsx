@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import AdminPage from "./pages/AdminPage";
 import RecordsPage from "./pages/RecordsPage";
 import MangaDetail from "./pages/MangaDetail";
+
 
 <Route path="/manga/:id" element={<MangaDetail />} />
 
