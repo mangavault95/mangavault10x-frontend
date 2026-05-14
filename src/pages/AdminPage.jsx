@@ -28,7 +28,7 @@ export default function AdminPage() {
     try {
       const id = selected.Id || selected.ID;
 
-      const res = await fetch(`http://localhost:3001/api/manga/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/manga`), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
@@ -59,7 +59,7 @@ export default function AdminPage() {
   // 🔥 ENRICH (UNCHANGED)
   async function enrichManga() {
     try {
-      await fetch("http://localhost:3001/api/manga/enrich", {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/manga`), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
