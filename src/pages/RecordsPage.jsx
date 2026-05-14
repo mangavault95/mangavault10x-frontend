@@ -4,7 +4,7 @@ export default function RecordsPage({ setRecordsMode }) {
   const [manga, setManga] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/manga")
+    fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
       .then((r) => r.json())
       .then((d) => setManga(Array.isArray(d) ? d : []))
       .catch(() => setManga([]));
