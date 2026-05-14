@@ -13,8 +13,8 @@ export default function RecordsPage({ setRecordsMode }) {
   const safe = useMemo(() => {
     return (manga || []).map((m) => ({
       ...m,
-      VolumiPosseduti: Number(m.VolumiPosseduti) || 0,
-      Costo: Number(m.Costo) || 0
+      VolumiPosseduti: Number(m?.VolumiPosseduti) || 0,
+      Costo: Number(m?.Costo) || 0
     }));
   }, [manga]);
 
@@ -30,6 +30,9 @@ export default function RecordsPage({ setRecordsMode }) {
     .slice(0, 3);
 
   const PodiumCard = ({ manga, rank, type }) => {
+    // ✅ FIX CRITICO: fallback
+    const m = manga || {};
+
     const colors = [
       "from-yellow-300/80 to-yellow-600/80",
       "from-zinc-200/70 to-zinc-500/70",
@@ -51,7 +54,6 @@ export default function RecordsPage({ setRecordsMode }) {
           animate-bounce
         `}
       >
-        {/* SPOTLIGHT */}
         <div className="absolute -top-10 w-20 h-20 bg-white/10 blur-2xl rounded-full" />
 
         <div
@@ -68,13 +70,13 @@ export default function RecordsPage({ setRecordsMode }) {
           `}
         >
           <div className="text-xs font-semibold text-white text-center w-full flex items-center justify-center">
-            {manga?.Titolo}
+            {m.Titolo || "—"}
           </div>
 
           <div className="text-[10px] text-white/80 mt-1 text-center w-full flex items-center justify-center">
             {type === "long"
-              ? `${manga.VolumiPosseduti} vol`
-              : `€${(manga.VolumiPosseduti * manga.Costo).toFixed(2)}`}
+              ? `${m.VolumiPosseduti || 0} vol`
+              : `€${((m.VolumiPosseduti || 0) * (m.Costo || 0)).toFixed(2)}`}
           </div>
 
           <div className="text-sm font-black text-white mt-1 text-center w-full flex items-center justify-center">
@@ -88,7 +90,6 @@ export default function RecordsPage({ setRecordsMode }) {
   return (
     <div className="p-8 text-white space-y-10 relative">
 
-      {/* BACK BUTTON */}
       <button
         onClick={() => setRecordsMode(false)}
         className="mb-6 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 transition"
@@ -98,7 +99,6 @@ export default function RecordsPage({ setRecordsMode }) {
 
       <h1 className="text-3xl font-bold">📊 Manga Records</h1>
 
-      {/* TOP LUNGHI */}
       <div>
         <h2 className="text-xl font-bold mb-6 text-center">
           🏆 Più Lunghi
@@ -111,7 +111,6 @@ export default function RecordsPage({ setRecordsMode }) {
         </div>
       </div>
 
-      {/* TOP COSTOSI */}
       <div>
         <h2 className="text-xl font-bold mb-6 text-center">
           💰 Più Costosi
@@ -124,7 +123,6 @@ export default function RecordsPage({ setRecordsMode }) {
         </div>
       </div>
 
-      {/* GLOW BACKGROUND */}
       <div className="absolute inset-0 pointer-events-none opacity-20">
         <div className="absolute top-20 left-1/2 w-96 h-96 bg-yellow-500 blur-[120px]" />
       </div>
