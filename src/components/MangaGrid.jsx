@@ -132,7 +132,13 @@ export default function MangaGrid({ search = "", filter = "all" }) {
                 {/* COVER */}
                 <div className="relative">
                   <img
-                    src={m.CoverURL || "https://via.placeholder.com/300x450"}
+                    src={
+  m.CoverURL &&
+  m.CoverURL !== "undefined" &&
+  m.CoverURL.startsWith("http")
+    ? m.CoverURL
+    : "https://placehold.co/300x450?text=MangaVault"
+}
                     alt={m.Titolo}
                     className="w-full h-[190px] object-cover transition-all duration-700 group-hover:scale-105"
                   />
