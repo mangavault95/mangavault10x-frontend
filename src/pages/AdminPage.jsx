@@ -74,10 +74,11 @@ body: JSON.stringify({
   }
 
   // ENRICH
-  async function enrichManga() {
+ async function enrichManga() {
   if (!selected) return;
 
   try {
+    // 🔹 STEP 1: ENRICH
     const res = await fetch(
       `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
       {
@@ -91,23 +92,45 @@ body: JSON.stringify({
       }
     );
 
-    const data = await res.json();
+    const enrichData = await res.json();
 
-    console.log("ENRICH DATA:", data); // 🔥 DEBUG
+    console.log("ENRICH:", enrichData);
 
-    // ✅ QUI È IL FIX: aggiorni UI
+    // 🔹 STEP 2: TRADUZIONE
+    let tramaTradotta = enrichData.trama;
+
+    if (enrichData.trama) {
+      const trRes = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/translate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: enrichData.trama,
+            target: "it",
+          }),
+        }
+      );
+
+      const trData = await trRes.json();
+
+      console.log("TRANSLATE:", trData);
+
+      tramaTradotta = trData.text || enrichData.trama;
+    }
+
+    // 🔹 STEP 3: aggiorna UI
     setSelected({
       ...selected,
-      Titolo: data.titolo || selected.Titolo,
-      Trama: data.trama || selected.Trama,
-      CoverURL: data.coverurl || selected.CoverURL,
-      VolumiTotali: data.volumitotali || selected.VolumiTotali,
+      Titolo: enrichData.titolo || selected.Titolo,
+      Trama: tramaTradotta || selected.Trama,
+      CoverURL: enrichData.coverurl || selected.CoverURL,
+      VolumiTotali: enrichData.volumitotali || selected.VolumiTotali,
     });
 
-  } catch (err) {
-    console.error(err);
-  }
-}
+
   return (
     <div className="flex">
       {/* SIDEBAR */}
