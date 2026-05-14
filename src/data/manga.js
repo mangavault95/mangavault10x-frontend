@@ -1,4 +1,4 @@
-const manga = [
+const Manga = [
   {
     id: 1,
     title: "One Piece",
@@ -25,4 +25,4 @@ const manga = [
   },
 ];
 
-export default manga;
+export default Manga;
