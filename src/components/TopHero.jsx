@@ -5,10 +5,8 @@ export default function TopHero({ manga }) {
   const [current, setCurrent] = useState(0);
   const navigate = useNavigate();
 
-  // ✅ solo ultimi 3 manga
   const latest = (manga || []).slice(0, 3);
 
-  // ✅ autoplay slider
   useEffect(() => {
     if (latest.length === 0) return;
 
@@ -17,7 +15,7 @@ export default function TopHero({ manga }) {
     }, 4000);
 
     return () => clearInterval(interval);
-  }, [latest]);
+  }, [latest.length]);
 
   if (latest.length === 0) return null;
 
@@ -26,38 +24,36 @@ export default function TopHero({ manga }) {
   return (
     <div className="relative w-full h-[360px] overflow-hidden rounded-2xl">
 
-      {/* ✅ BACKGROUND */}
+      {/* BACKGROUND */}
       <img
         src={
           currentManga?.CoverURL && currentManga.CoverURL !== "NULL"
             ? currentManga.CoverURL
             : "https://placehold.co/1200x400"
         }
-        className="absolute w-full h-full object-cover"
-        alt="background"
+        className="absolute inset-0 w-full h-full object-cover"
       />
 
-      {/* ✅ overlay scuro */}
+      {/* OVERLAY */}
       <div className="absolute inset-0 bg-black/60" />
 
-      {/* ✅ CONTENT */}
+      {/* CONTENT */}
       <div className="relative z-10 h-full flex items-center px-10">
 
-        {/* ✅ COVER */}
+        {/* MINI COVER */}
         <img
           src={
             currentManga?.CoverURL && currentManga.CoverURL !== "NULL"
               ? currentManga.CoverURL
               : "https://placehold.co/300x450"
           }
-          className="w-44 h-[260px] object-cover rounded-xl shadow-lg"
-          alt="cover"
+          className="w-40 h-[240px] object-cover rounded-xl shadow-lg"
         />
 
-        {/* ✅ TESTO */}
+        {/* TESTO */}
         <div className="ml-8 max-w-xl">
           <h2 className="text-3xl font-bold text-white mb-3">
-            {currentManga?.Titolo}
+            {currentManga?.Titolo || "Titolo"}
           </h2>
 
           <p className="text-sm text-zinc-300 mb-4 line-clamp-4">
