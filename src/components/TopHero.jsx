@@ -6,18 +6,15 @@ export default function TopHero({ manga }) {
 
   const latest = (manga || []).slice(0, 3);
 
-  // ✅ AUTO SLIDE + FADE
   useEffect(() => {
     if (!latest.length) return;
 
     const interval = setInterval(() => {
       setFade(false);
-
       setTimeout(() => {
         setCurrent((prev) => (prev + 1) % latest.length);
         setFade(true);
-      }, 250); // tempo fade-out
-
+      }, 250);
     }, 5000);
 
     return () => clearInterval(interval);
@@ -30,49 +27,56 @@ export default function TopHero({ manga }) {
   return (
     <div className="relative w-full h-[340px] rounded-2xl overflow-hidden border border-white/10 shadow-xl">
 
-      {/* ✅ BACKGROUND GRADIENT ESTETICO */}
-      <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-[#101018] to-black" />
+      {/* ✅ GRADIENT PIÙ CHIARO */}
+      <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 via-[#1a1a22] to-black" />
 
-      {/* ✅ GLASS OVERLAY */}
-      <div className="absolute inset-0 backdrop-blur-[2px] bg-black/20" />
+      {/* ✅ GLASS */}
+      <div className="absolute inset-0 backdrop-blur-sm bg-black/20" />
 
-      {/* ✅ CONTENUTO CON FADE */}
+      {/* ✅ CONTENUTO */}
       <div
-        className={`relative z-10 h-full flex items-center px-10 transition-all duration-300 ${
+        className={`relative z-10 h-full flex items-center px-10 transition-opacity duration-300 ${
           fade ? "opacity-100" : "opacity-0"
         }`}
       >
-
-        {/* ✅ COVER */}
+        {/* COVER */}
         <img
           src={currentManga?.CoverURL || "https://placehold.co/300x450"}
-          className="w-40 h-[260px] object-cover rounded-xl shadow-lg"
-          alt="cover"
+          className="w-44 h-[280px] object-cover rounded-xl shadow-lg"
         />
 
-        {/* ✅ TESTI */}
+        {/* TESTI */}
         <div className="ml-8 max-w-xl">
 
           <h2 className="text-3xl font-bold text-white mb-3">
             {currentManga?.Titolo}
           </h2>
 
-          <p className="text-sm text-zinc-400 mb-5 line-clamp-4">
-            {currentManga?.Trama || "Nessuna descrizione disponibile"}
+          <p className="text-sm text-zinc-400 mb-6 line-clamp-4">
+            {currentManga?.Trama}
           </p>
 
+          {/* ✅ BOTTONE PREMIUM SENAPE */}
           <button
             onClick={() =>
               (window.location.href = `/manga/${currentManga.ID}`)
             }
-            className="bg-green-600 hover:bg-green-700 transition px-5 py-2 rounded-lg"
+            className="
+              px-6 py-2 rounded-xl
+              bg-gradient-to-r from-yellow-500 to-yellow-600
+              text-black font-semibold
+              shadow-lg
+              hover:scale-105 hover:brightness-110
+              transition-all duration-200
+            "
           >
-            Dettagli
+            ✦ Dettagli
           </button>
+
         </div>
       </div>
 
-      {/* ✅ DOTS CLICCABILI */}
+      {/* ✅ DOTS */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
         {latest.map((_, i) => (
           <button
@@ -93,8 +97,8 @@ export default function TopHero({ manga }) {
         ))}
       </div>
 
-      {/* ✅ LIGHT GLOW BORDER (premium feel) */}
-      <div className="absolute inset-0 rounded-2xl ring-1 ring-white/10 pointer-events-none" />
+      {/* ✅ BORDER GLOW */}
+      <div className="absolute inset-0 rounded-2xl ring-1 ring-white/10" />
 
     </div>
   );
