@@ -5,6 +5,27 @@ export default function AdminPage() {
   const [mangaList, setMangaList] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(localStorage.getItem("token"));
+
+  async function login(username, password) {
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/api/manga/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const data = await res.json();
+
+  if (data.token) {
+    localStorage.setItem("token", data.token);
+    setToken(data.token);
+  } else {
+    alert("Login fallito");
+  }
+}
+
 
   useEffect(() => {
     loadManga();
@@ -42,8 +63,10 @@ export default function AdminPage() {
         {
           method: "PUT",
           headers: {
-            "Content-Type": "application/json",
-          },
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${token}`,
+},
+
           
 body: JSON.stringify({
   coverurl: selected.CoverURL,
@@ -84,8 +107,10 @@ body: JSON.stringify({
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-        },
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${token}`,
+},
+
         body: JSON.stringify({
           titolo: selected.Titolo,
         }),
@@ -104,9 +129,11 @@ body: JSON.stringify({
         `${import.meta.env.VITE_API_URL}/api/translate`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+         headers: {
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${token}`,
+},
+
           body: JSON.stringify({
             text: enrichData.trama,
             target: "it",
@@ -130,6 +157,31 @@ body: JSON.stringify({
       VolumiTotali: enrichData.volumitotali || selected.VolumiTotali,
     });
 
+    if (!token) {
+  return (
+    <div className="h-screen flex items-center justify-center bg-black text-white">
+      <div className="bg-zinc-900 p-6 rounded-xl space-y-4">
+        <h2 className="text-xl font-bold">Login Admin</h2>
+
+        <input id="user" placeholder="Username" className="w-full p-2 bg-zinc-800" />
+        <input id="pass" type="password" placeholder="Password" className="w-full p-2 bg-zinc-800" />
+
+        <button
+          onClick={() =>
+            login(
+              document.getElementById("user").value,
+              document.getElementById("pass").value
+            )
+          }
+          className="bg-green-600 px-4 py-2 w-full"
+        >
+          Login
+        </button>
+      </div>
+    </div>
+  );
+}
+``
 
   return (
     <div className="flex">
