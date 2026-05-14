@@ -2,14 +2,16 @@ import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import MangaGrid from "../components/MangaGrid";
 import TopHero from "../components/TopHero";
+import MangaDetail from "../components/MangaDetail";
 import { getManga } from "../services/api";
 
 export default function HomePage({ darkMode }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [selectedManga, setSelectedManga] = useState(null);
   const [mangaList, setMangaList] = useState([]);
 
-  // ✅ CARICA MANGA PER TOPHERO
+  // ✅ CARICA MANGA
   useEffect(() => {
     async function load() {
       try {
@@ -50,8 +52,11 @@ export default function HomePage({ darkMode }) {
       {/* MAIN */}
       <div className="ml-72 px-8 py-6 space-y-8">
 
-        {/* ✅ TOP HERO */}
-        <TopHero manga={mangaList} />
+        {/* ✅ TOP HERO (ORA FUNZIONA) */}
+        <TopHero
+          manga={mangaList}
+          onSelect={setSelectedManga}
+        />
 
         {/* HEADER */}
         <div className="flex justify-between items-center gap-4">
@@ -107,9 +112,18 @@ export default function HomePage({ darkMode }) {
           search={safeSearch}
           filter={filter}
           darkMode={darkMode}
+          onSelect={setSelectedManga}
         />
 
       </div>
+
+      {/* ✅ PANEL DETTAGLIO (CORE FEATURE) */}
+      {selectedManga && (
+        <MangaDetail
+          manga={selectedManga}
+          onClose={() => setSelectedManga(null)}
+        />
+      )}
     </div>
   );
 }
