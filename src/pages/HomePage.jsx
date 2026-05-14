@@ -1,25 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import MangaGrid from "../components/MangaGrid";
 import TopHero from "../components/TopHero";
-import { useEffect, useState } from "react";
 import { getManga } from "../services/api";
-
 
 export default function HomePage({ darkMode }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [mangaList, setMangaList] = useState([]);
 
+  // ✅ CARICA MANGA PER TOPHERO
   useEffect(() => {
-  async function load() {
-    const data = await getManga();
-    setMangaList(data || []);
-  }
-  load();
-}, []);
-``
-  // 🔒 NORMALIZZAZIONE SICURA
+    async function load() {
+      try {
+        const data = await getManga();
+        setMangaList(data || []);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    load();
+  }, []);
+
   const safeSearch = search || "";
 
   return (
@@ -33,14 +35,8 @@ export default function HomePage({ darkMode }) {
       {/* SIDEBAR */}
       <div
         className={`
-          fixed
-          left-0
-          top-0
-          w-72
-          h-screen
-          z-30
-          backdrop-blur-xl
-          border-r
+          fixed left-0 top-0 w-72 h-screen z-30
+          backdrop-blur-xl border-r
           ${
             darkMode
               ? "bg-black/60 border-zinc-800"
@@ -54,29 +50,22 @@ export default function HomePage({ darkMode }) {
       {/* MAIN */}
       <div className="ml-72 px-8 py-6 space-y-8">
 
-       <TopHero manga={mangaList} />
+        {/* ✅ TOP HERO */}
+        <TopHero manga={mangaList} />
 
         {/* HEADER */}
         <div className="flex justify-between items-center gap-4">
-
           <h2 className="text-2xl font-bold">
             La Mia Collezione
           </h2>
 
-          {/* 🔥 SEARCH INPUT SICURA */}
           <input
             type="text"
             value={safeSearch}
             onChange={(e) => setSearch(e.target.value ?? "")}
             placeholder="Cerca manga..."
             className={`
-              px-4
-              py-2
-              rounded-xl
-              border
-              outline-none
-              transition-all
-              w-64
+              px-4 py-2 rounded-xl border outline-none transition-all w-64
               ${
                 darkMode
                   ? "bg-zinc-900 border-zinc-700 text-white"
@@ -84,37 +73,34 @@ export default function HomePage({ darkMode }) {
               }
             `}
           />
-
         </div>
 
         {/* FILTRI */}
-<div className="flex gap-2 flex-wrap">
-
-  {[
-    { key: "all", label: "Tutti" },
-    { key: "ongoing", label: "In corso" },
-    { key: "to_complete", label: "Da completare" },
-    { key: "completed", label: "Completati" },
-  ].map((f) => (
-    <button
-      key={f.key}
-      onClick={() => setFilter(f.key)}
-      className={`
-        px-4 py-2 rounded-xl text-sm transition-all
-        ${
-          filter === f.key
-            ? "bg-yellow-500 text-black"
-            : darkMode
-            ? "bg-zinc-800 hover:bg-zinc-700"
-            : "bg-white border border-zinc-300 hover:bg-zinc-100"
-        }
-      `}
-    >
-      {f.label}
-    </button>
-  ))}
-
-</div>
+        <div className="flex gap-2 flex-wrap">
+          {[
+            { key: "all", label: "Tutti" },
+            { key: "ongoing", label: "In corso" },
+            { key: "to_complete", label: "Da completare" },
+            { key: "completed", label: "Completati" },
+          ].map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`
+                px-4 py-2 rounded-xl text-sm transition-all
+                ${
+                  filter === f.key
+                    ? "bg-yellow-500 text-black"
+                    : darkMode
+                    ? "bg-zinc-800 hover:bg-zinc-700"
+                    : "bg-white border border-zinc-300 hover:bg-zinc-100"
+                }
+              `}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
 
         {/* GRID */}
         <MangaGrid
