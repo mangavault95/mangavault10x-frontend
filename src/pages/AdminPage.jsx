@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { getManga } from "../services/api";
 
@@ -7,7 +8,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem("token"));
 
-  // ✅ LOGIN
+  // LOGIN
   async function login(username, password) {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/api/manga/login`, {
       method: "POST",
@@ -43,7 +44,7 @@ export default function AdminPage() {
     }
   }
 
-  // ✅ SAVE
+  // SAVE
   async function saveChanges() {
     if (!selected) return;
 
@@ -81,7 +82,7 @@ export default function AdminPage() {
     }
   }
 
-  // ✅ ENRICH (già tradotto dal backend)
+  // ENRICH
   async function enrichManga() {
     if (!selected) return;
 
@@ -101,8 +102,6 @@ export default function AdminPage() {
 
       const data = await res.json();
 
-      console.log("ENRICH:", data);
-
       setSelected({
         ...selected,
         Titolo: data.titolo || selected.Titolo,
@@ -116,7 +115,7 @@ export default function AdminPage() {
     }
   }
 
-  // ✅ BLOCCO LOGIN
+  // BLOCCO LOGIN
   if (!token) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-white">
@@ -169,63 +168,80 @@ export default function AdminPage() {
           <div className="text-zinc-400">Seleziona un manga</div>
         ) : (
           <>
-            <div className="flex gap-8">
-              <img
-                src={selected.CoverURL || "https://placehold.co/300x450"}
-                className="w-64 h-[380px] object-cover rounded-xl"
-              />
-<div className="max-w-5xl">
-  <div className="flex gap-8">
+            <div className="max-w-5xl">
+              <div className="flex gap-8">
 
-    {/* COVER */}
-    <div className="w-64">
-      <img
-        src={
-          selected.CoverURL && selected.CoverURL !== "NULL"
-            ? selected.CoverURL
-            : "https://placehold.co/300x450"
-        }
-        className="w-full h-[380px] object-cover rounded-2xl border border-zinc-800"
-        alt="cover"
-      />
+                {/* COVER */}
+                <div className="w-64">
+                  <img
+                    src={
+                      selected.CoverURL && selected.CoverURL !== "NULL"
+                        ? selected.CoverURL
+                        : "https://placehold.co/300x450"
+                    }
+                    className="w-full h-[380px] object-cover rounded-2xl border border-zinc-800"
+                    alt="cover"
+                  />
+                </div>
+
+                {/* FORM */}
+                <div className="flex-1 space-y-4">
+
+                  <input
+                    className="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white"
+                    value={selected.Titolo || ""}
+                    onChange={(e) =>
+                      setSelected({ ...selected, Titolo: e.target.value })
+                    }
+                  />
+
+                  <input
+                    className="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white"
+                    value={selected.Autore || ""}
+                    onChange={(e) =>
+                      setSelected({ ...selected, Autore: e.target.value })
+                    }
+                  />
+
+                  <input
+                    className="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white"
+                    value={selected.CoverURL || ""}
+                    onChange={(e) =>
+                      setSelected({ ...selected, CoverURL: e.target.value })
+                    }
+                  />
+
+                  <textarea
+                    className="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl h-56 text-white"
+                    value={selected.Trama || ""}
+                    onChange={(e) =>
+                      setSelected({ ...selected, Trama: e.target.value })
+                    }
+                  />
+
+                </div>
+              </div>
+            </div>
+
+            {/* BUTTONS */}
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={saveChanges}
+                className="bg-green-600 px-6 py-3 rounded-xl"
+              >
+                Salva
+              </button>
+
+              <button
+                onClick={enrichManga}
+                className="bg-blue-600 px-6 py-3 rounded-xl"
+              >
+                Auto Enrich
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
-
-    {/* FORM */}
-    <div className="flex-1 space-y-4">
-
-      <input
-        className="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white"
-        value={selected.Titolo || ""}
-        onChange={(e) =>
-          setSelected({ ...selected, Titolo: e.target.value })
-        }
-      />
-
-      <input
-        className="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white"
-        value={selected.Autore || ""}
-        onChange={(e) =>
-          setSelected({ ...selected, Autore: e.target.value })
-        }
-      />
-
-      <input
-        className="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white"
-        value={selected.CoverURL || ""}
-        onChange={(e) =>
-          setSelected({ ...selected, CoverURL: e.target.value })
-        }
-      />
-
-      <textarea
-        className="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl h-56 text-white"
-        value={selected.Trama || ""}
-        onChange={(e) =>
-          setSelected({ ...selected, Trama: e.target.value })
-        }
-      />
-
-    </div>
-  </div>
-</div>
-              
+  );
+}
