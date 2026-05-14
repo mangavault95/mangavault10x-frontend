@@ -1,118 +1,80 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function TopHero() {
-  const [heroList, setHeroList] = useState([]);
-  const [index, setIndex] = useState(0);
+export default function TopHero({ manga }) {
+  const [current, setCurrent] = useState(0);
+  const navigate = useNavigate();
 
+  // ✅ SOLO ULTIMI 3
+  const latest = (manga || []).slice(0, 3);
+
+  // ✅ AUTO SLIDE
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
-      .then((res) => res.json())
-      .then((data) => {
-        setHeroList(data || []);
-      })
-      .catch(console.error);
-  }, []);
-
-  // AUTO ROTATION HERO
-  useEffect(() => {
-    if (heroList.length <= 1) return;
+    if (latest.length === 0) return;
 
     const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % heroList.length);
-    }, 6000);
+      setCurrent((prev) => (prev + 1) % latest.length);
+    }, 4000);
 
     return () => clearInterval(interval);
-  }, [heroList]);
+  }, [latest]);
 
-  const manga = heroList[index];
+  if (latest.length === 0) return null;
 
-  if (!manga) return null;
+  const currentManga = latest[current];
 
   return (
-    <div className="relative h-[360px] rounded-2xl overflow-hidden bg-black">
+    <div className="relative w-full h-[360px] overflow-hidden rounded-2xl">
 
-      {/* 🔥 BACKGROUND BLUR (NO PIXELATION EFFECT) */}
-      <div
-        className="absolute inset-0 scale-110"
-        style={{
-          backgroundImage: `url(${manga.CoverURL})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          filter: "blur(40px) brightness(0.4)",
-          transform: "scale(1.2)"
-        }}
+      {/* BACKGROUND */}
+      <img
+        src={
+          currentManga.CoverURL && currentManga.CoverURL !== "NULL"
+            ? currentManga.CoverURL
+            : "https://placehold.co/1200x400"
+        }
+        className="absolute w-full h-full object-cover blur-md scale-110 opacity-40"
       />
-className="relative z-10"
-      {/* DARK OVERLAY CINEMATIC */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
 
       {/* CONTENT */}
-      <div className="relative z-10 h-full flex items-center px-8 gap-8">
+      <div className="relative z-10 h-full flex items-center px-10">
 
-        {/* POSTER (CLEAN, NO STRETCH) */}
-        <div className="flex-shrink-0">
-          <img
-            src={manga.CoverURL}
-            alt={manga.Titolo}
-            className="
-              w-[180px]
-              h-[260px]
-              object-cover
-              rounded-xl
-
-              shadow-[0_30px_80px_rgba(0,0,0,0.8)]
-              border border-zinc-700
-            "
-          />
-        </div>
+        {/* COVER */}
+        <img
+          src={
+            currentManga.CoverURL && currentManga.CoverURL !== "NULL"
+              ? currentManga.CoverURL
+              : "https://placehold.co/300x450"
+          }
+          className="w-40 h-56 object-cover rounded-xl shadow-lg"
+        />
 
         {/* TEXT */}
-        <div className="max-w-xl">
+        <div className="ml-8 max-w-xl">
+          <h2 className="text-3xl font-bold mb-2 text-white">
+            {currentManga.Titolo}
+          </h2>
 
-          <p className="text-yellow-500 text-xs tracking-widest mb-2">
-            IN EVIDENZA
-          </p>
-
-          <h1 className="text-4xl font-bold mb-3 leading-tight">
-            {manga.Titolo}
-          </h1>
-
-          <p className="text-zinc-300 text-sm line-clamp-3 mb-5">
-            {manga.Trama || manga.synopsis || "Nessuna descrizione disponibile"}
+          <p className="text-sm text-zinc-300 mb-4 line-clamp-4">
+            {currentManga.Trama || "Nessuna descrizione disponibile"}
           </p>
 
           <div className="flex gap-3">
 
-            <button className="bg-yellow-600 hover:bg-yellow-500 px-5 py-2 rounded-lg font-semibold transition-all active:scale-95">
+            {/* ✅ DETTAGLI (FUNZIONA) */}
+            <button
+              onClick={() => navigate(`/manga/${currentManga.ID}`)}
+              className="bg-green-600 px-5 py-2 rounded-lg"
+            >
               Dettagli
             </button>
 
-            <button className="bg-zinc-800 hover:bg-zinc-700 px-5 py-2 rounded-lg transition-all active:scale-95">
-              Vai alla scheda
-            </button>
+            {/* ✅ RIMOSSO BOTTONE ROTTO */}
+            {/* Se vuoi lo rimettiamo dopo */}
 
           </div>
-
         </div>
-
       </div>
-
-      {/* DOTS (indicatori slide) */}
-      {heroList.length > 1 && (
-        <div className="absolute bottom-4 right-6 flex gap-2">
-          {heroList.map((_, i) => (
-            <div
-              key={i}
-              className={`h-1.5 rounded-full transition-all ${
-                i === index
-                  ? "w-6 bg-yellow-500"
-                  : "w-2 bg-zinc-600"
-              }`}
-            />
-          ))}
-        </div>
-      )}
-
     </div>
   );
 }
