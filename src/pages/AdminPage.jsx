@@ -75,27 +75,39 @@ body: JSON.stringify({
 
   // ENRICH
   async function enrichManga() {
-    if (!selected) return;
+  if (!selected) return;
 
-    try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/manga/enrich`, {
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           titolo: selected.Titolo,
-          autore: selected.Autore,
         }),
-      });
+      }
+    );
 
-      alert("Auto Enrich completato!");
-      await loadManga();
-    } catch (err) {
-      console.error(err);
-    }
+    const data = await res.json();
+
+    console.log("ENRICH DATA:", data); // 🔥 DEBUG
+
+    // ✅ QUI È IL FIX: aggiorni UI
+    setSelected({
+      ...selected,
+      Titolo: data.titolo || selected.Titolo,
+      Trama: data.trama || selected.Trama,
+      CoverURL: data.coverurl || selected.CoverURL,
+      VolumiTotali: data.volumitotali || selected.VolumiTotali,
+    });
+
+  } catch (err) {
+    console.error(err);
   }
-
+}
   return (
     <div className="flex">
       {/* SIDEBAR */}
