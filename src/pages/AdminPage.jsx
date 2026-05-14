@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { getManga } from "../services/api";
 
@@ -8,7 +7,6 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem("token"));
 
-  // LOGIN
   async function login(username, password) {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/api/manga/login`, {
       method: "POST",
@@ -44,7 +42,6 @@ export default function AdminPage() {
     }
   }
 
-  // SAVE
   async function saveChanges() {
     if (!selected) return;
 
@@ -82,7 +79,6 @@ export default function AdminPage() {
     }
   }
 
-  // ENRICH
   async function enrichManga() {
     if (!selected) return;
 
@@ -115,7 +111,7 @@ export default function AdminPage() {
     }
   }
 
-  // BLOCCO LOGIN
+  // LOGIN SCREEN
   if (!token) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-white">
@@ -146,6 +142,16 @@ export default function AdminPage() {
       {/* SIDEBAR */}
       <div className="w-72 h-screen bg-black/60 border-r border-zinc-800 overflow-y-auto">
         <h1 className="text-2xl font-bold p-5">Admin MangaVault</h1>
+
+        {/* ✅ TORNA ALLA HOME */}
+        <div className="px-5 pb-3">
+          <button
+            onClick={() => window.location.href = "/"}
+            className="w-full py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition text-sm font-semibold"
+          >
+            ← Torna alla Home
+          </button>
+        </div>
 
         {loading ? (
           <div className="p-4 text-zinc-400">Caricamento...</div>
@@ -179,7 +185,7 @@ export default function AdminPage() {
                         ? selected.CoverURL
                         : "https://placehold.co/300x450"
                     }
-                    className="w-full h-[380px] object-cover rounded-2xl border border-zinc-800"
+                    className="w-full h-[380px] object-cover rounded-xl"
                     alt="cover"
                   />
                 </div>
