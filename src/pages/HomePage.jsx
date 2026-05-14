@@ -9,7 +9,16 @@ import { getManga } from "../services/api";
 export default function HomePage({ darkMode }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [mangaList, setMangaList] = useState([]);
 
+  useEffect(() => {
+  async function load() {
+    const data = await getManga();
+    setMangaList(data || []);
+  }
+  load();
+}, []);
+``
   // 🔒 NORMALIZZAZIONE SICURA
   const safeSearch = search || "";
 
@@ -45,7 +54,7 @@ export default function HomePage({ darkMode }) {
       {/* MAIN */}
       <div className="ml-72 px-8 py-6 space-y-8">
 
-        <TopHero darkMode={darkMode} />
+       <TopHero manga={mangaList} />
 
         {/* HEADER */}
         <div className="flex justify-between items-center gap-4">
