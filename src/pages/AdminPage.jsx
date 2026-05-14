@@ -79,55 +79,53 @@ export default function AdminPage() {
     }
   }
 
-  return (
-    <div className="flex">
+ return (
+  <div className="flex">
 
-      {/* SIDEBAR */}
-      <div className="w-72 h-screen bg-black/60 backdrop-blur-xl border-r border-zinc-800 overflow-y-auto">
+    {/* SIDEBAR */}
+    <div className="w-72 h-screen bg-black/60 backdrop-blur-xl border-r border-zinc-800 overflow-y-auto">
 
-        <h1 className="text-2xl font-bold p-5">
-          Admin MangaVault
-        </h1>
+      <h1 className="text-2xl font-bold p-5">
+        Admin MangaVault
+      </h1>
 
-        <div className="px-5 pb-3">
-          <button
-            onClick={() => window.location.reload()}
-            className="w-full py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-all text-sm font-semibold"
-          >
-            Torna alla Home
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="p-4 text-zinc-400">
-            Caricamento...
-          </div>
-        ) : (
-          mangaList.map((m, i) => (
-            <div
-              key={m.Id || m.ID || i}
-              onClick={() => setSelected(m)}
-              className="p-3 border-b border-zinc-800 cursor-pointer hover:bg-zinc-900"
-            >
-              {m.Titolo}
-            </div>
-          ))
-        )}
+      <div className="px-5 pb-3">
+        <button
+          onClick={() => window.location.reload()}
+          className="w-full py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-all text-sm font-semibold"
+        >
+          Torna alla Home
+        </button>
       </div>
 
-      {/* CONTENT */}
-      <div className="flex-1 p-8 overflow-y-auto">
-
-        {!selected ? (
-          <div className="text-zinc-400">
-            Seleziona un manga
+      {loading ? (
+        <div className="p-4 text-zinc-400">Caricamento...</div>
+      ) : (
+        mangaList.map((m, i) => (
+          <div
+            key={m.Id || m.ID || i}
+            onClick={() => setSelected(m)}
+            className="p-3 border-b border-zinc-800 cursor-pointer hover:bg-zinc-900"
+          >
+            {m.Titolo}
           </div>
-        ) : (
+        ))
+      )}
+    </div>
+
+    {/* CONTENT WRAPPER (IMPORTANTISSIMO: SEMPRE PRESENTE) */}
+    <div className="flex-1 p-8 overflow-y-auto">
+
+      {!selected ? (
+        <div className="text-zinc-400">
+          Seleziona un manga
+        </div>
+      ) : (
+        <>
           <div className="max-w-5xl">
 
             <div className="flex gap-8">
 
-              {/* COVER */}
               <div className="w-64">
                 <img
                   src={selected.CoverURL || "https://via.placeholder.com/300x450"}
@@ -136,7 +134,6 @@ export default function AdminPage() {
                 />
               </div>
 
-              {/* FORM */}
               <div className="flex-1 space-y-4">
 
                 <input
@@ -170,6 +167,7 @@ export default function AdminPage() {
                     setSelected({ ...selected, Trama: e.target.value })
                   }
                 />
+
               </div>
             </div>
 
@@ -193,9 +191,9 @@ export default function AdminPage() {
             </div>
 
           </div>
-        )}
+        </>
+      )}
 
-      </div>
     </div>
-  );
-}
+  </div>
+);
