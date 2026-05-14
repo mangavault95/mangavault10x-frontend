@@ -4,7 +4,7 @@ export default function StatsPanel() {
   const [manga, setManga] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/manga")
+    fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
       .then((res) => res.json())
       .then((data) => setManga(Array.isArray(data) ? data : []))
       .catch(() => setManga([]));
