@@ -174,8 +174,7 @@ export default function AdminPage() {
                 src={selected.CoverURL || "https://placehold.co/300x450"}
                 className="w-64 h-[380px] object-cover rounded-xl"
               />
-
-              <div className="max-w-5xl">
+<div className="max-w-5xl">
   <div className="flex gap-8">
 
     {/* COVER */}
@@ -229,3 +228,4 @@ export default function AdminPage() {
     </div>
   </div>
 </div>
+              
