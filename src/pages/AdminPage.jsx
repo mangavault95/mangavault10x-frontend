@@ -25,10 +25,12 @@ export default function AdminPage() {
 
   // 🔥 SAVE MANGA (UNCHANGED)
   async function saveChanges() {
-    try {
-      const id = selected.Id || selected.ID;
+  try {
+    const id = selected.Id || selected.ID;
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/manga`), {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/manga/${id}`,
+      {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
@@ -39,47 +41,45 @@ export default function AdminPage() {
           VolumiPosseduti: selected.VolumiPosseduti,
           VolumiTotali: selected.VolumiTotali
         })
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        alert("Salvato correttamente!");
-        await loadManga();
-      } else {
-        alert("Errore salvataggio");
       }
+    );
 
-    } catch (err) {
-      console.error(err);
-      alert("Errore server");
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Salvato correttamente!");
+      await loadManga();
+    } else {
+      alert("Errore salvataggio");
     }
+
+  } catch (err) {
+    console.error(err);
+    alert("Errore server");
   }
+}
 
   // 🔥 ENRICH (UNCHANGED)
   async function enrichManga() {
-    try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/manga`), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          titolo: selected.Titolo,
-          autore: selected.Autore
-        })
-      });
+  try {
+    await fetch(`${import.meta.env.VITE_API_URL}/api/manga/enrich`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        titolo: selected.Titolo,
+        autore: selected.Autore
+      })
+    });
 
-      alert("Auto Enrich completato!");
-      await loadManga();
+    alert("Auto Enrich completato!");
+    await loadManga();
 
-    } catch (err) {
-      console.error(err);
-    }
+  } catch (err) {
+    console.error(err);
   }
-
-  return (
-    <div className="flex min-h-screen bg-[#0b0b0f] text-white">
+}
 
       {/* SIDEBAR */}
       <div className="
@@ -193,7 +193,7 @@ export default function AdminPage() {
               </div>
 
             </div>
-
+if (!selected) return;
             {/* BUTTONS */}
             <div className="flex gap-4 mt-6">
 
