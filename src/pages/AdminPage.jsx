@@ -37,12 +37,14 @@ export default function AdminPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            CoverURL: selected.CoverURL,
-            Trama: selected.Trama,
-            VolumiPosseduti: selected.VolumiPosseduti,
-            VolumiTotali: selected.VolumiTotali,
-          }),
+          
+body: JSON.stringify({
+  coverurl: selected.CoverURL,
+  trama: selected.Trama,
+  volumiposseduti: selected.VolumiPosseduti,
+  volumitotali: selected.VolumiTotali,
+})
+,
         }
       );
 
