@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export default function TopHero({ manga }) {
+export default function TopHero({ manga, onSelect }) {
   const [current, setCurrent] = useState(0);
   const [fade, setFade] = useState(true);
 
@@ -58,9 +58,7 @@ export default function TopHero({ manga }) {
 
           {/* ✅ BOTTONE PREMIUM SENAPE */}
           <button
-            onClick={() =>
-              (window.location.href = `/manga/${currentManga.ID}`)
-            }
+            onClick={() => onSelect(currentManga)}
             className="
               px-6 py-2 rounded-xl
               bg-gradient-to-r from-yellow-500 to-yellow-600
