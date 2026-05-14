@@ -5,7 +5,7 @@ export default function TopHero() {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/manga/latest")
+    fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
       .then((res) => res.json())
       .then((data) => {
         setHeroList(data || []);
