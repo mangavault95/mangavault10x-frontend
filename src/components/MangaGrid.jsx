@@ -7,7 +7,7 @@ export default function MangaGrid({ search = "", filter = "all" }) {
   const [selectedManga, setSelectedManga] = useState(null);
 
   useEffect(() => {
-    fetch("https://mangavault10x-api.onrender.com/api/manga")
+    fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
       .then((res) => res.json())
       .then((data) => setManga(Array.isArray(data) ? data : []))
       .catch(() => setManga([]));
