@@ -10,52 +10,39 @@ export default function TopHero({ manga }) {
 
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % latest.length);
-    }, 4000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [latest.length]);
 
-  if (!latest || latest.length === 0) return null;
+  if (!latest.length) return null;
 
   const currentManga = latest[current];
 
-  // ✅ PROTEZIONE CRASH
-  if (!currentManga) return null;
-
   return (
-    <div className="relative w-full h-[360px] overflow-hidden rounded-2xl">
+    <div className="relative w-full h-[360px] rounded-2xl overflow-hidden">
 
-      {/* BACKGROUND */}
-      <img
-        src={
-          currentManga.CoverURL && currentManga.CoverURL !== "NULL"
-            ? currentManga.CoverURL
-            : "https://placehold.co/1200x400"
-        }
-        className="absolute inset-0 w-full h-full object-cover"
-        alt="background"
-      />
+      {/* ✅ GRADIENT BACKGROUND (come prima) */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black via-zinc-900 to-transparent" />
 
-      <div className="absolute inset-0 bg-black/60" />
-
-      {/* CONTENT */}
+      {/* ✅ CONTENT */}
       <div className="relative z-10 h-full flex items-center px-10">
 
-        {/* COVER */}
+        {/* ✅ IMMAGINE SINGOLA */}
         <img
           src={
             currentManga.CoverURL && currentManga.CoverURL !== "NULL"
               ? currentManga.CoverURL
               : "https://placehold.co/300x450"
           }
-          className="w-48 h-[300px] object-cover rounded-lg shadow-lg"
+          className="w-48 h-[300px] object-cover rounded-xl shadow-lg"
           alt="cover"
         />
 
-        {/* TEXT */}
+        {/* ✅ TESTI */}
         <div className="ml-8 max-w-xl">
           <h2 className="text-3xl font-bold text-white mb-3">
-            {currentManga.Titolo || "Titolo"}
+            {currentManga.Titolo}
           </h2>
 
           <p className="text-sm text-zinc-300 mb-4 line-clamp-4">
@@ -72,6 +59,22 @@ export default function TopHero({ manga }) {
           </button>
         </div>
       </div>
+
+      {/* ✅ INDICATORI (DOTS) */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+        {latest.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrent(i)}
+            className={`w-3 h-3 rounded-full transition-all ${
+              i === current
+                ? "bg-white scale-125"
+                : "bg-white/40 hover:bg-white/70"
+            }`}
+          />
+        ))}
+      </div>
+
     </div>
   );
 }
