@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import HomePage from "./pages/HomePage";
 import AdminPage from "./pages/AdminPage";
 import RecordsPage from "./pages/RecordsPage";
+import MangaDetail from "./pages/MangaDetail";
+
+<Route path="/manga/:id" element={<MangaDetail />} />
 
 function App() {
   const [adminMode, setAdminMode] = useState(false);
