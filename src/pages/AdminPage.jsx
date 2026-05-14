@@ -175,35 +175,57 @@ export default function AdminPage() {
                 className="w-64 h-[380px] object-cover rounded-xl"
               />
 
-              <div className="flex-1 space-y-4">
-                <input
-                  value={selected.Titolo || ""}
-                  onChange={(e) =>
-                    setSelected({ ...selected, Titolo: e.target.value })
-                  }
-                />
+              <div className="max-w-5xl">
+  <div className="flex gap-8">
 
-                <textarea
-                  value={selected.Trama || ""}
-                  onChange={(e) =>
-                    setSelected({ ...selected, Trama: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-4 mt-6">
-              <button onClick={saveChanges} className="bg-green-600 px-6 py-3">
-                Salva
-              </button>
-
-              <button onClick={enrichManga} className="bg-blue-600 px-6 py-3">
-                Auto Enrich
-              </button>
-            </div>
-          </>
-        )}
-      </div>
+    {/* COVER */}
+    <div className="w-64">
+      <img
+        src={
+          selected.CoverURL && selected.CoverURL !== "NULL"
+            ? selected.CoverURL
+            : "https://placehold.co/300x450"
+        }
+        className="w-full h-[380px] object-cover rounded-2xl border border-zinc-800"
+        alt="cover"
+      />
     </div>
-  );
-}
+
+    {/* FORM */}
+    <div className="flex-1 space-y-4">
+
+      <input
+        className="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white"
+        value={selected.Titolo || ""}
+        onChange={(e) =>
+          setSelected({ ...selected, Titolo: e.target.value })
+        }
+      />
+
+      <input
+        className="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white"
+        value={selected.Autore || ""}
+        onChange={(e) =>
+          setSelected({ ...selected, Autore: e.target.value })
+        }
+      />
+
+      <input
+        className="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white"
+        value={selected.CoverURL || ""}
+        onChange={(e) =>
+          setSelected({ ...selected, CoverURL: e.target.value })
+        }
+      />
+
+      <textarea
+        className="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl h-56 text-white"
+        value={selected.Trama || ""}
+        onChange={(e) =>
+          setSelected({ ...selected, Trama: e.target.value })
+        }
+      />
+
+    </div>
+  </div>
+</div>
