@@ -2,6 +2,9 @@ import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import MangaGrid from "../components/MangaGrid";
 import TopHero from "../components/TopHero";
+import { useEffect, useState } from "react";
+import { getManga } from "../services/api";
+
 
 export default function HomePage({ darkMode }) {
   const [search, setSearch] = useState("");
