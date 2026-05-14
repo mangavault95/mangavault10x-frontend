@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 export default function TopHero({ manga }) {
   const [current, setCurrent] = useState(0);
-  const navigate = useNavigate();
 
   const latest = (manga || []).slice(0, 3);
 
@@ -17,9 +15,12 @@ export default function TopHero({ manga }) {
     return () => clearInterval(interval);
   }, [latest.length]);
 
-  if (latest.length === 0) return null;
+  if (!latest || latest.length === 0) return null;
 
   const currentManga = latest[current];
+
+  // ✅ PROTEZIONE CRASH
+  if (!currentManga) return null;
 
   return (
     <div className="relative w-full h-[360px] overflow-hidden rounded-2xl">
@@ -27,41 +28,44 @@ export default function TopHero({ manga }) {
       {/* BACKGROUND */}
       <img
         src={
-          currentManga?.CoverURL && currentManga.CoverURL !== "NULL"
+          currentManga.CoverURL && currentManga.CoverURL !== "NULL"
             ? currentManga.CoverURL
             : "https://placehold.co/1200x400"
         }
         className="absolute inset-0 w-full h-full object-cover"
+        alt="background"
       />
 
-      {/* OVERLAY */}
       <div className="absolute inset-0 bg-black/60" />
 
       {/* CONTENT */}
       <div className="relative z-10 h-full flex items-center px-10">
 
-        {/* MINI COVER */}
+        {/* COVER */}
         <img
           src={
-            currentManga?.CoverURL && currentManga.CoverURL !== "NULL"
+            currentManga.CoverURL && currentManga.CoverURL !== "NULL"
               ? currentManga.CoverURL
               : "https://placehold.co/300x450"
           }
-          className="w-40 h-[240px] object-cover rounded-xl shadow-lg"
+          className="w-48 h-[300px] object-cover rounded-lg shadow-lg"
+          alt="cover"
         />
 
-        {/* TESTO */}
+        {/* TEXT */}
         <div className="ml-8 max-w-xl">
           <h2 className="text-3xl font-bold text-white mb-3">
-            {currentManga?.Titolo || "Titolo"}
+            {currentManga.Titolo || "Titolo"}
           </h2>
 
           <p className="text-sm text-zinc-300 mb-4 line-clamp-4">
-            {currentManga?.Trama || "Nessuna descrizione disponibile"}
+            {currentManga.Trama || "Nessuna descrizione disponibile"}
           </p>
 
           <button
-            onClick={() => navigate(`/manga/${currentManga.ID}`)}
+            onClick={() =>
+              (window.location.href = `/manga/${currentManga.ID}`)
+            }
             className="bg-green-600 px-5 py-2 rounded-lg hover:bg-green-700 transition"
           >
             Dettagli
