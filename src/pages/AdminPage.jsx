@@ -91,8 +91,9 @@ export default function AdminPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            titolo: selected.Titolo,
+         body: JSON.stringify({
+  titolo: selected.Titolo,
+  autore: selected.Autore   // ✅ AGGIUNGI QUESTA
           }),
         }
       );
