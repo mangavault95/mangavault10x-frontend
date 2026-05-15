@@ -79,48 +79,33 @@ export default function AdminPage() {
     }
   }
 
+  // ✅ ENRICH FIXATO
   async function enrichManga() {
-  if (!selected) return;
+    if (!selected) return;
 
-  try {
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          titolo: selected.Titolo,
-        }),
-      }
-    );
-
-    const data = await res.json();
-
-    // ✅ GESTIONE ERRORE (FONDAMENTALE)
-    if (data.error) {
-      alert(data.error);
-      return;
-    }
-
-    // ✅ AGGIORNA DATI
-    setSelected({
-      ...selected,
-      Titolo: data.titolo || selected.Titolo,
-      Trama: data.trama || selected.Trama,
-      CoverURL: data.coverurl || selected.CoverURL,
-      VolumiTotali: data.volumitotali || selected.VolumiTotali,
-    });
-
-  } catch (err) {
-    console.error(err);
-    alert("Errore durante enrich");
-  }
-}
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            titolo: selected.Titolo,
+          }),
+        }
+      );
 
       const data = await res.json();
 
+      // ✅ ERRORE GESTITO
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+
+      // ✅ UPDATE DATI
       setSelected({
         ...selected,
         Titolo: data.titolo || selected.Titolo,
@@ -131,10 +116,11 @@ export default function AdminPage() {
 
     } catch (err) {
       console.error(err);
+      alert("Errore enrich");
     }
   }
 
-  // LOGIN SCREEN
+  // LOGIN
   if (!token) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-white">
@@ -166,10 +152,9 @@ export default function AdminPage() {
       <div className="w-72 h-screen bg-black/60 border-r border-zinc-800 overflow-y-auto">
         <h1 className="text-2xl font-bold p-5">Admin MangaVault</h1>
 
-        {/* ✅ TORNA ALLA HOME */}
         <div className="px-5 pb-3">
           <button
-            onClick={() => window.location.href = "/"}
+            onClick={() => (window.location.href = "/")}
             className="w-full py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition text-sm font-semibold"
           >
             ← Torna alla Home
@@ -263,7 +248,7 @@ export default function AdminPage() {
 
               <button
                 onClick={enrichManga}
-                className="bg-blue-600 px-6 py-3 rounded-xl"
+                className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl transition"
               >
                 Auto Enrich
               </button>
