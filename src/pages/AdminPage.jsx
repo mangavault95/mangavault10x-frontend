@@ -80,21 +80,44 @@ export default function AdminPage() {
   }
 
   async function enrichManga() {
-    if (!selected) return;
+  if (!selected) return;
 
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            titolo: selected.Titolo,
-          }),
-        }
-      );
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          titolo: selected.Titolo,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    // ✅ GESTIONE ERRORE (FONDAMENTALE)
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    // ✅ AGGIORNA DATI
+    setSelected({
+      ...selected,
+      Titolo: data.titolo || selected.Titolo,
+      Trama: data.trama || selected.Trama,
+      CoverURL: data.coverurl || selected.CoverURL,
+      VolumiTotali: data.volumitotali || selected.VolumiTotali,
+    });
+
+  } catch (err) {
+    console.error(err);
+    alert("Errore durante enrich");
+  }
+}
 
       const data = await res.json();
 
