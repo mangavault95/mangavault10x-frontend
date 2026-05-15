@@ -10,14 +10,14 @@ export default function AdminPage() {
 
   function logout() {
     localStorage.removeItem("token");
-    setToken(null);
+    window.location.href = "/";
   }
 
-  async function login(username, password) {
+  async function login(user, pass) {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/api/manga/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username: user, password: pass })
     });
 
     const data = await res.json();
@@ -35,51 +35,40 @@ export default function AdminPage() {
 
     setLoading(true);
 
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            titolo: selected.Titolo,
-            autore: selected.Autore
-          })
-        }
-      );
-
-      const data = await res.json();
-
-      if (data.error) {
-        alert(data.error);
-        setLoading(false);
-        return;
-      }
-
-      setSelected({
-        ...selected,
-        Titolo: data.titolo,
-        Trama: data.trama,
-        CoverURL: data.coverurl,
-        VolumiTotali: data.volumitotali
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/manga/enrich`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          titolo: selected.Titolo,
+          autore: selected.Autore
+        })
       });
 
-    } catch {
-      alert("Errore enrich");
+    const data = await res.json();
+
+    if (data.error) {
+      alert(data.error);
+      setLoading(false);
+      return;
     }
+
+    setSelected({
+      ...selected,
+      Titolo: data.titolo,
+      Trama: data.trama,
+      CoverURL: data.coverurl,
+      VolumiTotali: data.volumitotali
+    });
 
     setLoading(false);
   }
 
   async function saveChanges() {
-    if (!selected || !token) {
-      alert("Devi rifare login");
-      return;
-    }
+    if (!selected || !token) return alert("Rifai login");
 
     const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/manga/${selected.ID}`,
-      {
+      `${import.meta.env.VITE_API_URL}/api/manga/${selected.ID}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -88,16 +77,12 @@ export default function AdminPage() {
         body: JSON.stringify({
           coverurl: selected.CoverURL,
           trama: selected.Trama,
-          volumiposseduti: selected.VolumiPosseduti || 0,
-          volumitotali: selected.VolumiTotali || 0
+          volumiposseduti: 0,
+          volumitotali: selected.VolumiTotali
         })
-      }
-    );
+      });
 
-    if (!res.ok) {
-      alert("Errore salvataggio");
-      return;
-    }
+    if (!res.ok) return alert("Errore salvataggio");
 
     alert("Salvato ✅");
   }
@@ -106,29 +91,27 @@ export default function AdminPage() {
     getManga().then(setMangaList);
   }, []);
 
-  // ✅ LOGIN SCREEN FIXATO
   if (!token) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-white">
-        <div className="bg-zinc-900 p-8 rounded-xl space-y-4 w-80">
-          <h2 className="text-xl font-bold text-center">Login Admin</h2>
+        <div className="bg-zinc-900 p-8 rounded-xl space-y-4 w-80 text-center">
+          <h2 className="text-xl font-bold">Login Admin</h2>
 
-          <input id="user" placeholder="Username"
-            className="w-full p-2 bg-zinc-800 rounded"/>
-
-          <input id="pass" type="password" placeholder="Password"
-            className="w-full p-2 bg-zinc-800 rounded"/>
+          <input id="u" placeholder="Username" className="w-full p-2 bg-zinc-800 rounded"/>
+          <input id="p" type="password" placeholder="Password" className="w-full p-2 bg-zinc-800 rounded"/>
 
           <button
-            onClick={() =>
-              login(
-                document.getElementById("user").value,
-                document.getElementById("pass").value
-              )
-            }
-            className="w-full bg-yellow-500 text-black py-2 rounded-lg font-semibold"
+            onClick={() => login(u.value, p.value)}
+            className="w-full bg-yellow-500 text-black py-2 rounded-lg"
           >
             Login
+          </button>
+
+          <button
+            onClick={() => window.location.href = "/"}
+            className="text-sm text-zinc-400"
+          >
+            ← Torna alla Home
           </button>
         </div>
       </div>
@@ -136,16 +119,16 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex bg-[#0b0b0f] text-white min-h-screen">
+    <div className="flex h-screen overflow-hidden bg-[#0b0b0f] text-white">
 
       {/* SIDEBAR */}
       <div className="w-72 bg-black/60 border-r border-zinc-800 overflow-y-auto">
-        <div className="p-5 flex justify-between items-center">
-          <h1 className="text-xl font-bold">Admin</h1>
-          <button onClick={logout} className="text-red-400 text-sm">Logout</button>
+        <div className="p-4 flex justify-between">
+          <span>Admin</span>
+          <button onClick={logout}>Logout</button>
         </div>
 
-        {mangaList.map((m) => (
+        {mangaList.map(m => (
           <div
             key={m.ID}
             onClick={() => setSelected(m)}
@@ -156,67 +139,51 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {/* CONTENT */}
-      <div className="flex-1 p-8">
-        {!selected ? (
-          <div className="text-zinc-400">Seleziona un manga</div>
-        ) : (
-          <>
-            <div className="flex gap-8">
+      {/* CONTENT FISSO */}
+      <div className="flex-1 flex justify-center p-8">
+        <div className="w-full max-w-5xl">
 
-              {/* COVER */}
-              <img
-                src={selected.CoverURL || "https://placehold.co/300x450"}
-                className="w-56 h-[340px] object-cover rounded-xl"
-              />
+          {!selected ? (
+            <div className="text-zinc-400">Seleziona un manga</div>
+          ) : (
+            <>
+              <div className="flex gap-8">
 
-              {/* FORM */}
-              <div className="flex-1 space-y-4">
-
-                <input
-                  value={selected.Titolo || ""}
-                  onChange={e => setSelected({ ...selected, Titolo: e.target.value })}
-                  className="w-full p-3 bg-zinc-900 rounded-xl"
+                <img
+                  src={selected.CoverURL || "https://placehold.co/300x450"}
+                  className="w-60 rounded-xl"
                 />
 
-                <input
-                  value={selected.Autore || ""}
-                  onChange={e => setSelected({ ...selected, Autore: e.target.value })}
-                  className="w-full p-3 bg-zinc-900 rounded-xl"
-                />
+                <div className="flex-1 space-y-4">
 
-                <input
-                  value={selected.CoverURL || ""}
-                  onChange={e => setSelected({ ...selected, CoverURL: e.target.value })}
-                  className="w-full p-3 bg-zinc-900 rounded-xl"
-                />
+                  <input value={selected.Titolo || ""}
+                    onChange={e => setSelected({...selected, Titolo:e.target.value})}
+                    className="w-full p-3 bg-zinc-900 rounded-xl"/>
 
-                <textarea
-                  value={selected.Trama || ""}
-                  onChange={e => setSelected({ ...selected, Trama: e.target.value })}
-                  className="w-full p-3 bg-zinc-900 rounded-xl h-48"
-                />
+                  <input value={selected.Autore || ""}
+                    onChange={e => setSelected({...selected, Autore:e.target.value})}
+                    className="w-full p-3 bg-zinc-900 rounded-xl"/>
 
+                  <textarea value={selected.Trama || ""}
+                    onChange={e => setSelected({...selected, Trama:e.target.value})}
+                    className="w-full p-3 bg-zinc-900 rounded-xl h-48"/>
+
+                </div>
               </div>
-            </div>
 
-            <div className="flex gap-4 mt-6">
-              <button
-                onClick={saveChanges}
-                className="bg-green-600 px-6 py-3 rounded-xl"
-              >
-                Salva
-              </button>
+              <div className="flex gap-4 mt-6">
+                <button onClick={saveChanges} className="bg-green-600 px-6 py-3 rounded-xl">
+                  Salva
+                </button>
 
-              <button
-                onClick={enrichManga}
-                className="bg-blue-600 px-6 py-3 rounded-xl"
-              >
-                {loading ? "..." : "Auto Enrich"}
-              </button>
-            </div>
-          </>
-        )}
+                <button onClick={enrichManga} className="bg-blue-600 px-6 py-3 rounded-xl">
+                  {loading ? "..." : "Auto Enrich"}
+                </button>
+              </div>
+            </>
+          )}
+
+        </div>
       </div>
 
     </div>
