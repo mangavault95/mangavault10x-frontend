@@ -55,10 +55,8 @@ export default function AdminPage() {
 
     setSelected({
       ...selected,
-      Titolo: data.titolo,
       Trama: data.trama,
       CoverURL: data.coverurl,
-      VolumiTotali: data.volumitotali
     });
 
     setLoading(false);
