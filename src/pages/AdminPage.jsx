@@ -6,18 +6,18 @@ export default function AdminPage() {
   const [mangaList, setMangaList] = useState([]);
   const [selected, setSelected] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token"));
+  const [loading, setLoading] = useState(false);
 
   function logout() {
     localStorage.removeItem("token");
     setToken(null);
-    location.reload();
   }
 
-  async function login(user, pass) {
+  async function login(username, password) {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/api/manga/login`, {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ username: user, password: pass })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
     });
 
     const data = await res.json();
@@ -33,38 +33,53 @@ export default function AdminPage() {
   async function enrichManga() {
     if (!selected) return;
 
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/manga/enrich`, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        titolo: selected.Titolo,
-        autore: selected.Autore
-      })
-    });
+    setLoading(true);
 
-    const data = await res.json();
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            titolo: selected.Titolo,
+            autore: selected.Autore
+          })
+        }
+      );
 
-    if (data.error) return alert(data.error);
+      const data = await res.json();
 
-    setSelected({
-      ...selected,
-      Titolo: data.titolo,
-      Trama: data.trama,
-      CoverURL: data.coverurl,
-      VolumiTotali: data.volumitotali
-    });
+      if (data.error) {
+        alert(data.error);
+        setLoading(false);
+        return;
+      }
+
+      setSelected({
+        ...selected,
+        Titolo: data.titolo,
+        Trama: data.trama,
+        CoverURL: data.coverurl,
+        VolumiTotali: data.volumitotali
+      });
+
+    } catch {
+      alert("Errore enrich");
+    }
+
+    setLoading(false);
   }
 
   async function saveChanges() {
     if (!selected || !token) {
-      alert("Rifai login");
+      alert("Devi rifare login");
       return;
     }
 
-    const id = selected.ID;
-
     const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/manga/${id}`, {
+      `${import.meta.env.VITE_API_URL}/api/manga/${selected.ID}`,
+      {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -73,14 +88,14 @@ export default function AdminPage() {
         body: JSON.stringify({
           coverurl: selected.CoverURL,
           trama: selected.Trama,
-          volumiposseduti: 0,
-          volumitotali: selected.VolumiTotali
+          volumiposseduti: selected.VolumiPosseduti || 0,
+          volumitotali: selected.VolumiTotali || 0
         })
       }
     );
 
     if (!res.ok) {
-      alert("Errore save");
+      alert("Errore salvataggio");
       return;
     }
 
@@ -91,46 +106,119 @@ export default function AdminPage() {
     getManga().then(setMangaList);
   }, []);
 
+  // ✅ LOGIN SCREEN FIXATO
   if (!token) {
     return (
-      <div>
-        <input id="u" placeholder="user" />
-        <input id="p" type="password" />
-        <button onClick={()=>login(u.value,p.value)}>Login</button>
+      <div className="h-screen flex items-center justify-center bg-black text-white">
+        <div className="bg-zinc-900 p-8 rounded-xl space-y-4 w-80">
+          <h2 className="text-xl font-bold text-center">Login Admin</h2>
+
+          <input id="user" placeholder="Username"
+            className="w-full p-2 bg-zinc-800 rounded"/>
+
+          <input id="pass" type="password" placeholder="Password"
+            className="w-full p-2 bg-zinc-800 rounded"/>
+
+          <button
+            onClick={() =>
+              login(
+                document.getElementById("user").value,
+                document.getElementById("pass").value
+              )
+            }
+            className="w-full bg-yellow-500 text-black py-2 rounded-lg font-semibold"
+          >
+            Login
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <button onClick={logout}>Logout</button>
+    <div className="flex bg-[#0b0b0f] text-white min-h-screen">
 
-      <div>
-        {mangaList.map(m => (
-          <div key={m.ID} onClick={()=>setSelected(m)}>
+      {/* SIDEBAR */}
+      <div className="w-72 bg-black/60 border-r border-zinc-800 overflow-y-auto">
+        <div className="p-5 flex justify-between items-center">
+          <h1 className="text-xl font-bold">Admin</h1>
+          <button onClick={logout} className="text-red-400 text-sm">Logout</button>
+        </div>
+
+        {mangaList.map((m) => (
+          <div
+            key={m.ID}
+            onClick={() => setSelected(m)}
+            className="p-3 border-b border-zinc-800 hover:bg-zinc-900 cursor-pointer"
+          >
             {m.Titolo}
           </div>
         ))}
       </div>
 
-      {selected && (
-        <>
-          <input value={selected.Titolo} onChange={e =>
-            setSelected({...selected, Titolo:e.target.value})
-          }/>
+      {/* CONTENT */}
+      <div className="flex-1 p-8">
+        {!selected ? (
+          <div className="text-zinc-400">Seleziona un manga</div>
+        ) : (
+          <>
+            <div className="flex gap-8">
 
-          <input value={selected.Autore||""} onChange={e =>
-            setSelected({...selected, Autore:e.target.value})
-          }/>
+              {/* COVER */}
+              <img
+                src={selected.CoverURL || "https://placehold.co/300x450"}
+                className="w-56 h-[340px] object-cover rounded-xl"
+              />
 
-          <textarea value={selected.Trama||""} onChange={e =>
-            setSelected({...selected, Trama:e.target.value})
-          }/>
+              {/* FORM */}
+              <div className="flex-1 space-y-4">
 
-          <button onClick={saveChanges}>Salva</button>
-          <button onClick={enrichManga}>Auto Enrich</button>
-        </>
-      )}
+                <input
+                  value={selected.Titolo || ""}
+                  onChange={e => setSelected({ ...selected, Titolo: e.target.value })}
+                  className="w-full p-3 bg-zinc-900 rounded-xl"
+                />
+
+                <input
+                  value={selected.Autore || ""}
+                  onChange={e => setSelected({ ...selected, Autore: e.target.value })}
+                  className="w-full p-3 bg-zinc-900 rounded-xl"
+                />
+
+                <input
+                  value={selected.CoverURL || ""}
+                  onChange={e => setSelected({ ...selected, CoverURL: e.target.value })}
+                  className="w-full p-3 bg-zinc-900 rounded-xl"
+                />
+
+                <textarea
+                  value={selected.Trama || ""}
+                  onChange={e => setSelected({ ...selected, Trama: e.target.value })}
+                  className="w-full p-3 bg-zinc-900 rounded-xl h-48"
+                />
+
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={saveChanges}
+                className="bg-green-600 px-6 py-3 rounded-xl"
+              >
+                Salva
+              </button>
+
+              <button
+                onClick={enrichManga}
+                className="bg-blue-600 px-6 py-3 rounded-xl"
+              >
+                {loading ? "..." : "Auto Enrich"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
     </div>
   );
 }
