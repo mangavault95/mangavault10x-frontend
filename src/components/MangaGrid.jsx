@@ -14,7 +14,12 @@ export default function MangaGrid({ search = "", filter = "all" }) {
   }, []);
 
   const enriched = useMemo(() => {
-    return manga.map((m) => {
+    return [...manga]
+  .sort((a, b) =>
+    (a.Titolo || "").localeCompare(b.Titolo || "")
+  )
+  .map((m) => {
+
       const owned = Number(m.VolumiPosseduti) || 0;
       const total = Number(m.VolumiTotali) || 0;
 
