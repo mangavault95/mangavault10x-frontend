@@ -4,7 +4,6 @@ import MangaDetail from "../components/MangaDetail";
 export default function RecordsPage({ setRecordsMode }) {
   const [manga, setManga] = useState([]);
   const [selected, setSelected] = useState(null);
-  const [chart, setChart] = useState(null);
   const [selectedManga, setSelectedManga] = useState(null);
 
   useEffect(() => {
@@ -27,77 +26,93 @@ export default function RecordsPage({ setRecordsMode }) {
 
   function groupBy(field) {
     const g = {};
+
     safe.forEach(m => {
       if (!g[m[field]]) g[m[field]] = [];
       g[m[field]].push(m);
     });
 
-    return Object.entries(g).map(([key, list]) => ({
-      name: key,
-      count: list.length,
-      totalVol: list.reduce((a,b)=>a+b.VolumiPosseduti,0),
-      avgCost: list.reduce((a,b)=>a+b.Costo,0)/list.length,
-      best: list.sort((a,b)=>b.Costo-a.Costo)[0],
-      worst: list.sort((a,b)=>a.Costo-b.Costo)[0],
-      list
-    }));
+    return Object.entries(g).map(([key, list]) => {
+      const avg =
+        list.reduce((a, b) => a + b.Costo, 0) / list.length;
+
+      const sorted = [...list].sort((a, b) => b.Costo - a.Costo);
+
+      return {
+        name: key,
+        count: list.length,
+        totalVol: list.reduce((a, b) => a + b.VolumiPosseduti, 0),
+        avgCost: avg,
+        best: sorted[0],
+        worst: sorted[sorted.length - 1],
+        list
+      };
+    });
   }
 
   const editori = groupBy("Editore");
   const autori = groupBy("Autore");
 
   const topSerieCostose = [...safe]
-    .sort((a,b)=> (b.Costo*b.VolumiPosseduti)-(a.Costo*a.VolumiPosseduti))
-    .slice(0,5);
+    .sort((a, b) => (b.Costo * b.VolumiPosseduti) - (a.Costo * a.VolumiPosseduti))
+    .slice(0, 5);
 
   const topVolumiSingoli = [...safe]
-    .filter(m=>m.VolumiPosseduti===1)
-    .sort((a,b)=>b.Costo-a.Costo)
-    .slice(0,5);
-
-  const topEditoriCostosi = editori
-    .filter(e=>e.count>=2)
-    .sort((a,b)=>b.avgCost-a.avgCost)
-    .slice(0,5);
+    .filter(m => m.VolumiPosseduti === 1)
+    .sort((a, b) => b.Costo - a.Costo)
+    .slice(0, 5);
 
   const topLunghe = [...safe]
-    .sort((a,b)=>b.VolumiPosseduti-a.VolumiPosseduti)
-    .slice(0,5);
+    .sort((a, b) => b.VolumiPosseduti - a.VolumiPosseduti)
+    .slice(0, 5);
+
+  const topEditoriCostosi = editori
+    .filter(e => e.count >= 2)
+    .sort((a, b) => b.avgCost - a.avgCost)
+    .slice(0, 5);
 
   const topEditoriSerie = [...editori]
-    .sort((a,b)=>b.count-a.count)
-    .slice(0,5);
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
 
   const topAutori = [...autori]
-    .sort((a,b)=>b.count-a.count)
-    .slice(0,5);
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
 
-  const medal = ["🥇","🥈","🥉"];
+  const medal = ["🥇", "🥈", "🥉"];
 
-  function open(item,type){
-    if(item.Titolo){
-      setSelectedManga(item); // 👉 apre manga detail
-    }else{
-      setSelected({item,type});
+  function handleClick(item) {
+    if (item.Titolo) {
+      setSelectedManga(item);
+    } else {
+      setSelected(item);
     }
   }
 
-  const Row = ({item,index,type})=>{
-    let value="";
+  const Row = ({ item, index, type }) => {
+    let value = "";
 
-    if(type==="cost") value=`€${(item.Costo*item.VolumiPosseduti).toFixed(0)}`;
-    else if(type==="single") value=`€${item.Costo}`;
-    else if(type==="long") value=`${item.VolumiPosseduti} vol`;
-    else if(type==="edit") value=`€${item.avgCost.toFixed(2)} (${item.count})`;
-    else value=item.count;
+    if (type === "cost") value = `€${(item.Costo * item.VolumiPosseduti).toFixed(0)}`;
+    else if (type === "single") value = `€${item.Costo}`;
+    else if (type === "long") value = `${item.VolumiPosseduti} vol`;
+    else if (type === "edit") value = `€${item.avgCost.toFixed(2)} (${item.count})`;
+    else value = item.count;
 
-    return(
+    return (
       <div
-        onClick={()=>open(item,type)}
-        className="flex justify-between bg-zinc-900 px-3 py-2 rounded-lg hover:bg-zinc-800 cursor-pointer transition"
+        onClick={() => handleClick(item)}
+        className="
+          flex justify-between items-center
+          px-4 py-2 rounded-xl
+          bg-zinc-900/70 backdrop-blur
+          hover:bg-zinc-800/90
+          hover:scale-[1.02]
+          transition-all duration-300
+          cursor-pointer
+        "
       >
         <div className="flex gap-2 text-sm">
-          <span>{medal[index] || `#${index+1}`}</span>
+          <span>{medal[index] || `#${index + 1}`}</span>
           {item.Titolo || item.name}
         </div>
         <div className="text-yellow-400 font-bold">{value}</div>
@@ -105,18 +120,15 @@ export default function RecordsPage({ setRecordsMode }) {
     );
   };
 
-  const Card = ({title,data,type})=>(
-    <div className="bg-[#121218] p-5 rounded-2xl">
-      <h3
-        onClick={()=>setChart(data)}
-        className="mb-3 font-bold cursor-pointer hover:text-yellow-400"
-      >
+  const Card = ({ title, data, type }) => (
+    <div className="bg-[#121218] p-5 rounded-2xl shadow-xl transition hover:shadow-2xl hover:scale-[1.01]">
+      <h3 className="mb-4 font-bold text-lg text-white/90">
         {title}
       </h3>
 
       <div className="space-y-2">
-        {data.map((m,i)=>(
-          <Row key={i} item={m} index={i} type={type}/>
+        {data.map((m, i) => (
+          <Row key={i} item={m} index={i} type={type} />
         ))}
       </div>
     </div>
@@ -125,103 +137,123 @@ export default function RecordsPage({ setRecordsMode }) {
   return (
     <div className="min-h-screen text-white p-8 space-y-10">
 
-      <button onClick={()=>setRecordsMode(false)}
-        className="px-4 py-2 bg-zinc-800 rounded-xl">
+      <button
+        onClick={() => setRecordsMode(false)}
+        className="px-4 py-2 bg-zinc-800 rounded-xl hover:bg-zinc-700 transition"
+      >
         ← Home
       </button>
 
-      <h1 className="text-4xl font-black">📊 Manga Records</h1>
+      <h1 className="text-4xl font-black tracking-tight">
+        📊 Manga Records
+      </h1>
 
       {/* MONETARI */}
       <div>
-        <h2 className="text-yellow-400 text-2xl">💰 Record Monetari</h2>
+        <h2 className="text-yellow-400 text-2xl mb-4">💰 Record Monetari</h2>
 
-        <div className="grid grid-cols-3 gap-6 mt-4">
-          <Card title="🔥 TOP Serie più costose" data={topSerieCostose} type="cost"/>
-          <Card title="💎 TOP Volumi singoli" data={topVolumiSingoli} type="single"/>
-          <Card title="🏢 TOP Editori più costosi" data={topEditoriCostosi} type="edit"/>
+        <div className="grid grid-cols-3 gap-6">
+          <Card title="🔥 TOP Serie più costose" data={topSerieCostose} type="cost" />
+          <Card title="💎 TOP Volumi singoli" data={topVolumiSingoli} type="single" />
+          <Card title="🏢 TOP Editori più costosi" data={topEditoriCostosi} type="edit" />
         </div>
       </div>
 
       {/* GENERALI */}
       <div>
-        <h2 className="text-blue-400 text-2xl">📚 Record Generali</h2>
+        <h2 className="text-blue-400 text-2xl mb-4">📚 Record Generali</h2>
 
-        <div className="grid grid-cols-3 gap-6 mt-4">
-          <Card title="📖 TOP Serie più lunghe" data={topLunghe} type="long"/>
-          <Card title="🏭 TOP Editori" data={topEditoriSerie} type="count"/>
-          <Card title="✍️ TOP Autori" data={topAutori} type="count"/>
+        <div className="grid grid-cols-3 gap-6">
+          <Card title="📖 TOP Serie più lunghe" data={topLunghe} type="long" />
+          <Card title="🏭 TOP Editori" data={topEditoriSerie} />
+          <Card title="✍️ TOP Autori" data={topAutori} />
         </div>
       </div>
 
-      {/* MODAL EDITORI/AUTORI */}
+      {/* MODAL PREMIUM */}
       {selected && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
-          onClick={()=>setSelected(null)}>
-
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 animate-fade"
+          onClick={() => setSelected(null)}
+        >
           <div
-            className="w-[650px] bg-gradient-to-br from-zinc-900 to-[#0f0f14] p-6 rounded-3xl shadow-2xl"
-            onClick={e=>e.stopPropagation()}
+            className="
+              w-[700px]
+              bg-gradient-to-br from-[#14141a] to-[#0c0c12]
+              rounded-3xl
+              p-6
+              shadow-[0_0_80px_rgba(0,0,0,0.8)]
+              animate-scaleIn
+            "
+            onClick={(e) => e.stopPropagation()}
           >
-
             <h2 className="text-2xl font-bold mb-4 text-yellow-400">
-              {selected.item.name}
+              {selected.name}
             </h2>
 
-            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-              <div>Serie: {selected.item.count}</div>
-              <div>Volumi: {selected.item.totalVol}</div>
-              <div>Media: €{selected.item.avgCost.toFixed(2)}</div>
+            <div className="grid grid-cols-2 gap-4 text-sm mb-4 text-zinc-300">
+              <div>Serie: {selected.count}</div>
+              <div>Volumi: {selected.totalVol}</div>
+              <div>Media: €{selected.avgCost.toFixed(2)}</div>
             </div>
 
-            {/* BEST / WORST */}
-            <div className="text-xs mb-3">
+            <div className="mb-3 text-xs">
               <p className="text-green-400">
-                🟢 Più caro: {selected.item.best?.Titolo} (€{selected.item.best?.Costo})
+                🟢 Più caro: {selected.best?.Titolo} (€{selected.best?.Costo})
               </p>
               <p className="text-red-400">
-                🔴 Più economico: {selected.item.worst?.Titolo} (€{selected.item.worst?.Costo})
+                🔴 Più economico: {selected.worst?.Titolo} (€{selected.worst?.Costo})
               </p>
             </div>
 
-            {/* LIST */}
-            <div className="max-h-48 overflow-y-auto pr-2 space-y-1 custom-scroll">
-              {selected.item.list.map((m,i)=>(
-                <div
-                  key={i}
-                  onClick={()=>setSelectedManga(m)}
-                  className={`text-xs hover:bg-zinc-800 px-2 py-1 rounded cursor-pointer
-                    ${m.Costo > selected.item.avgCost ? "text-green-400" : "text-red-400"}`}
-                >
-                  {m.Titolo} — €{m.Costo}
-                </div>
-              ))}
-            </div>
+            <div className="max-h-56 overflow-y-auto pr-2 custom-scroll space-y-1">
+              {selected.list.map((m, i) => {
+                const isBest = m === selected.best;
+                const isWorst = m === selected.worst;
 
+                return (
+                  <div
+                    key={i}
+                    onClick={() => setSelectedManga(m)}
+                    className={`
+                      text-xs px-2 py-1 rounded cursor-pointer transition
+                      hover:bg-zinc-800
+                      ${isBest ? "text-green-400" : ""}
+                      ${isWorst ? "text-red-400" : ""}
+                    `}
+                  >
+                    {m.Titolo} — €{m.Costo}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
 
-      {/* MANGA DETAIL */}
       {selectedManga && (
         <MangaDetail
           manga={selectedManga}
-          onClose={()=>setSelectedManga(null)}
+          onClose={() => setSelectedManga(null)}
         />
       )}
 
-      {/* SCROLLBAR */}
-      <style>
-        {`
+      {/* ANIMAZIONI */}
+      <style>{`
+        @keyframes fade { from{opacity:0} to{opacity:1} }
+        @keyframes scaleIn { from{transform:scale(0.9)} to{transform:scale(1)} }
+
+        .animate-fade { animation: fade .3s ease; }
+        .animate-scaleIn { animation: scaleIn .3s ease; }
+
         .custom-scroll::-webkit-scrollbar {
           width: 6px;
         }
         .custom-scroll::-webkit-scrollbar-thumb {
-          background: #555;
+          background: #444;
           border-radius: 10px;
         }
-        `}
-      </style>
+      `}</style>
 
     </div>
   );
