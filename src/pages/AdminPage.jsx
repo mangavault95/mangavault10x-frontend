@@ -184,33 +184,37 @@ export default function AdminPage() {
                 )}
 
                 {/* FORM */}
-                <div className="flex-1 space-y-4">
+<div className="flex-1 space-y-4">
 
-                  <input
-                    value={selected.Titolo || ""}
-                    disabled
-                    className="w-full p-3 bg-zinc-800 rounded-xl text-zinc-400"
-                  />
+  <input
+    value={selected.Titolo || ""}
+    disabled
+    className="w-full p-3 bg-zinc-800 rounded-xl text-zinc-400"
+  />
 
-                  <input
-                    value={selected.Autore || ""}
-                    onChange={e =>
-                      setSelected({ ...selected, Autore: e.target.value })
-                    }
-                    className="w-full p-3 bg-zinc-900 rounded-xl"
-                  />
+  <input
+    value={selected.Autore || ""}
+    onChange={e =>
+      setSelected({ ...selected, Autore: e.target.value })
+    }
+    className="w-full p-3 bg-zinc-900 rounded-xl"
+  />
 
-                  <textarea
-                    value={selected.Trama || ""}
-                    onChange={e =>
-                      setSelected({ ...selected, Trama: e.target.value })
-                    }
-                    className="w-full p-3 bg-zinc-900 rounded-xl h-48"
-                  />
+  {/* NEW: CURRENT READING */}
+  <div className="bg-zinc-900 p-3 rounded-xl">
+    <p className="text-xs text-zinc-400 mb-2">Sto leggendo</p>
 
-                </div>
-              </div>
+    <input
+      type="number"
+      placeholder="Volume attuale"
+      className="w-full p-2 bg-black rounded-lg"
+      onChange={(e) =>
+        localStorage.setItem("mv_current_vol", e.target.value)
+      }
+    />
+  </div>
 
+</div>
               {/* BUTTONS */}
               <div className="flex gap-4 mt-6">
                 <button
