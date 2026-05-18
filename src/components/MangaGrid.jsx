@@ -46,6 +46,7 @@ export default function MangaGrid({ search = "", filter = "all" }) {
 
   const filtered = useMemo(() => {
     switch (filter) {
+
       case "completed":
         return searched.filter((m) => m.status === "completed");
 
@@ -56,17 +57,21 @@ export default function MangaGrid({ search = "", filter = "all" }) {
         return searched.filter((m) => m.status === "to_complete");
 
       case "short":
-  return searched.filter(
-    m =>
-      m.VolumiTotali &&
-      m.VolumiTotali >= 2 &&
-      m.VolumiTotali < 8
-  );
+        return searched.filter(
+          (m) =>
+            m.VolumiTotali &&
+            m.VolumiTotali >= 2 &&
+            m.VolumiTotali < 8
+        );
 
       case "oneshot":
-  return searched.filter(
-    m => m.VolumiPosseduti === 1
-  );
+        return searched.filter(
+          (m) => Number(m.VolumiPosseduti) === 1
+        );
+
+      default:
+        return searched;
+    }
   }, [searched, filter]);
 
   function getColor(m) {
@@ -83,23 +88,32 @@ export default function MangaGrid({ search = "", filter = "all" }) {
           <div
             key={m.Id || index}
             onClick={() => setSelectedManga(m)}
-            className="group cursor-pointer hover:scale-[1.05] transition-all"
-          >
-            <div className="
-              relative rounded-[20px] overflow-hidden
-              bg-[#141414]
-              border border-white/10
-              group-hover:border-yellow-400
-              group-hover:shadow-[0_0_25px_rgba(250,204,21,0.3)]
+            className="
+              group cursor-pointer
               transition-all duration-300
-            ">
+              hover:scale-[1.05]
+            "
+          >
 
+            <div
+              className="
+                relative rounded-[20px] overflow-hidden
+                bg-[#141414]
+                border border-white/10
+                group-hover:border-yellow-400
+                group-hover:shadow-[0_0_25px_rgba(250,204,21,0.3)]
+                transition-all duration-300
+              "
+            >
+
+              {/* COVER */}
               <img
                 src={
-                  m.CoverURL?.startsWith("http")
+                  m.CoverURL && m.CoverURL.startsWith("http")
                     ? m.CoverURL
                     : "https://placehold.co/300x450?text=MangaVault"
                 }
+                alt={m.Titolo}
                 className="
                   w-full h-[190px] object-cover
                   transition duration-500
@@ -107,9 +121,14 @@ export default function MangaGrid({ search = "", filter = "all" }) {
                 "
               />
 
+              {/* CONTENT */}
               <div className="p-3">
 
-                <h3 className="text-sm font-bold text-white group-hover:text-yellow-400 transition">
+                <h3 className="
+                  text-sm font-bold text-white
+                  group-hover:text-yellow-400
+                  transition
+                ">
                   {m.Titolo}
                 </h3>
 
@@ -126,6 +145,7 @@ export default function MangaGrid({ search = "", filter = "all" }) {
                         ? "In corso"
                         : `${m.percent.toFixed(0)}%`}
                     </span>
+
                     <span>
                       {m.VolumiTotali
                         ? `${m.VolumiPosseduti}/${m.VolumiTotali}`
@@ -137,8 +157,8 @@ export default function MangaGrid({ search = "", filter = "all" }) {
                     <div
                       className={`
                         h-full ${getColor(m)}
-                        transition-all duration-500
                         animate-pulse
+                        transition-all duration-500
                       `}
                       style={{ width: `${m.percent}%` }}
                     />
@@ -159,16 +179,6 @@ export default function MangaGrid({ search = "", filter = "all" }) {
           onClose={() => setSelectedManga(null)}
         />
       )}
-
-      <style>
-        {`
-        @keyframes pulse {
-          0% { opacity: .6 }
-          50% { opacity: 1 }
-          100% { opacity: .6 }
-        }
-        `}
-      </style>
     </>
   );
 }
