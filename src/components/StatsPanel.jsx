@@ -6,7 +6,8 @@ export default function StatsPanel() {
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
       .then((res) => res.json())
-      .then((data) => setManga(data || []));
+      .then((data) => setManga(Array.isArray(data) ? data : []))
+      .catch(() => setManga([]));
   }, []);
 
   const stats = useMemo(() => {
@@ -27,14 +28,35 @@ export default function StatsPanel() {
       else ongoing++;
     });
 
-    return { completed, ongoing, totalVolumes, totalSpent };
+    return {
+      completed,
+      ongoing,
+      totalVolumes,
+      totalSpent
+    };
   }, [manga]);
 
   const cards = [
-    { label: "Completate", value: stats.completed, icon: "🏆" },
-    { label: "In corso", value: stats.ongoing, icon: "📚" },
-    { label: "Volumi", value: stats.totalVolumes, icon: "📦" },
-    { label: "Spesa", value: `€${stats.totalSpent}`, icon: "💴" }
+    {
+      label: "Completate",
+      value: stats.completed,
+      icon: "🏆"
+    },
+    {
+      label: "In corso",
+      value: stats.ongoing,
+      icon: "📚"
+    },
+    {
+      label: "Volumi",
+      value: stats.totalVolumes,
+      icon: "📦"
+    },
+    {
+      label: "Spesa",
+      value: `€${stats.totalSpent.toFixed(0)}`,
+      icon: "💴"
+    }
   ];
 
   return (
@@ -46,15 +68,32 @@ export default function StatsPanel() {
 
       <div className="grid grid-cols-2 gap-2">
 
-        {cards.map((c) => (
+        {cards.map((card) => (
           <div
-            key={c.label}
+            key={card.label}
             className="
               p-3 rounded-xl
               bg-[#151515]
               border border-zinc-800
               hover:border-yellow-400
-              hover:shadow-[0_0_15px_rgba(250,204,21,0.3)]
+              hover:shadow-[0_0_12px_rgba(250,204,21,0.3)]
               transition-all
             "
           >
+            <div className="flex justify-between items-center">
+              <span>{card.icon}</span>
+              <span className="text-[10px] text-zinc-500 uppercase">
+                {card.label}
+              </span>
+            </div>
+
+            <div className="mt-3 text-xl font-bold text-yellow-400">
+              {card.value}
+            </div>
+          </div>
+        ))}
+
+      </div>
+    </div>
+  );
+}
