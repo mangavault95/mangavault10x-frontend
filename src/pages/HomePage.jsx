@@ -60,28 +60,56 @@ export default function HomePage({
             La Mia Collezione
           </h2>
 
-          {/* SEARCH (ORA COERENTE) */}
-          <div className="
-            flex items-center gap-3 px-4 py-2
-            rounded-full
-            bg-[#1a1a1a]
-            border border-white/10
-            hover:border-yellow-400
-            transition
-          ">
-            <span className="text-zinc-500 text-sm">🔍</span>
-            <input
-              value={search}
-              onChange={(e)=>setSearch(e.target.value)}
-              placeholder="Cerca manga..."
-              className="
-                bg-transparent outline-none
-                text-sm text-white
-                placeholder:text-zinc-500
-                w-56
-              "
-            />
-          </div>
+         {/* SEARCH PREMIUM */}
+<div className="relative group">
+
+  {/* BACKGROUND GLOW */}
+  <div className="
+    absolute inset-0 rounded-full
+    bg-gradient-to-r from-yellow-400/20 via-transparent to-yellow-400/20
+    opacity-0 group-hover:opacity-100
+    blur-md transition
+  " />
+
+  {/* INPUT */}
+  <div className="
+    relative flex items-center gap-3 px-5 py-2.5
+    rounded-full
+    bg-[#151515]
+    border border-white/10
+    shadow-inner
+    group-hover:border-yellow-400/40
+    transition-all
+  ">
+
+    {/* ICON */}
+    <span className="
+      text-zinc-500
+      group-hover:text-yellow-400
+      transition
+    ">
+      🔍
+    </span>
+
+    {/* INPUT */}
+    <input
+      value={search}
+      onChange={(e)=>setSearch(e.target.value)}
+      placeholder="Cerca manga..."
+      className="
+        bg-transparent outline-none
+        text-sm text-white
+        placeholder:text-zinc-500
+        w-56
+
+        focus:w-64
+        transition-all duration-300
+      "
+    />
+
+  </div>
+
+</div>
 
           {/* HAMBURGER MENU */}
           <div className="relative">
