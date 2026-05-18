@@ -13,11 +13,7 @@ export default function HomePage() {
   const [openMenu, setOpenMenu] = useState(false);
 
   useEffect(() => {
-    async function load() {
-      const data = await getManga();
-      setMangaList(data || []);
-    }
-    load();
+    getManga().then((d) => setMangaList(d || []));
   }, []);
 
   useEffect(() => {
@@ -39,11 +35,12 @@ export default function HomePage() {
     <div className="bg-[#111] text-white min-h-screen">
 
       {/* SIDEBAR */}
-      <div className="fixed left-0 top-0 w-72 h-screen z-30 bg-black/60 border-r border-zinc-800 backdrop-blur-xl">
+      <div className="fixed left-0 top-0 w-72 h-screen bg-black/60 border-r border-zinc-800 backdrop-blur-xl">
         <Sidebar />
       </div>
 
-      <div className="ml-72 px-8 py-6 space-y-8">
+      {/* MAIN */}
+      <div className="ml-72 px-10 py-6 space-y-8">
 
         <TopHero manga={mangaList} onSelect={setSelectedManga} />
 
@@ -53,28 +50,28 @@ export default function HomePage() {
           <h2 className="text-2xl font-bold">La Mia Collezione</h2>
 
           {/* SEARCH */}
-          <div className="relative">
+          <div className="flex items-center gap-2 bg-[#1a1a1a] px-3 py-2 rounded-xl border border-white/10">
+            <span className="text-zinc-500">🔍</span>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cerca manga..."
-              className="pl-10 pr-4 py-2 rounded-xl bg-[#1a1a1a] border border-white/10 w-64 outline-none"
+              className="bg-transparent outline-none w-52"
             />
-            <span className="absolute left-3 top-2 text-zinc-500">🔍</span>
           </div>
 
           {/* MENU */}
           <div className="relative">
             <button
               onClick={() => setOpenMenu((prev) => !prev)}
-              className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10"
+              className="w-10 h-10 rounded-xl bg-[#1a1a1a] border border-white/10"
             >
-              👑
+              ☰
             </button>
 
             {openMenu && (
-              <div className="absolute right-0 mt-2 w-40 bg-[#141414] border border-white/10 rounded-xl">
-                <div className="p-3 hover:bg-zinc-800 cursor-pointer">Toggle Theme</div>
+              <div className="absolute right-0 mt-2 bg-[#141414] rounded-xl border w-40">
+                <div className="p-3 hover:bg-zinc-800 cursor-pointer">Tema</div>
                 <div className="p-3 hover:bg-zinc-800 cursor-pointer">Admin</div>
                 <div className="p-3 hover:bg-zinc-800 cursor-pointer">Records</div>
               </div>
@@ -89,11 +86,14 @@ export default function HomePage() {
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`px-4 py-2 rounded-xl text-sm ${
-                filter === f.key
-                  ? "bg-yellow-400 text-black"
-                  : "bg-[#1a1a1a] border border-white/10"
-              }`}
+              className={`
+                px-4 py-2 rounded-xl text-sm transition
+                ${
+                  filter === f.key
+                    ? "bg-yellow-400 text-black"
+                    : "bg-[#1a1a1a] border border-white/10"
+                }
+              `}
             >
               {f.label}
             </button>
