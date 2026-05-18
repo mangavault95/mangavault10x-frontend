@@ -68,7 +68,7 @@ export default function RecordsPage({ setRecordsMode }) {
     .sort((a,b)=>b.VolumiPosseduti-a.VolumiPosseduti)
     .slice(0,5);
 
-  const medal=["🥇","🥈","🥉"];
+  const medal = ["🥇","🥈","🥉"];
 
   function handleClick(item){
     if(item.Titolo) setSelectedManga(item);
@@ -89,35 +89,38 @@ export default function RecordsPage({ setRecordsMode }) {
         onClick={()=>handleClick(item)}
         className="
           flex justify-between px-4 py-2 rounded-xl
-          bg-[#111] hover:bg-[#1a1a1a]
-          border border-black/10
+          bg-[#141414]
+          border border-transparent
+          hover:border-yellow-400
+          hover:shadow-[0_0_12px_rgba(250,204,21,0.6)]
           transition-all duration-300
           cursor-pointer
         "
       >
-        <div className="flex gap-2 text-sm">
+        <div className="flex gap-2 text-sm text-white">
           <span>{medal[index] || `#${index+1}`}</span>
           {item.Titolo || item.name}
         </div>
 
-        <div className="font-bold text-yellow-500">
+        <div className="font-bold text-yellow-400">
           {value}
         </div>
       </div>
     );
   };
 
-  const Card = ({title,data,type,color})=>(
+  const Card = ({title,data,type})=>(
     <div
-      className={`
-        p-5 rounded-xl
-        bg-white
-        border border-black/10
-        shadow-md
-        ${color}
-      `}
+      className="
+        p-5 rounded-2xl
+        bg-[#1a1a1a]
+        border border-white/5
+        hover:border-yellow-400/50
+        hover:shadow-[0_0_25px_rgba(250,204,21,0.25)]
+        transition-all duration-300
+      "
     >
-      <h3 className="mb-4 text-base font-bold text-black uppercase tracking-wide">
+      <h3 className="mb-4 text-base font-bold text-yellow-400 uppercase tracking-wider">
         {title}
       </h3>
 
@@ -132,8 +135,8 @@ export default function RecordsPage({ setRecordsMode }) {
   return (
     <div className="
       min-h-screen p-8 space-y-10
-      bg-gradient-to-br from-[#f7f3e9] via-[#f2ede2] to-[#e9e3d5]
-      text-black
+      bg-[#111111]
+      text-white
     ">
 
       {/* FONT */}
@@ -147,10 +150,10 @@ export default function RecordsPage({ setRecordsMode }) {
           }
 
           .custom-scroll::-webkit-scrollbar {
-            width: 5px;
+            width: 6px;
           }
           .custom-scroll::-webkit-scrollbar-thumb {
-            background: #aaa;
+            background: #555;
             border-radius: 10px;
           }
         `}
@@ -158,21 +161,19 @@ export default function RecordsPage({ setRecordsMode }) {
 
       <button
         onClick={()=>setRecordsMode(false)}
-        className="px-4 py-2 bg-black text-white rounded-xl hover:bg-zinc-800"
+        className="px-4 py-2 bg-black border border-white/10 rounded-xl hover:bg-zinc-900"
       >
         ← Home
       </button>
 
       <h1 className="text-5xl title-manga">
-        <span className="text-black">Manga</span>{" "}
-        <span className="text-yellow-600">Records</span>
+        <span className="text-white">Manga</span>{" "}
+        <span className="text-yellow-400">Records</span>
       </h1>
 
       {/* MONETARI */}
       <div>
-        <h2 className="text-xl font-bold text-yellow-600 uppercase">
-          💰 Record Monetari
-        </h2>
+        <h2 className="text-yellow-400 text-xl uppercase">💰 Record Monetari</h2>
 
         <div className="grid grid-cols-3 gap-6 mt-4">
           <Card title="Serie più costose" data={topSerieCostose} type="cost"/>
@@ -183,9 +184,7 @@ export default function RecordsPage({ setRecordsMode }) {
 
       {/* GENERALI */}
       <div>
-        <h2 className="text-xl font-bold text-black uppercase">
-          📚 Record Generali
-        </h2>
+        <h2 className="text-white text-xl uppercase">📚 Record Generali</h2>
 
         <div className="grid grid-cols-3 gap-6 mt-4">
           <Card title="Serie più lunghe" data={topLunghe} type="long"/>
@@ -197,30 +196,30 @@ export default function RecordsPage({ setRecordsMode }) {
       {/* MODAL */}
       {selected && (
         <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center"
+          className="fixed inset-0 bg-black/80 backdrop-blur flex items-center justify-center"
           onClick={()=>setSelected(null)}
         >
           <div
             className="
               w-[700px] p-6 rounded-xl
-              bg-white
-              border border-yellow-500/20
-              shadow-xl text-black
+              bg-[#151515]
+              border border-yellow-400/20
+              shadow-[0_0_40px_rgba(250,204,21,0.3)]
             "
             onClick={e=>e.stopPropagation()}
           >
-            <h2 className="text-2xl text-yellow-600 mb-4">
+            <h2 className="text-2xl text-yellow-400 mb-4">
               {selected.name}
             </h2>
 
-            <p className="text-sm mb-3">
+            <p className="text-sm mb-3 text-zinc-300">
               Serie: {selected.count} • Volumi: {selected.totalVol}
             </p>
 
-            <p className="text-green-600 text-xs">
+            <p className="text-green-400 text-xs">
               ↑ {selected.best?.Titolo}
             </p>
-            <p className="text-red-600 text-xs mb-4">
+            <p className="text-red-400 text-xs mb-4">
               ↓ {selected.worst?.Titolo}
             </p>
 
@@ -229,7 +228,7 @@ export default function RecordsPage({ setRecordsMode }) {
                 <div
                   key={i}
                   onClick={()=>setSelectedManga(m)}
-                  className="px-2 py-1 hover:bg-black/10 rounded cursor-pointer text-sm"
+                  className="px-2 py-1 hover:bg-white/10 rounded cursor-pointer text-sm"
                 >
                   {m.Titolo}
                 </div>
