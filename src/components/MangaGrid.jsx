@@ -56,16 +56,17 @@ export default function MangaGrid({ search = "", filter = "all" }) {
         return searched.filter((m) => m.status === "to_complete");
 
       case "short":
-        return searched.filter(
-          (m) => m.VolumiTotali && m.VolumiTotali < 8
-        );
+  return searched.filter(
+    m =>
+      m.VolumiTotali &&
+      m.VolumiTotali >= 2 &&
+      m.VolumiTotali < 8
+  );
 
       case "oneshot":
-        return searched.filter((m) => m.VolumiPosseduti === 1);
-
-      default:
-        return searched;
-    }
+  return searched.filter(
+    m => m.VolumiPosseduti === 1
+  );
   }, [searched, filter]);
 
   function getColor(m) {
