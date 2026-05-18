@@ -152,7 +152,7 @@ export default function StatsPanel() {
             </span>
           </div>
 
-          <p className="text-xl mt-2 font-bold text-white">
+          <p className="text-lg truncate mt-2 font-bold text-white">
             €{stats.totalSpent.toFixed(0)}
           </p>
         </div>
@@ -164,7 +164,7 @@ export default function StatsPanel() {
         mt-2 text-[11px]
         text-zinc-500 flex justify-between
       ">
-        <span>media volumi serie:</span>
+     
         <span>
           {(stats.totalVolumes / (stats.completed + stats.ongoing || 1)).toFixed(1)}
         </span>
