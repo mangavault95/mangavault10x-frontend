@@ -85,35 +85,44 @@ export default function RecordsPage({ setRecordsMode }) {
       <div
         onClick={() => handleClick(item)}
         className="
-          flex justify-between px-4 py-2 rounded-xl
-          bg-white/5 hover:bg-white/10
+          flex justify-between px-4 py-2 rounded-lg
+          bg-black/70
+          border border-white/5
+          hover:bg-black/90
           transition-all duration-300
-          hover:scale-[1.03]
+          hover:translate-x-1
           cursor-pointer
         "
       >
-        <div className="flex gap-2 font-semibold">
+        <div className="flex gap-2">
           <span>{medal[index] || `#${index + 1}`}</span>
           {item.Titolo || item.name}
         </div>
 
-        <div className="font-bold text-yellow-400">{value}</div>
+        <div className="font-bold text-yellow-500">
+          {value}
+        </div>
       </div>
     );
   };
 
-  const Card = ({ title, data, type, glow }) => (
+  const Card = ({ title, data, type }) => (
     <div
-      className={`
-        p-5 rounded-3xl backdrop-blur
+      className="
+        relative p-5 rounded-xl
+        bg-[#0a0a0a]/90
         border border-white/10
-        shadow-lg
-        ${glow}
-        hover:scale-[1.02]
-        transition
-      `}
+        shadow-[0_0_30px_rgba(0,0,0,0.8)]
+        before:absolute before:inset-0
+        before:bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]
+        before:opacity-20 before:rounded-xl
+      "
     >
-      <h3 className="mb-4 text-lg font-bold text-white">
+      <h3 className="
+        mb-4 text-lg font-bold
+        text-yellow-500
+        uppercase tracking-wider
+      ">
         {title}
       </h3>
 
@@ -128,116 +137,105 @@ export default function RecordsPage({ setRecordsMode }) {
   return (
     <div className="
       min-h-screen text-white p-8 space-y-10
-      bg-[linear-gradient(135deg,#1a0f2e,#0f0f1f,#05050a)]
-      bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]
+      bg-[url('https://www.transparenttextures.com/patterns/paper.png')]
+      bg-[#0c0c0c]
     ">
 
       {/* FONT */}
       <style>
-{`
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        {`
+          @import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
 
-body {
-  font-family: 'Orbitron', system-ui;
-}
+          body {
+            font-family: system-ui;
+          }
 
-.title-manga {
-  font-family: 'Orbitron', system-ui;
-  letter-spacing: 1px;
-}
-`}
-</style>
+          .title-manga {
+            font-family: 'Anton', Impact, sans-serif;
+            letter-spacing: 2px;
+          }
+        `}
+      </style>
 
       <button
         onClick={() => setRecordsMode(false)}
-        className="px-4 py-2 bg-white/10 rounded-xl hover:bg-white/20"
+        className="px-4 py-2 bg-black border border-white/10 rounded-xl hover:bg-zinc-900"
       >
         ← Home
       </button>
 
-      
-<h1 className="text-5xl title-manga font-black">
-  <span className="text-white">Manga</span>{" "}
-  <span className="text-yellow-500">Records</span>
+      <h1 className="text-5xl title-manga">
+        <span className="text-white">Manga</span>{" "}
+        <span className="text-yellow-500">Records</span>
       </h1>
 
       {/* MONETARI */}
       <div>
-        <h2 className="text-2xl text-pink-300 mb-4">💰 Record Monetari</h2>
+        <h2 className="text-yellow-500 text-xl uppercase tracking-widest">
+          💰 Record Monetari
+        </h2>
 
-        <div className="grid grid-cols-3 gap-6">
-          <Card title="🔥 Serie più costose" data={topSerieCostose} type="cost" glow="bg-pink-500/10"/>
-          <Card title="💎 Volumi singoli più costosi" data={topVolumiSingoli} type="single" glow="bg-blue-500/10"/>
-          <Card title="🏢 Editori più costosi" data={topEditori} glow="bg-purple-500/10"/>
+        <div className="grid grid-cols-3 gap-6 mt-4">
+          <Card title="🔥 Serie più costose" data={topSerieCostose} type="cost"/>
+          <Card title="💎 Volumi singoli più costosi" data={topVolumiSingoli} type="single"/>
+          <Card title="🏢 Editori più costosi" data={topEditori}/>
         </div>
       </div>
 
       {/* GENERALI */}
       <div>
-        <h2 className="text-2xl text-blue-300 mb-4">📚 Record Generali</h2>
+        <h2 className="text-white text-xl uppercase tracking-widest">
+          📚 Record Generali
+        </h2>
 
-        <div className="grid grid-cols-3 gap-6">
-          <Card title="📖 Serie più lunghe" data={topLunghe} type="long" glow="bg-indigo-500/10"/>
-          <Card title="🏭 Editori con più serie" data={editori.slice(0,5)} glow="bg-yellow-500/10"/>
-          <Card title="✍️ Autori con più serie" data={autori.slice(0,5)} glow="bg-green-500/10"/>
+        <div className="grid grid-cols-3 gap-6 mt-4">
+          <Card title="📖 Serie più lunghe" data={topLunghe} type="long"/>
+          <Card title="🏭 Editori con più serie" data={editori.slice(0,5)}/>
+          <Card title="✍️ Autori con più serie" data={autori.slice(0,5)}/>
         </div>
       </div>
 
       {/* MODAL */}
       {selected && (
         <div
-          className="fixed inset-0 bg-black/70 backdrop-blur flex items-center justify-center"
+          className="fixed inset-0 bg-black/80 backdrop-blur flex items-center justify-center"
           onClick={() => setSelected(null)}
         >
           <div
             className="
-              w-[700px] p-6 rounded-3xl
-             bg-gradient-to-br from-[#191919] to-[#0a0a0a]
-border border-yellow-500/20
-              shadow-[0_0_80px_rgba(255,0,128,0.4)]
+              w-[700px] p-6 rounded-xl
+              bg-[#111]
+              border border-yellow-500/20
+              shadow-[0_0_60px_rgba(255,200,0,0.2)]
             "
             onClick={(e) => e.stopPropagation()}
           >
-
-            <h2 className="text-3xl text-pink-300 mb-4">
+            <h2 className="text-2xl text-yellow-500 mb-4">
               {selected.name}
             </h2>
 
-            <div className="text-sm mb-4">
+            <p className="text-sm mb-3">
               Serie: {selected.count} • Volumi: {selected.totalVol}
-            </div>
+            </p>
 
-            <div className="text-xs mb-3">
-              <p className="text-green-400">
-                ↑ {selected.best?.Titolo}
-              </p>
-              <p className="text-red-400">
-                ↓ {selected.worst?.Titolo}
-              </p>
-            </div>
+            <p className="text-green-400 text-xs">
+              ↑ {selected.best?.Titolo}
+            </p>
+            <p className="text-red-400 text-xs mb-4">
+              ↓ {selected.worst?.Titolo}
+            </p>
 
             <div className="max-h-56 overflow-y-auto custom-scroll space-y-1">
-              {selected.list.map((m, i) => {
-                const isBest = m === selected.best;
-                const isWorst = m === selected.worst;
-
-                return (
-                  <div
-                    key={i}
-                    onClick={() => setSelectedManga(m)}
-                    className={`
-                      px-2 py-1 rounded cursor-pointer
-                      hover:bg-white/10
-                      ${isBest ? "text-green-400" : ""}
-                      ${isWorst ? "text-red-400" : ""}
-                    `}
-                  >
-                    {m.Titolo}
-                  </div>
-                );
-              })}
+              {selected.list.map((m, i) => (
+                <div
+                  key={i}
+                  onClick={() => setSelectedManga(m)}
+                  className="px-2 py-1 hover:bg-white/10 rounded cursor-pointer text-sm"
+                >
+                  {m.Titolo}
+                </div>
+              ))}
             </div>
-
           </div>
         </div>
       )}
