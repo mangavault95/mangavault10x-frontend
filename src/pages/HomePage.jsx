@@ -20,7 +20,6 @@ export default function HomePage() {
     load();
   }, []);
 
-  // ✅ IMPORTANTE: listener per sidebar
   useEffect(() => {
     const handler = (e) => setSelectedManga(e.detail);
     window.addEventListener("openMangaDetail", handler);
@@ -37,14 +36,13 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="bg-[#111111] text-white min-h-screen">
+    <div className="bg-[#111] text-white min-h-screen">
 
       {/* SIDEBAR */}
       <div className="fixed left-0 top-0 w-72 h-screen z-30 bg-black/60 border-r border-zinc-800 backdrop-blur-xl">
         <Sidebar />
       </div>
 
-      {/* MAIN */}
       <div className="ml-72 px-8 py-6 space-y-8">
 
         <TopHero manga={mangaList} onSelect={setSelectedManga} />
@@ -56,63 +54,31 @@ export default function HomePage() {
 
           {/* SEARCH */}
           <div className="relative">
-
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cerca manga..."
-              className="
-                pl-10 pr-4 py-2 rounded-xl w-64
-                bg-[#1a1a1a]
-                border border-white/10
-                focus:border-yellow-400
-                focus:shadow-[0_0_12px_rgba(250,204,21,0.4)]
-                outline-none transition
-              "
+              className="pl-10 pr-4 py-2 rounded-xl bg-[#1a1a1a] border border-white/10 w-64 outline-none"
             />
-
-            <div className="absolute left-3 top-2 text-zinc-500">
-              🔍
-            </div>
-
+            <span className="absolute left-3 top-2 text-zinc-500">🔍</span>
           </div>
 
           {/* MENU */}
           <div className="relative">
-
             <button
-              onClick={() => setOpenMenu(prev => !prev)}
-              className="
-                w-10 h-10 rounded-full
-                bg-[#1a1a1a]
-                border border-white/10
-                hover:border-yellow-400
-                hover:shadow-[0_0_12px_rgba(250,204,21,0.4)]
-              "
+              onClick={() => setOpenMenu((prev) => !prev)}
+              className="w-10 h-10 rounded-full bg-[#1a1a1a] border border-white/10"
             >
               👑
             </button>
 
             {openMenu && (
-              <div className="
-                absolute right-0 mt-2 w-40
-                bg-[#141414]
-                border border-white/10
-                rounded-xl
-                overflow-hidden
-              ">
-                <div className="p-3 hover:bg-zinc-800 cursor-pointer">
-                  Toggle Theme
-                </div>
-                <div className="p-3 hover:bg-zinc-800 cursor-pointer">
-                  Admin
-                </div>
-                <div className="p-3 hover:bg-zinc-800 cursor-pointer">
-                  Records
-                </div>
+              <div className="absolute right-0 mt-2 w-40 bg-[#141414] border border-white/10 rounded-xl">
+                <div className="p-3 hover:bg-zinc-800 cursor-pointer">Toggle Theme</div>
+                <div className="p-3 hover:bg-zinc-800 cursor-pointer">Admin</div>
+                <div className="p-3 hover:bg-zinc-800 cursor-pointer">Records</div>
               </div>
             )}
-
           </div>
 
         </div>
@@ -123,12 +89,11 @@ export default function HomePage() {
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`
-                px-4 py-2 rounded-xl text-sm
-                ${filter === f.key
+              className={`px-4 py-2 rounded-xl text-sm ${
+                filter === f.key
                   ? "bg-yellow-400 text-black"
-                  : "bg-[#1a1a1a] hover:bg-[#222] border border-white/10"}
-              `}
+                  : "bg-[#1a1a1a] border border-white/10"
+              }`}
             >
               {f.label}
             </button>
@@ -145,7 +110,6 @@ export default function HomePage() {
           onClose={() => setSelectedManga(null)}
         />
       )}
-
     </div>
   );
 }
