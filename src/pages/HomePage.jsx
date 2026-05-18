@@ -1,15 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import MangaGrid from "../components/MangaGrid";
 import TopHero from "../components/TopHero";
 import MangaDetail from "../components/MangaDetail";
 import { getManga } from "../services/api";
+import Fuse from "fuse.js";
 
 export default function HomePage({
   setAdminMode,
-  setRecordsMode,
-  darkMode
+  setRecordsMode
 }) {
+
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [selectedManga, setSelectedManga] = useState(null);
@@ -17,19 +18,29 @@ export default function HomePage({
   const [openMenu, setOpenMenu] = useState(false);
 
   useEffect(() => {
-    async function load() {
-      const data = await getManga();
-      setMangaList(data || []);
-    }
-    load();
+    getManga().then(d => setMangaList(d || []));
   }, []);
 
-  // APERTURA DETAIL DA SIDEBAR
   useEffect(() => {
     const handler = (e) => setSelectedManga(e.detail);
     window.addEventListener("openMangaDetail", handler);
     return () => window.removeEventListener("openMangaDetail", handler);
   }, []);
+
+  // ✅ SEARCH INTELLIGENTE (fuzzy)
+  const filteredSearch = useMemo(() => {
+
+    if (!search) return mangaList;
+
+    const fuse = new Fuse(mangaList, {
+      keys: ["Titolo", "Autore", "Genere"],
+      threshold: 0.3,
+      ignoreLocation: true,
+    });
+
+    return fuse.search(search).map(r => r.item);
+
+  }, [search, mangaList]);
 
   const filters = [
     { key: "all", label: "Tutti" },
@@ -48,7 +59,7 @@ export default function HomePage({
         <Sidebar />
       </div>
 
-      {/* CONTENUTO */}
+      {/* MAIN */}
       <div className="ml-72 px-10 py-6 space-y-8">
 
         <TopHero manga={mangaList} onSelect={setSelectedManga} />
@@ -60,126 +71,102 @@ export default function HomePage({
             La Mia Collezione
           </h2>
 
-         {/* SEARCH PREMIUM */}
-<div className="relative group">
+          {/* RIGHT SIDE */}
+          <div className="flex items-center gap-4">
 
-  {/* BACKGROUND GLOW */}
-  <div className="
-    absolute inset-0 rounded-full
-    bg-gradient-to-r from-yellow-400/20 via-transparent to-yellow-400/20
-    opacity-0 group-hover:opacity-100
-    blur-md transition
-  " />
+            {/* SEARCH PREMIUM INTELLIGENTE */}
+            <div className="
+              relative
+              flex items-center
+            ">
 
-  {/* INPUT */}
-  <div className="
-    relative flex items-center gap-3 px-5 py-2.5
-    rounded-full
-    bg-[#151515]
-    border border-white/10
-    shadow-inner
-    group-hover:border-yellow-400/40
-    transition-all
-  ">
+              <input
+                value={search}
+                onChange={(e)=>setSearch(e.target.value)}
+                placeholder="Cerca titolo, autore..."
+                className="
+                  px-5 py-2.5 w-56
+                  rounded-full
+                  bg-[#151515]
+                  border border-white/10
+                  text-sm
+                  placeholder:text-zinc-500
+                  outline-none
 
-    {/* ICON */}
-    <span className="
-      text-zinc-500
-      group-hover:text-yellow-400
-      transition
-    ">
-      🔍
-    </span>
+                  focus:w-64
+                  focus:border-yellow-400
+                  transition-all duration-300
 
-    {/* INPUT */}
-    <input
-      value={search}
-      onChange={(e)=>setSearch(e.target.value)}
-      placeholder="Cerca manga..."
-      className="
-        bg-transparent outline-none
-        text-sm text-white
-        placeholder:text-zinc-500
-        w-56
+                  hover:border-white/20
+                "
+              />
 
-        focus:w-64
-        transition-all duration-300
-      "
-    />
-
-  </div>
-
-</div>
-
-          {/* HAMBURGER MENU */}
-          <div className="relative">
-
-            <button
-              onClick={()=>setOpenMenu(prev=>!prev)}
-              className="
-                w-10 h-10 rounded-xl
-                bg-[#1a1a1a]
-                border border-white/10
-                hover:border-yellow-400
-                transition
-              "
-            >
-              ☰
-            </button>
-
-            {openMenu && (
+              {/* glow sotto */}
               <div className="
-                absolute right-0 mt-2 w-44
-                rounded-xl overflow-hidden
-                bg-[#151515]/95 backdrop-blur
-                border border-white/10
-                shadow-[0_10px_30px_rgba(0,0,0,0.7)]
-              ">
+                absolute inset-0 rounded-full
+                bg-yellow-400/10 blur-md opacity-0
+                pointer-events-none
+                transition
+              " />
 
-                {/* TEMA */}
-                <button
-                  className="
-                    w-full px-4 py-3 text-left
-                    hover:bg-[#1f1f1f]
-                    border-b border-white/5
-                  "
-                >
-                  Tema
-                </button>
+            </div>
 
-                {/* ADMIN */}
-                <button
-                  onClick={()=>{
-                    setAdminMode(true);
-                    setRecordsMode(false);
-                    setOpenMenu(false);
-                  }}
-                  className="
-                    w-full px-4 py-3 text-left
-                    hover:bg-[#1f1f1f]
-                    border-b border-white/5
-                  "
-                >
-                  Admin
-                </button>
+            {/* MENU */}
+            <div className="relative">
 
-                {/* RECORDS */}
-                <button
-                  onClick={()=>{
-                    setRecordsMode(true);
-                    setAdminMode(false);
-                    setOpenMenu(false);
-                  }}
-                  className="
-                    w-full px-4 py-3 text-left
-                    hover:bg-[#1f1f1f]
-                  "
-                >
-                  Records
-                </button>
+              <button
+                onClick={()=>setOpenMenu(p=>!p)}
+                className="
+                  w-10 h-10 rounded-xl
+                  bg-[#1a1a1a]
+                  border border-white/10
+                  hover:border-yellow-400
+                  transition
+                "
+              >
+                ☰
+              </button>
 
-              </div>
-            )}
+              {openMenu && (
+                <div className="
+                  absolute right-0 mt-2 w-44
+                  bg-[#151515]/95
+                  backdrop-blur
+                  rounded-xl
+                  border border-white/10
+                  shadow-xl
+                ">
+
+                  <button className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f] border-b border-white/5">
+                    Tema
+                  </button>
+
+                  <button
+                    onClick={()=>{
+                      setAdminMode(true);
+                      setRecordsMode(false);
+                      setOpenMenu(false);
+                    }}
+                    className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f] border-b border-white/5"
+                  >
+                    Admin
+                  </button>
+
+                  <button
+                    onClick={()=>{
+                      setRecordsMode(true);
+                      setAdminMode(false);
+                      setOpenMenu(false);
+                    }}
+                    className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f]"
+                  >
+                    Records
+                  </button>
+
+                </div>
+              )}
+
+            </div>
 
           </div>
 
@@ -205,11 +192,13 @@ export default function HomePage({
         </div>
 
         {/* GRID */}
-        <MangaGrid search={search} filter={filter} />
+        <MangaGrid
+          searchResults={filteredSearch}
+          filter={filter}
+        />
 
       </div>
 
-      {/* DETTAGLIO */}
       {selectedManga && (
         <MangaDetail
           manga={selectedManga}
