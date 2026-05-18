@@ -97,7 +97,7 @@ export default function RecordsPage({ setRecordsMode }) {
           {item.Titolo || item.name}
         </div>
 
-        <div className="font-bold text-pink-300">{value}</div>
+        <div className="font-bold text-yellow-400">{value}</div>
       </div>
     );
   };
@@ -134,20 +134,19 @@ export default function RecordsPage({ setRecordsMode }) {
 
       {/* FONT */}
       <style>
-        {`
-        @import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+{`
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
-        body {
-          font-family: 'Bangers', cursive, system-ui;
-          letter-spacing: 1px;
-        }
+body {
+  font-family: 'Orbitron', system-ui;
+}
 
-        .title-manga {
-          font-family: 'Bangers', cursive;
-          letter-spacing: 2px;
-        }
-        `}
-      </style>
+.title-manga {
+  font-family: 'Orbitron', system-ui;
+  letter-spacing: 1px;
+}
+`}
+</style>
 
       <button
         onClick={() => setRecordsMode(false)}
@@ -156,8 +155,11 @@ export default function RecordsPage({ setRecordsMode }) {
         ← Home
       </button>
 
-      <h1 className="text-6xl title-manga text-pink-400">
-        Manga Records
+      
+<h1 className="text-5xl title-manga font-black">
+  <span className="text-white">Manga</span>{" "}
+  <span className="text-yellow-500">Records</span>
+     Manga Records
       </h1>
 
       {/* MONETARI */}
@@ -166,8 +168,8 @@ export default function RecordsPage({ setRecordsMode }) {
 
         <div className="grid grid-cols-3 gap-6">
           <Card title="🔥 Serie più costose" data={topSerieCostose} type="cost" glow="bg-pink-500/10"/>
-          <Card title="💎 Volumi singoli" data={topVolumiSingoli} type="single" glow="bg-blue-500/10"/>
-          <Card title="🏢 Editori TOP" data={topEditori} glow="bg-purple-500/10"/>
+          <Card title="💎 Volumi singoli più costosi" data={topVolumiSingoli} type="single" glow="bg-blue-500/10"/>
+          <Card title="🏢 Editori più costosi" data={topEditori} glow="bg-purple-500/10"/>
         </div>
       </div>
 
@@ -177,8 +179,8 @@ export default function RecordsPage({ setRecordsMode }) {
 
         <div className="grid grid-cols-3 gap-6">
           <Card title="📖 Serie più lunghe" data={topLunghe} type="long" glow="bg-indigo-500/10"/>
-          <Card title="🏭 Editori" data={editori.slice(0,5)} glow="bg-yellow-500/10"/>
-          <Card title="✍️ Autori" data={autori.slice(0,5)} glow="bg-green-500/10"/>
+          <Card title="🏭 Editori con più serie" data={editori.slice(0,5)} glow="bg-yellow-500/10"/>
+          <Card title="✍️ Autori con più serie" data={autori.slice(0,5)} glow="bg-green-500/10"/>
         </div>
       </div>
 
@@ -191,7 +193,8 @@ export default function RecordsPage({ setRecordsMode }) {
           <div
             className="
               w-[700px] p-6 rounded-3xl
-              bg-gradient-to-br from-pink-900/80 to-purple-900/70
+             bg-gradient-to-br from-[#191919] to-[#0a0a0a]
+border border-yellow-500/20
               shadow-[0_0_80px_rgba(255,0,128,0.4)]
             "
             onClick={(e) => e.stopPropagation()}
