@@ -81,19 +81,25 @@ export default function HomePage() {
                   Tema
                 </button>
 
-                <button
-                  onClick={()=>window.location.href="/admin"}
-                  className="block w-full text-left px-4 py-3 hover:bg-[#1f1f1f]"
-                >
-                  Admin
-                </button>
+               <button
+  onClick={()=>{
+    setAdminMode(true);
+    setRecordsMode(false);
+    setOpenMenu(false);
+  }}
+>
+  Admin
+</button>
 
-                <button
-                  onClick={()=>window.location.href="/records"}
-                  className="block w-full text-left px-4 py-3 hover:bg-[#1f1f1f]"
-                >
-                  Records
-                </button>
+<button
+  onClick={()=>{
+    setRecordsMode(true);
+    setAdminMode(false);
+    setOpenMenu(false);
+  }}
+>
+  Records
+</button>
 
               </div>
             )}
