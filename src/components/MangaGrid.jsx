@@ -7,78 +7,88 @@ export default function MangaGrid({ search = "", filter = "all" }) {
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
-      .then((r) => r.json())
-      .then((d) => setManga(d || []));
+      .then(r => r.json())
+      .then(d => setManga(Array.isArray(d) ? d : []))
+      .catch(() => setManga([]));
   }, []);
 
+  function getStatus(m){
+    const total = Number(m.VolumiTotali);
+    const owned = Number(m.VolumiPosseduti);
+
+    if (!total) return "ongoing";        // niente totale = in corso
+    if (owned >= total) return "completed";
+    return "to_complete";
+  }
+
+  function barColor(status){
+    if(status==="completed") return "bg-green-400";
+    if(status==="to_complete") return "bg-red-400";
+    return "bg-yellow-400";
+  }
+
   const filtered = useMemo(() => {
-    let list = [...manga].sort((a, b) =>
-      (a.Titolo || "").localeCompare(b.Titolo || "")
+
+    let list = [...manga].sort((a,b)=>
+      (a.Titolo||"").localeCompare(b.Titolo||"")
     );
 
-    if (search)
-      list = list.filter((m) =>
-        m.Titolo.toLowerCase().includes(search.toLowerCase())
+    if(search){
+      list = list.filter(m =>
+        (m.Titolo||"").toLowerCase().includes(search.toLowerCase())
       );
+    }
 
-    const getStatus = (m) => {
-      const owned = m.VolumiPosseduti;
-      const total = m.VolumiTotali;
-      if (!total) return "ongoing";
-      if (owned >= total) return "completed";
-      return "to_complete";
-    };
+    switch(filter){
 
-    switch (filter) {
       case "ongoing":
-        return list.filter((m) => getStatus(m) === "ongoing");
+        return list.filter(m =>
+          !m.VolumiTotali || m.VolumiTotali === 0
+        );
 
       case "to_complete":
-        return list.filter((m) => getStatus(m) === "to_complete");
+        return list.filter(m =>
+          m.VolumiTotali && m.VolumiPosseduti < m.VolumiTotali
+        );
 
       case "completed":
-        return list.filter((m) => getStatus(m) === "completed");
+        return list.filter(m =>
+          m.VolumiTotali && m.VolumiPosseduti >= m.VolumiTotali
+        );
 
       case "short":
-        return list.filter(
-          (m) => m.VolumiTotali >= 2 && m.VolumiTotali < 8
+        return list.filter(m =>
+          m.VolumiTotali >= 2 && m.VolumiTotali < 8
         );
 
       case "oneshot":
-        return list.filter(
-          (m) => m.VolumiTotali === 1 && m.VolumiPosseduti === 1
+        return list.filter(m =>
+          m.VolumiPosseduti === 1 && m.VolumiTotali === 1
         );
 
       default:
         return list;
     }
+
   }, [manga, search, filter]);
-
-  function getBarColor(m) {
-    const owned = m.VolumiPosseduti;
-    const total = m.VolumiTotali;
-
-    if (total && owned >= total) return "bg-green-400";
-    if (total) return "bg-yellow-400";
-    return "bg-red-400";
-  }
 
   return (
     <>
       <div className="grid grid-cols-6 gap-6">
 
-        {filtered.map((m) => {
-          const total = Number(m.VolumiTotali);
-          const owned = Number(m.VolumiPosseduti);
-          const percent = total ? (owned / total) * 100 : 50;
+        {filtered.map(m=>{
 
-          return (
-            <div
-              key={m.ID}
-              onClick={() => setSelectedManga(m)}
-              className="hover:scale-[1.05] transition cursor-pointer"
-            >
-              <div className="bg-[#141414] rounded-xl overflow-hidden border border-white/10">
+          const total = Number(m.VolumiTotali) || 0;
+          const owned = Number(m.VolumiPosseduti) || 0;
+          const percent = total ? (owned/total)*100 : 50;
+          const status = getStatus(m);
+
+          return(
+            <div key={m.ID}
+              onClick={()=>setSelectedManga(m)}
+              className="group cursor-pointer hover:scale-[1.05] transition">
+
+              <div className="bg-[#141414] rounded-xl border border-white/10 overflow-hidden">
 
                 <img
                   src={m.CoverURL || "https://placehold.co/300x450"}
@@ -101,7 +111,7 @@ export default function MangaGrid({ search = "", filter = "all" }) {
 
                   <div className="h-1 bg-zinc-800 mt-2 rounded">
                     <div
-                      className={`${getBarColor(m)} h-full animate-pulse`}
+                      className={`${barColor(status)} h-full`}
                       style={{ width: `${percent}%` }}
                     />
                   </div>
@@ -109,12 +119,15 @@ export default function MangaGrid({ search = "", filter = "all" }) {
                 </div>
               </div>
             </div>
-          );
+          )
         })}
       </div>
 
       {selectedManga && (
-        <MangaDetail manga={selectedManga} onClose={() => setSelectedManga(null)} />
+        <MangaDetail
+          manga={selectedManga}
+          onClose={()=>setSelectedManga(null)}
+        />
       )}
     </>
   );
