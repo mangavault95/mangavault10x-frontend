@@ -79,12 +79,12 @@ export default function StatsPanel() {
           <div
             key={card.label}
             className="
-              relative
-              overflow-hidden
-              rounded-xl
-              bg-[#151518]
-              border border-zinc-800
+              relative overflow-hidden rounded-xl
+              bg-[#151518] border border-zinc-800
               p-3
+              transition-all duration-300
+              hover:scale-[1.04] hover:bg-zinc-900 hover:shadow-lg
+              cursor-pointer
             "
           >
 
@@ -122,7 +122,6 @@ export default function StatsPanel() {
               </div>
 
             </div>
-
           </div>
         ))}
 
