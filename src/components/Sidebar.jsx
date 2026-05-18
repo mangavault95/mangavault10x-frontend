@@ -36,13 +36,17 @@ export default function Sidebar() {
         MangaVault<span className="text-yellow-400">10X</span>
       </div>
 
-      {/* CURRENT */}
+      {/* CURRENT READING */}
       {selected && (
         <div className="p-3 bg-[#141414] rounded-xl border border-white/10">
 
           <div className="flex gap-2">
-            src={selected.CoverURL}
-              className="w-10 h-14 rounded object-cover" />
+            <img
+              src={selected.CoverURL || "https://placehold.co/60x90"}
+              alt=""
+              className="w-10 h-14 rounded object-cover"
+            />
+
             <div>
               <p className="text-xs text-zinc-400">Stai leggendo</p>
               <p className="text-sm">{selected.Titolo}</p>
@@ -59,6 +63,7 @@ export default function Sidebar() {
               style={{ width: `${progress}%` }}
             />
           </div>
+
         </div>
       )}
 
@@ -74,16 +79,22 @@ export default function Sidebar() {
                 new CustomEvent("openMangaDetail", { detail: m })
               )
             }
-            className="flex gap-2 p-2 bg-[#141414] rounded-xl mb-2 cursor-pointer hover:bg-[#1a1a1a]"
+            className="
+              flex gap-2 p-2 rounded-xl mb-2 cursor-pointer
+              bg-[#141414] hover:bg-[#1a1a1a]
+            "
           >
-            src={m.CoverURL} className="w-8 h-10 rounded object-cover" />
+            <img
+              src={m.CoverURL || "https://placehold.co/60x90"}
+              alt=""
+              className="w-8 h-10 rounded object-cover"
+            />
+
             <span className="text-sm truncate">{m.Titolo}</span>
           </div>
         ))}
       </div>
 
       <StatsPanel />
-
     </div>
   );
-}
