@@ -58,8 +58,7 @@ export default function RecordsPage({ setRecordsMode }) {
     .sort((a, b) => b.Costo - a.Costo)
     .slice(0, 5);
 
-  const topEditori = editori
-    .filter(e => e.count >= 2)
+  const topEditori = editori.filter(e => e.count >= 2)
     .sort((a, b) => b.avgCost - a.avgCost)
     .slice(0, 5);
 
@@ -86,23 +85,19 @@ export default function RecordsPage({ setRecordsMode }) {
       <div
         onClick={() => handleClick(item)}
         className="
-          flex justify-between items-center
-          px-4 py-2 rounded-xl
-          bg-white/5
-          hover:bg-white/10
+          flex justify-between px-4 py-2 rounded-xl
+          bg-white/5 hover:bg-white/10
           transition-all duration-300
-          hover:scale-[1.02]
+          hover:scale-[1.03]
           cursor-pointer
         "
       >
-        <div className="flex gap-2 font-medium">
+        <div className="flex gap-2 font-semibold">
           <span>{medal[index] || `#${index + 1}`}</span>
           {item.Titolo || item.name}
         </div>
 
-        <div className="font-bold text-pink-300">
-          {value}
-        </div>
+        <div className="font-bold text-pink-300">{value}</div>
       </div>
     );
   };
@@ -112,12 +107,13 @@ export default function RecordsPage({ setRecordsMode }) {
       className={`
         p-5 rounded-3xl backdrop-blur
         border border-white/10
-        shadow-xl
+        shadow-lg
         ${glow}
-        transition hover:scale-[1.02]
+        hover:scale-[1.02]
+        transition
       `}
     >
-      <h3 className="mb-4 font-bold text-lg tracking-wide text-white">
+      <h3 className="mb-4 text-lg font-bold text-white">
         {title}
       </h3>
 
@@ -132,37 +128,55 @@ export default function RecordsPage({ setRecordsMode }) {
   return (
     <div className="
       min-h-screen text-white p-8 space-y-10
-      bg-gradient-to-br from-[#1a0f2e] via-[#0f0f1f] to-[#02020a]
+      bg-[linear-gradient(135deg,#1a0f2e,#0f0f1f,#05050a)]
+      bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]
     ">
+
+      {/* FONT */}
+      <style>
+        {`
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+
+        body {
+          font-family: 'Bangers', cursive, system-ui;
+          letter-spacing: 1px;
+        }
+
+        .title-manga {
+          font-family: 'Bangers', cursive;
+          letter-spacing: 2px;
+        }
+        `}
+      </style>
 
       <button
         onClick={() => setRecordsMode(false)}
-        className="px-4 py-2 bg-white/10 rounded-xl hover:bg-white/20 transition"
+        className="px-4 py-2 bg-white/10 rounded-xl hover:bg-white/20"
       >
         ← Home
       </button>
 
-      <h1 className="text-5xl font-extrabold tracking-tight">
-        📚 Manga Records
+      <h1 className="text-6xl title-manga text-pink-400">
+        Manga Records
       </h1>
 
       {/* MONETARI */}
       <div>
-        <h2 className="text-pink-400 text-2xl">💰 Record Monetari</h2>
+        <h2 className="text-2xl text-pink-300 mb-4">💰 Record Monetari</h2>
 
-        <div className="grid grid-cols-3 gap-6 mt-4">
+        <div className="grid grid-cols-3 gap-6">
           <Card title="🔥 Serie più costose" data={topSerieCostose} type="cost" glow="bg-pink-500/10"/>
           <Card title="💎 Volumi singoli" data={topVolumiSingoli} type="single" glow="bg-blue-500/10"/>
-          <Card title="🏢 Editori top" data={topEditori} glow="bg-purple-500/10"/>
+          <Card title="🏢 Editori TOP" data={topEditori} glow="bg-purple-500/10"/>
         </div>
       </div>
 
       {/* GENERALI */}
       <div>
-        <h2 className="text-blue-400 text-2xl">📖 Record Generali</h2>
+        <h2 className="text-2xl text-blue-300 mb-4">📚 Record Generali</h2>
 
-        <div className="grid grid-cols-3 gap-6 mt-4">
-          <Card title="📚 Serie più lunghe" data={topLunghe} type="long" glow="bg-indigo-500/10"/>
+        <div className="grid grid-cols-3 gap-6">
+          <Card title="📖 Serie più lunghe" data={topLunghe} type="long" glow="bg-indigo-500/10"/>
           <Card title="🏭 Editori" data={editori.slice(0,5)} glow="bg-yellow-500/10"/>
           <Card title="✍️ Autori" data={autori.slice(0,5)} glow="bg-green-500/10"/>
         </div>
@@ -171,33 +185,32 @@ export default function RecordsPage({ setRecordsMode }) {
       {/* MODAL */}
       {selected && (
         <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center"
+          className="fixed inset-0 bg-black/70 backdrop-blur flex items-center justify-center"
           onClick={() => setSelected(null)}
         >
           <div
             className="
-              w-[700px]
-              bg-gradient-to-br from-purple-900/80 to-black
-              p-6 rounded-3xl
-              shadow-[0_0_80px_rgba(168,85,247,0.4)]
-              animate-[fade_.3s]
+              w-[700px] p-6 rounded-3xl
+              bg-gradient-to-br from-pink-900/80 to-purple-900/70
+              shadow-[0_0_80px_rgba(255,0,128,0.4)]
             "
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-2xl font-bold text-pink-400 mb-3">
+
+            <h2 className="text-3xl text-pink-300 mb-4">
               {selected.name}
             </h2>
 
-            <div className="text-sm text-zinc-300 mb-4">
+            <div className="text-sm mb-4">
               Serie: {selected.count} • Volumi: {selected.totalVol}
             </div>
 
             <div className="text-xs mb-3">
               <p className="text-green-400">
-                ↑ {selected.best?.Titolo} (€{selected.best?.Costo})
+                ↑ {selected.best?.Titolo}
               </p>
               <p className="text-red-400">
-                ↓ {selected.worst?.Titolo} (€{selected.worst?.Costo})
+                ↓ {selected.worst?.Titolo}
               </p>
             </div>
 
@@ -211,10 +224,10 @@ export default function RecordsPage({ setRecordsMode }) {
                     key={i}
                     onClick={() => setSelectedManga(m)}
                     className={`
-                      px-2 py-1 rounded cursor-pointer text-sm
-                      hover:bg-white/10 transition
-                      ${isBest ? "text-green-400 font-semibold" : ""}
-                      ${isWorst ? "text-red-400 font-semibold" : ""}
+                      px-2 py-1 rounded cursor-pointer
+                      hover:bg-white/10
+                      ${isBest ? "text-green-400" : ""}
+                      ${isWorst ? "text-red-400" : ""}
                     `}
                   >
                     {m.Titolo}
@@ -222,6 +235,7 @@ export default function RecordsPage({ setRecordsMode }) {
                 );
               })}
             </div>
+
           </div>
         </div>
       )}
@@ -235,13 +249,14 @@ export default function RecordsPage({ setRecordsMode }) {
 
       <style>{`
         .custom-scroll::-webkit-scrollbar {
-          width: 6px;
+          width: 5px;
         }
         .custom-scroll::-webkit-scrollbar-thumb {
-          background: #888;
+          background: #999;
           border-radius: 10px;
         }
       `}</style>
+
     </div>
   );
 }
