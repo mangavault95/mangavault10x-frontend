@@ -8,7 +8,6 @@ export default function AdminPage() {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [loading, setLoading] = useState(false);
 
-  // ✅ LOAD MANGA
   async function loadManga() {
     const data = await getManga();
     setMangaList(data || []);
@@ -19,13 +18,11 @@ export default function AdminPage() {
     loadManga();
   }, []);
 
-  // ✅ LOGOUT → HOME
   function logout() {
     localStorage.removeItem("token");
     window.location.href = "/";
   }
 
-  // ✅ LOGIN
   async function login(user, pass) {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/api/manga/login`, {
       method: "POST",
@@ -43,29 +40,24 @@ export default function AdminPage() {
     }
   }
 
-  // ✅ ENRICH (NO TITOLO)
   async function enrichManga() {
     if (!selected) return;
 
     setLoading(true);
 
     const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/manga/enrich`, {
+      `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           titolo: selected.Titolo,
           autore: selected.Autore
         })
-      });
+      }
+    );
 
     const data = await res.json();
-
-    if (data.error) {
-      alert(data.error);
-      setLoading(false);
-      return;
-    }
 
     setSelected(prev => ({
       ...prev,
@@ -77,12 +69,12 @@ export default function AdminPage() {
     setLoading(false);
   }
 
-  // ✅ SAVE + UX FIX
   async function saveChanges() {
     if (!selected || !token) return alert("Rifai login");
 
     const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/manga/${selected.ID}`, {
+      `${import.meta.env.VITE_API_URL}/api/manga/${selected.ID}`,
+      {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -94,16 +86,14 @@ export default function AdminPage() {
           volumiposseduti: selected.VolumiPosseduti || 0,
           volumitotali: selected.VolumiTotali || 0
         })
-      });
+      }
+    );
 
     if (!res.ok) return alert("Errore salvataggio");
 
     alert("Salvato ✅");
 
-    // ✅ 🔥 ricarica dati
     const updatedList = await loadManga();
-
-    // ✅ 🔥 UX: mantieni selezionato aggiornato
     const updated = updatedList.find(m => m.ID === selected.ID);
     if (updated) setSelected(updated);
   }
@@ -113,13 +103,11 @@ export default function AdminPage() {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-white">
         <div className="bg-zinc-900 p-8 rounded-xl space-y-4 w-80 text-center">
+
           <h2 className="text-xl font-bold">Login Admin</h2>
 
-          <input id="u" placeholder="Username"
-            className="w-full p-2 bg-zinc-800 rounded"/>
-
-          <input id="p" type="password" placeholder="Password"
-            className="w-full p-2 bg-zinc-800 rounded"/>
+          <input id="u" placeholder="Username" className="w-full p-2 bg-zinc-800 rounded" />
+          <input id="p" type="password" placeholder="Password" className="w-full p-2 bg-zinc-800 rounded" />
 
           <button
             onClick={() => login(u.value, p.value)}
@@ -128,12 +116,6 @@ export default function AdminPage() {
             Login
           </button>
 
-          <button
-            onClick={() => window.location.href = "/"}
-            className="text-sm text-zinc-400"
-          >
-            ← Torna alla Home
-          </button>
         </div>
       </div>
     );
@@ -141,10 +123,11 @@ export default function AdminPage() {
 
   // ✅ ADMIN UI
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0b0b0f] text-white">
+    <div className="flex h-screen bg-[#0b0b0f] text-white">
 
       {/* SIDEBAR */}
       <div className="w-72 bg-black/60 border-r border-zinc-800 overflow-y-auto">
+
         <div className="p-4 flex justify-between">
           <span className="font-bold">Admin</span>
           <button onClick={logout} className="text-red-400 text-sm">
@@ -156,85 +139,107 @@ export default function AdminPage() {
           <div
             key={m.ID}
             onClick={() => setSelected(m)}
-            className={`p-3 border-b border-zinc-800 cursor-pointer hover:bg-zinc-900 ${
-              selected?.ID === m.ID ? "bg-zinc-800" : ""
-            }`}
+            className={`
+              p-3 border-b border-zinc-800 cursor-pointer
+              hover:bg-zinc-900
+              ${selected?.ID === m.ID ? "bg-zinc-800" : ""}
+            `}
           >
             {m.Titolo}
           </div>
         ))}
+
       </div>
 
-      {/* CONTENT FISSO */}
-      <div className="flex-1 flex justify-center p-8">
-        <div className="w-full max-w-5xl">
+      {/* CONTENT */}
+      <div className="flex-1 p-8">
 
-          {!selected ? (
-            <div className="text-zinc-400">Seleziona un manga</div>
-          ) : (
-            <>
-              <div className="flex gap-8">
+        {!selected ? (
+          <div className="text-zinc-400">Seleziona un manga</div>
+        ) : (
+          <>
+            <div className="flex gap-8">
 
-                {/* COVER */}
-                {selected.CoverURL && (
-                  <img
-                    src={selected.CoverURL}
-                    className="w-64 h-[380px] object-cover rounded-xl"
+              {/* COVER */}
+              {selected.CoverURL && (
+                <img
+                  src={selected.CoverURL}
+                  className="w-64 h-[380px] object-cover rounded-xl"
+                />
+              )}
+
+              {/* FORM */}
+              <div className="flex-1 space-y-4">
+
+                <input
+                  value={selected.Titolo || ""}
+                  disabled
+                  className="w-full p-3 bg-zinc-800 rounded-xl text-zinc-400"
+                />
+
+                <input
+                  value={selected.Autore || ""}
+                  onChange={e =>
+                    setSelected({ ...selected, Autore: e.target.value })
+                  }
+                  className="w-full p-3 bg-zinc-900 rounded-xl"
+                />
+
+                <textarea
+                  value={selected.Trama || ""}
+                  onChange={e =>
+                    setSelected({ ...selected, Trama: e.target.value })
+                  }
+                  className="w-full p-3 bg-zinc-900 rounded-xl h-40"
+                />
+
+                {/* ✅ CURRENT READING */}
+                <div className="bg-zinc-900 p-4 rounded-xl">
+                  <p className="text-xs text-zinc-400 mb-2">
+                    Imposta lettura corrente
+                  </p>
+
+                  <input
+                    type="number"
+                    placeholder="Volume corrente"
+                    className="w-full p-2 bg-black rounded-lg"
+                    onChange={(e) => {
+                      localStorage.setItem(
+                        "mv_selected_manga",
+                        JSON.stringify(selected)
+                      );
+                      localStorage.setItem(
+                        "mv_current_vol",
+                        e.target.value
+                      );
+                    }}
                   />
-                )}
+                </div>
 
-                {/* FORM */}
-<div className="flex-1 space-y-4">
-
-  <input
-    value={selected.Titolo || ""}
-    disabled
-    className="w-full p-3 bg-zinc-800 rounded-xl text-zinc-400"
-  />
-
-  <input
-    value={selected.Autore || ""}
-    onChange={e =>
-      setSelected({ ...selected, Autore: e.target.value })
-    }
-    className="w-full p-3 bg-zinc-900 rounded-xl"
-  />
-
-  {/* NEW: CURRENT READING */}
-  <div className="bg-zinc-900 p-3 rounded-xl">
-    <p className="text-xs text-zinc-400 mb-2">Sto leggendo</p>
-
-    <input
-      type="number"
-      placeholder="Volume attuale"
-      className="w-full p-2 bg-black rounded-lg"
-      onChange={(e) =>
-        localStorage.setItem("mv_current_vol", e.target.value)
-      }
-    />
-  </div>
-
-</div>
-              {/* BUTTONS */}
-              <div className="flex gap-4 mt-6">
-                <button
-                  onClick={saveChanges}
-                  className="bg-green-600 px-6 py-3 rounded-xl"
-                >
-                  Salva
-                </button>
-
-                <button
-                  onClick={enrichManga}
-                  className="bg-blue-600 px-6 py-3 rounded-xl"
-                >
-                  {loading ? "..." : "Auto Enrich"}
-                </button>
               </div>
-            </>
-          )}
+            </div>
 
-        </div>
+            {/* BUTTONS */}
+            <div className="flex gap-4 mt-6">
+
+              <button
+                onClick={saveChanges}
+                className="bg-green-600 px-6 py-3 rounded-xl"
+              >
+                Salva
+              </button>
+
+              <button
+                onClick={enrichManga}
+                className="bg-blue-600 px-6 py-3 rounded-xl"
+              >
+                {loading ? "..." : "Auto Enrich"}
+              </button>
+
+            </div>
+          </>
+        )}
+
       </div>
 
     </div>
