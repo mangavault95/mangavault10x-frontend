@@ -27,13 +27,16 @@ export default function TopHero({ manga, onSelect }) {
   return (
     <div className="relative w-full h-[340px] rounded-2xl overflow-hidden border border-white/10 shadow-xl">
 
-      {/* ✅ GRADIENT PIÙ CHIARO */}
-      <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 via-[#1a1a22] to-black" />
+      {/* BACKGROUND */}
+      <img
+        src={currentManga?.CoverURL || "https://placehold.co/1200x400"}
+        className="absolute inset-0 w-full h-full object-cover opacity-20 blur-sm scale-110"
+      />
 
-      {/* ✅ GLASS */}
-      <div className="absolute inset-0 backdrop-blur-sm bg-black/20" />
+      {/* GRADIENT */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
 
-      {/* ✅ CONTENUTO */}
+      {/* CONTENUTO */}
       <div
         className={`relative z-10 h-full flex items-center px-10 transition-opacity duration-300 ${
           fade ? "opacity-100" : "opacity-0"
@@ -42,7 +45,7 @@ export default function TopHero({ manga, onSelect }) {
         {/* COVER */}
         <img
           src={currentManga?.CoverURL || "https://placehold.co/300x450"}
-          className="w-44 h-[280px] object-cover rounded-xl shadow-lg"
+          className="w-40 h-[260px] object-cover rounded-xl shadow-lg"
         />
 
         {/* TESTI */}
@@ -52,29 +55,27 @@ export default function TopHero({ manga, onSelect }) {
             {currentManga?.Titolo}
           </h2>
 
-          <p className="text-sm text-zinc-400 mb-6 line-clamp-4">
-            {currentManga?.Trama}
+          <p className="text-sm text-zinc-400 mb-6 line-clamp-3">
+            {(currentManga?.Trama || "").slice(0, 160)}...
           </p>
 
-          {/* ✅ BOTTONE PREMIUM SENAPE */}
+          {/* BOTTONE */}
           <button
             onClick={() => onSelect(currentManga)}
             className="
               px-6 py-2 rounded-xl
-              bg-gradient-to-r from-yellow-500 to-yellow-600
-              text-black font-semibold
+              bg-yellow-500 text-black font-semibold
               shadow-lg
-              hover:scale-105 hover:brightness-110
+              hover:bg-yellow-400 hover:scale-105
               transition-all duration-200
             "
           >
             ✦ Dettagli
           </button>
-
         </div>
       </div>
 
-      {/* ✅ DOTS */}
+      {/* DOTS */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
         {latest.map((_, i) => (
           <button
@@ -88,16 +89,15 @@ export default function TopHero({ manga, onSelect }) {
             }}
             className={`transition-all rounded-full ${
               i === current
-                ? "w-4 h-4 bg-white"
+                ? "w-4 h-4 bg-yellow-400"
                 : "w-3 h-3 bg-white/30 hover:bg-white/60"
             }`}
           />
         ))}
       </div>
 
-      {/* ✅ BORDER GLOW */}
+      {/* BORDER */}
       <div className="absolute inset-0 rounded-2xl ring-1 ring-white/10" />
-
     </div>
   );
 }
