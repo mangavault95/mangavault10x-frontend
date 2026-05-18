@@ -130,35 +130,36 @@ export default function Sidebar() {
 </div>
 
       {/* SEARCH */}
-      {!selected && (
-        <div className="space-y-2">
+{!selected && (
+  <div className="space-y-2">
 
-          <input
-            className="w-full bg-zinc-900 p-2 rounded-lg text-sm outline-none"
-            placeholder="Cerca manga..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+    <input
+      className="w-full bg-zinc-900 p-2 rounded-lg text-sm outline-none border border-zinc-800 focus:border-yellow-500 transition"
+      placeholder="Cerca manga..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+    />
 
-          {results.length > 0 && (
-            <div className="bg-zinc-900 rounded-lg overflow-hidden">
-              {results.map((m) => (
-                <div
-                  key={m.Id}
-                  onClick={() => {
-                    setSelected(m);
-                    setSearch("");
-                  }}
-                  className="p-2 text-sm hover:bg-zinc-800 cursor-pointer"
-                >
-                  {m.Titolo}
-                </div>
-              ))}
-            </div>
-          )}
+    {results.length > 0 && (
+      <div className="bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800">
+        {results.map((m) => (
+          <div
+            key={m.Id}
+            onClick={() => {
+              setSelected(m);
+              setSearch("");
+            }}
+            className="p-2 text-sm hover:bg-zinc-800 cursor-pointer transition"
+          >
+            {m.Titolo}
+          </div>
+        ))}
+      </div>
+    )}
 
-        </div>
-      )}
+  </div>
+)}
+
 
       {/* CURRENT READING */}
       {selected && (
