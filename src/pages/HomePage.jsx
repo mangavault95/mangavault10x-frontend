@@ -5,7 +5,11 @@ import TopHero from "../components/TopHero";
 import MangaDetail from "../components/MangaDetail";
 import { getManga } from "../services/api";
 
-export default function HomePage() {
+export default function HomePage({
+  setAdminMode,
+  setRecordsMode,
+  darkMode
+}) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [selectedManga, setSelectedManga] = useState(null);
@@ -13,9 +17,14 @@ export default function HomePage() {
   const [openMenu, setOpenMenu] = useState(false);
 
   useEffect(() => {
-    getManga().then(d => setMangaList(d || []));
+    async function load() {
+      const data = await getManga();
+      setMangaList(data || []);
+    }
+    load();
   }, []);
 
+  // APERTURA DETAIL DA SIDEBAR
   useEffect(() => {
     const handler = (e) => setSelectedManga(e.detail);
     window.addEventListener("openMangaDetail", handler);
@@ -39,96 +48,111 @@ export default function HomePage() {
         <Sidebar />
       </div>
 
-      {/* MAIN */}
+      {/* CONTENUTO */}
       <div className="ml-72 px-10 py-6 space-y-8">
 
         <TopHero manga={mangaList} onSelect={setSelectedManga} />
 
         {/* HEADER */}
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
 
-          <h2 className="text-2xl font-bold">La Mia Collezione</h2>
+          <h2 className="text-2xl font-bold">
+            La Mia Collezione
+          </h2>
 
-          {/* SEARCH BELLA */}
+          {/* SEARCH (ORA COERENTE) */}
           <div className="
-            flex items-center gap-3 px-5 py-2
+            flex items-center gap-3 px-4 py-2
+            rounded-full
             bg-[#1a1a1a]
-            rounded-full border border-white/10
+            border border-white/10
+            hover:border-yellow-400
+            transition
           ">
-            <span className="text-zinc-500">🔍</span>
+            <span className="text-zinc-500 text-sm">🔍</span>
             <input
               value={search}
               onChange={(e)=>setSearch(e.target.value)}
               placeholder="Cerca manga..."
-              className="bg-transparent outline-none w-56 text-sm"
+              className="
+                bg-transparent outline-none
+                text-sm text-white
+                placeholder:text-zinc-500
+                w-56
+              "
             />
           </div>
 
-          {/* HAMBURGER */}
+          {/* HAMBURGER MENU */}
           <div className="relative">
 
             <button
-              onClick={()=>setOpenMenu(p=>!p)}
-              className="w-10 h-10 bg-[#1a1a1a] border border-white/10 rounded-xl"
+              onClick={()=>setOpenMenu(prev=>!prev)}
+              className="
+                w-10 h-10 rounded-xl
+                bg-[#1a1a1a]
+                border border-white/10
+                hover:border-yellow-400
+                transition
+              "
             >
               ☰
             </button>
 
             {openMenu && (
-  <div className="
-    absolute right-0 mt-2 w-44
-    bg-[#151515]
-    rounded-xl
-    border border-white/10
-    shadow-lg
-    overflow-hidden
-  ">
+              <div className="
+                absolute right-0 mt-2 w-44
+                rounded-xl overflow-hidden
+                bg-[#151515]/95 backdrop-blur
+                border border-white/10
+                shadow-[0_10px_30px_rgba(0,0,0,0.7)]
+              ">
 
-    <button
-      onClick={()=>setDarkMode(prev => !prev)}
-      className="
-        w-full px-4 py-3
-        text-left
-        hover:bg-[#1f1f1f]
-        border-b border-white/5
-      "
-    >
-      Tema
-    </button>
+                {/* TEMA */}
+                <button
+                  className="
+                    w-full px-4 py-3 text-left
+                    hover:bg-[#1f1f1f]
+                    border-b border-white/5
+                  "
+                >
+                  Tema
+                </button>
 
-    <button
-      onClick={()=>{
-        setAdminMode(true);
-        setRecordsMode(false);
-        setOpenMenu(false);
-      }}
-      className="
-        w-full px-4 py-3
-        text-left
-        hover:bg-[#1f1f1f]
-        border-b border-white/5
-      "
-    >
-      Admin
-    </button>
+                {/* ADMIN */}
+                <button
+                  onClick={()=>{
+                    setAdminMode(true);
+                    setRecordsMode(false);
+                    setOpenMenu(false);
+                  }}
+                  className="
+                    w-full px-4 py-3 text-left
+                    hover:bg-[#1f1f1f]
+                    border-b border-white/5
+                  "
+                >
+                  Admin
+                </button>
 
-    <button
-      onClick={()=>{
-        setRecordsMode(true);
-        setAdminMode(false);
-        setOpenMenu(false);
-      }}
-      className="
-        w-full px-4 py-3
-        text-left
-        hover:bg-[#1f1f1f]
-      "
-    >
-      Records
-    </button>
+                {/* RECORDS */}
+                <button
+                  onClick={()=>{
+                    setRecordsMode(true);
+                    setAdminMode(false);
+                    setOpenMenu(false);
+                  }}
+                  className="
+                    w-full px-4 py-3 text-left
+                    hover:bg-[#1f1f1f]
+                  "
+                >
+                  Records
+                </button>
 
-  </div>
-)}
+              </div>
+            )}
+
           </div>
 
         </div>
@@ -141,9 +165,10 @@ export default function HomePage() {
               onClick={()=>setFilter(f.key)}
               className={`
                 px-4 py-2 rounded-xl text-sm
+                transition
                 ${filter === f.key
                   ? "bg-yellow-400 text-black"
-                  : "bg-[#1a1a1a] border border-white/10"}
+                  : "bg-[#1a1a1a] border border-white/10 hover:bg-[#222]"}
               `}
             >
               {f.label}
@@ -151,10 +176,12 @@ export default function HomePage() {
           ))}
         </div>
 
+        {/* GRID */}
         <MangaGrid search={search} filter={filter} />
 
       </div>
 
+      {/* DETTAGLIO */}
       {selectedManga && (
         <MangaDetail
           manga={selectedManga}
