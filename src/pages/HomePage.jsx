@@ -1,5 +1,3 @@
-// SOVRASCRIVI TUTTO
-
 import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import MangaGrid from "../components/MangaGrid";
@@ -7,7 +5,7 @@ import TopHero from "../components/TopHero";
 import MangaDetail from "../components/MangaDetail";
 import { getManga } from "../services/api";
 
-export default function HomePage({ darkMode }) {
+export default function HomePage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [selectedManga, setSelectedManga] = useState(null);
@@ -24,7 +22,6 @@ export default function HomePage({ darkMode }) {
   return (
     <div className="bg-[#111111] text-white min-h-screen">
 
-      {/* SIDEBAR */}
       <div className="fixed left-0 top-0 w-72 h-screen z-30 bg-black/60 border-r border-zinc-800 backdrop-blur-xl">
         <Sidebar />
       </div>
@@ -47,21 +44,19 @@ export default function HomePage({ darkMode }) {
               border border-white/10
               focus:border-yellow-400
               focus:shadow-[0_0_12px_rgba(250,204,21,0.4)]
-              transition
-              outline-none
+              outline-none transition
             "
           />
-
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {["all","ongoing","to_complete","completed"].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               className={`
-                px-4 py-2 rounded-xl
-                ${filter===f
+                px-4 py-2 rounded-xl text-sm
+                ${filter === f
                   ? "bg-yellow-400 text-black"
                   : "bg-[#1a1a1a] hover:bg-[#222] hover:shadow-[0_0_10px_rgba(250,204,21,0.3)]"}
               `}
@@ -81,7 +76,6 @@ export default function HomePage({ darkMode }) {
           onClose={() => setSelectedManga(null)}
         />
       )}
-
     </div>
   );
 }
