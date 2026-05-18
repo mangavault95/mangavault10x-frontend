@@ -159,7 +159,6 @@ body {
 <h1 className="text-5xl title-manga font-black">
   <span className="text-white">Manga</span>{" "}
   <span className="text-yellow-500">Records</span>
-     Manga Records
       </h1>
 
       {/* MONETARI */}
