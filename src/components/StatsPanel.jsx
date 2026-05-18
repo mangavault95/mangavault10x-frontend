@@ -6,8 +6,7 @@ export default function StatsPanel() {
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
       .then((res) => res.json())
-      .then((data) => setManga(Array.isArray(data) ? data : []))
-      .catch(() => setManga([]));
+      .then((data) => setManga(data || []));
   }, []);
 
   const stats = useMemo(() => {
@@ -28,104 +27,34 @@ export default function StatsPanel() {
       else ongoing++;
     });
 
-    return {
-      completed,
-      ongoing,
-      totalVolumes,
-      totalSpent
-    };
+    return { completed, ongoing, totalVolumes, totalSpent };
   }, [manga]);
 
   const cards = [
-    {
-      label: "Completate",
-      value: stats.completed,
-      icon: "🏆",
-      color: "text-green-400",
-      glow: "from-green-500/20"
-    },
-    {
-      label: "In corso",
-      value: stats.ongoing,
-      icon: "📚",
-      color: "text-orange-400",
-      glow: "from-orange-500/20"
-    },
-    {
-      label: "Volumi",
-      value: stats.totalVolumes,
-      icon: "📦",
-      color: "text-blue-400",
-      glow: "from-blue-500/20"
-    },
-    {
-      label: "Spesa",
-      value: `€${stats.totalSpent.toFixed(0)}`,
-      icon: "💴",
-      color: "text-yellow-400",
-      glow: "from-yellow-500/20"
-    }
+    { label: "Completate", value: stats.completed, icon: "🏆" },
+    { label: "In corso", value: stats.ongoing, icon: "📚" },
+    { label: "Volumi", value: stats.totalVolumes, icon: "📦" },
+    { label: "Spesa", value: `€${stats.totalSpent}`, icon: "💴" }
   ];
 
   return (
     <div>
-      <h3 className="text-sm font-bold text-zinc-300 mb-3">
+
+      <h3 className="text-sm font-bold text-zinc-400 mb-3">
         Stats
       </h3>
 
       <div className="grid grid-cols-2 gap-2">
 
-        {cards.map((card) => (
+        {cards.map((c) => (
           <div
-            key={card.label}
+            key={c.label}
             className="
-              relative overflow-hidden rounded-xl
-              bg-[#151518] border border-zinc-800
-              p-3
-              transition-all duration-300
-              hover:scale-[1.04] hover:bg-zinc-900 hover:shadow-lg
-              cursor-pointer
+              p-3 rounded-xl
+              bg-[#151515]
+              border border-zinc-800
+              hover:border-yellow-400
+              hover:shadow-[0_0_15px_rgba(250,204,21,0.3)]
+              transition-all
             "
           >
-
-            {/* GLOW */}
-            <div
-              className={`
-                absolute inset-0
-                bg-gradient-to-br ${card.glow}
-                to-transparent
-                opacity-60
-              `}
-            />
-
-            <div className="relative z-10">
-
-              <div className="flex items-center justify-between">
-                <span className="text-lg">
-                  {card.icon}
-                </span>
-
-                <span className="text-[10px] text-zinc-500 uppercase tracking-wide">
-                  {card.label}
-                </span>
-              </div>
-
-              <div
-                className={`
-                  mt-3
-                  text-xl
-                  font-black
-                  ${card.color}
-                `}
-              >
-                {card.value}
-              </div>
-
-            </div>
-          </div>
-        ))}
-
-      </div>
-    </div>
-  );
-}
