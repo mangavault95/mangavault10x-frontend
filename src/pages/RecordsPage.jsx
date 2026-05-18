@@ -26,23 +26,19 @@ export default function RecordsPage({ setRecordsMode }) {
 
   function groupBy(field) {
     const g = {};
-
     safe.forEach(m => {
       if (!g[m[field]]) g[m[field]] = [];
       g[m[field]].push(m);
     });
 
     return Object.entries(g).map(([key, list]) => {
-      const avg =
-        list.reduce((a, b) => a + b.Costo, 0) / list.length;
-
       const sorted = [...list].sort((a, b) => b.Costo - a.Costo);
 
       return {
         name: key,
         count: list.length,
         totalVol: list.reduce((a, b) => a + b.VolumiPosseduti, 0),
-        avgCost: avg,
+        avgCost: list.reduce((a, b) => a + b.Costo, 0) / list.length,
         best: sorted[0],
         worst: sorted[sorted.length - 1],
         list
@@ -62,31 +58,20 @@ export default function RecordsPage({ setRecordsMode }) {
     .sort((a, b) => b.Costo - a.Costo)
     .slice(0, 5);
 
-  const topLunghe = [...safe]
-    .sort((a, b) => b.VolumiPosseduti - a.VolumiPosseduti)
-    .slice(0, 5);
-
-  const topEditoriCostosi = editori
+  const topEditori = editori
     .filter(e => e.count >= 2)
     .sort((a, b) => b.avgCost - a.avgCost)
     .slice(0, 5);
 
-  const topEditoriSerie = [...editori]
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
-
-  const topAutori = [...autori]
-    .sort((a, b) => b.count - a.count)
+  const topLunghe = [...safe]
+    .sort((a, b) => b.VolumiPosseduti - a.VolumiPosseduti)
     .slice(0, 5);
 
   const medal = ["🥇", "🥈", "🥉"];
 
   function handleClick(item) {
-    if (item.Titolo) {
-      setSelectedManga(item);
-    } else {
-      setSelected(item);
-    }
+    if (item.Titolo) setSelectedManga(item);
+    else setSelected(item);
   }
 
   const Row = ({ item, index, type }) => {
@@ -95,8 +80,7 @@ export default function RecordsPage({ setRecordsMode }) {
     if (type === "cost") value = `€${(item.Costo * item.VolumiPosseduti).toFixed(0)}`;
     else if (type === "single") value = `€${item.Costo}`;
     else if (type === "long") value = `${item.VolumiPosseduti} vol`;
-    else if (type === "edit") value = `€${item.avgCost.toFixed(2)} (${item.count})`;
-    else value = item.count;
+    else value = `${item.count}`;
 
     return (
       <div
@@ -104,25 +88,36 @@ export default function RecordsPage({ setRecordsMode }) {
         className="
           flex justify-between items-center
           px-4 py-2 rounded-xl
-          bg-zinc-900/70 backdrop-blur
-          hover:bg-zinc-800/90
-          hover:scale-[1.02]
+          bg-white/5
+          hover:bg-white/10
           transition-all duration-300
+          hover:scale-[1.02]
           cursor-pointer
         "
       >
-        <div className="flex gap-2 text-sm">
+        <div className="flex gap-2 font-medium">
           <span>{medal[index] || `#${index + 1}`}</span>
           {item.Titolo || item.name}
         </div>
-        <div className="text-yellow-400 font-bold">{value}</div>
+
+        <div className="font-bold text-pink-300">
+          {value}
+        </div>
       </div>
     );
   };
 
-  const Card = ({ title, data, type }) => (
-    <div className="bg-[#121218] p-5 rounded-2xl shadow-xl transition hover:shadow-2xl hover:scale-[1.01]">
-      <h3 className="mb-4 font-bold text-lg text-white/90">
+  const Card = ({ title, data, type, glow }) => (
+    <div
+      className={`
+        p-5 rounded-3xl backdrop-blur
+        border border-white/10
+        shadow-xl
+        ${glow}
+        transition hover:scale-[1.02]
+      `}
+    >
+      <h3 className="mb-4 font-bold text-lg tracking-wide text-white">
         {title}
       </h3>
 
@@ -135,78 +130,78 @@ export default function RecordsPage({ setRecordsMode }) {
   );
 
   return (
-    <div className="min-h-screen text-white p-8 space-y-10">
+    <div className="
+      min-h-screen text-white p-8 space-y-10
+      bg-gradient-to-br from-[#1a0f2e] via-[#0f0f1f] to-[#02020a]
+    ">
 
       <button
         onClick={() => setRecordsMode(false)}
-        className="px-4 py-2 bg-zinc-800 rounded-xl hover:bg-zinc-700 transition"
+        className="px-4 py-2 bg-white/10 rounded-xl hover:bg-white/20 transition"
       >
         ← Home
       </button>
 
-      <h1 className="text-4xl font-black tracking-tight">
-        📊 Manga Records
+      <h1 className="text-5xl font-extrabold tracking-tight">
+        📚 Manga Records
       </h1>
 
       {/* MONETARI */}
       <div>
-        <h2 className="text-yellow-400 text-2xl mb-4">💰 Record Monetari</h2>
+        <h2 className="text-pink-400 text-2xl">💰 Record Monetari</h2>
 
-        <div className="grid grid-cols-3 gap-6">
-          <Card title="🔥 TOP Serie più costose" data={topSerieCostose} type="cost" />
-          <Card title="💎 TOP Volumi singoli" data={topVolumiSingoli} type="single" />
-          <Card title="🏢 TOP Editori più costosi" data={topEditoriCostosi} type="edit" />
+        <div className="grid grid-cols-3 gap-6 mt-4">
+          <Card title="🔥 Serie più costose" data={topSerieCostose} type="cost" glow="bg-pink-500/10"/>
+          <Card title="💎 Volumi singoli" data={topVolumiSingoli} type="single" glow="bg-blue-500/10"/>
+          <Card title="🏢 Editori top" data={topEditori} glow="bg-purple-500/10"/>
         </div>
       </div>
 
       {/* GENERALI */}
       <div>
-        <h2 className="text-blue-400 text-2xl mb-4">📚 Record Generali</h2>
+        <h2 className="text-blue-400 text-2xl">📖 Record Generali</h2>
 
-        <div className="grid grid-cols-3 gap-6">
-          <Card title="📖 TOP Serie più lunghe" data={topLunghe} type="long" />
-          <Card title="🏭 TOP Editori" data={topEditoriSerie} />
-          <Card title="✍️ TOP Autori" data={topAutori} />
+        <div className="grid grid-cols-3 gap-6 mt-4">
+          <Card title="📚 Serie più lunghe" data={topLunghe} type="long" glow="bg-indigo-500/10"/>
+          <Card title="🏭 Editori" data={editori.slice(0,5)} glow="bg-yellow-500/10"/>
+          <Card title="✍️ Autori" data={autori.slice(0,5)} glow="bg-green-500/10"/>
         </div>
       </div>
 
-      {/* MODAL PREMIUM */}
+      {/* MODAL */}
       {selected && (
         <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 animate-fade"
+          className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center"
           onClick={() => setSelected(null)}
         >
           <div
             className="
               w-[700px]
-              bg-gradient-to-br from-[#14141a] to-[#0c0c12]
-              rounded-3xl
-              p-6
-              shadow-[0_0_80px_rgba(0,0,0,0.8)]
-              animate-scaleIn
+              bg-gradient-to-br from-purple-900/80 to-black
+              p-6 rounded-3xl
+              shadow-[0_0_80px_rgba(168,85,247,0.4)]
+              animate-[fade_.3s]
             "
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-2xl font-bold mb-4 text-yellow-400">
+            <h2 className="text-2xl font-bold text-pink-400 mb-3">
               {selected.name}
             </h2>
 
-            <div className="grid grid-cols-2 gap-4 text-sm mb-4 text-zinc-300">
-              <div>Serie: {selected.count}</div>
-              <div>Volumi: {selected.totalVol}</div>
-              <div>Media: €{selected.avgCost.toFixed(2)}</div>
+            <div className="text-sm text-zinc-300 mb-4">
+              Serie: {selected.count} • Volumi: {selected.totalVol}
             </div>
 
-            <div className="mb-3 text-xs">
+            <div className="text-xs mb-3">
               <p className="text-green-400">
-                🟢 Più caro: {selected.best?.Titolo} (€{selected.best?.Costo})
+                ↑ {selected.best?.Titolo} (€{selected.best?.Costo})
               </p>
               <p className="text-red-400">
-                🔴 Più economico: {selected.worst?.Titolo} (€{selected.worst?.Costo})
+                ↓ {selected.worst?.Titolo} (€{selected.worst?.Costo})
               </p>
             </div>
 
-            <div className="max-h-56 overflow-y-auto pr-2 custom-scroll space-y-1">
+            <div className="max-h-56 overflow-y-auto custom-scroll space-y-1">
               {selected.list.map((m, i) => {
                 const isBest = m === selected.best;
                 const isWorst = m === selected.worst;
@@ -216,13 +211,13 @@ export default function RecordsPage({ setRecordsMode }) {
                     key={i}
                     onClick={() => setSelectedManga(m)}
                     className={`
-                      text-xs px-2 py-1 rounded cursor-pointer transition
-                      hover:bg-zinc-800
-                      ${isBest ? "text-green-400" : ""}
-                      ${isWorst ? "text-red-400" : ""}
+                      px-2 py-1 rounded cursor-pointer text-sm
+                      hover:bg-white/10 transition
+                      ${isBest ? "text-green-400 font-semibold" : ""}
+                      ${isWorst ? "text-red-400 font-semibold" : ""}
                     `}
                   >
-                    {m.Titolo} — €{m.Costo}
+                    {m.Titolo}
                   </div>
                 );
               })}
@@ -238,23 +233,15 @@ export default function RecordsPage({ setRecordsMode }) {
         />
       )}
 
-      {/* ANIMAZIONI */}
       <style>{`
-        @keyframes fade { from{opacity:0} to{opacity:1} }
-        @keyframes scaleIn { from{transform:scale(0.9)} to{transform:scale(1)} }
-
-        .animate-fade { animation: fade .3s ease; }
-        .animate-scaleIn { animation: scaleIn .3s ease; }
-
         .custom-scroll::-webkit-scrollbar {
           width: 6px;
         }
         .custom-scroll::-webkit-scrollbar-thumb {
-          background: #444;
+          background: #888;
           border-radius: 10px;
         }
       `}</style>
-
     </div>
   );
 }
