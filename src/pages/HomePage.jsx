@@ -75,35 +75,60 @@ export default function HomePage() {
             </button>
 
             {openMenu && (
-              <div className="absolute right-0 mt-2 w-44 bg-[#151515] rounded-xl border border-white/10">
+  <div className="
+    absolute right-0 mt-2 w-44
+    bg-[#151515]
+    rounded-xl
+    border border-white/10
+    shadow-lg
+    overflow-hidden
+  ">
 
-                <button className="block w-full text-left px-4 py-3 hover:bg-[#1f1f1f]">
-                  Tema
-                </button>
+    <button
+      onClick={()=>setDarkMode(prev => !prev)}
+      className="
+        w-full px-4 py-3
+        text-left
+        hover:bg-[#1f1f1f]
+        border-b border-white/5
+      "
+    >
+      Tema
+    </button>
 
-               <button
-  onClick={()=>{
-    setAdminMode(true);
-    setRecordsMode(false);
-    setOpenMenu(false);
-  }}
->
-  Admin
-</button>
+    <button
+      onClick={()=>{
+        setAdminMode(true);
+        setRecordsMode(false);
+        setOpenMenu(false);
+      }}
+      className="
+        w-full px-4 py-3
+        text-left
+        hover:bg-[#1f1f1f]
+        border-b border-white/5
+      "
+    >
+      Admin
+    </button>
 
-<button
-  onClick={()=>{
-    setRecordsMode(true);
-    setAdminMode(false);
-    setOpenMenu(false);
-  }}
->
-  Records
-</button>
+    <button
+      onClick={()=>{
+        setRecordsMode(true);
+        setAdminMode(false);
+        setOpenMenu(false);
+      }}
+      className="
+        w-full px-4 py-3
+        text-left
+        hover:bg-[#1f1f1f]
+      "
+    >
+      Records
+    </button>
 
-              </div>
-            )}
-
+  </div>
+)}
           </div>
 
         </div>
