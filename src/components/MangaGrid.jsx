@@ -13,36 +13,16 @@ export default function MangaGrid({ search = "", filter = "all" }) {
       .catch(() => setManga([]));
   }, []);
 
-  const safeManga = useMemo(() => {
-    return manga.map((m) => ({
-      ...m,
-      Titolo: m?.Titolo || "",
-      Autore: m?.Autore || "",
-      Genere: m?.Genere || "",
-      CoverURL: m?.CoverURL || "",
-      VolumiPosseduti: Number(m?.VolumiPosseduti) || 0,
-      VolumiTotali: m?.VolumiTotali ? Number(m.VolumiTotali) : null
-    }));
-  }, [manga]);
-
   const enriched = useMemo(() => {
-    return safeManga.map((m) => {
-      const owned = m.VolumiPosseduti;
-      const total = m.VolumiTotali;
+    return manga.map((m) => {
+      const owned = Number(m.VolumiPosseduti) || 0;
+      const total = Number(m.VolumiTotali) || 0;
+
+      const percent = total ? Math.min((owned / total) * 100, 100) : 0;
 
       let status = "ongoing";
-      let percent = 50;
-
-      if (total) {
-        percent = Math.min((owned / total) * 100, 100);
-
-        if (owned >= total) {
-          status = "completed";
-          percent = 100;
-        } else {
-          status = "to_complete";
-        }
-      }
+      if (total && owned >= total) status = "completed";
+      else if (total) status = "to_complete";
 
       return {
         ...m,
@@ -50,43 +30,48 @@ export default function MangaGrid({ search = "", filter = "all" }) {
         status
       };
     });
-  }, [safeManga]);
+  }, [manga]);
 
   const fuse = useMemo(() => {
-    if (!enriched.length) return null;
-
     return new Fuse(enriched, {
       keys: ["Titolo", "Autore", "Genere"],
-      threshold: 0.3,
-      includeScore: true,
-      ignoreLocation: true
+      threshold: 0.3
     });
   }, [enriched]);
 
   const searched = useMemo(() => {
-    const q = search.trim();
-    if (!q || !fuse) return enriched;
-
-    return fuse.search(q).map((r) => r.item);
+    if (!search) return enriched;
+    return fuse.search(search).map((r) => r.item);
   }, [search, fuse, enriched]);
 
   const filtered = useMemo(() => {
     switch (filter) {
       case "completed":
         return searched.filter((m) => m.status === "completed");
-      case "to_complete":
-        return searched.filter((m) => m.status === "to_complete");
+
       case "ongoing":
         return searched.filter((m) => m.status === "ongoing");
+
+      case "to_complete":
+        return searched.filter((m) => m.status === "to_complete");
+
+      case "short":
+        return searched.filter(
+          (m) => m.VolumiTotali && m.VolumiTotali < 8
+        );
+
+      case "oneshot":
+        return searched.filter((m) => m.VolumiPosseduti === 1);
+
       default:
         return searched;
     }
   }, [searched, filter]);
 
   function getColor(m) {
-    if (m.status === "completed") return "bg-green-500";
-    if (m.status === "to_complete") return "bg-orange-500";
-    return "bg-red-500";
+    if (m.status === "completed") return "bg-green-400";
+    if (m.status === "to_complete") return "bg-orange-400";
+    return "bg-red-400";
   }
 
   return (
@@ -97,48 +82,37 @@ export default function MangaGrid({ search = "", filter = "all" }) {
           <div
             key={m.Id || index}
             onClick={() => setSelectedManga(m)}
-            className="group cursor-pointer transition-all duration-300 hover:scale-[1.05]"
+            className="group cursor-pointer hover:scale-[1.05] transition-all"
           >
+            <div className="
+              relative rounded-[20px] overflow-hidden
+              bg-[#141414]
+              border border-white/10
+              group-hover:border-yellow-400
+              group-hover:shadow-[0_0_25px_rgba(250,204,21,0.3)]
+              transition-all duration-300
+            ">
 
-            {/* CARD */}
-            <div
-              className="
-                relative rounded-[20px] overflow-hidden
-                bg-[#141414]
-                border border-white/10
-                transition-all duration-300
-                group-hover:border-yellow-400
-                group-hover:shadow-[0_0_25px_rgba(250,204,21,0.3)]
-              "
-            >
-
-              {/* COVER */}
               <img
                 src={
                   m.CoverURL?.startsWith("http")
                     ? m.CoverURL
                     : "https://placehold.co/300x450?text=MangaVault"
                 }
-                alt={m.Titolo}
                 className="
                   w-full h-[190px] object-cover
-                  transition-all duration-500
+                  transition duration-500
                   group-hover:scale-110
                 "
               />
 
-              {/* CONTENT */}
               <div className="p-3">
 
-                <h3 className="
-                  text-sm font-bold text-white
-                  group-hover:text-yellow-400
-                  transition
-                ">
+                <h3 className="text-sm font-bold text-white group-hover:text-yellow-400 transition">
                   {m.Titolo}
                 </h3>
 
-                <p className="text-[11px] text-zinc-400 mt-1 truncate">
+                <p className="text-[11px] text-zinc-400 truncate">
                   {m.Genere || "Nessun genere"}
                 </p>
 
@@ -151,7 +125,6 @@ export default function MangaGrid({ search = "", filter = "all" }) {
                         ? "In corso"
                         : `${m.percent.toFixed(0)}%`}
                     </span>
-
                     <span>
                       {m.VolumiTotali
                         ? `${m.VolumiPosseduti}/${m.VolumiTotali}`
@@ -161,16 +134,22 @@ export default function MangaGrid({ search = "", filter = "all" }) {
 
                   <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
                     <div
-                      className={`h-full ${getColor(m)} transition-all duration-500`}
+                      className={`
+                        h-full ${getColor(m)}
+                        transition-all duration-500
+                        animate-pulse
+                      `}
                       style={{ width: `${m.percent}%` }}
                     />
                   </div>
+
                 </div>
 
               </div>
             </div>
           </div>
         ))}
+
       </div>
 
       {selectedManga && (
@@ -179,6 +158,16 @@ export default function MangaGrid({ search = "", filter = "all" }) {
           onClose={() => setSelectedManga(null)}
         />
       )}
+
+      <style>
+        {`
+        @keyframes pulse {
+          0% { opacity: .6 }
+          50% { opacity: 1 }
+          100% { opacity: .6 }
+        }
+        `}
+      </style>
     </>
   );
 }
