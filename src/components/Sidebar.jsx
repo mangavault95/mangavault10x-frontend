@@ -125,7 +125,7 @@ export default function Sidebar() {
                 hover:shadow-[0_0_10px_rgba(250,204,21,0.3)]
                 transition cursor-pointer
               "
-              onClick={() => setSelected(m)}
+              onClick={() => window.dispatchEvent(new CustomEvent("openMangaDetail", { detail: m }))}
             >
               <img src={m.CoverURL} className="w-8 h-10 rounded" />
               <div className="text-sm truncate">{m.Titolo}</div>
