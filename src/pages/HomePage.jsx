@@ -13,7 +13,7 @@ export default function HomePage() {
   const [openMenu, setOpenMenu] = useState(false);
 
   useEffect(() => {
-    getManga().then((d) => setMangaList(d || []));
+    getManga().then(d => setMangaList(d || []));
   }, []);
 
   useEffect(() => {
@@ -45,94 +45,74 @@ export default function HomePage() {
         <TopHero manga={mangaList} onSelect={setSelectedManga} />
 
         {/* HEADER */}
-        <div className="flex justify-between items-center gap-4">
+        <div className="flex justify-between items-center">
 
-  <h2 className="text-2xl font-bold">La Mia Collezione</h2>
+          <h2 className="text-2xl font-bold">La Mia Collezione</h2>
 
-  {/* SEARCH NUOVA */}
-  <div className="
-    flex items-center gap-3 px-4 py-2
-    rounded-full
-    bg-gradient-to-r from-[#1a1a1a] to-[#111]
-    border border-white/10
-    shadow-inner
-  ">
-    <span className="text-zinc-400 text-sm">🔍</span>
-    <input
-      value={search}
-      onChange={(e)=>setSearch(e.target.value)}
-      placeholder="Cerca manga..."
-      className="
-        bg-transparent outline-none text-sm
-        placeholder:text-zinc-500
-        w-56
-      "
-    />
-  </div>
+          {/* SEARCH BELLA */}
+          <div className="
+            flex items-center gap-3 px-5 py-2
+            bg-[#1a1a1a]
+            rounded-full border border-white/10
+          ">
+            <span className="text-zinc-500">🔍</span>
+            <input
+              value={search}
+              onChange={(e)=>setSearch(e.target.value)}
+              placeholder="Cerca manga..."
+              className="bg-transparent outline-none w-56 text-sm"
+            />
+          </div>
 
-  {/* HAMBURGER UNICO */}
-  <div className="relative">
+          {/* HAMBURGER */}
+          <div className="relative">
 
-    <button
-      onClick={()=>setOpenMenu(prev=>!prev)}
-      className="
-        w-10 h-10 rounded-xl
-        bg-[#1a1a1a]
-        border border-white/10
-        hover:border-yellow-400
-        transition
-      "
-    >
-      ☰
-    </button>
+            <button
+              onClick={()=>setOpenMenu(p=>!p)}
+              className="w-10 h-10 bg-[#1a1a1a] border border-white/10 rounded-xl"
+            >
+              ☰
+            </button>
 
-    {openMenu && (
-      <div className="
-        absolute right-0 mt-2 w-44
-        rounded-xl overflow-hidden
-        bg-[#151515]
-        border border-white/10
-        shadow-[0_10px_30px_rgba(0,0,0,0.6)]
-      ">
-        <button
-          className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f]"
-        >
-          Tema
-        </button>
+            {openMenu && (
+              <div className="absolute right-0 mt-2 w-44 bg-[#151515] rounded-xl border border-white/10">
 
-        <button
-          onClick={()=>window.location.href="/admin"}
-          className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f]"
-        >
-          Admin
-        </button>
+                <button className="block w-full text-left px-4 py-3 hover:bg-[#1f1f1f]">
+                  Tema
+                </button>
 
-        <button
-          onClick={()=>window.location.href="/records"}
-          className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f]"
-        >
-          Records
-        </button>
-      </div>
-    )}
+                <button
+                  onClick={()=>window.location.href="/admin"}
+                  className="block w-full text-left px-4 py-3 hover:bg-[#1f1f1f]"
+                >
+                  Admin
+                </button>
 
-  </div>
+                <button
+                  onClick={()=>window.location.href="/records"}
+                  className="block w-full text-left px-4 py-3 hover:bg-[#1f1f1f]"
+                >
+                  Records
+                </button>
 
-</div>
+              </div>
+            )}
+
+          </div>
+
+        </div>
 
         {/* FILTRI */}
         <div className="flex gap-2 flex-wrap">
-          {filters.map((f) => (
+          {filters.map(f => (
             <button
               key={f.key}
-              onClick={() => setFilter(f.key)}
+              onClick={()=>setFilter(f.key)}
               className={`
-                px-4 py-2 rounded-xl text-sm transition
-                ${
-                  filter === f.key
-                    ? "bg-yellow-400 text-black"
-                    : "bg-[#1a1a1a] border border-white/10"
-                }
+                px-4 py-2 rounded-xl text-sm
+                ${filter === f.key
+                  ? "bg-yellow-400 text-black"
+                  : "bg-[#1a1a1a] border border-white/10"}
               `}
             >
               {f.label}
@@ -147,9 +127,10 @@ export default function HomePage() {
       {selectedManga && (
         <MangaDetail
           manga={selectedManga}
-          onClose={() => setSelectedManga(null)}
+          onClose={()=>setSelectedManga(null)}
         />
       )}
+
     </div>
   );
 }
