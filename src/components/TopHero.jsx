@@ -25,49 +25,50 @@ export default function TopHero({ manga, onSelect }) {
   const currentManga = latest[current];
 
   return (
-    <div className="relative w-full h-[340px] rounded-2xl overflow-hidden border border-white/10 shadow-xl">
+    <div className="
+      relative w-full h-[340px]
+      rounded-2xl overflow-hidden
+      bg-[#141414]
+      border border-white/10
+      shadow-[0_0_40px_rgba(0,0,0,0.6)]
+      hover:shadow-[0_0_60px_rgba(250,204,21,0.2)]
+      transition
+    ">
 
-      {/* BACKGROUND */}
+      {/* BG */}
       <img
         src={currentManga?.CoverURL || "https://placehold.co/1200x400"}
         className="absolute inset-0 w-full h-full object-cover opacity-20 blur-sm scale-110"
       />
 
-      {/* GRADIENT */}
       <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
 
-      {/* CONTENUTO */}
-      <div
-        className={`relative z-10 h-full flex items-center px-10 transition-opacity duration-300 ${
-          fade ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        {/* COVER */}
+      <div className={`relative z-10 h-full flex items-center px-10 transition-opacity duration-300 ${fade ? "opacity-100" : "opacity-0"}`}>
+
         <img
           src={currentManga?.CoverURL || "https://placehold.co/300x450"}
           className="w-40 h-[260px] object-cover rounded-xl shadow-lg"
         />
 
-        {/* TESTI */}
         <div className="ml-8 max-w-xl">
 
-          <h2 className="text-3xl font-bold text-white mb-3">
+          <h2 className="text-3xl font-bold text-white mb-2">
             {currentManga?.Titolo}
           </h2>
 
-          <p className="text-sm text-zinc-400 mb-6 line-clamp-3">
-            {(currentManga?.Trama || "").slice(0, 160)}...
+          <p className="text-sm text-zinc-400 mb-5 line-clamp-3">
+            {(currentManga?.Trama || "").slice(0, 150)}...
           </p>
 
-          {/* BOTTONE */}
           <button
             onClick={() => onSelect(currentManga)}
             className="
               px-6 py-2 rounded-xl
-              bg-yellow-500 text-black font-semibold
-              shadow-lg
-              hover:bg-yellow-400 hover:scale-105
-              transition-all duration-200
+              bg-yellow-400 text-black font-semibold
+              hover:bg-yellow-300
+              hover:scale-105
+              hover:shadow-[0_0_12px_rgba(250,204,21,0.5)]
+              transition
             "
           >
             ✦ Dettagli
@@ -75,29 +76,20 @@ export default function TopHero({ manga, onSelect }) {
         </div>
       </div>
 
-      {/* DOTS */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
         {latest.map((_, i) => (
           <button
             key={i}
-            onClick={() => {
-              setFade(false);
-              setTimeout(() => {
-                setCurrent(i);
-                setFade(true);
-              }, 200);
-            }}
-            className={`transition-all rounded-full ${
+            onClick={() => setCurrent(i)}
+            className={`rounded-full ${
               i === current
                 ? "w-4 h-4 bg-yellow-400"
-                : "w-3 h-3 bg-white/30 hover:bg-white/60"
+                : "w-3 h-3 bg-white/30"
             }`}
           />
         ))}
       </div>
 
-      {/* BORDER */}
-      <div className="absolute inset-0 rounded-2xl ring-1 ring-white/10" />
     </div>
   );
 }
