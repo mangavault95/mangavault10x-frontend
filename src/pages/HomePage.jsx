@@ -10,6 +10,7 @@ export default function HomePage() {
   const [filter, setFilter] = useState("all");
   const [selectedManga, setSelectedManga] = useState(null);
   const [mangaList, setMangaList] = useState([]);
+  const [openMenu, setOpenMenu] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -17,6 +18,13 @@ export default function HomePage() {
       setMangaList(data || []);
     }
     load();
+  }, []);
+
+  // ✅ IMPORTANTE: listener per sidebar
+  useEffect(() => {
+    const handler = (e) => setSelectedManga(e.detail);
+    window.addEventListener("openMangaDetail", handler);
+    return () => window.removeEventListener("openMangaDetail", handler);
   }, []);
 
   const filters = [
@@ -46,20 +54,67 @@ export default function HomePage() {
 
           <h2 className="text-2xl font-bold">La Mia Collezione</h2>
 
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cerca manga..."
-            className="
-              px-4 py-2 rounded-xl w-64
-              bg-[#1a1a1a]
-              border border-white/10
-              text-white
-              focus:border-yellow-400
-              focus:shadow-[0_0_12px_rgba(250,204,21,0.4)]
-              outline-none transition
-            "
-          />
+          {/* SEARCH */}
+          <div className="relative">
+
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cerca manga..."
+              className="
+                pl-10 pr-4 py-2 rounded-xl w-64
+                bg-[#1a1a1a]
+                border border-white/10
+                focus:border-yellow-400
+                focus:shadow-[0_0_12px_rgba(250,204,21,0.4)]
+                outline-none transition
+              "
+            />
+
+            <div className="absolute left-3 top-2 text-zinc-500">
+              🔍
+            </div>
+
+          </div>
+
+          {/* MENU */}
+          <div className="relative">
+
+            <button
+              onClick={() => setOpenMenu(prev => !prev)}
+              className="
+                w-10 h-10 rounded-full
+                bg-[#1a1a1a]
+                border border-white/10
+                hover:border-yellow-400
+                hover:shadow-[0_0_12px_rgba(250,204,21,0.4)]
+              "
+            >
+              👑
+            </button>
+
+            {openMenu && (
+              <div className="
+                absolute right-0 mt-2 w-40
+                bg-[#141414]
+                border border-white/10
+                rounded-xl
+                overflow-hidden
+              ">
+                <div className="p-3 hover:bg-zinc-800 cursor-pointer">
+                  Toggle Theme
+                </div>
+                <div className="p-3 hover:bg-zinc-800 cursor-pointer">
+                  Admin
+                </div>
+                <div className="p-3 hover:bg-zinc-800 cursor-pointer">
+                  Records
+                </div>
+              </div>
+            )}
+
+          </div>
+
         </div>
 
         {/* FILTRI */}
@@ -69,12 +124,10 @@ export default function HomePage() {
               key={f.key}
               onClick={() => setFilter(f.key)}
               className={`
-                px-4 py-2 rounded-xl text-sm transition-all
-                ${
-                  filter === f.key
-                    ? "bg-yellow-400 text-black shadow-[0_0_10px_rgba(250,204,21,0.6)]"
-                    : "bg-[#1a1a1a] hover:bg-[#222] hover:border-yellow-400 hover:shadow-[0_0_10px_rgba(250,204,21,0.3)] border border-white/10"
-                }
+                px-4 py-2 rounded-xl text-sm
+                ${filter === f.key
+                  ? "bg-yellow-400 text-black"
+                  : "bg-[#1a1a1a] hover:bg-[#222] border border-white/10"}
               `}
             >
               {f.label}
@@ -82,31 +135,16 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* GRID */}
         <MangaGrid search={search} filter={filter} />
 
       </div>
 
-      {/* DETAIL */}
       {selectedManga && (
         <MangaDetail
           manga={selectedManga}
           onClose={() => setSelectedManga(null)}
         />
       )}
-
-      {/* SCROLLBAR */}
-      <style>
-        {`
-        ::-webkit-scrollbar {
-          width: 8px;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: #555;
-          border-radius: 10px;
-        }
-        `}
-      </style>
 
     </div>
   );
