@@ -1,23 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import MangaDetail from "./MangaDetail";
 
 export default function MangaGrid({ searchResults = [], filter }) {
-  let list = [...searchResults];
-  const [manga, setManga] = useState([]);
-  const [selectedManga, setSelectedManga] = useState(null);
 
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
-      .then(r => r.json())
-      .then(d => setManga(Array.isArray(d) ? d : []))
-      .catch(() => setManga([]));
-  }, []);
+  const [selectedManga, setSelectedManga] = useState(null);
 
   function getStatus(m){
     const total = Number(m.VolumiTotali);
     const owned = Number(m.VolumiPosseduti);
 
-    if (!total) return "ongoing";        // niente totale = in corso
+    if (!total) return "ongoing";
     if (owned >= total) return "completed";
     return "to_complete";
   }
@@ -30,15 +22,9 @@ export default function MangaGrid({ searchResults = [], filter }) {
 
   const filtered = useMemo(() => {
 
-    let list = [...manga].sort((a,b)=>
+    let list = [...searchResults].sort((a,b)=>
       (a.Titolo||"").localeCompare(b.Titolo||"")
     );
-
-    if(search){
-      list = list.filter(m =>
-        (m.Titolo||"").toLowerCase().includes(search.toLowerCase())
-      );
-    }
 
     switch(filter){
 
@@ -59,19 +45,21 @@ export default function MangaGrid({ searchResults = [], filter }) {
 
       case "short":
         return list.filter(m =>
-          m.VolumiTotali >= 2 && m.VolumiTotali < 8
+          Number(m.VolumiTotali) >= 2 &&
+          Number(m.VolumiTotali) < 8
         );
 
       case "oneshot":
         return list.filter(m =>
-          m.VolumiPosseduti === 1 && m.VolumiTotali === 1
+          Number(m.VolumiPosseduti) === 1 &&
+          Number(m.VolumiTotali) === 1
         );
 
       default:
         return list;
     }
 
-  }, [manga, search, filter]);
+  }, [searchResults, filter]);
 
   return (
     <>
@@ -85,9 +73,11 @@ export default function MangaGrid({ searchResults = [], filter }) {
           const status = getStatus(m);
 
           return(
-            <div key={m.ID}
+            <div
+              key={m.ID}
               onClick={()=>setSelectedManga(m)}
-              className="group cursor-pointer hover:scale-[1.05] transition">
+              className="group cursor-pointer hover:scale-[1.05] transition"
+            >
 
               <div className="bg-[#141414] rounded-xl border border-white/10 overflow-hidden">
 
