@@ -135,7 +135,7 @@ export default function Sidebar() {
 
     <input
       className="w-full bg-zinc-900 p-2 rounded-lg text-sm outline-none border border-zinc-800 focus:border-yellow-500 transition"
-      placeholder="Cerca manga..."
+      placeholder="Ora sto leggendo..."
       value={search}
       onChange={(e) => setSearch(e.target.value)}
     />
