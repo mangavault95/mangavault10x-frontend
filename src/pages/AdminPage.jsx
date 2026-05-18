@@ -10,7 +10,11 @@ export default function AdminPage() {
 
   async function loadManga() {
     const data = await getManga();
-    setMangaList(data || []);
+    setMangaList(
+  (data || []).sort((a, b) =>
+    (a.Titolo || "").localeCompare(b.Titolo || "")
+  )
+);
     return data;
   }
 
@@ -178,12 +182,22 @@ export default function AdminPage() {
                 />
 
                 <input
-                  value={selected.Autore || ""}
-                  onChange={e =>
-                    setSelected({ ...selected, Autore: e.target.value })
-                  }
-                  className="w-full p-3 bg-zinc-900 rounded-xl"
-                />
+  value={selected.Autore || ""}
+  onChange={e =>
+    setSelected({ ...selected, Autore: e.target.value })
+  }
+  className="w-full p-3 bg-zinc-900 rounded-xl"
+/>
+
+<input
+  value={selected.CoverURL || ""}
+  onChange={e =>
+    setSelected({ ...selected, CoverURL: e.target.value })
+  }
+  placeholder="URL Cover"
+  className="w-full p-3 bg-zinc-900 rounded-xl"
+/>
+
 
                 <textarea
                   value={selected.Trama || ""}
