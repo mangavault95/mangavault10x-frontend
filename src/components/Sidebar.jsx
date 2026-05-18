@@ -24,7 +24,7 @@ export default function Sidebar() {
     const total = Number(selected.VolumiTotali) || 0;
     const current = Number(currentVol) || 0;
 
-    return total ? (current / total) * 100 : 0;
+    return total ? Math.min((current / total) * 100, 100) : 0;
   }, [selected, currentVol]);
 
   return (
@@ -32,34 +32,33 @@ export default function Sidebar() {
 
       {/* LOGO */}
       <div className="flex items-center gap-2 text-2xl font-black">
-        <div className="w-5 h-5 bg-yellow-400 rounded shadow" />
+        <div className="w-5 h-5 bg-yellow-400 rounded" />
         MangaVault<span className="text-yellow-400">10X</span>
       </div>
 
-      {/* CURRENT READING */}
+      {/* CURRENT */}
       {selected && (
         <div className="p-3 bg-[#141414] rounded-xl border border-white/10">
 
           <div className="flex gap-2">
-            <img src={selected.CoverURL} className="w-12 h-16 rounded" />
+            src={selected.CoverURL}
+              className="w-10 h-14 rounded object-cover" />
             <div>
               <p className="text-xs text-zinc-400">Stai leggendo</p>
               <p className="text-sm">{selected.Titolo}</p>
             </div>
           </div>
 
-          <div className="mt-2">
-            <div className="text-xs text-zinc-400">
-              {currentVol} / {selected.VolumiTotali}
-            </div>
-            <div className="h-2 bg-zinc-800 rounded">
-              <div
-                className="h-full bg-yellow-400 animate-pulse"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+          <div className="mt-2 text-xs text-zinc-400">
+            Vol {currentVol} / {selected.VolumiTotali || "?"}
           </div>
 
+          <div className="h-2 bg-zinc-800 rounded overflow-hidden mt-1">
+            <div
+              className="h-full bg-yellow-400 animate-pulse"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
         </div>
       )}
 
@@ -77,13 +76,12 @@ export default function Sidebar() {
             }
             className="flex gap-2 p-2 bg-[#141414] rounded-xl mb-2 cursor-pointer hover:bg-[#1a1a1a]"
           >
-            <img src={m.CoverURL} className="w-8 h-10 rounded" />
-            <span className="text-sm">{m.Titolo}</span>
+            src={m.CoverURL} className="w-8 h-10 rounded object-cover" />
+            <span className="text-sm truncate">{m.Titolo}</span>
           </div>
         ))}
       </div>
 
-      {/* STATS */}
       <StatsPanel />
 
     </div>
