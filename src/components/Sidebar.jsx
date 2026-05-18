@@ -162,59 +162,55 @@ export default function Sidebar() {
 
 
       {/* CURRENT READING */}
-      {selected && (
-        <div
-          className="mt-4 space-y-3"
-          onContextMenu={(e) => {
-            e.preventDefault();
-            resetSelection();
-          }}
-        >
+     {selected && (
+  <div
+    className="mt-4 space-y-3 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800"
+    onContextMenu={(e) => {
+      e.preventDefault();
+      resetSelection();
+    }}
+  >
 
-          <div className="flex items-center gap-2">
-            <img
-              src={selected.CoverURL}
-              className="w-8 h-10 rounded object-cover"
-            />
+    <div className="flex items-center gap-3">
+      <img
+        src={selected.CoverURL}
+        className="w-10 h-12 rounded object-cover"
+      />
 
-            <div className="text-xs text-zinc-300">
-              {selected.Titolo}
-            </div>
-          </div>
+      <div>
+        <p className="text-[11px] text-zinc-500">Stai leggendo</p>
+        <p className="text-sm font-semibold">{selected.Titolo}</p>
+      </div>
+    </div>
 
-          <div className="flex items-center justify-between text-[11px] text-zinc-400">
-            <span>📖 Volume</span>
+    <input
+      type="number"
+      className="w-full bg-black/40 p-2 rounded-lg text-sm border border-zinc-700 focus:border-yellow-500"
+      value={currentVol}
+      onChange={(e) => setCurrentVol(e.target.value)}
+      placeholder="Volume attuale"
+    />
 
-            <span>
-              {currentVol || 0}
-              <span className="text-zinc-600">
-                {" "} / {selected.VolumiTotali || "?"}
-              </span>
-            </span>
-          </div>
+    <div className="flex justify-between text-[11px] text-zinc-400">
+      <span>Volume</span>
+      <span>
+        {currentVol || 0} / {selected.VolumiTotali || "?"}
+      </span>
+    </div>
 
-          <input
-            type="number"
-            className="w-full bg-zinc-900 p-2 rounded-lg text-sm"
-            value={currentVol}
-            onChange={(e) => setCurrentVol(e.target.value)}
-          />
+    <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+      <div
+        className="h-full bg-yellow-500 transition-all duration-500"
+        style={{ width: `${progress}%` }}
+      />
+    </div>
 
-          <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-yellow-500 transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+    <p className="text-[10px] text-zinc-600">
+      tasto destro per rimuovere
+    </p>
+  </div>
+)}
 
-          <div className="text-[10px] text-zinc-600">
-            tasto destro per rimuovere
-          </div>
-
-        </div>
-      )}
-
-      {/* LATEST */}
       {/* LATEST */}
 <div className="mt-4">
   <div className="flex items-center justify-between mb-2">
