@@ -3,13 +3,15 @@ import StatsPanel from "./StatsPanel";
 
 export default function Sidebar() {
   const [manga, setManga] = useState([]);
+
   const selected = JSON.parse(localStorage.getItem("mv_selected_manga"));
   const currentVol = localStorage.getItem("mv_current_vol") || "";
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
       .then((res) => res.json())
-      .then((data) => setManga(data || []));
+      .then((data) => setManga(Array.isArray(data) ? data : []))
+      .catch(() => setManga([]));
   }, []);
 
   const latest = useMemo(() => {
@@ -28,11 +30,11 @@ export default function Sidebar() {
   }, [selected, currentVol]);
 
   return (
-    <div className="h-screen flex flex-col p-4 gap-4">
+    <div className="h-screen flex flex-col p-4 gap-4 overflow-hidden">
 
       {/* LOGO */}
       <div className="flex items-center gap-2 text-2xl font-black">
-        <div className="w-5 h-5 bg-yellow-400 rounded" />
+        <div className="w-5 h-5 bg-yellow-400 rounded"></div>
         MangaVault<span className="text-yellow-400">10X</span>
       </div>
 
@@ -42,14 +44,16 @@ export default function Sidebar() {
 
           <div className="flex gap-2">
             <img
-              src={selected.CoverURL || "https://placehold.co/60x90"}
-              alt=""
+              src={
+                selected.CoverURL ||
+                "https://placehold.co/100x150?text=Manga"
+              }
               className="w-10 h-14 rounded object-cover"
             />
 
-            <div>
+            <div className="overflow-hidden">
               <p className="text-xs text-zinc-400">Stai leggendo</p>
-              <p className="text-sm">{selected.Titolo}</p>
+              <p className="text-sm truncate">{selected.Titolo}</p>
             </div>
           </div>
 
@@ -73,20 +77,24 @@ export default function Sidebar() {
 
         {latest.map((m) => (
           <div
-            key={m.Id}
+            key={m.ID}
             onClick={() =>
               window.dispatchEvent(
                 new CustomEvent("openMangaDetail", { detail: m })
               )
             }
             className="
-              flex gap-2 p-2 rounded-xl mb-2 cursor-pointer
-              bg-[#141414] hover:bg-[#1a1a1a]
+              flex gap-2 p-2 mb-2 rounded-xl
+              bg-[#141414]
+              hover:bg-[#1a1a1a]
+              cursor-pointer
             "
           >
             <img
-              src={m.CoverURL || "https://placehold.co/60x90"}
-              alt=""
+              src={
+                m.CoverURL ||
+                "https://placehold.co/100x150?text=Manga"
+              }
               className="w-8 h-10 rounded object-cover"
             />
 
@@ -95,6 +103,11 @@ export default function Sidebar() {
         ))}
       </div>
 
-      <StatsPanel />
+      {/* STATS */}
+      <div className="mt-auto">
+        <StatsPanel />
+      </div>
+
     </div>
   );
+}
