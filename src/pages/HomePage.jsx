@@ -45,40 +45,80 @@ export default function HomePage() {
         <TopHero manga={mangaList} onSelect={setSelectedManga} />
 
         {/* HEADER */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center gap-4">
 
-          <h2 className="text-2xl font-bold">La Mia Collezione</h2>
+  <h2 className="text-2xl font-bold">La Mia Collezione</h2>
 
-          {/* SEARCH */}
-          <div className="flex items-center gap-2 bg-[#1a1a1a] px-3 py-2 rounded-xl border border-white/10">
-            <span className="text-zinc-500">🔍</span>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cerca manga..."
-              className="bg-transparent outline-none w-52"
-            />
-          </div>
+  {/* SEARCH NUOVA */}
+  <div className="
+    flex items-center gap-3 px-4 py-2
+    rounded-full
+    bg-gradient-to-r from-[#1a1a1a] to-[#111]
+    border border-white/10
+    shadow-inner
+  ">
+    <span className="text-zinc-400 text-sm">🔍</span>
+    <input
+      value={search}
+      onChange={(e)=>setSearch(e.target.value)}
+      placeholder="Cerca manga..."
+      className="
+        bg-transparent outline-none text-sm
+        placeholder:text-zinc-500
+        w-56
+      "
+    />
+  </div>
 
-          {/* MENU */}
-          <div className="relative">
-            <button
-              onClick={() => setOpenMenu((prev) => !prev)}
-              className="w-10 h-10 rounded-xl bg-[#1a1a1a] border border-white/10"
-            >
-              ☰
-            </button>
+  {/* HAMBURGER UNICO */}
+  <div className="relative">
 
-            {openMenu && (
-              <div className="absolute right-0 mt-2 bg-[#141414] rounded-xl border w-40">
-                <div className="p-3 hover:bg-zinc-800 cursor-pointer">Tema</div>
-                <div className="p-3 hover:bg-zinc-800 cursor-pointer">Admin</div>
-                <div className="p-3 hover:bg-zinc-800 cursor-pointer">Records</div>
-              </div>
-            )}
-          </div>
+    <button
+      onClick={()=>setOpenMenu(prev=>!prev)}
+      className="
+        w-10 h-10 rounded-xl
+        bg-[#1a1a1a]
+        border border-white/10
+        hover:border-yellow-400
+        transition
+      "
+    >
+      ☰
+    </button>
 
-        </div>
+    {openMenu && (
+      <div className="
+        absolute right-0 mt-2 w-44
+        rounded-xl overflow-hidden
+        bg-[#151515]
+        border border-white/10
+        shadow-[0_10px_30px_rgba(0,0,0,0.6)]
+      ">
+        <button
+          className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f]"
+        >
+          Tema
+        </button>
+
+        <button
+          onClick={()=>window.location.href="/admin"}
+          className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f]"
+        >
+          Admin
+        </button>
+
+        <button
+          onClick={()=>window.location.href="/records"}
+          className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f]"
+        >
+          Records
+        </button>
+      </div>
+    )}
+
+  </div>
+
+</div>
 
         {/* FILTRI */}
         <div className="flex gap-2 flex-wrap">
