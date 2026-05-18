@@ -16,20 +16,25 @@ export default function MangaGrid({ search = "", filter = "all" }) {
       (a.Titolo || "").localeCompare(b.Titolo || "")
     );
 
-    if (search)
+    if (search) {
       list = list.filter((m) =>
         m.Titolo.toLowerCase().includes(search.toLowerCase())
       );
+    }
 
     switch (filter) {
       case "short":
         return list.filter(
           (m) => m.VolumiTotali >= 2 && m.VolumiTotali < 8
         );
+
       case "oneshot":
         return list.filter(
-          (m) => m.VolumiTotali === 1 && m.VolumiPosseduti === 1
+          (m) =>
+            Number(m.VolumiPosseduti) === 1 &&
+            Number(m.VolumiTotali) === 1
         );
+
       default:
         return list;
     }
@@ -40,29 +45,32 @@ export default function MangaGrid({ search = "", filter = "all" }) {
       <div className="grid grid-cols-6 gap-5">
 
         {filtered.map((m) => {
-          const total = m.VolumiTotali;
-          const owned = m.VolumiPosseduti;
+          const total = Number(m.VolumiTotali) || 0;
+          const owned = Number(m.VolumiPosseduti) || 0;
+          const percent = total ? (owned / total) * 100 : 0;
 
           return (
             <div
               key={m.Id}
               onClick={() => setSelectedManga(m)}
-              className="group cursor-pointer hover:scale-105 transition"
+              className="group cursor-pointer hover:scale-[1.05] transition"
             >
 
-              <div className="bg-[#141414] rounded-xl overflow-hidden border border-white/10">
+              <div className="
+                bg-[#141414]
+                rounded-xl overflow-hidden
+                border border-white/10
+              ">
 
-                src={
-                    m.CoverURL || "https://placehold.co/300x450"
-                  }
-                  className="w-full h-[190px] object-cover"
-                />
+                {m.CoverURL
 
                 <div className="p-3">
 
-                  <h3 className="text-sm font-bold">{m.Titolo}</h3>
+                  <h3 className="text-sm font-bold truncate">
+                    {m.Titolo}
+                  </h3>
 
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-zinc-400 truncate">
                     {m.Genere || "Nessun genere"}
                   </p>
 
@@ -70,8 +78,15 @@ export default function MangaGrid({ search = "", filter = "all" }) {
                     {total ? `${owned}/${total}` : `${owned}+`}
                   </div>
 
-                </div>
+                  {/* PROGRESS */}
+                  <div className="h-1 bg-zinc-800 mt-2 rounded overflow-hidden">
+                    <div
+                      className="h-full bg-yellow-400 animate-pulse"
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
 
+                </div>
               </div>
 
             </div>
