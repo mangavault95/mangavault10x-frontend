@@ -72,94 +72,28 @@ export default function Sidebar() {
     <div className="h-screen flex flex-col p-4 overflow-hidden">
     
       {/* BRAND */}
-<div className="mb-5">
+// SOVRASCRIVI TUTTO (UI ONLY)
 
-  <button
-    onClick={() => window.location.reload()}
-    className="
-      group
-      text-left
-      leading-none
-      transition-all
-      hover:scale-[1.02]
-    "
-  >
+<div className="h-screen flex flex-col p-4 overflow-hidden text-white">
 
-    <div
-      className="
-        text-3xl
-        font-black
-        tracking-tight
-        text-white
-      "
-      style={{
-        textShadow: "0 0 18px rgba(255,255,255,0.08)"
-      }}
-    >
-      MangaVault
-
-      <span
-        className="
-          text-yellow-500
-          ml-1
-          italic
-        "
-        style={{
-          textShadow: "0 0 14px rgba(234,179,8,0.45)"
-        }}
-      >
-        10X
-      </span>
-    </div>
-
-    <div
-      className="
-        h-[2px]
-        w-0
-        bg-yellow-500
-        rounded-full
-        mt-1
-        transition-all
-        duration-300
-        group-hover:w-full
-      "
-    />
-
-  </button>
-
+{/* BRAND */}
+<div className="mb-6">
+  <div className="text-3xl font-black">
+    Manga<span className="text-yellow-400">Vault</span>
+  </div>
 </div>
 
-      {/* SEARCH */}
-{!selected && (
-  <div className="space-y-2">
-
-    <input
-      className="w-full bg-zinc-900 p-2 rounded-lg text-sm outline-none border border-zinc-800 focus:border-yellow-500 transition"
-      placeholder="Ora sto leggendo..."
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-    />
-
-    {results.length > 0 && (
-      <div className="bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800">
-        {results.map((m) => (
-          <div
-            key={m.Id}
-            onClick={() => {
-              setSelected(m);
-              setSearch("");
-            }}
-            className="p-2 text-sm hover:bg-zinc-800 cursor-pointer transition"
-          >
-            {m.Titolo}
-          </div>
-        ))}
-      </div>
-    )}
-
-  </div>
-)}
-
+{/* SEARCH */}
+<input
+  className="
+    w-full p-2 rounded-lg text-sm
+    bg-[#141414]
+    border border-white/10
+    focus:border-yellow-400
+    focus:shadow-[0_0_10px_rgba(250,204,21,0.4)]
+    outline-none transition
+  "
+/>
 
       {/* CURRENT READING */}
      {selected && (
