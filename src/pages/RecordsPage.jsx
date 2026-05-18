@@ -90,7 +90,6 @@ export default function RecordsPage({ setRecordsMode }) {
           border border-white/5
           hover:bg-black/90
           transition-all duration-300
-          hover:translate-x-1
           cursor-pointer
         "
       >
@@ -110,18 +109,14 @@ export default function RecordsPage({ setRecordsMode }) {
     <div
       className="
         relative p-5 rounded-xl
-        bg-[#0a0a0a]/90
+        bg-gradient-to-br from-[#0f0f0f] to-[#050505]
         border border-white/10
         shadow-[0_0_30px_rgba(0,0,0,0.8)]
-        before:absolute before:inset-0
-        before:bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]
-        before:opacity-20 before:rounded-xl
       "
     >
       <h3 className="
         mb-4 text-lg font-bold
-        text-yellow-500
-        uppercase tracking-wider
+        text-yellow-500 uppercase tracking-wide
       ">
         {title}
       </h3>
@@ -137,11 +132,9 @@ export default function RecordsPage({ setRecordsMode }) {
   return (
     <div className="
       min-h-screen text-white p-8 space-y-10
-      bg-[url('https://www.transparenttextures.com/patterns/paper.png')]
-      bg-[#0c0c0c]
+      bg-gradient-to-br from-[#0c0c0c] via-[#080808] to-black
     ">
 
-      {/* FONT */}
       <style>
         {`
           @import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
@@ -169,11 +162,8 @@ export default function RecordsPage({ setRecordsMode }) {
         <span className="text-yellow-500">Records</span>
       </h1>
 
-      {/* MONETARI */}
       <div>
-        <h2 className="text-yellow-500 text-xl uppercase tracking-widest">
-          💰 Record Monetari
-        </h2>
+        <h2 className="text-yellow-500 text-xl uppercase">💰 Record Monetari</h2>
 
         <div className="grid grid-cols-3 gap-6 mt-4">
           <Card title="🔥 Serie più costose" data={topSerieCostose} type="cost"/>
@@ -182,11 +172,8 @@ export default function RecordsPage({ setRecordsMode }) {
         </div>
       </div>
 
-      {/* GENERALI */}
       <div>
-        <h2 className="text-white text-xl uppercase tracking-widest">
-          📚 Record Generali
-        </h2>
+        <h2 className="text-white text-xl uppercase">📚 Record Generali</h2>
 
         <div className="grid grid-cols-3 gap-6 mt-4">
           <Card title="📖 Serie più lunghe" data={topLunghe} type="long"/>
@@ -195,7 +182,6 @@ export default function RecordsPage({ setRecordsMode }) {
         </div>
       </div>
 
-      {/* MODAL */}
       {selected && (
         <div
           className="fixed inset-0 bg-black/80 backdrop-blur flex items-center justify-center"
@@ -225,7 +211,7 @@ export default function RecordsPage({ setRecordsMode }) {
               ↓ {selected.worst?.Titolo}
             </p>
 
-            <div className="max-h-56 overflow-y-auto custom-scroll space-y-1">
+            <div className="max-h-56 overflow-y-auto space-y-1">
               {selected.list.map((m, i) => (
                 <div
                   key={i}
@@ -246,16 +232,6 @@ export default function RecordsPage({ setRecordsMode }) {
           onClose={() => setSelectedManga(null)}
         />
       )}
-
-      <style>{`
-        .custom-scroll::-webkit-scrollbar {
-          width: 5px;
-        }
-        .custom-scroll::-webkit-scrollbar-thumb {
-          background: #999;
-          border-radius: 10px;
-        }
-      `}</style>
 
     </div>
   );
