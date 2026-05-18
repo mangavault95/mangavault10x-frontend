@@ -1,9 +1,11 @@
 import { useEffect, useState, useMemo } from "react";
+import MangaDetail from "../components/MangaDetail";
 
 export default function RecordsPage({ setRecordsMode }) {
   const [manga, setManga] = useState([]);
   const [selected, setSelected] = useState(null);
   const [chart, setChart] = useState(null);
+  const [selectedManga, setSelectedManga] = useState(null);
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
@@ -23,7 +25,6 @@ export default function RecordsPage({ setRecordsMode }) {
     }));
   }, [manga]);
 
-  // GROUP UTILS
   function groupBy(field) {
     const g = {};
     safe.forEach(m => {
@@ -36,6 +37,8 @@ export default function RecordsPage({ setRecordsMode }) {
       count: list.length,
       totalVol: list.reduce((a,b)=>a+b.VolumiPosseduti,0),
       avgCost: list.reduce((a,b)=>a+b.Costo,0)/list.length,
+      best: list.sort((a,b)=>b.Costo-a.Costo)[0],
+      worst: list.sort((a,b)=>a.Costo-b.Costo)[0],
       list
     }));
   }
@@ -43,7 +46,6 @@ export default function RecordsPage({ setRecordsMode }) {
   const editori = groupBy("Editore");
   const autori = groupBy("Autore");
 
-  // TOP
   const topSerieCostose = [...safe]
     .sort((a,b)=> (b.Costo*b.VolumiPosseduti)-(a.Costo*a.VolumiPosseduti))
     .slice(0,5);
@@ -72,18 +74,21 @@ export default function RecordsPage({ setRecordsMode }) {
 
   const medal = ["🥇","🥈","🥉"];
 
-  function open(item, type) {
-    setSelected({item,type});
+  function open(item,type){
+    if(item.Titolo){
+      setSelectedManga(item); // 👉 apre manga detail
+    }else{
+      setSelected({item,type});
+    }
   }
 
   const Row = ({item,index,type})=>{
-    let label=item.Titolo || item.name;
     let value="";
 
     if(type==="cost") value=`€${(item.Costo*item.VolumiPosseduti).toFixed(0)}`;
     else if(type==="single") value=`€${item.Costo}`;
     else if(type==="long") value=`${item.VolumiPosseduti} vol`;
-    else if(type==="editCost") value=`€${item.avgCost.toFixed(2)} (${item.count})`;
+    else if(type==="edit") value=`€${item.avgCost.toFixed(2)} (${item.count})`;
     else value=item.count;
 
     return(
@@ -93,7 +98,7 @@ export default function RecordsPage({ setRecordsMode }) {
       >
         <div className="flex gap-2 text-sm">
           <span>{medal[index] || `#${index+1}`}</span>
-          {label}
+          {item.Titolo || item.name}
         </div>
         <div className="text-yellow-400 font-bold">{value}</div>
       </div>
@@ -117,39 +122,6 @@ export default function RecordsPage({ setRecordsMode }) {
     </div>
   );
 
-  const Chart = ()=>{
-    if(!chart) return null;
-
-    const max=Math.max(...chart.map(d=>{
-      if(d.Costo) return d.Costo*d.VolumiPosseduti;
-      if(d.avgCost) return d.avgCost;
-      return d.count;
-    }));
-
-    return (
-      <div className="bg-zinc-900 p-4 rounded-xl mt-8">
-        {chart.map((d,i)=>{
-          const v=d.Costo?d.Costo*d.VolumiPosseduti:d.avgCost||d.count;
-          return(
-            <div key={i} className="mb-2">
-              <div className="flex justify-between text-xs">
-                <span>{d.Titolo || d.name}</span>
-                <span>{v.toFixed(0)}</span>
-              </div>
-
-              <div className="h-2 bg-zinc-800">
-                <div
-                  className="h-2 bg-yellow-500"
-                  style={{width:`${(v/max)*100}%`}}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen text-white p-8 space-y-10">
 
@@ -167,7 +139,7 @@ export default function RecordsPage({ setRecordsMode }) {
         <div className="grid grid-cols-3 gap-6 mt-4">
           <Card title="🔥 TOP Serie più costose" data={topSerieCostose} type="cost"/>
           <Card title="💎 TOP Volumi singoli" data={topVolumiSingoli} type="single"/>
-          <Card title="🏢 TOP Editori più costosi" data={topEditoriCostosi} type="editCost"/>
+          <Card title="🏢 TOP Editori più costosi" data={topEditoriCostosi} type="edit"/>
         </div>
       </div>
 
@@ -177,61 +149,79 @@ export default function RecordsPage({ setRecordsMode }) {
 
         <div className="grid grid-cols-3 gap-6 mt-4">
           <Card title="📖 TOP Serie più lunghe" data={topLunghe} type="long"/>
-          <Card title="🏭 TOP Editori per serie" data={topEditoriSerie} type="count"/>
+          <Card title="🏭 TOP Editori" data={topEditoriSerie} type="count"/>
           <Card title="✍️ TOP Autori" data={topAutori} type="count"/>
         </div>
       </div>
 
-      <Chart />
-
-      {/* MODAL */}
+      {/* MODAL EDITORI/AUTORI */}
       {selected && (
-        <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center"
-          onClick={()=>setSelected(null)}
-        >
-          <div className="bg-zinc-900 p-6 rounded-2xl w-96"
-            onClick={e=>e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+          onClick={()=>setSelected(null)}>
 
-            <h2 className="text-xl font-bold mb-3">
-              {selected.item.Titolo || selected.item.name}
+          <div
+            className="w-[650px] bg-gradient-to-br from-zinc-900 to-[#0f0f14] p-6 rounded-3xl shadow-2xl"
+            onClick={e=>e.stopPropagation()}
+          >
+
+            <h2 className="text-2xl font-bold mb-4 text-yellow-400">
+              {selected.item.name}
             </h2>
 
-            {"list" in selected.item ? (
-              <>
-                <p className="text-sm text-zinc-400">
-                  Serie: {selected.item.count}
-                </p>
+            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div>Serie: {selected.item.count}</div>
+              <div>Volumi: {selected.item.totalVol}</div>
+              <div>Media: €{selected.item.avgCost.toFixed(2)}</div>
+            </div>
 
-                <p className="text-sm text-zinc-400">
-                  Volumi totali: {selected.item.totalVol}
-                </p>
+            {/* BEST / WORST */}
+            <div className="text-xs mb-3">
+              <p className="text-green-400">
+                🟢 Più caro: {selected.item.best?.Titolo} (€{selected.item.best?.Costo})
+              </p>
+              <p className="text-red-400">
+                🔴 Più economico: {selected.item.worst?.Titolo} (€{selected.item.worst?.Costo})
+              </p>
+            </div>
 
-                <p className="text-sm text-zinc-400">
-                  Prezzo medio: €{selected.item.avgCost.toFixed(2)}
-                </p>
-
-                <div className="mt-3 max-h-40 overflow-auto text-xs text-zinc-500">
-                  {selected.item.list.map((m,i)=>(
-                    <div key={i}>{m.Titolo}</div>
-                  ))}
+            {/* LIST */}
+            <div className="max-h-48 overflow-y-auto pr-2 space-y-1 custom-scroll">
+              {selected.item.list.map((m,i)=>(
+                <div
+                  key={i}
+                  onClick={()=>setSelectedManga(m)}
+                  className={`text-xs hover:bg-zinc-800 px-2 py-1 rounded cursor-pointer
+                    ${m.Costo > selected.item.avgCost ? "text-green-400" : "text-red-400"}`}
+                >
+                  {m.Titolo} — €{m.Costo}
                 </div>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-zinc-400">
-                  Volumi: {selected.item.VolumiPosseduti}
-                </p>
-
-                <p className="text-sm text-zinc-400">
-                  Prezzo: €{selected.item.Costo}
-                </p>
-              </>
-            )}
+              ))}
+            </div>
 
           </div>
         </div>
       )}
+
+      {/* MANGA DETAIL */}
+      {selectedManga && (
+        <MangaDetail
+          manga={selectedManga}
+          onClose={()=>setSelectedManga(null)}
+        />
+      )}
+
+      {/* SCROLLBAR */}
+      <style>
+        {`
+        .custom-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+          background: #555;
+          border-radius: 10px;
+        }
+        `}
+      </style>
 
     </div>
   );
