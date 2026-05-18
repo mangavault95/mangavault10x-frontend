@@ -5,53 +5,60 @@ export default function StatsPanel() {
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
-      .then(res => res.json())
-      .then(data => setManga(data || []));
+      .then((r) => r.json())
+      .then((d) => setManga(d || []));
   }, []);
 
   const stats = useMemo(() => {
     let completed = 0;
     let ongoing = 0;
     let totalVolumes = 0;
+    let spent = 0;
 
-    manga.forEach(m => {
-      const owned = Number(m.VolumiPosseduti) || 0;
-      const total = Number(m.VolumiTotali) || 0;
+    manga.forEach((m) => {
+      const owned = Number(m.VolumiPosseduti);
+      const total = Number(m.VolumiTotali);
+      const cost = Number(m.Costo);
 
       totalVolumes += owned;
+      spent += owned * cost;
 
       if (total && owned >= total) completed++;
       else ongoing++;
     });
 
-    return { completed, ongoing, totalVolumes };
+    return { completed, ongoing, totalVolumes, spent };
   }, [manga]);
 
   return (
-    <div className="mt-4">
+    <div className="space-y-2 mt-4">
 
-      <p className="text-xs text-zinc-500 mb-2">Statistiche</p>
-
-      <div className="bg-[#141414] p-3 rounded-xl border border-white/10">
-        <p className="text-xs text-zinc-400">Totale volumi</p>
-        <p className="text-lg font-bold truncate">{stats.totalVolumes}</p>
+      <div className="bg-[#141414] p-3 rounded-xl border">
+        <p className="text-xs text-zinc-400">Volumi totali</p>
+        <p className="text-lg font-bold">{stats.totalVolumes}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 mt-2">
+      <div className="grid grid-cols-2 gap-2">
 
-        <div className="bg-[#141414] p-3 rounded-xl border text-center">
-          <p className="text-xs text-zinc-400">Completate</p>
-          <p className="text-lg">{stats.completed}</p>
+        <div className="bg-[#141414] p-3 rounded-xl text-center border">
+          <p className="text-xs text-zinc-400">Completati</p>
+          <p className="text-green-400">{stats.completed}</p>
         </div>
 
-        <div className="bg-[#141414] p-3 rounded-xl border text-center">
+        <div className="bg-[#141414] p-3 rounded-xl text-center border">
           <p className="text-xs text-zinc-400">In corso</p>
-          <p className="text-lg">{stats.ongoing}</p>
+          <p className="text-yellow-400">{stats.ongoing}</p>
         </div>
 
+      </div>
+
+      <div className="bg-[#141414] p-3 rounded-xl border">
+        <p className="text-xs text-zinc-400">Spesa totale</p>
+        <p className="text-yellow-400 font-bold">
+          €{stats.spent.toFixed(0)}
+        </p>
       </div>
 
     </div>
   );
 }
-``
