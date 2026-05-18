@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import MangaDetail from "./MangaDetail";
 
-export default function MangaGrid({ search = "", filter = "all" }) {
+export default function MangaGrid({ searchResults = [], filter }) {
+  let list = [...searchResults];
   const [manga, setManga] = useState([]);
   const [selectedManga, setSelectedManga] = useState(null);
 
