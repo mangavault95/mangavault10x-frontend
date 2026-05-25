@@ -5,15 +5,15 @@
 /* base layout (tieni il resto del tuo file) */
 
 @layer components {
-  /* GRID helper: usalo sulla grid container se vuoi */
+  /* GRID helper */
   .manga-grid {
     display: grid;
-    gap: 1.5rem;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem; /* meno spazio tra i volumi */
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     align-items: start;
   }
 
-  /* wrapper che fornisce perspective */
+  /* wrapper perspective */
   .volume-3d-wrap {
     perspective: 1000px;
     -webkit-perspective: 1000px;
@@ -22,27 +22,27 @@
     overflow: visible;
   }
 
-  /* VOLUME: larghezza fissa per uniformità, altezza cover fissa */
+  /* VOLUME: larghezza fissa per uniformità */
   .volume-3d {
-    --thickness: 12px; /* default, sovrascritto inline dallo JSX */
-    width: 140px;
-    border-radius: 12px;
+    --thickness: 12px; /* default, sovrascritto inline dallo JSX per la costina */
+    width: 150px;
+    border-radius: 10px;
     background: #141414;
     position: relative;
     transform-style: preserve-3d;
     transform-origin: left center;
-    transition: transform 0.38s cubic-bezier(.2,.9,.2,1), box-shadow 0.38s ease;
-    box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+    transition: transform 0.32s cubic-bezier(.2,.9,.2,1), box-shadow 0.32s ease;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.32);
     overflow: visible;
     backface-visibility: hidden;
   }
 
   .volume-3d:hover {
-    transform: translateY(-10px) rotateY(-12deg) translateZ(6px);
-    box-shadow: 0 28px 60px rgba(0,0,0,0.6);
+    transform: translateY(-8px) rotateY(-10deg) translateZ(6px);
+    box-shadow: 0 26px 50px rgba(0,0,0,0.55);
   }
 
-  /* spine / costina (sinistra) */
+  /* costina (sinistra) - spessore dinamico ma non influenza la larghezza della cover */
   .volume-3d::before {
     content: "";
     position: absolute;
@@ -50,16 +50,16 @@
     top: 0;
     height: 100%;
     width: calc(var(--thickness));
-    background: linear-gradient(90deg, rgba(10,10,10,0.95), rgba(40,40,40,0.85));
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 12px;
+    background: linear-gradient(90deg, rgba(12,12,12,0.96), rgba(40,40,40,0.88));
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
     z-index: 40;
     box-shadow: inset -2px 0 6px rgba(0,0,0,0.6);
     transform: translateZ(calc(var(--thickness) / 2));
     pointer-events: none;
   }
 
-  /* thin separator between spine and cover */
+  /* separatore sottile */
   .volume-3d::after {
     content: "";
     position: absolute;
@@ -73,24 +73,23 @@
     pointer-events: none;
   }
 
-  /* pages block (right side) */
+  /* PAGES: larghezza fissa per tutti (non cambia) */
   .volume-3d .pages {
     position: absolute;
-    right: calc(-1 * var(--thickness));
+    right: -12px; /* larghezza fissa delle pagine: 12px */
     top: 6%;
     height: 88%;
-    width: calc(var(--thickness));
+    width: 12px; /* FISSO: tutte le pagine uguali */
     background: linear-gradient(180deg, #f8f7f3 0%, #efece6 100%);
     box-shadow: inset -6px 0 8px rgba(0,0,0,0.06);
-    border-top-right-radius: 10px;
-    border-bottom-right-radius: 10px;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
     transform: translateZ(calc(var(--thickness) / 2));
     z-index: 20;
     pointer-events: none;
     overflow: hidden;
   }
 
-  /* subtle page lines to simulate many pages */
   .volume-3d .pages::before {
     content: "";
     position: absolute;
@@ -104,16 +103,16 @@
     transform: translateZ(2px);
   }
 
-  /* cover area */
+  /* COVER area: altezza fissa per uniformità */
   .volume-3d .cover {
     width: 100%;
-    height: 200px;
+    height: 210px; /* altezza fissa */
     background: #000;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
     overflow: hidden;
     position: relative;
     z-index: 10;
@@ -122,41 +121,68 @@
   .volume-3d .cover img {
     max-width: 100%;
     max-height: 100%;
-    object-fit: contain;
+    object-fit: contain; /* evita crop e mantiene proporzioni */
     display: block;
     transition: transform 0.45s ease;
     backface-visibility: hidden;
+  }
+
+  /* SHINE effect (B) */
+  .volume-3d .cover::after {
+    content: "";
+    position: absolute;
+    left: -60%;
+    top: -40%;
+    width: 40%;
+    height: 180%;
+    background: linear-gradient(120deg, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.0) 100%);
+    transform: rotate(20deg);
+    opacity: 0;
+    transition: transform 0.8s ease, opacity 0.4s ease;
+    pointer-events: none;
+    z-index: 25;
+    filter: blur(6px);
+  }
+
+  .volume-3d:hover .cover::after {
+    transform: translateX(220%) rotate(20deg);
+    opacity: 1;
+    transition: transform 0.9s cubic-bezier(.2,.9,.2,1), opacity 0.25s ease;
   }
 
   .volume-3d:hover .cover img {
     transform: scale(1.03);
   }
 
-  /* info area */
+  /* INFO area: troncamento con ellipsis (non cambia dimensione) */
   .volume-3d .info {
     padding: 10px;
     padding-bottom: 14px;
     z-index: 12;
     position: relative;
+    min-height: 64px; /* mantiene spazio costante per meta */
+    box-sizing: border-box;
   }
 
   .volume-3d .title {
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     color: #e6e6e6;
     line-height: 1.1;
     margin-bottom: 4px;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
+    text-overflow: ellipsis; /* TRONCA con ... */
   }
 
   .volume-3d .meta {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: #9ca3af;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* TRONCA con ... */
   }
 
-  /* progress bar small */
   .volume-3d .progress {
     height: 6px;
     background: rgba(255,255,255,0.04);
@@ -167,6 +193,6 @@
 
   .volume-3d .progress > .bar {
     height: 100%;
-    transition: width 0.5s ease;
+    transition: width 0.45s ease;
   }
 }
