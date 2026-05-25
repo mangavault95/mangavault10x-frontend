@@ -129,35 +129,48 @@ export default function MangaDetail({ manga, onClose, onSave }) {
       Editore: local.Editore
     };
 
+    // URL attuale (modifica se il backend usa un altro path o metodo)
+    const url = "https://mangavault10x-api.onrender.com/api/manga/update";
+    const token = localStorage.getItem("token");
+
     try {
-      // endpoint di aggiornamento (manteniamo lo stesso dominio usato per rating)
-      const res = await fetch("https://mangavault10x-api.onrender.com/api/manga/update", {
-        method: "POST",
+      const res = await fetch(url, {
+        method: "POST", // cambia in "PUT" o "PATCH" se il server lo richiede
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify(payload)
       });
 
-      const data = await res.json().catch(() => ({}));
+      const body = await res.text().catch(() => "");
 
       if (!res.ok) {
-        console.error("Save error", res.status, data);
-        setToast({ show: true, text: "Errore: impossibile salvare", tone: "error" });
+        console.error("Save error", res.status, body);
+
+        if (res.status === 404) {
+          setToast({ show: true, text: "Errore: endpoint non trovato (404). Modifiche applicate localmente.", tone: "error" });
+          if (onSave) onSave(payload);
+          setSaving(false);
+          return;
+        }
+
+        setToast({ show: true, text: `Errore salvataggio: ${res.status}`, tone: "error" });
         setSaving(false);
         return;
       }
 
-      // successo: aggiorna stato padre e mostra toast
-      setToast({ show: true, text: "Modifiche salvate", tone: "success" });
-      setTimeout(() => setToast({ show: false, text: "", tone: "success" }), 1600);
+      let data;
+      try { data = JSON.parse(body || "{}"); } catch (e) { data = {}; }
 
       if (onSave) onSave(payload);
+      setToast({ show: true, text: "Modifiche salvate", tone: "success" });
+      setTimeout(() => setToast({ show: false, text: "", tone: "success" }), 1600);
       setEditing(false);
     } catch (err) {
       console.error("Errore salvataggio:", err);
-      setToast({ show: true, text: "Errore di rete durante il salvataggio", tone: "error" });
+      setToast({ show: true, text: "Errore di rete durante il salvataggio. Modifiche applicate localmente.", tone: "error" });
+      if (onSave) onSave(payload);
     } finally {
       setSaving(false);
     }
