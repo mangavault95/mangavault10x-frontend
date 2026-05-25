@@ -123,7 +123,7 @@ export default function MangaDetail({ manga, onClose }) {
               </div>
             )}
 
-            {/* ⭐ RATING STARS CLICKABLE + POP + TOOLTIP */}
+            {/* ⭐ RATING STARS CLICKABLE + POP + TOOLTIP + PROGRESSIVE FILL */}
             <div className="flex items-center gap-1 mb-6">
               {[1, 2, 3, 4, 5].map(i => (
                 <span
