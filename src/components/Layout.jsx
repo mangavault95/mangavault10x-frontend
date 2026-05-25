@@ -7,13 +7,14 @@ export default function Layout({ children }) {
   return (
     <div className="flex h-screen overflow-hidden">
 
-      {/* TOGGLE BUTTON */}
+      {/* TOGGLE */}
       <button
         onClick={() => setOpen(o => !o)}
         className="
           fixed top-4 left-4 z-50
-          text-white bg-black/40 backdrop-blur-md
-          px-3 py-2 rounded-lg border border-white/10
+          bg-black/40 backdrop-blur-md
+          border border-white/10
+          text-white px-3 py-2 rounded-lg
           hover:bg-black/60 transition
         "
       >
@@ -23,12 +24,12 @@ export default function Layout({ children }) {
       {/* SIDEBAR */}
       <div
         className={`
-          fixed top-0 left-0 h-full w-72 z-40
-          transition-transform duration-300
-          ${open ? "translate-x-0" : "-translate-x-full"}
+          fixed top-0 left-0 h-full z-40
+          transition-all duration-300
+          ${open ? "w-72" : "w-16"}
         `}
       >
-        <Sidebar />
+        <Sidebar open={open} />
       </div>
 
       {/* OVERLAY MOBILE */}
@@ -39,8 +40,8 @@ export default function Layout({ children }) {
         />
       )}
 
-      {/* MAIN CONTENT */}
-      <div className="flex-1 ml-0 md:ml-72 overflow-y-auto">
+      {/* MAIN */}
+      <div className={`flex-1 transition-all duration-300 ${open ? "ml-72" : "ml-16"}`}>
         {children}
       </div>
 
