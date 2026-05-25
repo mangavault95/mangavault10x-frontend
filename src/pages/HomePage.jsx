@@ -18,7 +18,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
   // controllo apertura sidebar
   const [openSidebar, setOpenSidebar] = useState(true);
 
-  // modali locali
+  // modali
   const [showFavorites, setShowFavorites] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showWishlist, setShowWishlist] = useState(false);
@@ -47,6 +47,10 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     };
     window.addEventListener("navigate", navHandler);
 
+    // toggle via quadratino giallo
+    const toggleHandler = () => setOpenSidebar(s => !s);
+    window.addEventListener("toggleSidebar", toggleHandler);
+
     // apri modali da sidebar
     const favOpen = () => setShowFavorites(true);
     const histOpen = () => setShowHistory(true);
@@ -62,6 +66,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     return () => {
       window.removeEventListener("openMangaDetail", handler);
       window.removeEventListener("navigate", navHandler);
+      window.removeEventListener("toggleSidebar", toggleHandler);
       window.removeEventListener("openFavoritesModal", favOpen);
       window.removeEventListener("openHistoryModal", histOpen);
       window.removeEventListener("openWishlistModal", wishOpen);
@@ -69,7 +74,6 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     };
   }, [setAdminMode, setRecordsMode]);
 
-  // fuzzy search (manteniamo la barra principale)
   const filteredSearch = useMemo(() => {
     if (!search) return mangaList;
     const fuse = new Fuse(mangaList, {
@@ -80,27 +84,19 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     return fuse.search(search).map(r => r.item);
   }, [search, mangaList]);
 
-  // rimuovo i filtri dalla UI come richiesto: non mostro i bottoni filtro
   return (
     <div className="bg-[#111] text-white min-h-screen">
 
-      {/* TOGGLE SIDEBAR: posizionato a destra del logo quando aperto */}
-      <button
-        onClick={() => setOpenSidebar(s => !s)}
-        style={{ left: openSidebar ? 220 : 16 }}
-        className="fixed top-4 z-50 bg-black/40 backdrop-blur-md border border-white/10 text-white px-3 py-2 rounded-lg hover:bg-black/60 transition"
-        aria-label={openSidebar ? "Chiudi sidebar" : "Apri sidebar"}
-      >
-        {openSidebar ? "◀" : "▶"}
-      </button>
+      {/* Nota: il toggle è ora il quadratino giallo nel logo della sidebar.
+          Non serve più un pulsante separato in alto a sinistra. */}
 
       {/* SIDEBAR */}
-      <div className={`fixed left-0 top-0 h-screen transition-all duration-300 ${openSidebar ? "w-72" : "w-24"}`}>
+      <div className={`fixed left-0 top-0 h-screen transition-all duration-300 ${openSidebar ? "w-72" : "w-28"}`}>
         <Sidebar open={openSidebar} />
       </div>
 
       {/* MAIN: margine dinamico */}
-      <div style={{ marginLeft: openSidebar ? 288 : 96 }} className="px-10 py-6 space-y-8 transition-all duration-300">
+      <div style={{ marginLeft: openSidebar ? 288 : 112 }} className="px-10 py-6 space-y-8 transition-all duration-300">
         <TopHero manga={mangaList} onSelect={setSelectedManga} />
 
         {/* HEADER */}
@@ -113,12 +109,12 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Cerca titolo, autore..."
-                className="px-5 py-2.5 w-56 rounded-full bg-[#151515] border border-white/10 text-sm placeholder:text-zinc-500 outline-none focus:w-64 focus:border-yellow-400 transition-all duration-300 hover:border-white/20"
+                className="px-5 py-2.5 w-56 rounded-full bg-[#151515] border border-white/6 text-sm placeholder:text-zinc-500 outline-none focus:w-64 focus:border-yellow-400 transition-all duration-300 hover:border-white/20"
               />
             </div>
 
             <div className="relative">
-              <button onClick={() => setOpenMenu(p => !p)} className="w-10 h-10 rounded-xl bg-[#1a1a1a] border border-white/10 hover:border-yellow-400 transition">☰</button>
+              <button onClick={() => setOpenMenu(p => !p)} className="w-10 h-10 rounded-xl bg-[#1a1a1a] border border-white/6 hover:border-yellow-400 transition">☰</button>
               {openMenu && (
                 <div className="absolute right-0 mt-2 w-44 bg-[#151515]/95 backdrop-blur rounded-xl border border-white/10 shadow-xl">
                   <button className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f] border-b border-white/5">Tema</button>
@@ -137,7 +133,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
 
       {selectedManga && <MangaDetail manga={selectedManga} onClose={() => setSelectedManga(null)} />}
 
-      {/* MODALI per Preferiti / Ultime letture / Wishlist */}
+      {/* MODALI */}
       {showFavorites && <FavoritesModal onClose={() => setShowFavorites(false)} />}
       {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
       {showWishlist && <WishlistModal onClose={() => setShowWishlist(false)} />}
