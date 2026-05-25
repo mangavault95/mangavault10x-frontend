@@ -12,9 +12,19 @@ export default function MangaDetail({ manga, onClose }) {
   const owned = Number(manga.VolumiPosseduti) || 0;
   const total = Number(manga.VolumiTotali) || 0;
   const price = Number(manga.PrezzoVolume) || 0;
-  const percent = total ? Math.min((owned / total) * 100, 100) : 0;
-  const totalCost = total && price ? (total * price).toFixed(2) : "N/A";
   const rating = Number(manga.Valutazione) || 0;
+
+  const isOngoing = !total || total === 0 || manga.VolumiTotali === "?";
+
+  // costo basato sui volumi posseduti
+  const totalCost = price ? (owned * price).toFixed(2) : "N/A";
+
+  // percentuale
+  const percent = isOngoing
+    ? 50
+    : total
+    ? Math.min((owned / total) * 100, 100)
+    : 0;
 
   return (
     <div
@@ -22,7 +32,7 @@ export default function MangaDetail({ manga, onClose }) {
       onClick={onClose}
     >
 
-      {/* BACKGROUND COLOR EXTRACTED FROM COVER */}
+      {/* BACKGROUND PATTERN FROM COVER */}
       <div
         className="absolute inset-0"
         style={{
@@ -45,7 +55,10 @@ export default function MangaDetail({ manga, onClose }) {
       </button>
 
       {/* MAIN CARD */}
-      <div className="relative max-w-5xl mx-auto mt-20 mb-20 p-10 rounded-3xl shadow-2xl border border-white/10 bg-[#1a1a1a]/90 backdrop-blur-xl">
+      <div
+        className="relative max-w-5xl mx-auto mt-20 mb-20 p-10 rounded-3xl shadow-2xl border border-white/10 bg-[#1a1a1a]/90 backdrop-blur-xl"
+        onClick={e => e.stopPropagation()}
+      >
 
         <div className="flex gap-10">
 
@@ -66,7 +79,7 @@ export default function MangaDetail({ manga, onClose }) {
 
             {/* RATING STARS */}
             <div className="flex items-center gap-1 mb-6">
-              {[1,2,3,4,5].map(i => (
+              {[1, 2, 3, 4, 5].map(i => (
                 <span
                   key={i}
                   className={`text-3xl ${
@@ -83,7 +96,7 @@ export default function MangaDetail({ manga, onClose }) {
               {manga.Trama || "Nessuna descrizione disponibile."}
             </p>
 
-            {/* STATS */}
+            {/* STATS GRID */}
             <div className="grid grid-cols-2 gap-4 mb-8">
 
               <div className="bg-white/5 p-5 rounded-xl border border-white/10">
@@ -93,7 +106,9 @@ export default function MangaDetail({ manga, onClose }) {
 
               <div className="bg-white/5 p-5 rounded-xl border border-white/10">
                 <p className="text-xs text-zinc-400">Volumi totali</p>
-                <p className="text-3xl font-semibold">{total || "?"}</p>
+                <p className="text-3xl font-semibold">
+                  {total || "?"}
+                </p>
               </div>
 
               <div className="bg-white/5 p-5 rounded-xl border border-white/10">
@@ -103,18 +118,26 @@ export default function MangaDetail({ manga, onClose }) {
 
               <div className="bg-white/5 p-5 rounded-xl border border-white/10">
                 <p className="text-xs text-zinc-400">Completion</p>
-                <p className="text-3xl font-semibold">{percent.toFixed(0)}%</p>
+                <p className="text-3xl font-semibold">
+                  {isOngoing ? "In corso" : `${percent.toFixed(0)}%`}
+                </p>
               </div>
 
             </div>
 
-            {/* PROGRESS BAR WITH PERCENTAGE INSIDE */}
-            <div className="relative h-4 bg-white/10 rounded-full overflow-hidden mb-4">
+            {/* PROGRESS BAR (BUTTON STYLE) */}
+            <div className="relative h-4 bg-white/10 rounded-full overflow-hidden mb-4 cursor-pointer hover:bg-white/20 transition">
               <div
-                className="h-full bg-gradient-to-r from-yellow-400 to-yellow-600 transition-all flex items-center justify-end pr-2 text-black font-bold text-xs"
+                className="h-full bg-gradient-to-r from-yellow-400 to-yellow-600 transition-all flex items-center justify-center text-black font-bold text-xs"
                 style={{ width: `${percent}%` }}
               >
-                {percent.toFixed(0)}%
+                {isOngoing ? (
+                  <span className="animate-pulse text-black font-bold">
+                    In corso
+                  </span>
+                ) : (
+                  `${percent.toFixed(0)}%`
+                )}
               </div>
             </div>
 
