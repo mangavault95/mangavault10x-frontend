@@ -77,7 +77,7 @@ export default function MangaGrid({ searchResults = [], filter }) {
           const status = getStatus(m);
           const percent = hasKnownTotal ? Math.min(100, (owned / total) * 100) : 50;
 
-          // thickness logic: more volumi -> più spessore (clamp 6..28)
+          // thickness logic: più volumi -> più spessore della costina (clamp 6..28)
           const thickness = hasKnownTotal
             ? Math.min(28, Math.max(6, Math.round(total / 2)))
             : 10;
@@ -93,12 +93,12 @@ export default function MangaGrid({ searchResults = [], filter }) {
                     <img src={m.CoverURL || "https://placehold.co/300x450"} alt={m.Titolo} />
                   </div>
 
-                  {/* pages block (right side) */}
+                  {/* pages block (right side) - larghezza FISSA */}
                   <div className="pages" aria-hidden="true" />
 
                   <div className="info">
                     <div className="title" title={m.Titolo}>{m.Titolo}</div>
-                    <div className="meta">{m.Genere || "Nessun genere"}</div>
+                    <div className="meta" title={m.Genere || "Nessun genere"}>{m.Genere || "Nessun genere"}</div>
 
                     <div className="progress" aria-hidden>
                       <div
