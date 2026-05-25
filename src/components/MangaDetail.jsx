@@ -13,58 +13,56 @@ export default function MangaDetail({ manga, onClose }) {
   const total = Number(manga.VolumiTotali) || 0;
   const price = Number(manga.PrezzoVolume) || 0;
   const percent = total ? Math.min((owned / total) * 100, 100) : 0;
-
   const totalCost = total && price ? (total * price).toFixed(2) : "N/A";
-
   const rating = Number(manga.Valutazione) || 0;
 
   return (
     <div
-      className="fixed inset-0 bg-black/90 z-[999] overflow-y-auto"
+      className="fixed inset-0 z-[999] overflow-y-auto"
       onClick={onClose}
     >
 
-      {/* HERO BACKGROUND */}
+      {/* BACKGROUND COLOR EXTRACTED FROM COVER */}
       <div
-        className="relative h-[380px] w-full"
+        className="absolute inset-0"
         style={{
-          backgroundImage: `url(${manga.CoverURL})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center"
+          background: `linear-gradient(135deg, rgba(20,20,20,0.95), rgba(40,40,40,0.95)), url(${manga.CoverURL})`,
+          backgroundSize: "120px",
+          backgroundRepeat: "repeat",
+          opacity: 0.25
         }}
+      />
+
+      {/* DARK OVERLAY */}
+      <div className="absolute inset-0 bg-black/70" />
+
+      {/* CLOSE BUTTON */}
+      <button
+        onClick={onClose}
+        className="absolute top-6 right-6 w-12 h-12 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-2xl text-white hover:bg-white/20 transition z-[999]"
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/80 to-black" />
-
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-6 right-6 w-12 h-12 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-2xl text-white hover:bg-white/20 transition"
-        >
-          ✕
-        </button>
-
-        {/* Title + Author */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-center">
-          <h1 className="text-5xl font-black text-white drop-shadow-2xl">
-            {manga.Titolo}
-          </h1>
-          <p className="text-zinc-300 text-lg mt-2">{manga.Autore}</p>
-        </div>
-      </div>
+        ✕
+      </button>
 
       {/* MAIN CARD */}
-      <div className="max-w-5xl mx-auto -mt-24 mb-20 p-10 bg-[#141414] rounded-3xl shadow-2xl border border-white/10 relative z-50">
+      <div className="relative max-w-5xl mx-auto mt-20 mb-20 p-10 rounded-3xl shadow-2xl border border-white/10 bg-[#1a1a1a]/90 backdrop-blur-xl">
 
         <div className="flex gap-10">
 
           {/* COVER */}
           <img
             src={manga.CoverURL}
-            className="w-[260px] h-[380px] object-cover rounded-2xl shadow-xl border border-white/10"
+            className="w-[260px] h-[380px] object-cover rounded-2xl shadow-2xl border border-white/10"
           />
 
           {/* RIGHT SIDE */}
           <div className="flex-1">
+
+            {/* TITLE */}
+            <h1 className="text-5xl font-black text-white mb-2 drop-shadow-xl">
+              {manga.Titolo}
+            </h1>
+            <p className="text-zinc-400 text-lg mb-6">{manga.Autore}</p>
 
             {/* RATING STARS */}
             <div className="flex items-center gap-1 mb-6">
@@ -88,34 +86,36 @@ export default function MangaDetail({ manga, onClose }) {
             {/* STATS */}
             <div className="grid grid-cols-2 gap-4 mb-8">
 
-              <div className="bg-white/5 p-5 rounded-xl backdrop-blur border border-white/10">
+              <div className="bg-white/5 p-5 rounded-xl border border-white/10">
                 <p className="text-xs text-zinc-400">Volumi posseduti</p>
                 <p className="text-3xl font-semibold">{owned}</p>
               </div>
 
-              <div className="bg-white/5 p-5 rounded-xl backdrop-blur border border-white/10">
+              <div className="bg-white/5 p-5 rounded-xl border border-white/10">
                 <p className="text-xs text-zinc-400">Volumi totali</p>
                 <p className="text-3xl font-semibold">{total || "?"}</p>
               </div>
 
-              <div className="bg-white/5 p-5 rounded-xl backdrop-blur border border-white/10">
+              <div className="bg-white/5 p-5 rounded-xl border border-white/10">
                 <p className="text-xs text-zinc-400">Costo totale serie</p>
                 <p className="text-3xl font-semibold">{totalCost}€</p>
               </div>
 
-              <div className="bg-white/5 p-5 rounded-xl backdrop-blur border border-white/10">
+              <div className="bg-white/5 p-5 rounded-xl border border-white/10">
                 <p className="text-xs text-zinc-400">Completion</p>
                 <p className="text-3xl font-semibold">{percent.toFixed(0)}%</p>
               </div>
 
             </div>
 
-            {/* PROGRESS BAR */}
-            <div className="h-3 bg-white/10 rounded-full overflow-hidden mb-4">
+            {/* PROGRESS BAR WITH PERCENTAGE INSIDE */}
+            <div className="relative h-4 bg-white/10 rounded-full overflow-hidden mb-4">
               <div
-                className="h-full bg-gradient-to-r from-yellow-400 to-yellow-600 transition-all"
+                className="h-full bg-gradient-to-r from-yellow-400 to-yellow-600 transition-all flex items-center justify-end pr-2 text-black font-bold text-xs"
                 style={{ width: `${percent}%` }}
-              />
+              >
+                {percent.toFixed(0)}%
+              </div>
             </div>
 
           </div>
