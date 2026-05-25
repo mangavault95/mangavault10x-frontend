@@ -20,26 +20,30 @@ export default function MangaGrid({ searchResults = [], filter }) {
     return isNaN(num) ? null : num;
   }
 
-  function getTotals(m) {
+  function getMeta(m) {
     const total = parseTotal(m.VolumiTotali);
     const owned = Number(m.VolumiPosseduti) || 0;
     const hasKnownTotal = total !== null;
+    const concluded = Number(m.Concluso) || 0; // 0 o 1, anche se era "0"/"1"
 
-    return { total, owned, hasKnownTotal };
+    return { total, owned, hasKnownTotal, concluded };
   }
 
   // -----------------------------
   // STATUS
   // -----------------------------
   function getStatus(m){
-    const { total, owned, hasKnownTotal } = getTotals(m);
+    const { total, owned, hasKnownTotal, concluded } = getMeta(m);
 
-    if (m.Concluso === 0 && !hasKnownTotal && owned > 0)
+    // IN CORSO → non conclusa, totali sconosciuti, possiedi già qualcosa
+    if (concluded === 0 && !hasKnownTotal && owned > 0)
       return "ongoing";
 
-    if (m.Concluso === 0 && hasKnownTotal && owned < total)
+    // DA COMPLETARE → non conclusa, totali noti, possiedi meno del totale
+    if (concluded === 0 && hasKnownTotal && owned < total)
       return "to_complete";
 
+    // il resto lo consideriamo completato
     return "completed";
   }
 
@@ -60,43 +64,43 @@ export default function MangaGrid({ searchResults = [], filter }) {
 
     switch(filter){
 
-      // IN CORSO → non concluso, totali sconosciuti, possiedi già qualcosa
+      // IN CORSO → non conclusa, totali sconosciuti, possiedi già qualcosa
       case "ongoing":
         return list.filter(m => {
-          const { owned, hasKnownTotal } = getTotals(m);
-          return m.Concluso === 0 &&
+          const { owned, hasKnownTotal, concluded } = getMeta(m);
+          return concluded === 0 &&
                  !hasKnownTotal &&
                  owned > 0;
         });
 
-      // DA COMPLETARE → non concluso, totali noti, possiedi meno del totale
+      // DA COMPLETARE → non conclusa, totali noti, possiedi meno del totale
       case "to_complete":
         return list.filter(m => {
-          const { total, owned, hasKnownTotal } = getTotals(m);
-          return m.Concluso === 0 &&
+          const { total, owned, hasKnownTotal, concluded } = getMeta(m);
+          return concluded === 0 &&
                  hasKnownTotal &&
                  owned < total;
         });
 
-      // COMPLETATI
+      // COMPLETATI → concluso = 1 oppure possiedi tutti i volumi noti
       case "completed":
         return list.filter(m => {
-          const { total, owned, hasKnownTotal } = getTotals(m);
-          return m.Concluso === 1 ||
+          const { total, owned, hasKnownTotal, concluded } = getMeta(m);
+          return concluded === 1 ||
                  (hasKnownTotal && owned >= total);
         });
 
-      // SERIE BREVI
+      // SERIE BREVI → 2–7 volumi totali noti
       case "short":
         return list.filter(m => {
-          const { total, hasKnownTotal } = getTotals(m);
+          const { total, hasKnownTotal } = getMeta(m);
           return hasKnownTotal && total >= 2 && total < 8;
         });
 
-      // ONE-SHOT
+      // VOLUMI UNICI → 1/1
       case "oneshot":
         return list.filter(m => {
-          const { total, owned, hasKnownTotal } = getTotals(m);
+          const { total, owned, hasKnownTotal } = getMeta(m);
           return hasKnownTotal && total === 1 && owned >= 1;
         });
 
@@ -115,7 +119,7 @@ export default function MangaGrid({ searchResults = [], filter }) {
 
         {filtered.map(m => {
 
-          const { total, owned, hasKnownTotal } = getTotals(m);
+          const { total, owned, hasKnownTotal } = getMeta(m);
           const status = getStatus(m);
 
           const percent = hasKnownTotal
