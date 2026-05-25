@@ -5,9 +5,6 @@ export default function MangaGrid({ searchResults = [], filter }) {
 
   const [selectedManga, setSelectedManga] = useState(null);
 
-  // -----------------------------
-  // PARSING ROBUSTO
-  // -----------------------------
   function parseTotal(raw) {
     if (!raw) return null;
     const cleaned = String(raw).replace(/[^0-9]/g, "");
@@ -23,9 +20,6 @@ export default function MangaGrid({ searchResults = [], filter }) {
     return { total, owned, hasKnownTotal };
   }
 
-  // -----------------------------
-  // STATUS
-  // -----------------------------
   function getStatus(m){
     const { total, owned, hasKnownTotal } = getMeta(m);
 
@@ -42,9 +36,6 @@ export default function MangaGrid({ searchResults = [], filter }) {
     return "bg-yellow-400";
   }
 
-  // -----------------------------
-  // FILTRI
-  // -----------------------------
   const filtered = useMemo(() => {
 
     let list = [...searchResults].sort((a,b)=>
@@ -89,9 +80,6 @@ export default function MangaGrid({ searchResults = [], filter }) {
 
   }, [searchResults, filter]);
 
-  // -----------------------------
-  // RENDER
-  // -----------------------------
   return (
     <>
       <div className="grid grid-cols-6 gap-6">
@@ -145,7 +133,6 @@ export default function MangaGrid({ searchResults = [], filter }) {
                     {hasKnownTotal ? `${owned}/${total}` : `${owned}+`}
                   </div>
 
-                  {/* PROGRESS BAR */}
                   <div className="h-1 bg-zinc-800 mt-2 rounded overflow-hidden">
                     <div
                       className={`${barColor(status)} h-full transition-all duration-500 ease-out`}
