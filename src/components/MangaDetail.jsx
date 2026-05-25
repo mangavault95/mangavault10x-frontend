@@ -42,7 +42,7 @@ export default function MangaDetail({ manga, onClose }) {
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          "https://mangavault10x-backend.vercel.app/manga/updateRating",
+          "https://mangavault10x-backend.vercel.app/api/manga/updateRating",
           {
             method: "POST",
             headers: {
