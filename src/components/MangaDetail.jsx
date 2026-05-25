@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export default function MangaDetail({ manga, onClose }) {
 
@@ -9,24 +9,22 @@ export default function MangaDetail({ manga, onClose }) {
 
   if (!manga) return null;
 
+  const [rating, setRating] = useState(Number(manga.Valutazione) || 0);
+  const debounceRef = useRef(null);
+
   const owned = Number(manga.VolumiPosseduti) || 0;
   const total = Number(manga.VolumiTotali) || 0;
-  const rating = Number(manga.Valutazione) || 0;
-
-  // PREZZO PER VOLUME (colonna "Costo")
   const price = Number(manga.Costo) || 0;
 
-  // STATUS
   const isCompleted =
     (!!total && total > 0 && owned === total) || manga.Concluso === 1;
+
   const isOngoing =
     !isCompleted &&
     (!total || total === 0 || manga.VolumiTotali === "?" || manga.Concluso === 0);
 
-  // COSTO BASATO SUI VOLUMI POSSEDUTI
   const totalCost = price && owned ? (owned * price).toFixed(2) : "N/A";
 
-  // PERCENTUALE
   const percent = isCompleted
     ? 100
     : isOngoing
@@ -34,6 +32,29 @@ export default function MangaDetail({ manga, onClose }) {
     : total
     ? Math.min((owned / total) * 100, 100)
     : 0;
+
+  // ⭐ CLICK STELLE + DEBOUNCE + ANIMAZIONE POP
+  async function handleRating(stars) {
+    setRating(stars);
+
+    // debounce per evitare spam al DB
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        await fetch("/api/updateRating", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: manga.ID,
+            rating: stars
+          })
+        });
+      } catch (err) {
+        console.error("Errore aggiornamento rating:", err);
+      }
+    }, 500);
+  }
 
   return (
     <div
@@ -52,7 +73,6 @@ export default function MangaDetail({ manga, onClose }) {
         }}
       />
 
-      {/* DARK OVERLAY */}
       <div className="absolute inset-0 bg-black/70" />
 
       {/* CLOSE BUTTON */}
@@ -101,14 +121,22 @@ export default function MangaDetail({ manga, onClose }) {
               </div>
             )}
 
-            {/* RATING STARS */}
+            {/* ⭐ RATING STARS CLICKABLE + POP + TOOLTIP */}
             <div className="flex items-center gap-1 mb-6">
               {[1, 2, 3, 4, 5].map(i => (
                 <span
                   key={i}
-                  className={`text-3xl ${
+                  onClick={() => handleRating(i)}
+                  title={
+                    i === 1 ? "Pessimo" :
+                    i === 2 ? "Bruttino" :
+                    i === 3 ? "Carino" :
+                    i === 4 ? "Bello" :
+                    "Capolavoro"
+                  }
+                  className={`text-3xl cursor-pointer transition-transform ${
                     i <= rating ? "text-yellow-400" : "text-zinc-600"
-                  }`}
+                  } hover:text-yellow-300 active:scale-125`}
                 >
                   ★
                 </span>
