@@ -62,51 +62,47 @@ export default function MangaGrid({ searchResults = [], filter }) {
       (a.Titolo || "").localeCompare(b.Titolo || "")
     );
 
-    switch(filter){
+   switch(filter){
 
-      // IN CORSO → non conclusa, totali sconosciuti, possiedi già qualcosa
-      case "ongoing":
-        return list.filter(m => {
-          const { owned, hasKnownTotal, concluded } = getMeta(m);
-          return concluded === 0 &&
-                 !hasKnownTotal &&
-                 owned > 0;
-        });
+  // IN CORSO → totali sconosciuti, possiedi già qualcosa
+  case "ongoing":
+    return list.filter(m => {
+      const { owned, hasKnownTotal } = getMeta(m);
+      return !hasKnownTotal && owned > 0;
+    });
 
-      // DA COMPLETARE → non conclusa, totali noti, possiedi meno del totale
-      case "to_complete":
-        return list.filter(m => {
-          const { total, owned, hasKnownTotal, concluded } = getMeta(m);
-          return concluded === 0 &&
-                 hasKnownTotal &&
-                 owned < total;
-        });
+  // DA COMPLETARE → totali noti, possiedi meno del totale
+  case "to_complete":
+    return list.filter(m => {
+      const { total, owned, hasKnownTotal } = getMeta(m);
+      return hasKnownTotal && owned < total;
+    });
 
-      // COMPLETATI → concluso = 1 oppure possiedi tutti i volumi noti
-      case "completed":
-        return list.filter(m => {
-          const { total, owned, hasKnownTotal, concluded } = getMeta(m);
-          return concluded === 1 ||
-                 (hasKnownTotal && owned >= total);
-        });
+  // COMPLETATI → totali noti, possiedi tutti i volumi
+  case "completed":
+    return list.filter(m => {
+      const { total, owned, hasKnownTotal } = getMeta(m);
+      return hasKnownTotal && owned === total;
+    });
 
-      // SERIE BREVI → 2–7 volumi totali noti
-      case "short":
-        return list.filter(m => {
-          const { total, hasKnownTotal } = getMeta(m);
-          return hasKnownTotal && total >= 2 && total < 8;
-        });
+  // SERIE BREVI → 2–7 volumi totali noti
+  case "short":
+    return list.filter(m => {
+      const { total, hasKnownTotal } = getMeta(m);
+      return hasKnownTotal && total >= 2 && total < 8;
+    });
 
-      // VOLUMI UNICI → 1/1
-      case "oneshot":
-        return list.filter(m => {
-          const { total, owned, hasKnownTotal } = getMeta(m);
-          return hasKnownTotal && total === 1 && owned >= 1;
-        });
+  // ONE-SHOT → 1/1
+  case "oneshot":
+    return list.filter(m => {
+      const { total, owned, hasKnownTotal } = getMeta(m);
+      return hasKnownTotal && total === 1 && owned >= 1;
+    });
 
-      default:
-        return list;
-    }
+  default:
+    return list;
+}
+
 
   }, [searchResults, filter]);
 
