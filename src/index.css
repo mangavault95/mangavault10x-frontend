@@ -1,6 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Layout base */
 html, body {
   height: 100%;
 }
@@ -8,6 +10,8 @@ html, body {
 #root {
   min-height: 100vh;
 }
+
+/* Effetti vari già presenti */
 .glow-star {
   text-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
 }
@@ -22,19 +26,13 @@ html, body {
 .animate-fade-in-out {
   animation: fade-in-out 2s ease forwards;
 }
-.volume-3d {
-  position: relative;
-  transform-style: preserve-3d;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
 
-.volume-3d:hover {
-  transform: translateY(-4px) rotateY(-6deg);
-  box-shadow: 0 12px 25px rgba(0,0,0,0.45);
-}
+/* --------------------------------------------- */
+/* 🎨 VOLUME 3D FLAT — VERSIONE CORRETTA         */
+/* --------------------------------------------- */
 
-/* Costa laterale */
 @layer components {
+
   .volume-3d {
     position: relative;
     transform-style: preserve-3d;
@@ -46,6 +44,7 @@ html, body {
     box-shadow: 0 12px 25px rgba(0,0,0,0.45);
   }
 
+  /* Costa laterale */
   .volume-3d::before {
     content: "";
     position: absolute;
@@ -53,7 +52,11 @@ html, body {
     top: 0;
     width: 12px;
     height: 100%;
-    background: linear-gradient(to right, rgba(0,0,0,0.6), rgba(0,0,0,0.15));
+    background: linear-gradient(
+      to right,
+      rgba(0,0,0,0.6),
+      rgba(0,0,0,0.15)
+    );
     transform: translateZ(-1px);
   }
 }
