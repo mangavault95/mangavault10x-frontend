@@ -2,13 +2,11 @@ import { useEffect, useState, useRef } from "react";
 
 /**
  * src/components/MangaDetail.jsx
- *
- * Gestisce:
- * - visualizzazione dettaglio manga
- * - rating (debounce -> POST /api/manga/updateRating)
+ * - mostra dettaglio manga
+ * - rating con debounce (POST /api/manga/updateRating)
  * - edit modal + drag&drop cover
- * - salvataggio con PUT /api/manga/:id (autenticato)
- * - gestione 401/403: apre modal login, salva token e ritenta
+ * - salvataggio con PUT /api/manga/:id (auth)
+ * - gestione 401/403: apre modal login precompilato (admin/1234) e ritenta automaticamente
  * - fallback locale via onSave(payload)
  *
  * Sostituisci interamente il file esistente con questo.
@@ -43,14 +41,14 @@ export default function MangaDetail({ manga, onClose, onSave }) {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Login modal state (per gestire 401/403)
+  // Login modal state (precompilato per test)
   const [loginOpen, setLoginOpen] = useState(false);
-  const [loginUser, setLoginUser] = useState("");
-  const [loginPass, setLoginPass] = useState("");
+  const [loginUser, setLoginUser] = useState("admin");
+  const [loginPass, setLoginPass] = useState("1234");
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
 
-  // Se abbiamo un'azione pendente da ritentare (es. save), la memorizziamo qui
+  // Azione pendente da ritentare dopo login
   const pendingActionRef = useRef(null);
 
   function updateField(key, value) {
@@ -163,15 +161,13 @@ export default function MangaDetail({ manga, onClose, onSave }) {
         return;
       }
 
-      // salva token e chiudi modal
       localStorage.setItem("token", token);
       setLoginLoading(false);
       setLoginOpen(false);
-      setLoginUser("");
-      setLoginPass("");
+      setLoginUser("admin");
+      setLoginPass("1234");
       setLoginError("");
 
-      // se c'era un'azione pendente, ritentala
       if (pendingActionRef.current) {
         const action = pendingActionRef.current;
         pendingActionRef.current = null;
@@ -196,10 +192,10 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     };
 
     const url = `https://mangavault10x-api.onrender.com/api/manga/${manga.ID}`;
-    const token = localStorage.getItem("token");
 
     // funzione che esegue la richiesta (utile per ritentare dopo login)
     const doPut = async () => {
+      const token = localStorage.getItem("token");
       try {
         const res = await fetch(url, {
           method: "PUT",
@@ -215,10 +211,8 @@ export default function MangaDetail({ manga, onClose, onSave }) {
         if (!res.ok) {
           console.error("Save error", res.status, text);
 
-          // AUTH errors -> apri modal login e memorizza azione pendente
           if (res.status === 401 || res.status === 403) {
             setToast({ show: true, text: "Autenticazione richiesta o token non valido", tone: "error" });
-            // memorizza l'azione e apri login modal
             pendingActionRef.current = doPut;
             setLoginOpen(true);
             setSaving(false);
@@ -237,7 +231,6 @@ export default function MangaDetail({ manga, onClose, onSave }) {
           return;
         }
 
-        // successo: aggiorna parent con shape completo
         if (onSave) {
           const updated = {
             ...manga,
@@ -266,7 +259,6 @@ export default function MangaDetail({ manga, onClose, onSave }) {
       }
     };
 
-    // esegui la PUT
     await doPut();
   }
 
@@ -554,7 +546,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
                 </div>
               </div>
 
-              <div className="mt-3 text-xs text-zinc-400">Usa le credenziali del backend (es. admin / 1234) per test.</div>
+              <div className="mt-3 text-xs text-zinc-400">Credenziali di test: admin / 1234</div>
             </div>
           </div>
         )}
