@@ -54,7 +54,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     ? Math.min((owned / total) * 100, 100)
     : 0;
 
-  // Rating debounce + save
+  // Rating debounce + save (mantiene il tuo endpoint updateRating)
   async function handleRating(stars) {
     setRating(stars);
     manga.Valutazione = stars;
@@ -113,44 +113,46 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     e.preventDefault();
   }
 
-  // SAVE: invia al backend e chiama onSave(payload)
+  // SAVE: usa PUT /api/manga/:id (come definito in manga.js)
   async function saveChanges() {
     setSaving(true);
-    const payload = {
-      ...manga,
-      Titolo: local.Titolo,
-      Autore: local.Autore,
-      Trama: local.Trama,
-      Genere: local.Genere,
-      VolumiPosseduti: Number(local.VolumiPosseduti),
-      VolumiTotali: local.VolumiTotali ? Number(local.VolumiTotali) : null,
-      CoverURL: local.CoverURL,
-      Costo: Number(local.Costo),
-      Editore: local.Editore
+
+    // payload per il server (nomi in lower-case come nel router)
+    const payloadForServer = {
+      coverurl: local.CoverURL || null,
+      trama: local.Trama || null,
+      volumiposseduti: Number(local.VolumiPosseduti) || 0,
+      volumitotali: local.VolumiTotali ? Number(local.VolumiTotali) : 0
     };
 
-    // URL attuale (modifica se il backend usa un altro path o metodo)
-    const url = "https://mangavault10x-api.onrender.com/api/manga/update";
+    const url = `https://mangavault10x-api.onrender.com/api/manga/${manga.ID}`;
     const token = localStorage.getItem("token");
 
     try {
       const res = await fetch(url, {
-        method: "POST", // cambia in "PUT" o "PATCH" se il server lo richiede
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payloadForServer)
       });
 
-      const body = await res.text().catch(() => "");
+      const text = await res.text().catch(() => "");
 
       if (!res.ok) {
-        console.error("Save error", res.status, body);
+        console.error("Save error", res.status, text);
+
+        if (res.status === 401 || res.status === 403) {
+          setToast({ show: true, text: "Autenticazione richiesta o token non valido", tone: "error" });
+          setSaving(false);
+          return;
+        }
 
         if (res.status === 404) {
-          setToast({ show: true, text: "Errore: endpoint non trovato (404). Modifiche applicate localmente.", tone: "error" });
-          if (onSave) onSave(payload);
+          setToast({ show: true, text: "Endpoint non trovato (404). Modifiche applicate localmente.", tone: "error" });
+          // fallback locale: aggiorna UI padre
+          if (onSave) onSave({ ...manga, ...local });
           setSaving(false);
           return;
         }
@@ -160,17 +162,31 @@ export default function MangaDetail({ manga, onClose, onSave }) {
         return;
       }
 
-      let data;
-      try { data = JSON.parse(body || "{}"); } catch (e) { data = {}; }
+      // successo: aggiorna anche i campi locali nel parent
+      if (onSave) {
+        // inviamo al parent l'oggetto completo aggiornato (stesso shape che usi nel resto dell'app)
+        const updated = {
+          ...manga,
+          Titolo: local.Titolo,
+          Autore: local.Autore,
+          Trama: local.Trama,
+          Genere: local.Genere,
+          VolumiPosseduti: Number(local.VolumiPosseduti),
+          VolumiTotali: local.VolumiTotali ? Number(local.VolumiTotali) : null,
+          CoverURL: local.CoverURL,
+          Costo: Number(local.Costo),
+          Editore: local.Editore
+        };
+        onSave(updated);
+      }
 
-      if (onSave) onSave(payload);
       setToast({ show: true, text: "Modifiche salvate", tone: "success" });
       setTimeout(() => setToast({ show: false, text: "", tone: "success" }), 1600);
       setEditing(false);
     } catch (err) {
       console.error("Errore salvataggio:", err);
       setToast({ show: true, text: "Errore di rete durante il salvataggio. Modifiche applicate localmente.", tone: "error" });
-      if (onSave) onSave(payload);
+      if (onSave) onSave({ ...manga, ...local });
     } finally {
       setSaving(false);
     }
@@ -230,7 +246,6 @@ export default function MangaDetail({ manga, onClose, onSave }) {
         ✕
       </button>
 
-      {/* toast */}
       {toast.show && (
         <div
           className={`fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-xl text-lg font-semibold animate-fade-in-out z-9999 ${
