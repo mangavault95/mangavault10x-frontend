@@ -109,27 +109,18 @@ export default function MangaGrid({ searchResults = [], filter }) {
             <div
               key={m.ID}
               onClick={() => setSelectedManga(m)}
-              className="group cursor-pointer hover:scale-[1.04] transition-transform duration-300"
+              className="group cursor-pointer"
             >
 
               {/* VOLUME 3D FLAT */}
               <div className="
+                volume-3d
                 bg-[#141414]
                 rounded-xl
                 border border-white/10
                 shadow-xl shadow-black/40
                 overflow-hidden
-                relative
-                transition-all duration-300
-                group-hover:shadow-2xl
-                group-hover:-translate-y-1
               ">
-
-                {/* COSTA LATERALE */}
-                <div className="
-                  absolute left-0 top-0 h-full w-[10px]
-                  bg-gradient-to-r from-black/60 to-black/20
-                " />
 
                 {/* COVER */}
                 <div className="w-full h-[230px] bg-black flex items-center justify-center">
