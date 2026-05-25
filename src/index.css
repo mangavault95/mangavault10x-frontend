@@ -22,3 +22,25 @@ html, body {
 .animate-fade-in-out {
   animation: fade-in-out 2s ease forwards;
 }
+.volume-3d {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.volume-3d:hover {
+  transform: translateY(-4px) rotateY(-6deg);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.45);
+}
+
+/* Costa laterale */
+.volume-3d::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12px;
+  height: 100%;
+  background: linear-gradient(to right, rgba(0,0,0,0.6), rgba(0,0,0,0.15));
+  transform: translateZ(-1px);
+}
