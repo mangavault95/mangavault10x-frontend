@@ -299,5 +299,11 @@
   transform: translateX(220%) rotate(20deg);
   opacity: 1;
 }
+/* opzionale: classe esplicita per il main card */
+.manga-detail-card {
+  background-color: rgba(0,0,0,0.8); /* più corposo */
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.07);
+}
 
 }
