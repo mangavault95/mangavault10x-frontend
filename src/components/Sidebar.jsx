@@ -14,7 +14,7 @@ export default function Sidebar({ open = true }) {
       .catch(() => setManga([]));
   }, []);
 
-  // dati utili per i mini widget del menu
+  // stats utili
   const stats = useMemo(() => {
     let total = 0, completed = 0, ongoing = 0, spent = 0;
     manga.forEach(m => {
@@ -47,9 +47,10 @@ export default function Sidebar({ open = true }) {
     const updated = favorites.includes(id) ? favorites.filter(f => f !== id) : [...favorites, id];
     setFavorites(updated);
     localStorage.setItem("mv_favorites", JSON.stringify(updated));
+    // dispatch per aggiornare altre parti dell'app
+    window.dispatchEvent(new CustomEvent("favoritesUpdated", { detail: { favorites: updated } }));
   };
 
-  // helper per dispatch di navigazione SPA
   const navigate = (page) => {
     window.dispatchEvent(new CustomEvent("navigate", { detail: { page } }));
   };
@@ -69,7 +70,7 @@ export default function Sidebar({ open = true }) {
         {open && <div className="text-lg font-black tracking-tight text-white">MangaVault <span className="text-yellow-400">10X</span></div>}
       </div>
 
-      {/* MENU PRINCIPALE (sezione con più carattere) */}
+      {/* MENU PRINCIPALE */}
       <nav className={`flex flex-col gap-2 ${open ? "" : "items-center"}`}>
 
         <button
@@ -97,60 +98,38 @@ export default function Sidebar({ open = true }) {
 
         <button
           onClick={() => navigate("progress")}
-          title="Progressi e mini grafici"
+          title="Progressi"
           className={`flex items-center gap-3 w-full ${open ? "px-3 py-2 rounded-lg bg-yellow-500/5 hover:bg-yellow-500/10" : "p-2 rounded-md"}`}
         >
           <span className="text-2xl">📈</span>
-          {open && (
-            <div className="flex-1">
-              <div className="flex justify-between items-center text-sm text-white">
-                <span>Progressi</span>
-                <span className="text-zinc-400 text-xs">{stats.total} vol.</span>
-              </div>
-
-              {/* mini bar che mostra rapporto completati/in corso */}
-              <div className="mt-2 h-2 bg-zinc-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-yellow-400"
-                  style={{
-                    width: `${stats.total ? Math.min((stats.completed / Math.max(stats.completed + stats.ongoing,1)) * 100, 100) : 0}%`
-                  }}
-                />
-              </div>
-            </div>
-          )}
+          {open && <span className="text-sm text-white">Progressi</span>}
         </button>
 
         <button
           onClick={() => navigate("history")}
-          title="Cronologia letture"
+          title="Ultime letture"
           className={`flex items-center gap-3 w-full ${open ? "px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10" : "p-2 rounded-md"}`}
         >
           <span className="text-2xl">🕒</span>
-          {open && <span className="text-sm text-white">Cronologia</span>}
+          {open && <span className="text-sm text-white">Ultime letture</span>}
         </button>
 
         <button
-          onClick={() => navigate("upcoming")}
-          title="Prossime uscite"
+          onClick={() => navigate("wishlist")}
+          title="Wishlist"
           className={`flex items-center gap-3 w-full ${open ? "px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10" : "p-2 rounded-md"}`}
         >
           <span className="text-2xl">📅</span>
-          {open && (
-            <div className="flex-1 flex justify-between items-center text-sm text-white">
-              <span>Prossime uscite</span>
-              <span className="text-zinc-400 text-xs">{upcomingCount}</span>
-            </div>
-          )}
+          {open && <span className="text-sm text-white">Wishlist</span>}
         </button>
 
       </nav>
 
-      {/* separatore */}
-      {open && <div className="h-px w-full bg-gradient-to-r from-transparent via-yellow-500/20 to-transparent my-2" />}
+      {/* separatore sottile */}
+      {open && <div className="h-px w-full bg-zinc-800 my-2" />}
 
-      {/* AZIONI RAPIDE (posizionate con più senso) */}
-      <div className={`flex ${open ? "flex-col gap-2" : "flex-col gap-3 items-center"} `}>
+      {/* AZIONI RAPIDE */}
+      <div className={`flex ${open ? "flex-col gap-2" : "flex-col gap-3 items-center"}`}>
         <button
           onClick={() => window.dispatchEvent(new Event("openAddManga"))}
           title="Aggiungi manga"
@@ -170,7 +149,7 @@ export default function Sidebar({ open = true }) {
         </button>
       </div>
 
-      {/* ULTIMI AGGIUNTI (solo in modalità aperta) */}
+      {/* ULTIMI AGGIUNTI — stile più curato */}
       {open && (
         <div>
           <p className="text-xs uppercase tracking-wider text-zinc-400 mb-3">Ultimi aggiunti</p>
@@ -178,21 +157,21 @@ export default function Sidebar({ open = true }) {
             {manga
               .slice()
               .sort((a, b) => new Date(b.DataAggiunta) - new Date(a.DataAggiunta))
-              .slice(0, 4)
+              .slice(0, 6)
               .map(m => (
                 <div
                   key={m.ID}
                   onClick={() => window.dispatchEvent(new CustomEvent("openMangaDetail", { detail: m }))}
-                  className="flex items-center gap-3 p-2 rounded-lg cursor-pointer bg-[#151515] border border-white/5 hover:bg-[#1c1c1c] transition"
+                  className="flex items-center gap-3 p-2 rounded-lg cursor-pointer bg-gradient-to-r from-[#0f0f0f] to-[#121212] border border-white/6 hover:scale-[1.01] transition-transform"
                 >
-                  <img src={m.CoverURL || "https://placehold.co/60x90"} className="w-10 h-14 rounded-md object-cover" />
+                  <img src={m.CoverURL || "https://placehold.co/60x90"} className="w-10 h-14 rounded-md object-cover flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-sm truncate text-white">{m.Titolo}</span>
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleFavorite(m.ID); }}
                         className="text-yellow-400 ml-2"
-                        title="Aggiungi ai preferiti"
+                        title={favorites.includes(m.ID) ? "Rimuovi preferito" : "Aggiungi ai preferiti"}
                       >
                         {favorites.includes(m.ID) ? "★" : "☆"}
                       </button>
@@ -205,7 +184,7 @@ export default function Sidebar({ open = true }) {
         </div>
       )}
 
-      {/* STATS (solo aperta) */}
+      {/* STATS */}
       {open && <div className="mt-auto"><StatsPanel /></div>}
     </div>
   );
