@@ -6,48 +6,51 @@ export default function MangaGrid({ searchResults = [], filter }) {
   const [selectedManga, setSelectedManga] = useState(null);
 
   // -----------------------------
-  // HELPERS
+  // PARSING ROBUSTO
   // -----------------------------
-  function getTotals(m) {
-    const rawTotal = m.VolumiTotali;
-    const total = Number(rawTotal);
-    const owned = Number(m.VolumiPosseduti) || 0;
+  function parseTotal(raw) {
+    if (!raw) return null; // null, undefined, empty string
 
-    const hasKnownTotal = !isNaN(total) && total > 0;
+    // rimuove simboli non numerici (+, ?, ecc.)
+    const cleaned = String(raw).replace(/[^0-9]/g, "");
+
+    if (!cleaned) return null;
+
+    const num = Number(cleaned);
+    return isNaN(num) ? null : num;
+  }
+
+  function getTotals(m) {
+    const total = parseTotal(m.VolumiTotali);
+    const owned = Number(m.VolumiPosseduti) || 0;
+    const hasKnownTotal = total !== null;
 
     return { total, owned, hasKnownTotal };
   }
 
+  // -----------------------------
+  // STATUS
+  // -----------------------------
   function getStatus(m){
     const { total, owned, hasKnownTotal } = getTotals(m);
 
-    // Serie non conclusa, volumi totali sconosciuti → IN CORSO
-    if (m.Concluso === 0 && !hasKnownTotal && owned > 0) {
+    if (m.Concluso === 0 && !hasKnownTotal && owned > 0)
       return "ongoing";
-    }
 
-    // Serie non conclusa, volumi totali noti ma non completa → DA COMPLETARE
-    if (m.Concluso === 0 && hasKnownTotal && owned > 0 && owned < total) {
+    if (m.Concluso === 0 && hasKnownTotal && owned < total)
       return "to_complete";
-    }
 
-    // Serie conclusa o comunque completa → COMPLETATA
-    if (m.Concluso === 1 || (hasKnownTotal && owned >= total)) {
-      return "completed";
-    }
-
-    // Fallback: la consideriamo ongoing
-    return "ongoing";
+    return "completed";
   }
 
   function barColor(status){
     if(status === "completed") return "bg-green-400";
     if(status === "to_complete") return "bg-red-400";
-    return "bg-yellow-400"; // ongoing
+    return "bg-yellow-400";
   }
 
   // -----------------------------
-  // FILTER LOGIC
+  // FILTRI
   // -----------------------------
   const filtered = useMemo(() => {
 
@@ -57,26 +60,25 @@ export default function MangaGrid({ searchResults = [], filter }) {
 
     switch(filter){
 
-      // IN CORSO → non conclusa, volumi totali sconosciuti, possiedi già qualcosa
+      // IN CORSO → non concluso, totali sconosciuti, possiedi già qualcosa
       case "ongoing":
         return list.filter(m => {
-          const { hasKnownTotal, owned } = getTotals(m);
+          const { owned, hasKnownTotal } = getTotals(m);
           return m.Concluso === 0 &&
                  !hasKnownTotal &&
                  owned > 0;
         });
 
-      // DA COMPLETARE → non conclusa, volumi totali noti, possiedi meno del totale
+      // DA COMPLETARE → non concluso, totali noti, possiedi meno del totale
       case "to_complete":
         return list.filter(m => {
           const { total, owned, hasKnownTotal } = getTotals(m);
           return m.Concluso === 0 &&
                  hasKnownTotal &&
-                 owned > 0 &&
                  owned < total;
         });
 
-      // COMPLETATI → concluso = 1 oppure possiedi tutti i volumi noti
+      // COMPLETATI
       case "completed":
         return list.filter(m => {
           const { total, owned, hasKnownTotal } = getTotals(m);
@@ -84,14 +86,14 @@ export default function MangaGrid({ searchResults = [], filter }) {
                  (hasKnownTotal && owned >= total);
         });
 
-      // SERIE BREVI → 2–7 volumi totali noti
+      // SERIE BREVI
       case "short":
         return list.filter(m => {
           const { total, hasKnownTotal } = getTotals(m);
           return hasKnownTotal && total >= 2 && total < 8;
         });
 
-      // VOLUMI UNICI → 1/1
+      // ONE-SHOT
       case "oneshot":
         return list.filter(m => {
           const { total, owned, hasKnownTotal } = getTotals(m);
