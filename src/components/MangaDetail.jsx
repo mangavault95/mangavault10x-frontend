@@ -37,7 +37,6 @@ export default function MangaDetail({ manga, onClose }) {
   async function handleRating(stars) {
     setRating(stars);
 
-    // debounce per evitare spam al DB
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     debounceRef.current = setTimeout(async () => {
