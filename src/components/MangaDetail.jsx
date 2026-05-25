@@ -16,6 +16,7 @@ export default function MangaDetail({ manga, onClose }) {
   // PREZZO PER VOLUME (colonna "Costo")
   const price = Number(manga.Costo) || 0;
 
+  // MANGA IN CORSO
   const isOngoing =
     !total || total === 0 || manga.VolumiTotali === "?" || manga.Concluso === 0;
 
@@ -128,28 +129,26 @@ export default function MangaDetail({ manga, onClose }) {
               </div>
 
               <div className="bg-white/5 p-5 rounded-xl border border-white/10">
-                <p className="text-xs text-zinc-400">Completion</p>
-                <p className="text-3xl font-semibold">
-                  {isOngoing ? "In corso" : `${percent.toFixed(0)}%`}
+                <p className="text-xs text-zinc-400">Editore</p>
+                <p className="text-2xl font-semibold">
+                  {manga.Editore || "N/A"}
                 </p>
               </div>
 
             </div>
 
             {/* PROGRESS BAR */}
-            <div className="relative h-4 bg-white/10 rounded-full overflow-hidden mb-4 cursor-pointer hover:bg-white/20 transition">
+            <div className="relative h-4 bg-white/10 rounded-full overflow-hidden mb-4">
+
               <div
-                className="h-full bg-gradient-to-r from-yellow-400 to-yellow-600 transition-all flex items-center justify-center text-black font-bold text-xs"
+                className={`h-full transition-all ${
+                  isOngoing
+                    ? "bg-gradient-to-r from-yellow-400 to-yellow-600"
+                    : "bg-gradient-to-r from-green-400 to-green-600"
+                }`}
                 style={{ width: `${percent}%` }}
-              >
-                {isOngoing ? (
-                  <span className="animate-pulse text-black font-bold">
-                    In corso
-                  </span>
-                ) : (
-                  `${percent.toFixed(0)}%`
-                )}
-              </div>
+              />
+
             </div>
 
           </div>
