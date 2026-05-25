@@ -11,15 +11,17 @@ export default function MangaDetail({ manga, onClose }) {
 
   const owned = Number(manga.VolumiPosseduti) || 0;
   const total = Number(manga.VolumiTotali) || 0;
-  const price = Number(manga.PrezzoVolume) || 0;
   const rating = Number(manga.Valutazione) || 0;
+
+  // PREZZO PER VOLUME (colonna "Costo")
+  const price = Number(manga.Costo) || 0;
 
   const isOngoing = !total || total === 0 || manga.VolumiTotali === "?";
 
-  // costo basato sui volumi posseduti
-  const totalCost = price ? (owned * price).toFixed(2) : "N/A";
+  // COSTO BASATO SUI VOLUMI POSSEDUTI
+  const totalCost = price && owned ? (owned * price).toFixed(2) : "N/A";
 
-  // percentuale
+  // PERCENTUALE
   const percent = isOngoing
     ? 50
     : total
@@ -32,7 +34,7 @@ export default function MangaDetail({ manga, onClose }) {
       onClick={onClose}
     >
 
-      {/* BACKGROUND PATTERN FROM COVER */}
+      {/* BACKGROUND PATTERN */}
       <div
         className="absolute inset-0"
         style={{
@@ -43,7 +45,6 @@ export default function MangaDetail({ manga, onClose }) {
         }}
       />
 
-      {/* DARK OVERLAY */}
       <div className="absolute inset-0 bg-black/70" />
 
       {/* CLOSE BUTTON */}
@@ -59,7 +60,6 @@ export default function MangaDetail({ manga, onClose }) {
         className="relative max-w-5xl mx-auto mt-20 mb-20 p-10 rounded-3xl shadow-2xl border border-white/10 bg-[#1a1a1a]/90 backdrop-blur-xl"
         onClick={e => e.stopPropagation()}
       >
-
         <div className="flex gap-10">
 
           {/* COVER */}
@@ -112,7 +112,7 @@ export default function MangaDetail({ manga, onClose }) {
               </div>
 
               <div className="bg-white/5 p-5 rounded-xl border border-white/10">
-                <p className="text-xs text-zinc-400">Costo totale serie</p>
+                <p className="text-xs text-zinc-400">Costo totale posseduto</p>
                 <p className="text-3xl font-semibold">{totalCost}€</p>
               </div>
 
@@ -125,7 +125,7 @@ export default function MangaDetail({ manga, onClose }) {
 
             </div>
 
-            {/* PROGRESS BAR (BUTTON STYLE) */}
+            {/* PROGRESS BAR */}
             <div className="relative h-4 bg-white/10 rounded-full overflow-hidden mb-4 cursor-pointer hover:bg-white/20 transition">
               <div
                 className="h-full bg-gradient-to-r from-yellow-400 to-yellow-600 transition-all flex items-center justify-center text-black font-bold text-xs"
