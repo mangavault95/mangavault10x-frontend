@@ -4,9 +4,6 @@ import MangaDetail from "./MangaDetail";
 export default function MangaGrid({ searchResults = [], filter }) {
   const [selectedManga, setSelectedManga] = useState(null);
 
-  // -----------------------------
-  // PARSING ROBUSTO
-  // -----------------------------
   function parseTotal(raw) {
     if (!raw) return null;
     const cleaned = String(raw).replace(/[^0-9]/g, "");
@@ -22,16 +19,11 @@ export default function MangaGrid({ searchResults = [], filter }) {
     return { total, owned, hasKnownTotal };
   }
 
-  // -----------------------------
-  // STATUS
-  // -----------------------------
   function getStatus(m) {
     const { total, owned, hasKnownTotal } = getMeta(m);
-
     if (!hasKnownTotal && owned > 0) return "ongoing";
     if (hasKnownTotal && owned < total) return "to_complete";
     if (hasKnownTotal && owned === total) return "completed";
-
     return "ongoing";
   }
 
@@ -41,9 +33,6 @@ export default function MangaGrid({ searchResults = [], filter }) {
     return "bg-yellow-400";
   }
 
-  // -----------------------------
-  // FILTRI
-  // -----------------------------
   const filtered = useMemo(() => {
     let list = [...searchResults].sort((a, b) =>
       (a.Titolo || "").localeCompare(b.Titolo || "")
@@ -55,95 +44,65 @@ export default function MangaGrid({ searchResults = [], filter }) {
           const { owned, hasKnownTotal } = getMeta(m);
           return !hasKnownTotal && owned > 0;
         });
-
       case "to_complete":
         return list.filter((m) => {
           const { total, owned, hasKnownTotal } = getMeta(m);
           return hasKnownTotal && owned < total;
         });
-
       case "completed":
         return list.filter((m) => {
           const { total, owned, hasKnownTotal } = getMeta(m);
           return hasKnownTotal && owned === total;
         });
-
       case "short":
         return list.filter((m) => {
           const { total, hasKnownTotal } = getMeta(m);
           return hasKnownTotal && total >= 2 && total < 8;
         });
-
       case "oneshot":
         return list.filter((m) => {
           const { total, owned, hasKnownTotal } = getMeta(m);
           return hasKnownTotal && total === 1 && owned >= 1;
         });
-
       default:
         return list;
     }
   }, [searchResults, filter]);
 
-  // -----------------------------
-  // RENDER
-  // -----------------------------
   return (
     <>
-      <div className="grid grid-cols-6 gap-6">
+      <div className="manga-grid">
         {filtered.map((m) => {
           const { total, owned, hasKnownTotal } = getMeta(m);
           const status = getStatus(m);
+          const percent = hasKnownTotal ? Math.min(100, (owned / total) * 100) : 50;
 
-          const percent = hasKnownTotal
-            ? Math.min(100, (owned / total) * 100)
-            : 50;
+          // thickness logic: more volumi -> più spessore (clamp 6..28)
+          const thickness = hasKnownTotal
+            ? Math.min(28, Math.max(6, Math.round(total / 2)))
+            : 10;
 
           return (
-            <div
-              key={m.ID}
-              onClick={() => setSelectedManga(m)}
-              className="group cursor-pointer"
-            >
-              {/* WRAPPER: perspective + overflow visibile */}
+            <div key={m.ID} className="group cursor-pointer" onClick={() => setSelectedManga(m)}>
               <div className="volume-3d-wrap">
-                {/* VOLUME 3D FLAT */}
                 <div
-                  className="
-                    volume-3d
-                    bg-[#141414]
-                    rounded-xl
-                    border border-white/10
-                    shadow-xl shadow-black/40
-                    overflow-visible
-                    transition-all
-                  "
+                  className="volume-3d"
+                  style={{ ['--thickness']: `${thickness}px` }}
                 >
-                  {/* COVER */}
-                  <div className="w-full h-[230px] bg-black flex items-center justify-center">
-                    <img
-                      src={m.CoverURL || "https://placehold.co/300x450"}
-                      alt={m.Titolo}
-                      className="max-h-full max-w-full object-contain"
-                    />
+                  <div className="cover">
+                    <img src={m.CoverURL || "https://placehold.co/300x450"} alt={m.Titolo} />
                   </div>
 
-                  {/* INFO */}
-                  <div className="p-3">
-                    <h3 className="text-sm font-bold truncate">{m.Titolo}</h3>
+                  {/* pages block (right side) */}
+                  <div className="pages" aria-hidden="true" />
 
-                    <p className="text-xs text-zinc-400 truncate">
-                      {m.Genere || "Nessun genere"}
-                    </p>
+                  <div className="info">
+                    <div className="title" title={m.Titolo}>{m.Titolo}</div>
+                    <div className="meta">{m.Genere || "Nessun genere"}</div>
 
-                    <div className="text-[10px] text-zinc-400 mt-1">
-                      {hasKnownTotal ? `${owned}/${total}` : `${owned}+`}
-                    </div>
-
-                    {/* PROGRESS BAR */}
-                    <div className="h-1 bg-zinc-800 mt-2 rounded overflow-hidden">
+                    <div className="progress" aria-hidden>
                       <div
-                        className={`${barColor(status)} h-full transition-all duration-500 ease-out`}
+                        className={`bar ${barColor(status)}`}
                         style={{ width: `${percent}%` }}
                         title={
                           status === "completed"
@@ -162,9 +121,7 @@ export default function MangaGrid({ searchResults = [], filter }) {
         })}
       </div>
 
-      {selectedManga && (
-        <MangaDetail manga={selectedManga} onClose={() => setSelectedManga(null)} />
-      )}
+      {selectedManga && <MangaDetail manga={selectedManga} onClose={() => setSelectedManga(null)} />}
     </>
   );
 }
