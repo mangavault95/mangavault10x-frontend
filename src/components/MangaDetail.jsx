@@ -16,15 +16,20 @@ export default function MangaDetail({ manga, onClose }) {
   // PREZZO PER VOLUME (colonna "Costo")
   const price = Number(manga.Costo) || 0;
 
-  // MANGA IN CORSO
+  // STATUS
+  const isCompleted =
+    (!!total && total > 0 && owned === total) || manga.Concluso === 1;
   const isOngoing =
-    !total || total === 0 || manga.VolumiTotali === "?" || manga.Concluso === 0;
+    !isCompleted &&
+    (!total || total === 0 || manga.VolumiTotali === "?" || manga.Concluso === 0);
 
   // COSTO BASATO SUI VOLUMI POSSEDUTI
   const totalCost = price && owned ? (owned * price).toFixed(2) : "N/A";
 
   // PERCENTUALE
-  const percent = isOngoing
+  const percent = isCompleted
+    ? 100
+    : isOngoing
     ? 50
     : total
     ? Math.min((owned / total) * 100, 100)
@@ -81,11 +86,18 @@ export default function MangaDetail({ manga, onClose }) {
 
             <p className="text-zinc-400 text-lg mb-2">{manga.Autore}</p>
 
-            {/* BADGE IN CORSO */}
+            {/* BADGE STATUS */}
             {isOngoing && (
               <div className="inline-flex items-center gap-2 px-3 py-1 mb-4 rounded-full bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 font-semibold text-sm animate-pulse w-fit">
                 <span className="text-lg">⏳</span>
                 <span>In corso</span>
+              </div>
+            )}
+
+            {isCompleted && (
+              <div className="inline-flex items-center gap-2 px-3 py-1 mb-4 rounded-full bg-green-500/20 border border-green-500/40 text-green-300 font-semibold text-sm w-fit">
+                <span className="text-lg">✅</span>
+                <span>Completo</span>
               </div>
             )}
 
@@ -139,16 +151,14 @@ export default function MangaDetail({ manga, onClose }) {
 
             {/* PROGRESS BAR */}
             <div className="relative h-4 bg-white/10 rounded-full overflow-hidden mb-4">
-
               <div
                 className={`h-full transition-all ${
-                  isOngoing
-                    ? "bg-gradient-to-r from-yellow-400 to-yellow-600"
-                    : "bg-gradient-to-r from-green-400 to-green-600"
+                  isCompleted
+                    ? "bg-gradient-to-r from-green-400 to-green-600"
+                    : "bg-gradient-to-r from-yellow-400 to-yellow-600"
                 }`}
                 style={{ width: `${percent}%` }}
               />
-
             </div>
 
           </div>
