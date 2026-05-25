@@ -2,89 +2,171 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Layout base */
-html, body {
-  height: 100%;
-}
-
-#root {
-  min-height: 100vh;
-}
-
-/* Effetti vari già presenti */
-.glow-star {
-  text-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
-}
-
-@keyframes fade-in-out {
-  0% { opacity: 0; transform: translateY(-10px); }
-  10% { opacity: 1; transform: translateY(0); }
-  90% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-10px); }
-}
-
-.animate-fade-in-out {
-  animation: fade-in-out 2s ease forwards;
-}
-
-/* --------------------------------------------- */
-/* 🎨 VOLUME 3D FLAT — VERSIONE CORRETTA         */
-/* --------------------------------------------- */
+/* base layout (tieni il resto del tuo file) */
 
 @layer components {
-  .volume-3d-wrap {
-    perspective: 900px;
-    -webkit-perspective: 900px;
-    overflow: visible;
-    display: inline-block;
+  /* GRID helper: usalo sulla grid container se vuoi */
+  .manga-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    align-items: start;
   }
 
+  /* wrapper che fornisce perspective */
+  .volume-3d-wrap {
+    perspective: 1000px;
+    -webkit-perspective: 1000px;
+    display: flex;
+    justify-content: center;
+    overflow: visible;
+  }
+
+  /* VOLUME: larghezza fissa per uniformità, altezza cover fissa */
   .volume-3d {
+    --thickness: 12px; /* default, sovrascritto inline dallo JSX */
+    width: 140px;
+    border-radius: 12px;
+    background: #141414;
     position: relative;
     transform-style: preserve-3d;
     transform-origin: left center;
-    transition: transform 0.35s cubic-bezier(.2,.9,.2,1), box-shadow 0.35s ease;
-    will-change: transform;
+    transition: transform 0.38s cubic-bezier(.2,.9,.2,1), box-shadow 0.38s ease;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.35);
     overflow: visible;
     backface-visibility: hidden;
   }
 
   .volume-3d:hover {
-    transform: translateY(-6px) rotateY(-8deg);
-    box-shadow: 0 18px 40px rgba(0,0,0,0.55);
+    transform: translateY(-10px) rotateY(-12deg) translateZ(6px);
+    box-shadow: 0 28px 60px rgba(0,0,0,0.6);
   }
 
+  /* spine / costina (sinistra) */
   .volume-3d::before {
     content: "";
     position: absolute;
-    left: 0;
+    left: calc(-1 * var(--thickness));
     top: 0;
-    width: 14px;
     height: 100%;
-    background: linear-gradient(to right, rgba(0,0,0,0.7), rgba(0,0,0,0.12));
-    transform: translateZ(6px);
-    z-index: 30;
-    pointer-events: none;
+    width: calc(var(--thickness));
+    background: linear-gradient(90deg, rgba(10,10,10,0.95), rgba(40,40,40,0.85));
     border-top-left-radius: 12px;
     border-bottom-left-radius: 12px;
+    z-index: 40;
+    box-shadow: inset -2px 0 6px rgba(0,0,0,0.6);
+    transform: translateZ(calc(var(--thickness) / 2));
+    pointer-events: none;
   }
 
+  /* thin separator between spine and cover */
   .volume-3d::after {
     content: "";
     position: absolute;
-    left: 14px;
+    left: calc(-1 * var(--thickness) + 6px);
     top: 6%;
     height: 88%;
     width: 1px;
     background: rgba(255,255,255,0.03);
-    transform: translateZ(6px);
-    z-index: 29;
+    z-index: 41;
+    transform: translateZ(calc(var(--thickness) / 2));
     pointer-events: none;
   }
 
-  .volume-3d img {
+  /* pages block (right side) */
+  .volume-3d .pages {
+    position: absolute;
+    right: calc(-1 * var(--thickness));
+    top: 6%;
+    height: 88%;
+    width: calc(var(--thickness));
+    background: linear-gradient(180deg, #f8f7f3 0%, #efece6 100%);
+    box-shadow: inset -6px 0 8px rgba(0,0,0,0.06);
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    transform: translateZ(calc(var(--thickness) / 2));
+    z-index: 20;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  /* subtle page lines to simulate many pages */
+  .volume-3d .pages::before {
+    content: "";
+    position: absolute;
+    left: 6%;
+    top: 6%;
+    right: 6%;
+    bottom: 6%;
+    background-image: linear-gradient(transparent 0%, rgba(0,0,0,0.03) 1px);
+    background-size: 100% 6px;
+    opacity: 0.6;
+    transform: translateZ(2px);
+  }
+
+  /* cover area */
+  .volume-3d .cover {
+    width: 100%;
+    height: 200px;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    overflow: hidden;
     position: relative;
     z-index: 10;
+  }
+
+  .volume-3d .cover img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+    transition: transform 0.45s ease;
     backface-visibility: hidden;
+  }
+
+  .volume-3d:hover .cover img {
+    transform: scale(1.03);
+  }
+
+  /* info area */
+  .volume-3d .info {
+    padding: 10px;
+    padding-bottom: 14px;
+    z-index: 12;
+    position: relative;
+  }
+
+  .volume-3d .title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #e6e6e6;
+    line-height: 1.1;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .volume-3d .meta {
+    font-size: 0.75rem;
+    color: #9ca3af;
+  }
+
+  /* progress bar small */
+  .volume-3d .progress {
+    height: 6px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .volume-3d .progress > .bar {
+    height: 100%;
+    transition: width 0.5s ease;
   }
 }
