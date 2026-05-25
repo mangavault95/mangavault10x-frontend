@@ -235,4 +235,69 @@
 
   /* small utility for modal z-index */
   .z-9999 { z-index: 9999; }
+  /* custom scrollbar per descrizione e textarea */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+}
+
+/* Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+}
+
+/* Webkit */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08));
+  border-radius: 999px;
+  border: 2px solid rgba(0,0,0,0.0);
+}
+
+/* miglior contrasto per inputs nella modal */
+.bg-white\/6 { background-color: rgba(255,255,255,0.06); }
+.bg-white\/8 { background-color: rgba(255,255,255,0.08); }
+
+/* utility z-index */
+.z-60 { z-index: 60; }
+.z-9999 { z-index: 9999; }
+
+/* cover shine (riutilizzabile) */
+.cover-shine {
+  position: absolute;
+  left: -60%;
+  top: -40%;
+  width: 40%;
+  height: 180%;
+  background: linear-gradient(120deg, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.0) 100%);
+  transform: rotate(20deg);
+  opacity: 0;
+  transition: transform 0.9s cubic-bezier(.2,.9,.2,1), opacity 0.25s ease;
+  pointer-events: none;
+  filter: blur(6px);
+  z-index: 25;
+}
+
+/* show shine on hover/focus of the cover wrapper */
+.w-
+
+\[260px\]
+
+:hover .cover-shine,
+.w-
+
+\[260px\]
+
+:focus .cover-shine {
+  transform: translateX(220%) rotate(20deg);
+  opacity: 1;
+}
+
 }
