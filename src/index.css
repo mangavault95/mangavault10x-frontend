@@ -195,4 +195,11 @@
     height: 100%;
     transition: width 0.45s ease;
   }
+
+  /* MangaDetail specific */
+.manga-detail-backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); }
+.bg-white\/6 { background-color: rgba(255,255,255,0.06); }
+.bg-white\/8 { background-color: rgba(255,255,255,0.08); }
+.z-60 { z-index: 60; }
+
 }
