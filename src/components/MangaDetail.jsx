@@ -37,6 +37,9 @@ export default function MangaDetail({ manga, onClose }) {
   async function handleRating(stars) {
     setRating(stars);
 
+    // ⭐ Mantiene le stelle accese anche dopo la chiusura
+    manga.Valutazione = stars;
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     debounceRef.current = setTimeout(async () => {
