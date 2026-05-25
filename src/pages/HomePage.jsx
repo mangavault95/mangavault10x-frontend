@@ -13,7 +13,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
   const [mangaList, setMangaList] = useState([]);
   const [openMenu, setOpenMenu] = useState(false);
 
-  // controllo apertura sidebar (gestito qui)
+  // controllo apertura sidebar
   const [openSidebar, setOpenSidebar] = useState(true);
 
   useEffect(() => {
@@ -24,30 +24,36 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     const handler = (e) => setSelectedManga(e.detail);
     window.addEventListener("openMangaDetail", handler);
 
-    // intercetta navigazioni dalla sidebar
     const navHandler = (e) => {
       const page = e.detail?.page;
       if (!page) return;
-      // esempio: apri pagina records o applica filtro
       if (page === "records") {
         setRecordsMode(true);
         setAdminMode(false);
       } else if (page === "favorites") {
         setFilter("favorites");
       } else if (page === "progress") {
-        // puoi gestire la navigazione interna qui
         setFilter("all");
       } else if (page === "history") {
         setFilter("history");
-      } else if (page === "upcoming") {
-        setFilter("upcoming");
+      } else if (page === "wishlist") {
+        setFilter("wishlist");
       }
     };
     window.addEventListener("navigate", navHandler);
 
+    // aggiorna UI quando cambiano i preferiti
+    const favHandler = (e) => {
+      // puoi usare e.detail.favorites se vuoi reagire
+      // qui forzo un refresh della lista per aggiornare badge ecc.
+      getManga().then(d => setMangaList(d || []));
+    };
+    window.addEventListener("favoritesUpdated", favHandler);
+
     return () => {
       window.removeEventListener("openMangaDetail", handler);
       window.removeEventListener("navigate", navHandler);
+      window.removeEventListener("favoritesUpdated", favHandler);
     };
   }, [setAdminMode, setRecordsMode]);
 
@@ -67,16 +73,23 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     { key: "to_complete", label: "Da completare" },
     { key: "completed", label: "Completati" },
     { key: "short", label: "Serie brevi" },
-    { key: "oneshot", label: "Volumi unici" }
+    { key: "oneshot", label: "Volumi unici" },
+    { key: "favorites", label: "Preferiti" },
+    { key: "history", label: "Ultime letture" },
+    { key: "wishlist", label: "Wishlist" }
   ];
+
+  // posizione toggle: se sidebar aperta sposto il bottone a destra del logo per non coprirlo
+  const toggleStyle = openSidebar ? { left: 300 } : { left: 16 };
 
   return (
     <div className="bg-[#111] text-white min-h-screen">
 
-      {/* TOGGLE SIDEBAR */}
+      {/* TOGGLE SIDEBAR: posizione dinamica per non coprire il logo */}
       <button
         onClick={() => setOpenSidebar(s => !s)}
-        className="fixed top-4 left-4 z-50 bg-black/40 backdrop-blur-md border border-white/10 text-white px-3 py-2 rounded-lg hover:bg-black/60 transition"
+        style={toggleStyle}
+        className="fixed top-4 z-50 bg-black/40 backdrop-blur-md border border-white/10 text-white px-3 py-2 rounded-lg hover:bg-black/60 transition"
         aria-label={openSidebar ? "Chiudi sidebar" : "Apri sidebar"}
       >
         {openSidebar ? "✖" : "☰"}
