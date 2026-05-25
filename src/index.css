@@ -32,31 +32,62 @@ html, body {
 /* --------------------------------------------- */
 
 @layer components {
+  /* wrapper che fornisce la perspective e permette overflow visibile */
+  .volume-3d-wrap {
+    perspective: 900px;
+    -webkit-perspective: 900px;
+    overflow: visible; /* importante per ombre e pseudo-elementi */
+  }
 
   .volume-3d {
     position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transform-origin: left center;
+    transition: transform 0.35s cubic-bezier(.2,.9,.2,1), box-shadow 0.35s ease;
+    will-change: transform;
+    overflow: visible;
+    backface-visibility: hidden;
   }
 
   .volume-3d:hover {
-    transform: translateY(-4px) rotateY(-6deg);
-    box-shadow: 0 12px 25px rgba(0,0,0,0.45);
+    transform: translateY(-6px) rotateY(-8deg);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.55);
   }
 
-  /* Costa laterale */
+  /* Costa laterale: davanti al contenuto, non dietro */
   .volume-3d::before {
     content: "";
     position: absolute;
     left: 0;
     top: 0;
-    width: 12px;
+    width: 14px;
     height: 100%;
-    background: linear-gradient(
-      to right,
-      rgba(0,0,0,0.6),
-      rgba(0,0,0,0.15)
-    );
-    transform: translateZ(-1px);
+    background: linear-gradient(to right, rgba(0,0,0,0.7), rgba(0,0,0,0.12));
+    transform: translateZ(6px); /* leggermente in avanti */
+    z-index: 30; /* porta la costa sopra la cover */
+    pointer-events: none;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+  }
+
+  /* piccolo bordo interno per separare costa/cover */
+  .volume-3d::after {
+    content: "";
+    position: absolute;
+    left: 14px;
+    top: 6%;
+    height: 88%;
+    width: 1px;
+    background: rgba(255,255,255,0.03);
+    transform: translateZ(6px);
+    z-index: 29;
+    pointer-events: none;
+  }
+
+  /* assicurati che l'immagine non proietti sopra la costa */
+  .volume-3d img {
+    position: relative;
+    z-index: 10;
+    backface-visibility: hidden;
   }
 }
