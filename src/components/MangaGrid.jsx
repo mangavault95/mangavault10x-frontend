@@ -10,10 +10,8 @@ export default function MangaGrid({ searchResults = [], filter }) {
   // -----------------------------
   function parseTotal(raw) {
     if (!raw) return null;
-
     const cleaned = String(raw).replace(/[^0-9]/g, "");
     if (!cleaned) return null;
-
     const num = Number(cleaned);
     return isNaN(num) ? null : num;
   }
@@ -22,7 +20,6 @@ export default function MangaGrid({ searchResults = [], filter }) {
     const total = parseTotal(m.VolumiTotali);
     const owned = Number(m.VolumiPosseduti) || 0;
     const hasKnownTotal = total !== null;
-
     return { total, owned, hasKnownTotal };
   }
 
@@ -32,14 +29,9 @@ export default function MangaGrid({ searchResults = [], filter }) {
   function getStatus(m){
     const { total, owned, hasKnownTotal } = getMeta(m);
 
-    if (!hasKnownTotal && owned > 0)
-      return "ongoing";
-
-    if (hasKnownTotal && owned < total)
-      return "to_complete";
-
-    if (hasKnownTotal && owned === total)
-      return "completed";
+    if (!hasKnownTotal && owned > 0) return "ongoing";
+    if (hasKnownTotal && owned < total) return "to_complete";
+    if (hasKnownTotal && owned === total) return "completed";
 
     return "ongoing";
   }
@@ -117,15 +109,32 @@ export default function MangaGrid({ searchResults = [], filter }) {
             <div
               key={m.ID}
               onClick={() => setSelectedManga(m)}
-              className="group cursor-pointer hover:scale-[1.03] transition-transform duration-300"
+              className="group cursor-pointer hover:scale-[1.04] transition-transform duration-300"
             >
 
-              <div className="bg-[#141414] rounded-xl border border-white/10 shadow-lg shadow-black/30 overflow-hidden">
+              {/* VOLUME 3D FLAT */}
+              <div className="
+                bg-[#141414]
+                rounded-xl
+                border border-white/10
+                shadow-xl shadow-black/40
+                overflow-hidden
+                relative
+                transition-all duration-300
+                group-hover:shadow-2xl
+                group-hover:-translate-y-1
+              ">
+
+                {/* COSTA LATERALE */}
+                <div className="
+                  absolute left-0 top-0 h-full w-[10px]
+                  bg-gradient-to-r from-black/60 to-black/20
+                " />
 
                 {/* COVER */}
-                <div className="w-full h-[220px] bg-black flex items-center justify-center">
+                <div className="w-full h-[230px] bg-black flex items-center justify-center">
                   <img
-                    src={m.CoverURL || "https://placehold.co/300x450"}
+                    src={m.CoverURL || 'https://placehold.co/300x450'}
                     className="max-h-full max-w-full object-contain"
                   />
                 </div>
