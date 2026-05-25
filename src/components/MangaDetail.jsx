@@ -10,7 +10,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
 
   const [rating, setRating] = useState(Number(manga.Valutazione) || 0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [showToast, setShowToast] = useState(false);
+  const [toast, setToast] = useState({ show: false, text: "", tone: "success" });
   const debounceRef = useRef(null);
 
   const [local, setLocal] = useState({
@@ -27,6 +27,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
 
   const [editing, setEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   function updateField(key, value) {
     setLocal(prev => ({ ...prev, [key]: value }));
@@ -53,6 +54,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     ? Math.min((owned / total) * 100, 100)
     : 0;
 
+  // Rating debounce + save
   async function handleRating(stars) {
     setRating(stars);
     manga.Valutazione = stars;
@@ -77,14 +79,17 @@ export default function MangaDetail({ manga, onClose, onSave }) {
         );
 
         await res.json().catch(() => ({}));
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 2000);
+        setToast({ show: true, text: "⭐ Valutazione salvata!", tone: "success" });
+        setTimeout(() => setToast({ show: false, text: "", tone: "success" }), 1800);
       } catch (err) {
         console.error("Errore aggiornamento rating:", err);
+        setToast({ show: true, text: "Errore salvataggio valutazione", tone: "error" });
+        setTimeout(() => setToast({ show: false, text: "", tone: "success" }), 2200);
       }
     }, 500);
   }
 
+  // Cover upload preview
   function handleCoverFile(file) {
     if (!file) return;
     setUploading(true);
@@ -108,7 +113,9 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     e.preventDefault();
   }
 
-  function saveChanges() {
+  // SAVE: invia al backend e chiama onSave(payload)
+  async function saveChanges() {
+    setSaving(true);
     const payload = {
       ...manga,
       Titolo: local.Titolo,
@@ -122,10 +129,41 @@ export default function MangaDetail({ manga, onClose, onSave }) {
       Editore: local.Editore
     };
 
-    if (onSave) onSave(payload);
-    setEditing(false);
+    try {
+      // endpoint di aggiornamento (manteniamo lo stesso dominio usato per rating)
+      const res = await fetch("https://mangavault10x-api.onrender.com/api/manga/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        console.error("Save error", res.status, data);
+        setToast({ show: true, text: "Errore: impossibile salvare", tone: "error" });
+        setSaving(false);
+        return;
+      }
+
+      // successo: aggiorna stato padre e mostra toast
+      setToast({ show: true, text: "Modifiche salvate", tone: "success" });
+      setTimeout(() => setToast({ show: false, text: "", tone: "success" }), 1600);
+
+      if (onSave) onSave(payload);
+      setEditing(false);
+    } catch (err) {
+      console.error("Errore salvataggio:", err);
+      setToast({ show: true, text: "Errore di rete durante il salvataggio", tone: "error" });
+    } finally {
+      setSaving(false);
+    }
   }
 
+  // Focus trap per modal
   const modalRef = useRef(null);
   useEffect(() => {
     if (!editing) return;
@@ -159,18 +197,17 @@ export default function MangaDetail({ manga, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 z-[999] overflow-y-auto" onClick={onClose}>
-
       <div
         className="absolute inset-0"
         style={{
           background: `linear-gradient(135deg, rgba(10,10,10,0.96), rgba(30,30,30,0.96)), url(${local.CoverURL || manga.CoverURL})`,
           backgroundSize: "120px",
           backgroundRepeat: "repeat",
-          opacity: 0.16
+          opacity: 0.14
         }}
       />
 
-      <div className="absolute inset-0 bg-black/72" />
+      <div className="absolute inset-0 bg-black/64" />
 
       <button
         onClick={onClose}
@@ -180,20 +217,24 @@ export default function MangaDetail({ manga, onClose, onSave }) {
         ✕
       </button>
 
-      {showToast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-xl shadow-xl text-lg font-semibold animate-fade-in-out z-9999">
-          ⭐ Valutazione salvata!
+      {/* toast */}
+      {toast.show && (
+        <div
+          className={`fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-xl text-lg font-semibold animate-fade-in-out z-9999 ${
+            toast.tone === "success" ? "bg-green-500 text-white" : "bg-red-600 text-white"
+          }`}
+        >
+          {toast.text}
         </div>
       )}
 
       <div
-        className="relative max-w-6xl mx-auto mt-16 mb-16 p-8 rounded-3xl shadow-2xl border border-white/12 bg-black/80 backdrop-blur-md"
+        className="relative max-w-6xl mx-auto mt-16 mb-16 p-8 rounded-3xl shadow-2xl border border-white/10 manga-detail-card"
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
         <div className="flex gap-8">
-
           <div className="flex-shrink-0">
             <div className="relative w-[260px]">
               <div className="rounded-xl overflow-hidden shadow-2xl transform-gpu transition-transform duration-300 hover:-translate-y-1">
@@ -232,7 +273,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
             </div>
           </div>
 
-          <div className="flex-1 bg-white/6 backdrop-blur-md rounded-xl p-6 text-white">
+          <div className="flex-1 bg-white/8 backdrop-blur-md rounded-xl p-6 text-white">
             <div className="flex justify-between items-start gap-4">
               <div>
                 <h1 className="text-3xl font-extrabold leading-tight">{local.Titolo}</h1>
@@ -267,7 +308,6 @@ export default function MangaDetail({ manga, onClose, onSave }) {
               {local.Trama || <span className="text-zinc-400">Nessuna descrizione disponibile.</span>}
             </div>
 
-            {/* metadati: solo visualizzazione (rimosse le modifiche inline per volumi e costo) */}
             <div className="mt-5 grid grid-cols-3 gap-3">
               <div className="bg-white/4 p-3 rounded">
                 <div className="text-xs text-zinc-300">Volumi posseduti</div>
@@ -315,7 +355,9 @@ export default function MangaDetail({ manga, onClose, onSave }) {
 
               <div className="flex gap-3">
                 <button className="px-3 py-2 bg-blue-600 rounded hover:bg-blue-700" onClick={() => updateField("VolumiPosseduti", local.VolumiTotali || local.VolumiPosseduti)}>Segna come completato</button>
-                <button className="px-3 py-2 bg-white/8 rounded hover:bg-white/12" onClick={saveChanges}>Salva modifiche</button>
+                <button className="px-3 py-2 bg-white/8 rounded hover:bg-white/12" onClick={saveChanges} disabled={saving}>
+                  {saving ? "Salvataggio..." : "Salva modifiche"}
+                </button>
               </div>
             </div>
           </div>
@@ -380,7 +422,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
 
               <div className="mt-4 flex justify-end gap-2">
                 <button className="px-3 py-1 bg-white/6 rounded" onClick={() => setEditing(false)}>Annulla</button>
-                <button className="px-3 py-1 bg-green-600 rounded" onClick={saveChanges}>Salva</button>
+                <button className="px-3 py-1 bg-green-600 rounded" onClick={saveChanges} disabled={saving}>{saving ? "Salvataggio..." : "Salva"}</button>
               </div>
             </div>
           </div>
