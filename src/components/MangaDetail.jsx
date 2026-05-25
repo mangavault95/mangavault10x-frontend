@@ -10,6 +10,8 @@ export default function MangaDetail({ manga, onClose }) {
   if (!manga) return null;
 
   const [rating, setRating] = useState(Number(manga.Valutazione) || 0);
+  const [favorite, setFavorite] = useState(manga.Preferito === 1);
+  const [showToast, setShowToast] = useState(false);
   const debounceRef = useRef(null);
 
   const owned = Number(manga.VolumiPosseduti) || 0;
@@ -36,8 +38,6 @@ export default function MangaDetail({ manga, onClose }) {
   // ⭐ CLICK STELLE + DEBOUNCE + SALVATAGGIO BACKEND
   async function handleRating(stars) {
     setRating(stars);
-
-    // ⭐ Mantiene le stelle accese anche dopo la chiusura
     manga.Valutazione = stars;
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -62,10 +62,20 @@ export default function MangaDetail({ manga, onClose }) {
         const data = await res.json().catch(() => ({}));
         console.log("UPDATE RATING STATUS:", res.status, data);
 
+        // 🔔 Toast
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2000);
+
       } catch (err) {
         console.error("Errore aggiornamento rating:", err);
       }
     }, 500);
+  }
+
+  // ❤️ TOGGLE PREFERITO (solo frontend)
+  function toggleFavorite() {
+    setFavorite(!favorite);
+    manga.Preferito = !favorite ? 1 : 0;
   }
 
   return (
@@ -95,6 +105,13 @@ export default function MangaDetail({ manga, onClose }) {
         ✕
       </button>
 
+      {/* TOAST */}
+      {showToast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-xl shadow-xl text-lg font-semibold animate-fade-in-out z-[9999]">
+          ⭐ Valutazione salvata!
+        </div>
+      )}
+
       {/* MAIN CARD */}
       <div
         className="relative max-w-5xl mx-auto mt-20 mb-20 p-10 rounded-3xl shadow-2xl border border-white/10 bg-[#1a1a1a]/90 backdrop-blur-xl"
@@ -111,10 +128,21 @@ export default function MangaDetail({ manga, onClose }) {
           {/* RIGHT SIDE */}
           <div className="flex-1">
 
-            {/* TITLE */}
-            <h1 className="text-5xl font-black text-white mb-2 drop-shadow-xl">
-              {manga.Titolo}
-            </h1>
+            {/* TITLE + FAVORITE */}
+            <div className="flex items-center justify-between">
+              <h1 className="text-5xl font-black text-white mb-2 drop-shadow-xl">
+                {manga.Titolo}
+              </h1>
+
+              <button
+                onClick={toggleFavorite}
+                className={`text-4xl transition ${
+                  favorite ? "text-red-500 scale-110" : "text-zinc-500"
+                } hover:scale-125`}
+              >
+                ❤️
+              </button>
+            </div>
 
             <p className="text-zinc-400 text-lg mb-2">{manga.Autore}</p>
 
@@ -133,24 +161,24 @@ export default function MangaDetail({ manga, onClose }) {
               </div>
             )}
 
-            {/* ⭐ RATING STARS CLICKABLE */}
+            {/* ⭐ RATING STARS WITH SPARKLE */}
             <div className="flex items-center gap-1 mb-6">
               {[1, 2, 3, 4, 5].map(i => (
                 <span
                   key={i}
                   onClick={() => handleRating(i)}
-                  title={
-                    i === 1 ? "Pessimo" :
-                    i === 2 ? "Bruttino" :
-                    i === 3 ? "Carino" :
-                    i === 4 ? "Bello" :
-                    "Capolavoro"
-                  }
-                  className={`text-3xl cursor-pointer transition-transform ${
+                  className={`text-3xl cursor-pointer transition-transform relative ${
                     i <= rating ? "text-yellow-400" : "text-zinc-600"
                   } hover:text-yellow-300 active:scale-125`}
                 >
                   ★
+
+                  {/* ✨ Sparkle effect */}
+                  {i <= rating && (
+                    <span className="absolute -top-2 -right-2 text-yellow-300 animate-ping">
+                      ✨
+                    </span>
+                  )}
                 </span>
               ))}
             </div>
@@ -189,8 +217,8 @@ export default function MangaDetail({ manga, onClose }) {
 
             </div>
 
-            {/* PROGRESS BAR */}
-            <div className="relative h-4 bg-white/10 rounded-full overflow-hidden mb-4">
+            {/* 📊 ADVANCED PROGRESS BAR */}
+            <div className="relative h-5 bg-white/10 rounded-full overflow-hidden mb-4 border border-white/10">
               <div
                 className={`h-full transition-all ${
                   isCompleted
@@ -199,6 +227,10 @@ export default function MangaDetail({ manga, onClose }) {
                 }`}
                 style={{ width: `${percent}%` }}
               />
+
+              <span className="absolute inset-0 flex items-center justify-center text-xs text-white font-bold drop-shadow">
+                {owned}/{total || "?"} volumi
+              </span>
             </div>
 
           </div>
