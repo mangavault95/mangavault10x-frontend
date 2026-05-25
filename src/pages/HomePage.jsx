@@ -3,18 +3,25 @@ import Sidebar from "../components/Sidebar";
 import MangaGrid from "../components/MangaGrid";
 import TopHero from "../components/TopHero";
 import MangaDetail from "../components/MangaDetail";
+import FavoritesModal from "../components/FavoritesModal";
+import HistoryModal from "../components/HistoryModal";
+import WishlistModal from "../components/WishlistModal";
 import { getManga } from "../services/api";
 import Fuse from "fuse.js";
 
 export default function HomePage({ setAdminMode, setRecordsMode }) {
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
   const [selectedManga, setSelectedManga] = useState(null);
   const [mangaList, setMangaList] = useState([]);
   const [openMenu, setOpenMenu] = useState(false);
 
   // controllo apertura sidebar
   const [openSidebar, setOpenSidebar] = useState(true);
+
+  // modali locali
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showWishlist, setShowWishlist] = useState(false);
 
   useEffect(() => {
     getManga().then(d => setMangaList(d || []));
@@ -31,32 +38,38 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
         setRecordsMode(true);
         setAdminMode(false);
       } else if (page === "favorites") {
-        setFilter("favorites");
-      } else if (page === "progress") {
-        setFilter("all");
+        setShowFavorites(true);
       } else if (page === "history") {
-        setFilter("history");
+        setShowHistory(true);
       } else if (page === "wishlist") {
-        setFilter("wishlist");
+        setShowWishlist(true);
       }
     };
     window.addEventListener("navigate", navHandler);
 
-    // aggiorna UI quando cambiano i preferiti
-    const favHandler = (e) => {
-      // puoi usare e.detail.favorites se vuoi reagire
-      // qui forzo un refresh della lista per aggiornare badge ecc.
-      getManga().then(d => setMangaList(d || []));
-    };
-    window.addEventListener("favoritesUpdated", favHandler);
+    // apri modali da sidebar
+    const favOpen = () => setShowFavorites(true);
+    const histOpen = () => setShowHistory(true);
+    const wishOpen = () => setShowWishlist(true);
+    window.addEventListener("openFavoritesModal", favOpen);
+    window.addEventListener("openHistoryModal", histOpen);
+    window.addEventListener("openWishlistModal", wishOpen);
+
+    // aggiornamento preferiti -> ricarica lista per badge
+    const favUpdated = () => getManga().then(d => setMangaList(d || []));
+    window.addEventListener("favoritesUpdated", favUpdated);
 
     return () => {
       window.removeEventListener("openMangaDetail", handler);
       window.removeEventListener("navigate", navHandler);
-      window.removeEventListener("favoritesUpdated", favHandler);
+      window.removeEventListener("openFavoritesModal", favOpen);
+      window.removeEventListener("openHistoryModal", histOpen);
+      window.removeEventListener("openWishlistModal", wishOpen);
+      window.removeEventListener("favoritesUpdated", favUpdated);
     };
   }, [setAdminMode, setRecordsMode]);
 
+  // fuzzy search (manteniamo la barra principale)
   const filteredSearch = useMemo(() => {
     if (!search) return mangaList;
     const fuse = new Fuse(mangaList, {
@@ -67,41 +80,27 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     return fuse.search(search).map(r => r.item);
   }, [search, mangaList]);
 
-  const filters = [
-    { key: "all", label: "Tutti" },
-    { key: "ongoing", label: "In corso" },
-    { key: "to_complete", label: "Da completare" },
-    { key: "completed", label: "Completati" },
-    { key: "short", label: "Serie brevi" },
-    { key: "oneshot", label: "Volumi unici" },
-    { key: "favorites", label: "Preferiti" },
-    { key: "history", label: "Ultime letture" },
-    { key: "wishlist", label: "Wishlist" }
-  ];
-
-  // posizione toggle: se sidebar aperta sposto il bottone a destra del logo per non coprirlo
-  const toggleStyle = openSidebar ? { left: 300 } : { left: 16 };
-
+  // rimuovo i filtri dalla UI come richiesto: non mostro i bottoni filtro
   return (
     <div className="bg-[#111] text-white min-h-screen">
 
-      {/* TOGGLE SIDEBAR: posizione dinamica per non coprire il logo */}
+      {/* TOGGLE SIDEBAR: posizionato a destra del logo quando aperto */}
       <button
         onClick={() => setOpenSidebar(s => !s)}
-        style={toggleStyle}
+        style={{ left: openSidebar ? 220 : 16 }}
         className="fixed top-4 z-50 bg-black/40 backdrop-blur-md border border-white/10 text-white px-3 py-2 rounded-lg hover:bg-black/60 transition"
         aria-label={openSidebar ? "Chiudi sidebar" : "Apri sidebar"}
       >
-        {openSidebar ? "✖" : "☰"}
+        {openSidebar ? "◀" : "▶"}
       </button>
 
       {/* SIDEBAR */}
-      <div className={`fixed left-0 top-0 h-screen transition-all duration-300 ${openSidebar ? "w-72" : "w-20"}`}>
+      <div className={`fixed left-0 top-0 h-screen transition-all duration-300 ${openSidebar ? "w-72" : "w-24"}`}>
         <Sidebar open={openSidebar} />
       </div>
 
       {/* MAIN: margine dinamico */}
-      <div style={{ marginLeft: openSidebar ? 288 : 80 }} className="px-10 py-6 space-y-8 transition-all duration-300">
+      <div style={{ marginLeft: openSidebar ? 288 : 96 }} className="px-10 py-6 space-y-8 transition-all duration-300">
         <TopHero manga={mangaList} onSelect={setSelectedManga} />
 
         {/* HEADER */}
@@ -131,18 +130,17 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
           </div>
         </div>
 
-        {/* FILTRI */}
-        <div className="flex gap-2 flex-wrap">
-          {filters.map(f => (
-            <button key={f.key} onClick={() => setFilter(f.key)} className={`px-4 py-2 rounded-xl text-sm transition ${filter === f.key ? "bg-yellow-400 text-black" : "bg-[#1a1a1a] border border-white/10 hover:bg-[#222]"}`}>{f.label}</button>
-          ))}
-        </div>
-
         {/* GRID */}
-        <MangaGrid searchResults={filteredSearch} filter={filter} />
+        <MangaGrid searchResults={filteredSearch} />
+
       </div>
 
       {selectedManga && <MangaDetail manga={selectedManga} onClose={() => setSelectedManga(null)} />}
+
+      {/* MODALI per Preferiti / Ultime letture / Wishlist */}
+      {showFavorites && <FavoritesModal onClose={() => setShowFavorites(false)} />}
+      {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
+      {showWishlist && <WishlistModal onClose={() => setShowWishlist(false)} />}
     </div>
   );
 }
