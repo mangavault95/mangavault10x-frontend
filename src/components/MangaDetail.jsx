@@ -1,5 +1,18 @@
 import { useEffect, useState, useRef } from "react";
 
+/**
+ * MangaDetail migliorato
+ * - solo "Modifica" apre l'editor (modal)
+ * - drag & drop + file input per cover
+ * - focus trap nella modal di editing
+ * - rimosse azioni ridondanti sotto la cover
+ * - mantiene rating + debounce + toast
+ *
+ * Props:
+ * - manga: oggetto manga
+ * - onClose: funzione per chiudere il dettaglio
+ * - onSave: funzione(payload) per salvare (opzionale)
+ */
 export default function MangaDetail({ manga, onClose, onSave }) {
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -8,13 +21,13 @@ export default function MangaDetail({ manga, onClose, onSave }) {
 
   if (!manga) return null;
 
-  // Stato rating esistente
+  // rating
   const [rating, setRating] = useState(Number(manga.Valutazione) || 0);
   const [hoverRating, setHoverRating] = useState(0);
   const [showToast, setShowToast] = useState(false);
   const debounceRef = useRef(null);
 
-  // Stato locale per editing inline (preview prima del salvataggio)
+  // local state per preview / editing
   const [local, setLocal] = useState({
     Titolo: manga.Titolo || "",
     Autore: manga.Autore || "",
@@ -34,7 +47,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     setLocal(prev => ({ ...prev, [key]: value }));
   }
 
-  // calcoli esistenti
+  // calcoli
   const owned = Number(local.VolumiPosseduti) || 0;
   const total = Number(local.VolumiTotali) || 0;
   const price = Number(local.Costo) || 0;
@@ -56,10 +69,9 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     ? Math.min((owned / total) * 100, 100)
     : 0;
 
-  // ⭐ Rating con debounce (mantengo la chiamata esistente)
+  // rating debounce (mantengo la chiamata esistente)
   async function handleRating(stars) {
     setRating(stars);
-    // aggiorno anche l'oggetto manga per coerenza
     manga.Valutazione = stars;
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -81,9 +93,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
           }
         );
 
-        const data = await res.json().catch(() => ({}));
-        console.log("UPDATE RATING STATUS:", res.status, data);
-
+        await res.json().catch(() => ({}));
         setShowToast(true);
         setTimeout(() => setShowToast(false), 2000);
       } catch (err) {
@@ -92,21 +102,34 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     }, 500);
   }
 
-  // Upload cover preview (usa URL.createObjectURL per preview)
-  function handleCoverUpload(e) {
-    const file = e.target.files?.[0];
+  // Upload cover: drag & drop + file input (preview con createObjectURL)
+  function handleCoverFile(file) {
     if (!file) return;
     setUploading(true);
     const url = URL.createObjectURL(file);
     updateField("CoverURL", url);
 
-    // se vuoi caricare al server, qui va la chiamata; per ora solo preview
-    setTimeout(() => setUploading(false), 600);
+    // placeholder: qui puoi aggiungere upload al server
+    setTimeout(() => setUploading(false), 700);
   }
 
-  // Salvataggio locale + callback onSave (se fornita)
+  function handleCoverUpload(e) {
+    const file = e.target.files?.[0];
+    handleCoverFile(file);
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    const file = e.dataTransfer?.files?.[0];
+    handleCoverFile(file);
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+  }
+
+  // Salvataggio: invoca onSave(payload) se fornita
   function saveChanges() {
-    // normalizza tipi
     const payload = {
       ...manga,
       Titolo: local.Titolo,
@@ -124,39 +147,72 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     setEditing(false);
   }
 
-  // UI
+  // Focus trap per la modal di editing
+  const modalRef = useRef(null);
+  useEffect(() => {
+    if (!editing) return;
+    const focusable = modalRef.current?.querySelectorAll(
+      'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusable?.[0];
+    const last = focusable?.[focusable.length - 1];
+
+    function handleKey(e) {
+      if (e.key === "Escape") {
+        setEditing(false);
+      }
+      if (e.key === "Tab") {
+        if (!first || !last) return;
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+
+    document.addEventListener("keydown", handleKey);
+    // autofocus first
+    setTimeout(() => first?.focus?.(), 0);
+
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [editing]);
+
   return (
     <div className="fixed inset-0 z-[999] overflow-y-auto" onClick={onClose}>
 
-      {/* BACKDROP pattern + overlay */}
+      {/* backdrop pattern + overlay */}
       <div
         className="absolute inset-0"
         style={{
           background: `linear-gradient(135deg, rgba(10,10,10,0.96), rgba(30,30,30,0.96)), url(${local.CoverURL || manga.CoverURL})`,
           backgroundSize: "120px",
           backgroundRepeat: "repeat",
-          opacity: 0.18
+          opacity: 0.16
         }}
       />
 
-      <div className="absolute inset-0 bg-black/70" />
+      <div className="absolute inset-0 bg-black/72" />
 
-      {/* CLOSE */}
+      {/* close */}
       <button
         onClick={onClose}
         className="absolute top-6 right-6 w-12 h-12 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-2xl text-white hover:bg-white/20 transition z-[999]"
+        aria-label="Chiudi dettaglio"
       >
         ✕
       </button>
 
-      {/* TOAST */}
+      {/* toast */}
       {showToast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-xl shadow-xl text-lg font-semibold animate-fade-in-out z-[9999]">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-xl shadow-xl text-lg font-semibold animate-fade-in-out z-9999">
           ⭐ Valutazione salvata!
         </div>
       )}
 
-      {/* MAIN CARD */}
+      {/* main card */}
       <div
         className="relative max-w-6xl mx-auto mt-16 mb-16 p-8 rounded-3xl shadow-2xl border border-white/10 bg-transparent"
         onClick={e => e.stopPropagation()}
@@ -165,10 +221,10 @@ export default function MangaDetail({ manga, onClose, onSave }) {
       >
         <div className="flex gap-8">
 
-          {/* LEFT: cover + semitrasparenza sotto cover */}
+          {/* LEFT: cover (no più "Cambia cover" qui) */}
           <div className="flex-shrink-0">
-            <div className="relative">
-              <div className="w-[260px] rounded-xl overflow-hidden shadow-2xl transform-gpu transition-transform duration-300 hover:-translate-y-1">
+            <div className="relative w-[260px]">
+              <div className="rounded-xl overflow-hidden shadow-2xl transform-gpu transition-transform duration-300 hover:-translate-y-1">
                 <div className="bg-black relative">
                   <img
                     src={local.CoverURL || manga.CoverURL || "https://placehold.co/300x450"}
@@ -176,13 +232,13 @@ export default function MangaDetail({ manga, onClose, onSave }) {
                     alt={local.Titolo}
                   />
 
-                  {/* shine hint (subtle) */}
+                  {/* shine */}
                   <div className="absolute inset-0 pointer-events-none">
                     <div className="cover-shine" />
                   </div>
                 </div>
 
-                {/* pannello semitrasparente sotto la cover */}
+                {/* sotto cover: pannello semitrasparente minimale (solo info essenziali) */}
                 <div className="bg-white/6 backdrop-blur-md text-white p-3">
                   <div className="text-sm font-semibold truncate" title={local.Titolo}>{local.Titolo}</div>
                   <div className="text-xs text-zinc-300 truncate" title={local.Autore}>{local.Autore}</div>
@@ -198,31 +254,16 @@ export default function MangaDetail({ manga, onClose, onSave }) {
 
                     <div className="text-xs text-zinc-300">⭐ {manga.Valutazione ?? "N/A"}</div>
                   </div>
-
-                  <div className="mt-3 flex gap-2">
-                    <label className="text-xs bg-white/8 px-2 py-1 rounded cursor-pointer">
-                      Cambia cover
-                      <input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
-                    </label>
-
-                    <button
-                      className="text-xs bg-white/6 px-2 py-1 rounded hover:bg-white/10"
-                      onClick={() => setEditing(true)}
-                    >
-                      Modifica dettagli
-                    </button>
-                  </div>
                 </div>
               </div>
 
-              {/* piccolo badge di upload */}
               {uploading && (
                 <div className="absolute -top-2 right-0 bg-blue-600 text-white text-xs px-2 py-1 rounded">Uploading</div>
               )}
             </div>
           </div>
 
-          {/* RIGHT: pannello semitrasparente con dettagli e azioni */}
+          {/* RIGHT: pannello semitrasparente con dettagli */}
           <div className="flex-1 bg-white/6 backdrop-blur-md rounded-xl p-6 text-white">
             <div className="flex justify-between items-start gap-4">
               <div>
@@ -231,8 +272,20 @@ export default function MangaDetail({ manga, onClose, onSave }) {
               </div>
 
               <div className="flex gap-2">
-                <button className="px-3 py-1 text-sm bg-white/8 rounded hover:bg-white/12" onClick={() => setEditing(true)}>Modifica</button>
-                <button className="px-3 py-1 text-sm bg-red-600 rounded hover:bg-red-700" onClick={onClose}>Chiudi</button>
+                {/* solo questo bottone apre l'editor */}
+                <button
+                  className="px-3 py-1 text-sm bg-white/8 rounded hover:bg-white/12"
+                  onClick={() => setEditing(true)}
+                >
+                  Modifica
+                </button>
+
+                <button
+                  className="px-3 py-1 text-sm bg-red-600 rounded hover:bg-red-700"
+                  onClick={onClose}
+                >
+                  Chiudi
+                </button>
               </div>
             </div>
 
@@ -244,12 +297,12 @@ export default function MangaDetail({ manga, onClose, onSave }) {
               {(!local.Genere || local.Genere === "") && <span className="text-xs text-zinc-400">Nessun genere</span>}
             </div>
 
-            {/* descrizione */}
-            <div className="mt-4 text-sm text-zinc-200 leading-relaxed max-h-44 overflow-auto pr-2">
+            {/* descrizione con scrollbar custom */}
+            <div className="mt-4 text-sm text-zinc-200 leading-relaxed max-h-44 overflow-auto pr-2 custom-scrollbar">
               {local.Trama || <span className="text-zinc-400">Nessuna descrizione disponibile.</span>}
             </div>
 
-            {/* metadati e volumi con controlli rapidi */}
+            {/* metadati e volumi con controlli rapidi (minimizzati) */}
             <div className="mt-5 grid grid-cols-3 gap-3">
               <div className="bg-white/4 p-3 rounded">
                 <div className="text-xs text-zinc-300">Volumi posseduti</div>
@@ -317,10 +370,10 @@ export default function MangaDetail({ manga, onClose, onSave }) {
           </div>
         </div>
 
-        {/* MODAL EDIT INLINE */}
+        {/* EDIT MODAL (apre solo con Modifica) */}
         {editing && (
-          <div className="absolute inset-0 flex items-center justify-center z-60">
-            <div className="bg-black/70 backdrop-blur-md p-6 rounded-lg w-[720px]">
+          <div className="absolute inset-0 flex items-center justify-center z-60" role="dialog" aria-modal="true">
+            <div ref={modalRef} className="bg-black/70 backdrop-blur-md p-6 rounded-lg w-[720px]">
               <h3 className="text-lg font-bold mb-3">Modifica dettagli</h3>
 
               <div className="grid grid-cols-2 gap-3">
@@ -341,8 +394,39 @@ export default function MangaDetail({ manga, onClose, onSave }) {
 
                 <label className="text-sm col-span-2">
                   Descrizione
-                  <textarea value={local.Trama} onChange={(e) => updateField("Trama", e.target.value)} className="w-full mt-1 p-2 rounded bg-white/6 h-28" />
+                  <textarea value={local.Trama} onChange={(e) => updateField("Trama", e.target.value)} className="w-full mt-1 p-2 rounded bg-white/6 h-28 custom-scrollbar" />
                 </label>
+
+                <label className="text-sm">
+                  Volumi posseduti
+                  <input type="number" value={local.VolumiPosseduti} onChange={(e) => updateField("VolumiPosseduti", Number(e.target.value))} className="w-full mt-1 p-2 rounded bg-white/6" />
+                </label>
+
+                <label className="text-sm">
+                  Volumi totali
+                  <input type="number" value={local.VolumiTotali ?? ""} onChange={(e) => updateField("VolumiTotali", e.target.value ? Number(e.target.value) : null)} className="w-full mt-1 p-2 rounded bg-white/6" />
+                </label>
+
+                <label className="text-sm col-span-2">
+                  Editore
+                  <input value={local.Editore} onChange={(e) => updateField("Editore", e.target.value)} className="w-full mt-1 p-2 rounded bg-white/6" />
+                </label>
+
+                {/* Drag & drop cover upload */}
+                <div className="col-span-2">
+                  <div
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    className="border-dashed border-2 border-white/10 rounded p-3 text-center"
+                  >
+                    <div className="text-sm text-zinc-300 mb-2">Trascina qui la nuova cover oppure</div>
+                    <label className="inline-block px-3 py-2 bg-white/8 rounded cursor-pointer">
+                      Seleziona file
+                      <input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
+                    </label>
+                    <div className="mt-3 text-xs text-zinc-400">Preview: verrà mostrata nella scheda dopo il salvataggio</div>
+                  </div>
+                </div>
               </div>
 
               <div className="mt-4 flex justify-end gap-2">
