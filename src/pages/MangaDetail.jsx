@@ -33,7 +33,7 @@ export default function MangaDetail({ manga, onClose }) {
     ? Math.min((owned / total) * 100, 100)
     : 0;
 
-  // ⭐ CLICK STELLE + DEBOUNCE + ANIMAZIONE POP + SALVATAGGIO BACKEND
+  // ⭐ CLICK STELLE + DEBOUNCE + SALVATAGGIO BACKEND
   async function handleRating(stars) {
     setRating(stars);
 
@@ -41,17 +41,24 @@ export default function MangaDetail({ manga, onClose }) {
 
     debounceRef.current = setTimeout(async () => {
       try {
-        await fetch("https://mangavault10x-backend.vercel.app/manga/updateRating", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`
-          },
-          body: JSON.stringify({
-            id: manga.ID,
-            rating: stars
-          })
-        });
+        const res = await fetch(
+          "https://mangavault10x-backend.vercel.app/manga/updateRating",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`
+            },
+            body: JSON.stringify({
+              id: manga.ID,
+              rating: stars
+            })
+          }
+        );
+
+        const data = await res.json().catch(() => ({}));
+        console.log("UPDATE RATING STATUS:", res.status, data);
+
       } catch (err) {
         console.error("Errore aggiornamento rating:", err);
       }
@@ -123,7 +130,7 @@ export default function MangaDetail({ manga, onClose }) {
               </div>
             )}
 
-            {/* ⭐ RATING STARS CLICKABLE + POP + TOOLTIP + PROGRESSIVE FILL */}
+            {/* ⭐ RATING STARS CLICKABLE */}
             <div className="flex items-center gap-1 mb-6">
               {[1, 2, 3, 4, 5].map(i => (
                 <span
