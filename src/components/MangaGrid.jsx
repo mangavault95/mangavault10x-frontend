@@ -5,50 +5,66 @@ export default function MangaGrid({ searchResults = [], filter }) {
 
   const [selectedManga, setSelectedManga] = useState(null);
 
+  // -----------------------------
+  // STATUS LOGIC
+  // -----------------------------
   function getStatus(m){
+    // ongoing = VolumiTotali === null
+    if (m.VolumiTotali === null) return "ongoing";
+
     const total = Number(m.VolumiTotali);
     const owned = Number(m.VolumiPosseduti);
 
-    if (!total) return "ongoing";
     if (owned >= total) return "completed";
     return "to_complete";
   }
 
   function barColor(status){
-    if(status==="completed") return "bg-green-400";
-    if(status==="to_complete") return "bg-red-400";
-    return "bg-yellow-400";
+    if(status === "completed") return "bg-green-400";
+    if(status === "to_complete") return "bg-red-400";
+    return "bg-yellow-400"; // ongoing
   }
 
+  // -----------------------------
+  // FILTER LOGIC
+  // -----------------------------
   const filtered = useMemo(() => {
 
     let list = [...searchResults].sort((a,b)=>
-      (a.Titolo||"").localeCompare(b.Titolo||"")
+      (a.Titolo || "").localeCompare(b.Titolo || "")
     );
 
     switch(filter){
 
+      // IN CORSO → VolumiTotali === null
       case "ongoing":
         return list.filter(m =>
-          !m.VolumiTotali || m.VolumiTotali === 0
+          m.VolumiTotali === null
         );
 
+      // DA COMPLETARE → Concluso = 1 AND VolumiPosseduti < VolumiTotali
       case "to_complete":
         return list.filter(m =>
-          m.VolumiTotali && m.VolumiPosseduti < m.VolumiTotali
+          m.Concluso === 1 &&
+          m.VolumiTotali !== null &&
+          Number(m.VolumiPosseduti) < Number(m.VolumiTotali)
         );
 
+      // COMPLETATI → VolumiPosseduti >= VolumiTotali
       case "completed":
         return list.filter(m =>
-          m.VolumiTotali && m.VolumiPosseduti >= m.VolumiTotali
+          m.VolumiTotali !== null &&
+          Number(m.VolumiPosseduti) >= Number(m.VolumiTotali)
         );
 
+      // SERIE BREVI → 2–7 volumi
       case "short":
         return list.filter(m =>
           Number(m.VolumiTotali) >= 2 &&
           Number(m.VolumiTotali) < 8
         );
 
+      // VOLUMI UNICI → 1/1
       case "oneshot":
         return list.filter(m =>
           Number(m.VolumiPosseduti) === 1 &&
@@ -61,21 +77,28 @@ export default function MangaGrid({ searchResults = [], filter }) {
 
   }, [searchResults, filter]);
 
+  // -----------------------------
+  // RENDER
+  // -----------------------------
   return (
     <>
       <div className="grid grid-cols-6 gap-6">
 
-        {filtered.map(m=>{
+        {filtered.map(m => {
 
-          const total = Number(m.VolumiTotali) || 0;
-          const owned = Number(m.VolumiPosseduti) || 0;
-          const percent = total ? (owned/total)*100 : 50;
+          const total = Number(m.VolumiTotali);
+          const owned = Number(m.VolumiPosseduti);
           const status = getStatus(m);
 
-          return(
+          // percentuale barra
+          const percent = total
+            ? (owned / total) * 100
+            : 50; // ongoing → barra neutra
+
+          return (
             <div
               key={m.ID}
-              onClick={()=>setSelectedManga(m)}
+              onClick={() => setSelectedManga(m)}
               className="group cursor-pointer hover:scale-[1.05] transition"
             >
 
@@ -110,14 +133,14 @@ export default function MangaGrid({ searchResults = [], filter }) {
                 </div>
               </div>
             </div>
-          )
+          );
         })}
       </div>
 
       {selectedManga && (
         <MangaDetail
           manga={selectedManga}
-          onClose={()=>setSelectedManga(null)}
+          onClose={() => setSelectedManga(null)}
         />
       )}
     </>
