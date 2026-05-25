@@ -9,11 +9,9 @@ export default function MangaGrid({ searchResults = [], filter }) {
   // PARSING ROBUSTO
   // -----------------------------
   function parseTotal(raw) {
-    if (!raw) return null; // null, undefined, empty string
+    if (!raw) return null;
 
-    // rimuove simboli non numerici (+, ?, ecc.)
     const cleaned = String(raw).replace(/[^0-9]/g, "");
-
     if (!cleaned) return null;
 
     const num = Number(cleaned);
@@ -24,36 +22,33 @@ export default function MangaGrid({ searchResults = [], filter }) {
     const total = parseTotal(m.VolumiTotali);
     const owned = Number(m.VolumiPosseduti) || 0;
     const hasKnownTotal = total !== null;
-    const concluded = Number(m.Concluso) || 0; // 0 o 1, anche se era "0"/"1"
 
-    return { total, owned, hasKnownTotal, concluded };
+    return { total, owned, hasKnownTotal };
   }
 
   // -----------------------------
   // STATUS
   // -----------------------------
   function getStatus(m){
-  const { total, owned, hasKnownTotal } = getMeta(m);
+    const { total, owned, hasKnownTotal } = getMeta(m);
 
-  if (!hasKnownTotal && owned > 0)
-    return "ongoing"; // giallo
+    if (!hasKnownTotal && owned > 0)
+      return "ongoing";
 
-  if (hasKnownTotal && owned < total)
-    return "to_complete"; // rosso
+    if (hasKnownTotal && owned < total)
+      return "to_complete";
 
-  if (hasKnownTotal && owned === total)
-    return "completed"; // verde
+    if (hasKnownTotal && owned === total)
+      return "completed";
 
-  return "ongoing"; // fallback
-}
+    return "ongoing";
+  }
 
-
-function barColor(status){
-  if(status === "completed") return "bg-green-500";
-  if(status === "to_complete") return "bg-red-500";
-  return "bg-yellow-400"; // ongoing
-}
-
+  function barColor(status){
+    if(status === "completed") return "bg-green-500";
+    if(status === "to_complete") return "bg-red-500";
+    return "bg-yellow-400";
+  }
 
   // -----------------------------
   // FILTRI
@@ -64,47 +59,41 @@ function barColor(status){
       (a.Titolo || "").localeCompare(b.Titolo || "")
     );
 
-   switch(filter){
+    switch(filter){
 
-  // IN CORSO → totali sconosciuti, possiedi già qualcosa
-  case "ongoing":
-    return list.filter(m => {
-      const { owned, hasKnownTotal } = getMeta(m);
-      return !hasKnownTotal && owned > 0;
-    });
+      case "ongoing":
+        return list.filter(m => {
+          const { owned, hasKnownTotal } = getMeta(m);
+          return !hasKnownTotal && owned > 0;
+        });
 
-  // DA COMPLETARE → totali noti, possiedi meno del totale
-  case "to_complete":
-    return list.filter(m => {
-      const { total, owned, hasKnownTotal } = getMeta(m);
-      return hasKnownTotal && owned < total;
-    });
+      case "to_complete":
+        return list.filter(m => {
+          const { total, owned, hasKnownTotal } = getMeta(m);
+          return hasKnownTotal && owned < total;
+        });
 
-  // COMPLETATI → totali noti, possiedi tutti i volumi
-  case "completed":
-    return list.filter(m => {
-      const { total, owned, hasKnownTotal } = getMeta(m);
-      return hasKnownTotal && owned === total;
-    });
+      case "completed":
+        return list.filter(m => {
+          const { total, owned, hasKnownTotal } = getMeta(m);
+          return hasKnownTotal && owned === total;
+        });
 
-  // SERIE BREVI → 2–7 volumi totali noti
-  case "short":
-    return list.filter(m => {
-      const { total, hasKnownTotal } = getMeta(m);
-      return hasKnownTotal && total >= 2 && total < 8;
-    });
+      case "short":
+        return list.filter(m => {
+          const { total, hasKnownTotal } = getMeta(m);
+          return hasKnownTotal && total >= 2 && total < 8;
+        });
 
-  // ONE-SHOT → 1/1
-  case "oneshot":
-    return list.filter(m => {
-      const { total, owned, hasKnownTotal } = getMeta(m);
-      return hasKnownTotal && total === 1 && owned >= 1;
-    });
+      case "oneshot":
+        return list.filter(m => {
+          const { total, owned, hasKnownTotal } = getMeta(m);
+          return hasKnownTotal && total === 1 && owned >= 1;
+        });
 
-  default:
-    return list;
-}
-
+      default:
+        return list;
+    }
 
   }, [searchResults, filter]);
 
@@ -128,23 +117,27 @@ function barColor(status){
             <div
               key={m.ID}
               onClick={() => setSelectedManga(m)}
-              className="group cursor-pointer hover:scale-[1.05] transition"
+              className="group cursor-pointer hover:scale-[1.03] transition-transform duration-300"
             >
 
-              <div className="bg-[#141414] rounded-xl border border-white/10 overflow-hidden">
+              <div className="bg-[#141414] rounded-xl border border-white/10 shadow-lg shadow-black/30 overflow-hidden">
 
-                <img
-                  src={m.CoverURL || "https://placehold.co/300x450"}
-                  className="w-full h-[190px] object-cover"
-                />
+                {/* COVER */}
+                <div className="w-full h-[220px] bg-black flex items-center justify-center">
+                  <img
+                    src={m.CoverURL || "https://placehold.co/300x450"}
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
 
+                {/* INFO */}
                 <div className="p-3">
 
                   <h3 className="text-sm font-bold truncate">
                     {m.Titolo}
                   </h3>
 
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-zinc-400 truncate">
                     {m.Genere || "Nessun genere"}
                   </p>
 
@@ -152,10 +145,18 @@ function barColor(status){
                     {hasKnownTotal ? `${owned}/${total}` : `${owned}+`}
                   </div>
 
-                  <div className="h-1 bg-zinc-800 mt-2 rounded">
+                  {/* PROGRESS BAR */}
+                  <div className="h-1 bg-zinc-800 mt-2 rounded overflow-hidden">
                     <div
-                      className={`${barColor(status)} h-full`}
+                      className={`${barColor(status)} h-full transition-all duration-500 ease-out`}
                       style={{ width: `${percent}%` }}
+                      title={
+                        status === "completed"
+                          ? "Completato"
+                          : status === "to_complete"
+                          ? "Da completare"
+                          : "In corso"
+                      }
                     />
                   </div>
 
