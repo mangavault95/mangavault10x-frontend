@@ -1,5 +1,19 @@
 import { useEffect, useState, useRef } from "react";
 
+/**
+ * src/components/MangaDetail.jsx
+ *
+ * Gestisce:
+ * - visualizzazione dettaglio manga
+ * - rating (debounce -> POST /api/manga/updateRating)
+ * - edit modal + drag&drop cover
+ * - salvataggio con PUT /api/manga/:id (autenticato)
+ * - gestione 401/403: apre modal login, salva token e ritenta
+ * - fallback locale via onSave(payload)
+ *
+ * Sostituisci interamente il file esistente con questo.
+ */
+
 export default function MangaDetail({ manga, onClose, onSave }) {
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -29,6 +43,16 @@ export default function MangaDetail({ manga, onClose, onSave }) {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Login modal state (per gestire 401/403)
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [loginUser, setLoginUser] = useState("");
+  const [loginPass, setLoginPass] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
+
+  // Se abbiamo un'azione pendente da ritentare (es. save), la memorizziamo qui
+  const pendingActionRef = useRef(null);
+
   function updateField(key, value) {
     setLocal(prev => ({ ...prev, [key]: value }));
   }
@@ -54,7 +78,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     ? Math.min((owned / total) * 100, 100)
     : 0;
 
-  // Rating debounce + save (mantiene il tuo endpoint updateRating)
+  // ---------- RATING (debounce + POST updateRating) ----------
   async function handleRating(stars) {
     setRating(stars);
     manga.Valutazione = stars;
@@ -69,7 +93,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("token")}`
+              Authorization: `Bearer ${localStorage.getItem("token") || ""}`
             },
             body: JSON.stringify({
               id: manga.ID,
@@ -89,7 +113,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     }, 500);
   }
 
-  // Cover upload preview
+  // ---------- COVER UPLOAD PREVIEW ----------
   function handleCoverFile(file) {
     if (!file) return;
     setUploading(true);
@@ -113,11 +137,57 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     e.preventDefault();
   }
 
-  // SAVE: usa PUT /api/manga/:id (come definito in manga.js)
+  // ---------- LOGIN (POST /api/manga/login) ----------
+  async function doLoginAndRetry() {
+    setLoginLoading(true);
+    setLoginError("");
+    try {
+      const res = await fetch("https://mangavault10x-api.onrender.com/api/manga/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: loginUser, password: loginPass })
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setLoginError(data?.error || `Login failed (${res.status})`);
+        setLoginLoading(false);
+        return;
+      }
+
+      const token = data?.token;
+      if (!token) {
+        setLoginError("Token non ricevuto");
+        setLoginLoading(false);
+        return;
+      }
+
+      // salva token e chiudi modal
+      localStorage.setItem("token", token);
+      setLoginLoading(false);
+      setLoginOpen(false);
+      setLoginUser("");
+      setLoginPass("");
+      setLoginError("");
+
+      // se c'era un'azione pendente, ritentala
+      if (pendingActionRef.current) {
+        const action = pendingActionRef.current;
+        pendingActionRef.current = null;
+        try { await action(); } catch (e) { /* handled in action */ }
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setLoginError("Errore di rete durante il login");
+      setLoginLoading(false);
+    }
+  }
+
+  // ---------- SAVE CHANGES (PUT /api/manga/:id) ----------
   async function saveChanges() {
     setSaving(true);
 
-    // payload per il server (nomi in lower-case come nel router)
     const payloadForServer = {
       coverurl: local.CoverURL || null,
       trama: local.Trama || null,
@@ -128,71 +198,79 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     const url = `https://mangavault10x-api.onrender.com/api/manga/${manga.ID}`;
     const token = localStorage.getItem("token");
 
-    try {
-      const res = await fetch(url, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify(payloadForServer)
-      });
+    // funzione che esegue la richiesta (utile per ritentare dopo login)
+    const doPut = async () => {
+      try {
+        const res = await fetch(url, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify(payloadForServer)
+        });
 
-      const text = await res.text().catch(() => "");
+        const text = await res.text().catch(() => "");
 
-      if (!res.ok) {
-        console.error("Save error", res.status, text);
+        if (!res.ok) {
+          console.error("Save error", res.status, text);
 
-        if (res.status === 401 || res.status === 403) {
-          setToast({ show: true, text: "Autenticazione richiesta o token non valido", tone: "error" });
+          // AUTH errors -> apri modal login e memorizza azione pendente
+          if (res.status === 401 || res.status === 403) {
+            setToast({ show: true, text: "Autenticazione richiesta o token non valido", tone: "error" });
+            // memorizza l'azione e apri login modal
+            pendingActionRef.current = doPut;
+            setLoginOpen(true);
+            setSaving(false);
+            return;
+          }
+
+          if (res.status === 404) {
+            setToast({ show: true, text: "Endpoint non trovato (404). Modifiche applicate localmente.", tone: "error" });
+            if (onSave) onSave({ ...manga, ...local });
+            setSaving(false);
+            return;
+          }
+
+          setToast({ show: true, text: `Errore salvataggio: ${res.status}`, tone: "error" });
           setSaving(false);
           return;
         }
 
-        if (res.status === 404) {
-          setToast({ show: true, text: "Endpoint non trovato (404). Modifiche applicate localmente.", tone: "error" });
-          // fallback locale: aggiorna UI padre
-          if (onSave) onSave({ ...manga, ...local });
-          setSaving(false);
-          return;
+        // successo: aggiorna parent con shape completo
+        if (onSave) {
+          const updated = {
+            ...manga,
+            Titolo: local.Titolo,
+            Autore: local.Autore,
+            Trama: local.Trama,
+            Genere: local.Genere,
+            VolumiPosseduti: Number(local.VolumiPosseduti),
+            VolumiTotali: local.VolumiTotali ? Number(local.VolumiTotali) : null,
+            CoverURL: local.CoverURL,
+            Costo: Number(local.Costo),
+            Editore: local.Editore
+          };
+          onSave(updated);
         }
 
-        setToast({ show: true, text: `Errore salvataggio: ${res.status}`, tone: "error" });
+        setToast({ show: true, text: "Modifiche salvate", tone: "success" });
+        setTimeout(() => setToast({ show: false, text: "", tone: "success" }), 1600);
+        setEditing(false);
+      } catch (err) {
+        console.error("Errore salvataggio:", err);
+        setToast({ show: true, text: "Errore di rete durante il salvataggio. Modifiche applicate localmente.", tone: "error" });
+        if (onSave) onSave({ ...manga, ...local });
+      } finally {
         setSaving(false);
-        return;
       }
+    };
 
-      // successo: aggiorna anche i campi locali nel parent
-      if (onSave) {
-        // inviamo al parent l'oggetto completo aggiornato (stesso shape che usi nel resto dell'app)
-        const updated = {
-          ...manga,
-          Titolo: local.Titolo,
-          Autore: local.Autore,
-          Trama: local.Trama,
-          Genere: local.Genere,
-          VolumiPosseduti: Number(local.VolumiPosseduti),
-          VolumiTotali: local.VolumiTotali ? Number(local.VolumiTotali) : null,
-          CoverURL: local.CoverURL,
-          Costo: Number(local.Costo),
-          Editore: local.Editore
-        };
-        onSave(updated);
-      }
-
-      setToast({ show: true, text: "Modifiche salvate", tone: "success" });
-      setTimeout(() => setToast({ show: false, text: "", tone: "success" }), 1600);
-      setEditing(false);
-    } catch (err) {
-      console.error("Errore salvataggio:", err);
-      setToast({ show: true, text: "Errore di rete durante il salvataggio. Modifiche applicate localmente.", tone: "error" });
-      if (onSave) onSave({ ...manga, ...local });
-    } finally {
-      setSaving(false);
-    }
+    // esegui la PUT
+    await doPut();
   }
 
-  // Focus trap per modal
+  // ---------- Focus trap per modal di editing ----------
   const modalRef = useRef(null);
   useEffect(() => {
     if (!editing) return;
@@ -224,6 +302,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     return () => document.removeEventListener("keydown", handleKey);
   }, [editing]);
 
+  // ---------- RENDER ----------
   return (
     <div className="fixed inset-0 z-[999] overflow-y-auto" onClick={onClose}>
       <div
@@ -391,6 +470,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
           </div>
         </div>
 
+        {/* EDIT MODAL */}
         {editing && (
           <div className="absolute inset-0 flex items-center justify-center z-60" role="dialog" aria-modal="true">
             <div ref={modalRef} className="bg-black/70 backdrop-blur-md p-6 rounded-lg w-[720px]">
@@ -452,6 +532,29 @@ export default function MangaDetail({ manga, onClose, onSave }) {
                 <button className="px-3 py-1 bg-white/6 rounded" onClick={() => setEditing(false)}>Annulla</button>
                 <button className="px-3 py-1 bg-green-600 rounded" onClick={saveChanges} disabled={saving}>{saving ? "Salvataggio..." : "Salva"}</button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* LOGIN MODAL (apre quando server risponde 401/403) */}
+        {loginOpen && (
+          <div className="absolute inset-0 flex items-center justify-center z-70" role="dialog" aria-modal="true">
+            <div className="bg-black/80 backdrop-blur-md p-6 rounded-lg w-[420px]">
+              <h3 className="text-lg font-bold mb-3">Login richiesto</h3>
+
+              <div className="flex flex-col gap-2">
+                <input placeholder="Username" value={loginUser} onChange={(e) => setLoginUser(e.target.value)} className="p-2 rounded bg-white/6" />
+                <input placeholder="Password" type="password" value={loginPass} onChange={(e) => setLoginPass(e.target.value)} className="p-2 rounded bg-white/6" />
+                {loginError && <div className="text-sm text-red-400">{loginError}</div>}
+                <div className="flex justify-end gap-2 mt-3">
+                  <button className="px-3 py-1 bg-white/6 rounded" onClick={() => setLoginOpen(false)}>Annulla</button>
+                  <button className="px-3 py-1 bg-blue-600 rounded" onClick={doLoginAndRetry} disabled={loginLoading}>
+                    {loginLoading ? "Login..." : "Accedi"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-3 text-xs text-zinc-400">Usa le credenziali del backend (es. admin / 1234) per test.</div>
             </div>
           </div>
         )}
