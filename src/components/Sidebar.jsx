@@ -6,6 +6,7 @@ export default function Sidebar({ open = true }) {
   const [favorites, setFavorites] = useState(
     JSON.parse(localStorage.getItem("mv_favorites") || "[]")
   );
+  const [pulseFav, setPulseFav] = useState(false);
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
@@ -14,7 +15,16 @@ export default function Sidebar({ open = true }) {
       .catch(() => setManga([]));
   }, []);
 
-  // stats utili
+  // pulse quando arriva evento globale (es. aggiunta preferito da altre parti)
+  useEffect(() => {
+    const handler = () => {
+      setPulseFav(true);
+      setTimeout(() => setPulseFav(false), 900);
+    };
+    window.addEventListener("favoriteAdded", handler);
+    return () => window.removeEventListener("favoriteAdded", handler);
+  }, []);
+
   const stats = useMemo(() => {
     let total = 0, completed = 0, ongoing = 0, spent = 0;
     manga.forEach(m => {
@@ -44,16 +54,31 @@ export default function Sidebar({ open = true }) {
   }, [manga, favorites]);
 
   const toggleFavorite = (id) => {
+    // imposta rating 5 e salva preferiti
     const updated = favorites.includes(id) ? favorites.filter(f => f !== id) : [...favorites, id];
     setFavorites(updated);
     localStorage.setItem("mv_favorites", JSON.stringify(updated));
-    // dispatch per aggiornare altre parti dell'app
+
+    // se possibile aggiorna anche il manga in memoria (solo lato client)
+    setManga(prev => prev.map(m => m.ID === id ? { ...m, Rating: 5 } : m));
+
+    // dispatch eventi per aggiornare UI altrove e animare menu
     window.dispatchEvent(new CustomEvent("favoritesUpdated", { detail: { favorites: updated } }));
+    window.dispatchEvent(new Event("favoriteAdded"));
   };
 
   const navigate = (page) => {
     window.dispatchEvent(new CustomEvent("navigate", { detail: { page } }));
+    // apri popup corrispondente
+    if (page === "favorites") window.dispatchEvent(new Event("openFavoritesModal"));
+    if (page === "history") window.dispatchEvent(new Event("openHistoryModal"));
+    if (page === "wishlist") window.dispatchEvent(new Event("openWishlistModal"));
   };
+
+  // ultimi 3 aggiunti
+  const latest = useMemo(() => {
+    return [...manga].sort((a,b) => new Date(b.DataAggiunta) - new Date(a.DataAggiunta)).slice(0,3);
+  }, [manga]);
 
   return (
     <div className={`
@@ -61,16 +86,16 @@ export default function Sidebar({ open = true }) {
       bg-gradient-to-b from-[#070707] via-[#0f0f10] to-[#070707]
       border-r border-white/6
       transition-all duration-300
-      ${open ? "w-full" : "w-20 items-center"}
+      ${open ? "w-full" : "w-24 items-center"}
     `}>
 
       {/* LOGO */}
       <div className={`flex items-center gap-3 ${open ? "" : "flex-col"}`}>
-        <div className="w-8 h-8 rounded-md bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-[0_0_14px_rgba(250,204,21,0.6)]" />
+        <div className="w-9 h-9 rounded-md bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-[0_0_14px_rgba(250,204,21,0.6)]" />
         {open && <div className="text-lg font-black tracking-tight text-white">MangaVault <span className="text-yellow-400">10X</span></div>}
       </div>
 
-      {/* MENU PRINCIPALE */}
+      {/* MENU PRINCIPALE (solo 3 voci + records nascosto) */}
       <nav className={`flex flex-col gap-2 ${open ? "" : "items-center"}`}>
 
         <button
@@ -78,31 +103,13 @@ export default function Sidebar({ open = true }) {
           title="Preferiti (5 stelle)"
           className={`flex items-center gap-3 w-full ${open ? "px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10" : "p-2 rounded-md"}`}
         >
-          <span className="text-2xl">⭐</span>
+          <span className={`text-2xl ${pulseFav ? "scale-110 animate-pulse" : ""}`}>⭐</span>
           {open && (
             <div className="flex-1 text-sm text-white flex justify-between items-center">
               <span>Preferiti</span>
               <span className="text-zinc-400 text-xs">{favoritesList.length}</span>
             </div>
           )}
-        </button>
-
-        <button
-          onClick={() => navigate("records")}
-          title="Records"
-          className={`flex items-center gap-3 w-full ${open ? "px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10" : "p-2 rounded-md"}`}
-        >
-          <span className="text-2xl">📜</span>
-          {open && <span className="text-sm text-white">Records</span>}
-        </button>
-
-        <button
-          onClick={() => navigate("progress")}
-          title="Progressi"
-          className={`flex items-center gap-3 w-full ${open ? "px-3 py-2 rounded-lg bg-yellow-500/5 hover:bg-yellow-500/10" : "p-2 rounded-md"}`}
-        >
-          <span className="text-2xl">📈</span>
-          {open && <span className="text-sm text-white">Progressi</span>}
         </button>
 
         <button
@@ -125,61 +132,65 @@ export default function Sidebar({ open = true }) {
 
       </nav>
 
-      {/* separatore sottile */}
+      {/* separatore */}
       {open && <div className="h-px w-full bg-zinc-800 my-2" />}
+
+      {/* ULTIMA LETTURA IN CORSO (ripristinata) */}
+      {open && (() => {
+        const selected = JSON.parse(localStorage.getItem("mv_selected_manga"));
+        const currentVol = localStorage.getItem("mv_current_vol") || "";
+        if (!selected) return null;
+        return (
+          <div className="p-3 rounded-2xl bg-gradient-to-br from-[#1a1a1a] to-[#121212] border border-white/8 shadow-sm">
+            <div className="flex gap-3">
+              <img src={selected.CoverURL || "https://placehold.co/80x120"} className="w-14 h-20 object-cover rounded-lg" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] text-zinc-400">Stai leggendo</p>
+                <p className="text-sm font-semibold truncate text-white">{selected.Titolo}</p>
+                <p className="text-xs text-zinc-500 mt-1">Vol {currentVol} / {selected.VolumiTotali || "?"}</p>
+              </div>
+            </div>
+
+            <div className="mt-3 flex gap-2">
+              <button onClick={() => window.dispatchEvent(new CustomEvent("openMangaDetail", { detail: selected }))} className="flex-1 py-2 rounded-md bg-white/5 text-sm text-white">Vai al dettaglio</button>
+              <button onClick={() => window.dispatchEvent(new CustomEvent("quickUpdateVolume", { detail: selected }))} className="py-2 px-3 rounded-md bg-yellow-500/20 text-yellow-300 text-sm">Aggiorna</button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* AZIONI RAPIDE */}
       <div className={`flex ${open ? "flex-col gap-2" : "flex-col gap-3 items-center"}`}>
-        <button
-          onClick={() => window.dispatchEvent(new Event("openAddManga"))}
-          title="Aggiungi manga"
-          className={`${open ? "flex items-center gap-3 px-3 py-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20" : "p-2 rounded-md"}`}
-        >
+        <button onClick={() => window.dispatchEvent(new Event("openAddManga"))} title="Aggiungi manga" className={`${open ? "flex items-center gap-3 px-3 py-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20" : "p-2 rounded-md"}`}>
           <span className="text-2xl">➕</span>
           {open && <span className="text-sm text-yellow-300">Aggiungi</span>}
         </button>
 
-        <button
-          onClick={() => window.dispatchEvent(new Event("openCollection"))}
-          title="Vai alla collezione"
-          className={`${open ? "flex items-center gap-3 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10" : "p-2 rounded-md"}`}
-        >
+        <button onClick={() => window.dispatchEvent(new Event("openCollection"))} title="Vai alla collezione" className={`${open ? "flex items-center gap-3 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10" : "p-2 rounded-md"}`}>
           <span className="text-2xl">📚</span>
           {open && <span className="text-sm">Collezione</span>}
         </button>
       </div>
 
-      {/* ULTIMI AGGIUNTI — stile più curato */}
+      {/* ULTIMI AGGIUNTI (solo 3) */}
       {open && (
         <div>
           <p className="text-xs uppercase tracking-wider text-zinc-400 mb-3">Ultimi aggiunti</p>
-          <div className="space-y-2 max-h-56 overflow-y-auto">
-            {manga
-              .slice()
-              .sort((a, b) => new Date(b.DataAggiunta) - new Date(a.DataAggiunta))
-              .slice(0, 6)
-              .map(m => (
-                <div
-                  key={m.ID}
-                  onClick={() => window.dispatchEvent(new CustomEvent("openMangaDetail", { detail: m }))}
-                  className="flex items-center gap-3 p-2 rounded-lg cursor-pointer bg-gradient-to-r from-[#0f0f0f] to-[#121212] border border-white/6 hover:scale-[1.01] transition-transform"
-                >
-                  <img src={m.CoverURL || "https://placehold.co/60x90"} className="w-10 h-14 rounded-md object-cover flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm truncate text-white">{m.Titolo}</span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); toggleFavorite(m.ID); }}
-                        className="text-yellow-400 ml-2"
-                        title={favorites.includes(m.ID) ? "Rimuovi preferito" : "Aggiungi ai preferiti"}
-                      >
-                        {favorites.includes(m.ID) ? "★" : "☆"}
-                      </button>
-                    </div>
-                    <div className="text-xs text-zinc-500">{m.Autore}</div>
+          <div className="space-y-2">
+            {latest.map(m => (
+              <div key={m.ID} onClick={() => window.dispatchEvent(new CustomEvent("openMangaDetail", { detail: m }))} className="flex items-center gap-3 p-2 rounded-lg cursor-pointer bg-gradient-to-r from-[#0f0f0f] to-[#121212] border border-white/6 hover:scale-[1.01] transition-transform">
+                <img src={m.CoverURL || "https://placehold.co/60x90"} className="w-10 h-14 rounded-md object-cover flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm truncate text-white">{m.Titolo}</span>
+                    <button onClick={(e) => { e.stopPropagation(); toggleFavorite(m.ID); }} className="text-yellow-400 ml-2" title={favorites.includes(m.ID) ? "Rimuovi preferito" : "Aggiungi ai preferiti"}>
+                      {favorites.includes(m.ID) ? "★" : "☆"}
+                    </button>
                   </div>
+                  <div className="text-xs text-zinc-500">{m.Autore}</div>
                 </div>
-              ))}
+              </div>
+            ))}
           </div>
         </div>
       )}
