@@ -33,40 +33,29 @@ export default function StatsPanel() {
   return (
     <div className="space-y-3 mt-4 text-sm">
 
-      {/* TOTAL */}
       <div className="bg-[#141414] border border-white/10 rounded-xl p-4">
         <div className="flex justify-between items-center">
           <span className="text-zinc-400">Volumi totali</span>
-          <span className="font-semibold text-white">
-            {stats.total}
-          </span>
+          <span className="font-semibold text-white">{stats.total}</span>
         </div>
       </div>
 
-      {/* ROW */}
       <div className="grid grid-cols-2 gap-2">
-
         <div className="bg-[#141414] border border-green-500/30 rounded-xl p-3">
           <div className="flex justify-between">
             <span className="text-zinc-400">Completati</span>
-            <span className="text-green-400 font-semibold">
-              {stats.completed}
-            </span>
+            <span className="text-green-400 font-semibold">{stats.completed}</span>
           </div>
         </div>
 
         <div className="bg-[#141414] border border-yellow-500/30 rounded-xl p-3">
           <div className="flex justify-between">
             <span className="text-zinc-400">In corso</span>
-            <span className="text-yellow-400 font-semibold">
-              {stats.ongoing}
-            </span>
+            <span className="text-yellow-400 font-semibold">{stats.ongoing}</span>
           </div>
         </div>
-
       </div>
 
-      {/* SPESA */}
       <div className="bg-[#141414] border border-yellow-500/20 rounded-xl p-3">
         <div className="flex justify-between">
           <span className="text-zinc-400">Spesa totale</span>
