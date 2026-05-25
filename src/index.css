@@ -8,7 +8,7 @@
   /* GRID helper */
   .manga-grid {
     display: grid;
-    gap: 1rem; /* meno spazio tra i volumi */
+    gap: 1rem;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     align-items: start;
   }
@@ -24,7 +24,7 @@
 
   /* VOLUME: larghezza fissa per uniformità */
   .volume-3d {
-    --thickness: 12px; /* default, sovrascritto inline dallo JSX per la costina */
+    --thickness: 12px;
     width: 150px;
     border-radius: 10px;
     background: #141414;
@@ -42,7 +42,7 @@
     box-shadow: 0 26px 50px rgba(0,0,0,0.55);
   }
 
-  /* costina (sinistra) - spessore dinamico ma non influenza la larghezza della cover */
+  /* costina (sinistra) */
   .volume-3d::before {
     content: "";
     position: absolute;
@@ -73,13 +73,13 @@
     pointer-events: none;
   }
 
-  /* PAGES: larghezza fissa per tutti (non cambia) */
+  /* PAGES: larghezza fissa per tutti */
   .volume-3d .pages {
     position: absolute;
-    right: -12px; /* larghezza fissa delle pagine: 12px */
+    right: -12px;
     top: 6%;
     height: 88%;
-    width: 12px; /* FISSO: tutte le pagine uguali */
+    width: 12px;
     background: linear-gradient(180deg, #f8f7f3 0%, #efece6 100%);
     box-shadow: inset -6px 0 8px rgba(0,0,0,0.06);
     border-top-right-radius: 8px;
@@ -103,10 +103,10 @@
     transform: translateZ(2px);
   }
 
-  /* COVER area: altezza fissa per uniformità */
+  /* COVER area: altezza fissa */
   .volume-3d .cover {
     width: 100%;
-    height: 210px; /* altezza fissa */
+    height: 210px;
     background: #000;
     display: flex;
     align-items: center;
@@ -121,7 +121,7 @@
   .volume-3d .cover img {
     max-width: 100%;
     max-height: 100%;
-    object-fit: contain; /* evita crop e mantiene proporzioni */
+    object-fit: contain;
     display: block;
     transition: transform 0.45s ease;
     backface-visibility: hidden;
@@ -154,13 +154,13 @@
     transform: scale(1.03);
   }
 
-  /* INFO area: troncamento con ellipsis (non cambia dimensione) */
+  /* INFO area: troncamento con ellipsis */
   .volume-3d .info {
     padding: 10px;
     padding-bottom: 14px;
     z-index: 12;
     position: relative;
-    min-height: 64px; /* mantiene spazio costante per meta */
+    min-height: 64px;
     box-sizing: border-box;
   }
 
@@ -172,7 +172,7 @@
     margin-bottom: 4px;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* TRONCA con ... */
+    text-overflow: ellipsis;
   }
 
   .volume-3d .meta {
@@ -180,7 +180,7 @@
     color: #9ca3af;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* TRONCA con ... */
+    text-overflow: ellipsis;
   }
 
   .volume-3d .progress {
@@ -196,40 +196,43 @@
     transition: width 0.45s ease;
   }
 
-/* MangaDetail specific */
-.bg-white\/6 { background-color: rgba(255,255,255,0.06); }
-.bg-white\/8 { background-color: rgba(255,255,255,0.08); }
-.z-60 { z-index: 60; }
+  /* MangaDetail specific */
+  .bg-white\/6 { background-color: rgba(255,255,255,0.06); }
+  .bg-white\/8 { background-color: rgba(255,255,255,0.08); }
+  .z-60 { z-index: 60; }
 
-/* Shine sulla cover */
-.cover-shine {
-  position: absolute;
-  left: -60%;
-  top: -40%;
-  width: 40%;
-  height: 180%;
-  background: linear-gradient(120deg, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.0) 100%);
-  transform: rotate(20deg);
-  opacity: 0;
-  transition: transform 0.9s cubic-bezier(.2,.9,.2,1), opacity 0.25s ease;
-  pointer-events: none;
-  filter: blur(6px);
-  z-index: 25;
-}
+  /* Shine sulla cover (riutilizzabile) */
+  .cover-shine {
+    position: absolute;
+    left: -60%;
+    top: -40%;
+    width: 40%;
+    height: 180%;
+    background: linear-gradient(120deg, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.0) 100%);
+    transform: rotate(20deg);
+    opacity: 0;
+    transition: transform 0.9s cubic-bezier(.2,.9,.2,1), opacity 0.25s ease;
+    pointer-events: none;
+    filter: blur(6px);
+    z-index: 25;
+  }
 
-/* show shine on hover of parent card */
-.w-[260px]:hover .cover-shine,
-.w-
+  /* show shine on hover/focus of the cover wrapper
+     Use the escaped utility selector for Tailwind-generated class .w-[260px] */
+  .w-
+
+\[260px\]
+
+:hover .cover-shine,
+  .w-
 
 \[260px\]
 
 :focus .cover-shine {
-  transform: translateX(220%) rotate(20deg);
-  opacity: 1;
-}
+    transform: translateX(220%) rotate(20deg);
+    opacity: 1;
+  }
 
-/* small utility for modal z-index */
-.z-9999 { z-index: 9999; }
-
-
+  /* small utility for modal z-index */
+  .z-9999 { z-index: 9999; }
 }
