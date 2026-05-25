@@ -1,17 +1,5 @@
 import { useEffect, useState, useRef } from "react";
 
-/**
- * src/components/MangaDetail.jsx
- * - mostra dettaglio manga
- * - rating con debounce (POST /api/manga/updateRating)
- * - edit modal + drag&drop cover
- * - salvataggio con PUT /api/manga/:id (auth)
- * - gestione 401/403: apre modal login precompilato (admin/1234) e ritenta automaticamente
- * - fallback locale via onSave(payload)
- *
- * Sostituisci interamente il file esistente con questo.
- */
-
 export default function MangaDetail({ manga, onClose, onSave }) {
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -41,14 +29,11 @@ export default function MangaDetail({ manga, onClose, onSave }) {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Login modal state (precompilato per test)
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginUser, setLoginUser] = useState("admin");
   const [loginPass, setLoginPass] = useState("1234");
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
-
-  // Azione pendente da ritentare dopo login
   const pendingActionRef = useRef(null);
 
   function updateField(key, value) {
@@ -76,7 +61,6 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     ? Math.min((owned / total) * 100, 100)
     : 0;
 
-  // ---------- RATING (debounce + POST updateRating) ----------
   async function handleRating(stars) {
     setRating(stars);
     manga.Valutazione = stars;
@@ -111,7 +95,6 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     }, 500);
   }
 
-  // ---------- COVER UPLOAD PREVIEW ----------
   function handleCoverFile(file) {
     if (!file) return;
     setUploading(true);
@@ -135,7 +118,6 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     e.preventDefault();
   }
 
-  // ---------- LOGIN (POST /api/manga/login) ----------
   async function doLoginAndRetry() {
     setLoginLoading(true);
     setLoginError("");
@@ -180,7 +162,6 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     }
   }
 
-  // ---------- SAVE CHANGES (PUT /api/manga/:id) ----------
   async function saveChanges() {
     setSaving(true);
 
@@ -188,12 +169,16 @@ export default function MangaDetail({ manga, onClose, onSave }) {
       coverurl: local.CoverURL || null,
       trama: local.Trama || null,
       volumiposseduti: Number(local.VolumiPosseduti) || 0,
-      volumitotali: local.VolumiTotali ? Number(local.VolumiTotali) : 0
+      volumitotali: local.VolumiTotali ? Number(local.VolumiTotali) : 0,
+      titolo: local.Titolo || null,
+      autore: local.Autore || null,
+      genere: local.Genere || null,
+      costo: local.Costo || null,
+      editore: local.Editore || null
     };
 
     const url = `https://mangavault10x-api.onrender.com/api/manga/${manga.ID}`;
 
-    // funzione che esegue la richiesta (utile per ritentare dopo login)
     const doPut = async () => {
       const token = localStorage.getItem("token");
       try {
@@ -231,20 +216,43 @@ export default function MangaDetail({ manga, onClose, onSave }) {
           return;
         }
 
-        if (onSave) {
+        // parse JSON response (server returns { success: true, updated })
+        let data;
+        try { data = JSON.parse(text || "{}"); } catch (e) { data = {}; }
+
+        if (data && data.updated) {
+          // aggiorna il parent con i dati reali dal DB
           const updated = {
             ...manga,
-            Titolo: local.Titolo,
-            Autore: local.Autore,
-            Trama: local.Trama,
-            Genere: local.Genere,
-            VolumiPosseduti: Number(local.VolumiPosseduti),
-            VolumiTotali: local.VolumiTotali ? Number(local.VolumiTotali) : null,
-            CoverURL: local.CoverURL,
-            Costo: Number(local.Costo),
-            Editore: local.Editore
+            // mappa i campi dal DB (attento ai nomi esatti)
+            Titolo: data.updated.Titolo ?? local.Titolo,
+            Autore: data.updated.Autore ?? local.Autore,
+            Trama: data.updated.Trama ?? local.Trama,
+            Genere: data.updated.Genere ?? local.Genere,
+            VolumiPosseduti: data.updated.VolumiPosseduti ?? Number(local.VolumiPosseduti),
+            VolumiTotali: data.updated.VolumiTotali ?? (local.VolumiTotali ? Number(local.VolumiTotali) : null),
+            CoverURL: data.updated.CoverURL ?? local.CoverURL,
+            Costo: data.updated.Costo ?? Number(local.Costo),
+            Editore: data.updated.Editore ?? local.Editore,
+            Valutazione: data.updated.Valutazione ?? manga.Valutazione
           };
-          onSave(updated);
+          if (onSave) onSave(updated);
+          // aggiorna local con i valori dal DB per coerenza
+          setLocal(prev => ({
+            ...prev,
+            Titolo: updated.Titolo,
+            Autore: updated.Autore,
+            Trama: updated.Trama,
+            Genere: updated.Genere,
+            VolumiPosseduti: updated.VolumiPosseduti,
+            VolumiTotali: updated.VolumiTotali,
+            CoverURL: updated.CoverURL,
+            Costo: updated.Costo,
+            Editore: updated.Editore
+          }));
+        } else {
+          // fallback: se server non ha ritornato updated, aggiorna localmente
+          if (onSave) onSave({ ...manga, ...local });
         }
 
         setToast({ show: true, text: "Modifiche salvate", tone: "success" });
@@ -262,7 +270,6 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     await doPut();
   }
 
-  // ---------- Focus trap per modal di editing ----------
   const modalRef = useRef(null);
   useEffect(() => {
     if (!editing) return;
@@ -294,7 +301,6 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     return () => document.removeEventListener("keydown", handleKey);
   }, [editing]);
 
-  // ---------- RENDER ----------
   return (
     <div className="fixed inset-0 z-[999] overflow-y-auto" onClick={onClose}>
       <div
@@ -462,7 +468,6 @@ export default function MangaDetail({ manga, onClose, onSave }) {
           </div>
         </div>
 
-        {/* EDIT MODAL */}
         {editing && (
           <div className="absolute inset-0 flex items-center justify-center z-60" role="dialog" aria-modal="true">
             <div ref={modalRef} className="bg-black/70 backdrop-blur-md p-6 rounded-lg w-[720px]">
@@ -499,6 +504,11 @@ export default function MangaDetail({ manga, onClose, onSave }) {
                   <input type="number" value={local.VolumiTotali ?? ""} onChange={(e) => updateField("VolumiTotali", e.target.value ? Number(e.target.value) : null)} className="w-full mt-1 p-2 rounded bg-white/6" />
                 </label>
 
+                <label className="text-sm">
+                  Costo unitario
+                  <input type="number" step="0.01" value={local.Costo ?? ""} onChange={(e) => updateField("Costo", Number(e.target.value))} className="w-full mt-1 p-2 rounded bg-white/6" />
+                </label>
+
                 <label className="text-sm col-span-2">
                   Editore
                   <input value={local.Editore} onChange={(e) => updateField("Editore", e.target.value)} className="w-full mt-1 p-2 rounded bg-white/6" />
@@ -528,7 +538,6 @@ export default function MangaDetail({ manga, onClose, onSave }) {
           </div>
         )}
 
-        {/* LOGIN MODAL (apre quando server risponde 401/403) */}
         {loginOpen && (
           <div className="absolute inset-0 flex items-center justify-center z-70" role="dialog" aria-modal="true">
             <div className="bg-black/80 backdrop-blur-md p-6 rounded-lg w-[420px]">
