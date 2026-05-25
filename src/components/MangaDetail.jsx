@@ -10,7 +10,7 @@ export default function MangaDetail({ manga, onClose }) {
   if (!manga) return null;
 
   const [rating, setRating] = useState(Number(manga.Valutazione) || 0);
-  const [favorite, setFavorite] = useState(manga.Preferito === 1);
+  const [hoverRating, setHoverRating] = useState(0);
   const [showToast, setShowToast] = useState(false);
   const debounceRef = useRef(null);
 
@@ -72,12 +72,6 @@ export default function MangaDetail({ manga, onClose }) {
     }, 500);
   }
 
-  // ❤️ TOGGLE PREFERITO (solo frontend)
-  function toggleFavorite() {
-    setFavorite(!favorite);
-    manga.Preferito = !favorite ? 1 : 0;
-  }
-
   return (
     <div
       className="fixed inset-0 z-[999] overflow-y-auto"
@@ -128,21 +122,10 @@ export default function MangaDetail({ manga, onClose }) {
           {/* RIGHT SIDE */}
           <div className="flex-1">
 
-            {/* TITLE + FAVORITE */}
-            <div className="flex items-center justify-between">
-              <h1 className="text-5xl font-black text-white mb-2 drop-shadow-xl">
-                {manga.Titolo}
-              </h1>
-
-              <button
-                onClick={toggleFavorite}
-                className={`text-4xl transition ${
-                  favorite ? "text-red-500 scale-110" : "text-zinc-500"
-                } hover:scale-125`}
-              >
-                ❤️
-              </button>
-            </div>
+            {/* TITLE */}
+            <h1 className="text-5xl font-black text-white mb-2 drop-shadow-xl">
+              {manga.Titolo}
+            </h1>
 
             <p className="text-zinc-400 text-lg mb-2">{manga.Autore}</p>
 
@@ -161,26 +144,27 @@ export default function MangaDetail({ manga, onClose }) {
               </div>
             )}
 
-            {/* ⭐ RATING STARS WITH SPARKLE */}
+            {/* ⭐ RATING STARS WITH HOVER PREVIEW */}
             <div className="flex items-center gap-1 mb-6">
-              {[1, 2, 3, 4, 5].map(i => (
-                <span
-                  key={i}
-                  onClick={() => handleRating(i)}
-                  className={`text-3xl cursor-pointer transition-transform relative ${
-                    i <= rating ? "text-yellow-400" : "text-zinc-600"
-                  } hover:text-yellow-300 active:scale-125`}
-                >
-                  ★
+              {[1, 2, 3, 4, 5].map(i => {
+                const active = hoverRating ? i <= hoverRating : i <= rating;
 
-                  {/* ✨ Sparkle effect */}
-                  {i <= rating && (
-                    <span className="absolute -top-2 -right-2 text-yellow-300 animate-ping">
-                      ✨
-                    </span>
-                  )}
-                </span>
-              ))}
+                return (
+                  <span
+                    key={i}
+                    onMouseEnter={() => setHoverRating(i)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    onClick={() => handleRating(i)}
+                    className={`
+                      text-3xl cursor-pointer transition-transform
+                      ${active ? "text-yellow-400 glow-star" : "text-zinc-600"}
+                      hover:text-yellow-300 active:scale-125
+                    `}
+                  >
+                    ★
+                  </span>
+                );
+              })}
             </div>
 
             {/* DESCRIPTION */}
