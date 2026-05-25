@@ -33,25 +33,27 @@ export default function MangaGrid({ searchResults = [], filter }) {
   // STATUS
   // -----------------------------
   function getStatus(m){
-    const { total, owned, hasKnownTotal, concluded } = getMeta(m);
+  const { total, owned, hasKnownTotal } = getMeta(m);
 
-    // IN CORSO → non conclusa, totali sconosciuti, possiedi già qualcosa
-    if (concluded === 0 && !hasKnownTotal && owned > 0)
-      return "ongoing";
+  if (!hasKnownTotal && owned > 0)
+    return "ongoing"; // giallo
 
-    // DA COMPLETARE → non conclusa, totali noti, possiedi meno del totale
-    if (concluded === 0 && hasKnownTotal && owned < total)
-      return "to_complete";
+  if (hasKnownTotal && owned < total)
+    return "to_complete"; // rosso
 
-    // il resto lo consideriamo completato
-    return "completed";
-  }
+  if (hasKnownTotal && owned === total)
+    return "completed"; // verde
 
-  function barColor(status){
-    if(status === "completed") return "bg-green-400";
-    if(status === "to_complete") return "bg-red-400";
-    return "bg-yellow-400";
-  }
+  return "ongoing"; // fallback
+}
+
+
+function barColor(status){
+  if(status === "completed") return "bg-green-500";
+  if(status === "to_complete") return "bg-red-500";
+  return "bg-yellow-400"; // ongoing
+}
+
 
   // -----------------------------
   // FILTRI
