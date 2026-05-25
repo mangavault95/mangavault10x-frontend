@@ -16,7 +16,8 @@ export default function MangaDetail({ manga, onClose }) {
   // PREZZO PER VOLUME (colonna "Costo")
   const price = Number(manga.Costo) || 0;
 
-  const isOngoing = !total || total === 0 || manga.VolumiTotali === "?";
+  const isOngoing =
+    !total || total === 0 || manga.VolumiTotali === "?" || manga.Concluso === 0;
 
   // COSTO BASATO SUI VOLUMI POSSEDUTI
   const totalCost = price && owned ? (owned * price).toFixed(2) : "N/A";
@@ -45,6 +46,7 @@ export default function MangaDetail({ manga, onClose }) {
         }}
       />
 
+      {/* DARK OVERLAY */}
       <div className="absolute inset-0 bg-black/70" />
 
       {/* CLOSE BUTTON */}
@@ -75,7 +77,16 @@ export default function MangaDetail({ manga, onClose }) {
             <h1 className="text-5xl font-black text-white mb-2 drop-shadow-xl">
               {manga.Titolo}
             </h1>
-            <p className="text-zinc-400 text-lg mb-6">{manga.Autore}</p>
+
+            <p className="text-zinc-400 text-lg mb-2">{manga.Autore}</p>
+
+            {/* BADGE IN CORSO */}
+            {isOngoing && (
+              <div className="inline-flex items-center gap-2 px-3 py-1 mb-4 rounded-full bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 font-semibold text-sm animate-pulse w-fit">
+                <span className="text-lg">⏳</span>
+                <span>In corso</span>
+              </div>
+            )}
 
             {/* RATING STARS */}
             <div className="flex items-center gap-1 mb-6">
