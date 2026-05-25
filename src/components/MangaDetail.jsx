@@ -61,6 +61,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     ? Math.min((owned / total) * 100, 100)
     : 0;
 
+  // rating (debounce) - mantiene updateRating
   async function handleRating(stars) {
     setRating(stars);
     manga.Valutazione = stars;
@@ -95,6 +96,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     }, 500);
   }
 
+  // cover preview
   function handleCoverFile(file) {
     if (!file) return;
     setUploading(true);
@@ -118,6 +120,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     e.preventDefault();
   }
 
+  // login and retry
   async function doLoginAndRetry() {
     setLoginLoading(true);
     setLoginError("");
@@ -162,10 +165,12 @@ export default function MangaDetail({ manga, onClose, onSave }) {
     }
   }
 
+  // SAVE: usa POST /api/manga/update (pattern come updateRating)
   async function saveChanges() {
     setSaving(true);
 
     const payloadForServer = {
+      id: manga.ID,
       coverurl: local.CoverURL || null,
       trama: local.Trama || null,
       volumiposseduti: Number(local.VolumiPosseduti) || 0,
@@ -177,13 +182,13 @@ export default function MangaDetail({ manga, onClose, onSave }) {
       editore: local.Editore || null
     };
 
-    const url = `https://mangavault10x-api.onrender.com/api/manga/${manga.ID}`;
+    const url = `https://mangavault10x-api.onrender.com/api/manga/update`;
 
-    const doPut = async () => {
+    const doPost = async () => {
       const token = localStorage.getItem("token");
       try {
         const res = await fetch(url, {
-          method: "PUT",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -198,7 +203,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
 
           if (res.status === 401 || res.status === 403) {
             setToast({ show: true, text: "Autenticazione richiesta o token non valido", tone: "error" });
-            pendingActionRef.current = doPut;
+            pendingActionRef.current = doPost;
             setLoginOpen(true);
             setSaving(false);
             return;
@@ -216,28 +221,25 @@ export default function MangaDetail({ manga, onClose, onSave }) {
           return;
         }
 
-        // parse JSON response (server returns { success: true, updated })
         let data;
         try { data = JSON.parse(text || "{}"); } catch (e) { data = {}; }
 
         if (data && data.updated) {
-          // aggiorna il parent con i dati reali dal DB
+          const u = data.updated;
           const updated = {
             ...manga,
-            // mappa i campi dal DB (attento ai nomi esatti)
-            Titolo: data.updated.Titolo ?? local.Titolo,
-            Autore: data.updated.Autore ?? local.Autore,
-            Trama: data.updated.Trama ?? local.Trama,
-            Genere: data.updated.Genere ?? local.Genere,
-            VolumiPosseduti: data.updated.VolumiPosseduti ?? Number(local.VolumiPosseduti),
-            VolumiTotali: data.updated.VolumiTotali ?? (local.VolumiTotali ? Number(local.VolumiTotali) : null),
-            CoverURL: data.updated.CoverURL ?? local.CoverURL,
-            Costo: data.updated.Costo ?? Number(local.Costo),
-            Editore: data.updated.Editore ?? local.Editore,
-            Valutazione: data.updated.Valutazione ?? manga.Valutazione
+            Titolo: u.Titolo ?? local.Titolo,
+            Autore: u.Autore ?? local.Autore,
+            Trama: u.Trama ?? local.Trama,
+            Genere: u.Genere ?? local.Genere,
+            VolumiPosseduti: u.VolumiPosseduti ?? Number(local.VolumiPosseduti),
+            VolumiTotali: u.VolumiTotali ?? (local.VolumiTotali ? Number(local.VolumiTotali) : null),
+            CoverURL: u.CoverURL ?? local.CoverURL,
+            Costo: u.Costo ?? Number(local.Costo),
+            Editore: u.Editore ?? local.Editore,
+            Valutazione: u.Valutazione ?? manga.Valutazione
           };
           if (onSave) onSave(updated);
-          // aggiorna local con i valori dal DB per coerenza
           setLocal(prev => ({
             ...prev,
             Titolo: updated.Titolo,
@@ -251,7 +253,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
             Editore: updated.Editore
           }));
         } else {
-          // fallback: se server non ha ritornato updated, aggiorna localmente
+          // fallback: aggiorna UI localmente
           if (onSave) onSave({ ...manga, ...local });
         }
 
@@ -267,7 +269,7 @@ export default function MangaDetail({ manga, onClose, onSave }) {
       }
     };
 
-    await doPut();
+    await doPost();
   }
 
   const modalRef = useRef(null);
