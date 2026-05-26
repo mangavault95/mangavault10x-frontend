@@ -1,5 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 
+/**
+ * WishlistModal - design coerente con MangaDetail
+ * - usa /api/manga/enrich per precompilare Titolo, CoverURL, Trama, VolumiTotali, Genere
+ * - NON imposta automaticamente Autore (lascio vuoto per evitare mismatch)
+ * - salva su /api/wishlist e fallback su localStorage
+ */
+
 export default function WishlistModal({ onClose, onSaved }) {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -10,7 +17,7 @@ export default function WishlistModal({ onClose, onSaved }) {
 
   const [form, setForm] = useState({
     Titolo: "",
-    Autore: "",
+    Autore: "",        // intentionally left blank by autofill
     CoverURL: "",
     Trama: "",
     Genere: "",
@@ -42,16 +49,24 @@ export default function WishlistModal({ onClose, onSaved }) {
         setError(data.error || "Nessun risultato");
         setMeta(null);
       } else {
+        // popola solo i campi affidabili; NON imposta Autore automaticamente
         const normalized = {
           Titolo: data.titolo || title,
-          Autore: data.autore || "",
           CoverURL: data.coverurl || "",
           Trama: data.trama || "",
-          Genere: data.genere || "",
-          VolumiTotali: data.volumitotali || ""
+          VolumiTotali: data.volumitotali || "",
+          Genere: data.genere || ""
         };
         setMeta(normalized);
-        setForm(prev => ({ ...prev, ...normalized }));
+        setForm(prev => ({
+          ...prev,
+          Titolo: normalized.Titolo,
+          CoverURL: normalized.CoverURL,
+          Trama: normalized.Trama,
+          VolumiTotali: normalized.VolumiTotali,
+          Genere: normalized.Genere,
+          // Autore intentionally left as prev.Autore (do not override)
+        }));
       }
     } catch (err) {
       setError("Errore durante la ricerca");
@@ -76,16 +91,15 @@ export default function WishlistModal({ onClose, onSaved }) {
     setSaving(true);
     const payload = {
       titolo: form.Titolo,
-      autori: form.Autore,
-      coverurl: form.CoverURL,
-      trama: form.Trama,
-      generi: form.Genere,
+      autori: form.Autore || null,
+      coverurl: form.CoverURL || null,
+      trama: form.Trama || null,
+      generi: form.Genere || null,
       volumitotali: form.VolumiTotali ? Number(form.VolumiTotali) : null,
       dovecomprare: ""
     };
 
     try {
-      // salva su backend
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/wishlist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -113,7 +127,16 @@ export default function WishlistModal({ onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-[999] overflow-y-auto" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/70" />
+      {/* patterned translucent background like MangaDetail */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: `linear-gradient(135deg, rgba(10,10,10,0.96), rgba(30,30,30,0.96))`,
+          opacity: 0.9
+        }}
+      />
+      <div className="absolute inset-0 bg-black/64" />
+
       <button
         onClick={onClose}
         className="absolute top-6 right-6 w-12 h-12 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-2xl text-white hover:bg-white/20 transition z-[999]"
@@ -123,7 +146,7 @@ export default function WishlistModal({ onClose, onSaved }) {
       </button>
 
       <div
-        className="relative max-w-5xl mx-auto mt-16 mb-16 p-6 rounded-3xl shadow-2xl border border-white/10 bg-gradient-to-br from-[#0b0b0f] to-[#0f0f12]"
+        className="relative max-w-5xl mx-auto mt-16 mb-16 p-6 rounded-3xl shadow-2xl border border-white/10 bg-white/6 backdrop-blur-md"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -152,7 +175,7 @@ export default function WishlistModal({ onClose, onSaved }) {
             </div>
           </div>
 
-          <div className="flex-1 bg-white/8 backdrop-blur-md rounded-xl p-6 text-white">
+          <div className="flex-1 text-white">
             <div className="flex justify-between items-start gap-4">
               <div>
                 <h1 className="text-3xl font-extrabold leading-tight">Aggiungi alla Wishlist</h1>
@@ -183,30 +206,30 @@ export default function WishlistModal({ onClose, onSaved }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                 <div>
                   <label className="text-xs text-zinc-400">Titolo</label>
-                  <input value={form.Titolo} onChange={(e)=>setForm(prev=>({...prev, Titolo: e.target.value}))} className="w-full mt-2 p-2 rounded bg-[#070708] text-white text-sm border border-white/4" />
+                  <input value={form.Titolo} onChange={(e)=>handleChange("Titolo", e.target.value)} className="w-full mt-2 p-2 rounded bg-[#070708] text-white text-sm border border-white/4" />
                 </div>
                 <div>
                   <label className="text-xs text-zinc-400">Autore</label>
-                  <input value={form.Autore} onChange={(e)=>setForm(prev=>({...prev, Autore: e.target.value}))} className="w-full mt-2 p-2 rounded bg-[#070708] text-white text-sm border border-white/4" />
+                  <input value={form.Autore} onChange={(e)=>handleChange("Autore", e.target.value)} placeholder="Inserisci autore (se necessario)" className="w-full mt-2 p-2 rounded bg-[#070708] text-white text-sm border border-white/4" />
                 </div>
                 <div>
                   <label className="text-xs text-zinc-400">Volumi totali</label>
-                  <input value={form.VolumiTotali} onChange={(e)=>setForm(prev=>({...prev, VolumiTotali: e.target.value}))} type="number" className="w-full mt-2 p-2 rounded bg-[#070708] text-white text-sm border border-white/4" />
+                  <input value={form.VolumiTotali} onChange={(e)=>handleChange("VolumiTotali", e.target.value)} type="number" className="w-full mt-2 p-2 rounded bg-[#070708] text-white text-sm border border-white/4" />
                 </div>
                 <div>
                   <label className="text-xs text-zinc-400">Genere</label>
-                  <input value={form.Genere} onChange={(e)=>setForm(prev=>({...prev, Genere: e.target.value}))} className="w-full mt-2 p-2 rounded bg-[#070708] text-white text-sm border border-white/4" />
+                  <input value={form.Genere} onChange={(e)=>handleChange("Genere", e.target.value)} className="w-full mt-2 p-2 rounded bg-[#070708] text-white text-sm border border-white/4" />
                 </div>
               </div>
 
               <div>
                 <label className="text-xs text-zinc-400">Trama</label>
-                <textarea value={form.Trama} onChange={(e)=>setForm(prev=>({...prev, Trama: e.target.value}))} rows={3} className="w-full mt-2 p-2 rounded bg-[#070708] text-white text-sm border border-white/4" />
+                <textarea value={form.Trama} onChange={(e)=>handleChange("Trama", e.target.value)} rows={3} className="w-full mt-2 p-2 rounded bg-[#070708] text-white text-sm border border-white/4" />
               </div>
 
               <div>
                 <label className="text-xs text-zinc-400">Cover (URL o upload)</label>
-                <input value={form.CoverURL} onChange={(e)=>setForm(prev=>({...prev, CoverURL: e.target.value}))} placeholder="https://..." className="w-full mt-2 p-2 rounded bg-[#070708] text-white text-sm border border-white/4" />
+                <input value={form.CoverURL} onChange={(e)=>handleChange("CoverURL", e.target.value)} placeholder="https://..." className="w-full mt-2 p-2 rounded bg-[#070708] text-white text-sm border border-white/4" />
                 <div className="mt-2 flex items-center gap-3">
                   <input ref={fileRef} onChange={handleFile} type="file" accept="image/*" className="text-xs text-zinc-400" />
                   {form.CoverURL && <img src={form.CoverURL} alt="preview cover" className="w-20 h-28 rounded-md object-cover shadow-sm" />}
