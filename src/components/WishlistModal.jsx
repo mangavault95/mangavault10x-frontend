@@ -2,8 +2,9 @@ import { useEffect, useState, useRef } from "react";
 
 /**
  * WishlistModal.jsx
- * - design coerente con MangaDetail (trasparenza, cover offset)
- * - inserisci titolo per autofetch /api/manga/enrich
+ * - pannello con trasparenza più grigia (bg-zinc)
+ * - cover leggermente staccata dalla barra sinistra
+ * - autofetch /api/manga/enrich (Anilist)
  * - NON sovrascrive Autore automaticamente
  * - salva su /api/wishlist e fallback su localStorage
  */
@@ -65,7 +66,6 @@ export default function WishlistModal({ onClose, onSaved }) {
           Trama: normalized.Trama,
           VolumiTotali: normalized.VolumiTotali,
           Genere: normalized.Genere
-          // Autore intentionally not overwritten
         }));
       }
     } catch (err) {
@@ -107,7 +107,6 @@ export default function WishlistModal({ onClose, onSaved }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Errore salvataggio");
-      // salva anche localmente per immediatezza
       try {
         const existing = JSON.parse(localStorage.getItem("mv_wishlist_custom") || "[]");
         localStorage.setItem("mv_wishlist_custom", JSON.stringify([data.item, ...existing]));
@@ -117,7 +116,6 @@ export default function WishlistModal({ onClose, onSaved }) {
       onClose();
     } catch (err) {
       console.error("Wishlist save error:", err);
-      // fallback locale
       const fallbackItem = {
         id: `c_${Date.now()}`,
         titolo: payload.titolo,
@@ -140,12 +138,11 @@ export default function WishlistModal({ onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-[999] overflow-y-auto" onClick={onClose}>
-      {/* patterned translucent background */}
       <div
         className="absolute inset-0"
         style={{
-          background: `linear-gradient(135deg, rgba(10,10,10,0.96), rgba(30,30,30,0.96))`,
-          opacity: 0.9
+          background: `linear-gradient(135deg, rgba(10,10,10,0.92), rgba(30,30,30,0.92))`,
+          opacity: 0.92
         }}
       />
       <div className="absolute inset-0 bg-black/64" />
@@ -159,14 +156,13 @@ export default function WishlistModal({ onClose, onSaved }) {
       </button>
 
       <div
-        className="relative max-w-5xl mx-auto mt-16 mb-16 p-6 rounded-3xl shadow-2xl border border-white/10 bg-white/10 backdrop-blur-md"
+        className="relative max-w-5xl mx-auto mt-16 mb-16 p-6 rounded-3xl shadow-2xl border border-white/10 bg-zinc-700/40 backdrop-blur-md"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
         <div className="flex gap-8">
           <div className="flex-shrink-0 w-[260px] relative">
-            {/* left offset bar to emulate MangaDetail separation */}
             <div className="absolute -left-6 top-6 w-3 h-[380px] rounded-r-lg bg-gradient-to-b from-black/0 to-white/6 pointer-events-none" />
             <div className="rounded-xl overflow-hidden shadow-2xl transform-gpu transition-transform duration-300">
               <div className="bg-black relative">
