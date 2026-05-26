@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 
 /**
  * WishlistModal.jsx
- * - pannello con trasparenza più grigia (bg-zinc)
+ * - pannello usa variabili CSS per colore (coerenza con app.css)
  * - cover leggermente staccata dalla barra sinistra
  * - autofetch /api/manga/enrich (Anilist)
  * - NON sovrascrive Autore automaticamente
@@ -136,6 +136,12 @@ export default function WishlistModal({ onClose, onSaved }) {
     }
   };
 
+  // style using CSS variables so the panel color matches app.css
+  const panelStyle = {
+    backgroundColor: "var(--panel-bg, rgba(255,255,255,0.06))",
+    borderColor: "var(--border, rgba(255,255,255,0.08))"
+  };
+
   return (
     <div className="fixed inset-0 z-[999] overflow-y-auto" onClick={onClose}>
       <div
@@ -156,7 +162,8 @@ export default function WishlistModal({ onClose, onSaved }) {
       </button>
 
       <div
-        className="relative max-w-5xl mx-auto mt-16 mb-16 p-6 rounded-3xl shadow-2xl border border-white/10 bg-zinc-700/40 backdrop-blur-md"
+        className="relative max-w-5xl mx-auto mt-16 mb-16 p-6 rounded-3xl shadow-2xl border backdrop-blur-md"
+        style={panelStyle}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
