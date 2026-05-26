@@ -8,7 +8,6 @@ const LS = {
 function safeParse(v, fallback = []) {
   try { const p = JSON.parse(v); return Array.isArray(p) ? p : fallback; } catch { return fallback; }
 }
-
 function uid() {
   return `c_${Date.now()}_${Math.floor(Math.random()*10000)}`;
 }
@@ -33,7 +32,6 @@ export default function WishlistModal({ onClose }) {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    // rilegge localStorage all'avvio
     setWishlist(safeParse(localStorage.getItem(LS.WISHLIST), []));
     setCustom(safeParse(localStorage.getItem(LS.WISHLIST_CUSTOM), []));
     fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
@@ -43,11 +41,9 @@ export default function WishlistModal({ onClose }) {
   }, []);
 
   useEffect(() => {
-    // salva custom ogni volta che cambia
     try { localStorage.setItem(LS.WISHLIST_CUSTOM, JSON.stringify(custom)); } catch {}
   }, [custom]);
 
-  // assicurati che wishlist sia sempre array e normalizza gli ID a stringa
   const wishlistSet = useMemo(() => new Set((Array.isArray(wishlist) ? wishlist : []).map(String)), [wishlist]);
 
   const wishManga = useMemo(() => {
@@ -110,36 +106,54 @@ export default function WishlistModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="w-[min(96vw,720px)] bg-[#0f0f10] p-4 rounded-xl border border-white/10">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-semibold">Wishlist</h3>
-          <button onClick={onClose} className="text-sm text-zinc-400">Chiudi</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="w-[min(96vw,980px)] bg-gradient-to-b from-[#0b0b0f] to-[#0f0f12] rounded-2xl border border-white/6 shadow-xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/6">
+          <div className="flex items-center gap-3">
+            <div className="text-xl font-extrabold tracking-tight">Wishlist</div>
+            <div className="text-xs text-zinc-400">Gestisci i tuoi desideri</div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} className="text-sm text-zinc-400 hover:text-white">Chiudi</button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+          {/* LEFT: lista wishlist (stile MangaDetail list) */}
           <div>
-            <p className="text-xs uppercase tracking-wider text-zinc-400 mb-2">Elementi in wishlist</p>
-            <div className="space-y-2 max-h-72 overflow-y-auto pr-2">
-              {combined.length === 0 && <div className="text-zinc-500">Wishlist vuota</div>}
+            <p className="text-xs uppercase tracking-wider text-zinc-400 mb-3">Elementi in wishlist</p>
+            <div className="space-y-3 max-h-[56vh] overflow-y-auto pr-2">
+              {combined.length === 0 && (
+                <div className="rounded-xl p-6 bg-gradient-to-br from-[#0f0f10] to-[#0b0b0c] border border-white/4 text-zinc-500">
+                  Wishlist vuota
+                </div>
+              )}
+
               {combined.map(item => (
-                <div key={item.ID} className="flex items-start gap-3 p-2 rounded-md bg-white/5">
-                  <img src={item.CoverURL || "https://placehold.co/60x90"} alt={`Copertina ${item.Titolo}`} loading="lazy" className="w-10 h-14 rounded-md object-cover" />
+                <div key={item.ID} className="flex gap-4 p-3 rounded-xl bg-gradient-to-r from-[#0f0f10] to-[#121212] border border-white/4 items-start">
+                  <img src={item.CoverURL || "https://placehold.co/80x120"} alt={`Copertina ${item.Titolo}`} loading="lazy" className="w-16 h-24 rounded-md object-cover flex-shrink-0 shadow-sm" />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <div className="text-sm font-semibold truncate text-white">{item.Titolo}</div>
-                        {item.Autore && <div className="text-xs text-zinc-500">{item.Autore}</div>}
-                        {item._custom && <div className="text-xs text-zinc-400 mt-1">Aggiunto manualmente</div>}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-white truncate">{item.Titolo}</div>
+                        {item.Autore && <div className="text-xs text-zinc-400 truncate">{item.Autore}</div>}
+                        {item._custom && <div className="text-[11px] text-yellow-300 mt-1">Aggiunto manualmente</div>}
                       </div>
 
-                      <div className="flex flex-col items-end gap-1">
-                        {item.PrezzoDesiderato != null && <div className="text-sm text-yellow-300">€{Number(item.PrezzoDesiderato).toFixed(2)}</div>}
-                        <div className="flex gap-1">
-                          <button onClick={() => fetchAvgPrice(item)} className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/6" title="Controlla prezzo medio venduto">
+                      <div className="flex flex-col items-end gap-2">
+                        {item.PrezzoDesiderato != null && <div className="text-sm text-yellow-300 font-semibold">€{Number(item.PrezzoDesiderato).toFixed(2)}</div>}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => fetchAvgPrice(item)}
+                            className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/6"
+                            aria-label={`Controlla prezzo medio per ${item.Titolo}`}
+                          >
                             {loadingPriceId === item.ID ? "..." : "Prezzo medio"}
                           </button>
-                          {item._custom && <button onClick={() => removeCustom(item.ID)} className="text-xs px-2 py-1 rounded bg-red-600/20">Elimina</button>}
+                          {item._custom && (
+                            <button onClick={() => removeCustom(item.ID)} className="text-xs px-2 py-1 rounded bg-red-600/20 hover:bg-red-600/30">Elimina</button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -162,50 +176,56 @@ export default function WishlistModal({ onClose }) {
             </div>
           </div>
 
+          {/* RIGHT: form aggiungi (stile MangaDetail panel) */}
           <div>
-            <p className="text-xs uppercase tracking-wider text-zinc-400 mb-2">Aggiungi manga non presente</p>
-            <form onSubmit={addCustom} className="space-y-2">
-              <div>
-                <label className="text-xs text-zinc-400">Titolo</label>
-                <input value={form.Titolo} onChange={(e)=>handleFormChange("Titolo", e.target.value)} className="w-full mt-1 p-2 rounded bg-[#0b0b0c] text-white text-sm" required />
-              </div>
-
-              <div>
-                <label className="text-xs text-zinc-400">Autore</label>
-                <input value={form.Autore} onChange={(e)=>handleFormChange("Autore", e.target.value)} className="w-full mt-1 p-2 rounded bg-[#0b0b0c] text-white text-sm" />
-              </div>
-
-              <div>
-                <label className="text-xs text-zinc-400">Cover (URL o upload)</label>
-                <input value={form.CoverURL} onChange={(e)=>handleFormChange("CoverURL", e.target.value)} placeholder="https://..." className="w-full mt-1 p-2 rounded bg-[#0b0b0c] text-white text-sm" />
-                <input ref={fileInputRef} onChange={handleFile} type="file" accept="image/*" className="mt-2 text-xs text-zinc-400" />
-              </div>
-
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <label className="text-xs text-zinc-400">Prezzo desiderato (€)</label>
-                  <input value={form.PrezzoDesiderato} onChange={(e)=>handleFormChange("PrezzoDesiderato", e.target.value)} type="number" step="0.01" className="w-full mt-1 p-2 rounded bg-[#0b0b0c] text-white text-sm" />
+            <p className="text-xs uppercase tracking-wider text-zinc-400 mb-3">Aggiungi manga non presente</p>
+            <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0f0f10] to-[#0b0b0c] border border-white/6">
+              <form onSubmit={addCustom} className="space-y-3">
+                <div>
+                  <label className="text-xs text-zinc-400">Titolo</label>
+                  <input value={form.Titolo} onChange={(e)=>handleFormChange("Titolo", e.target.value)} className="w-full mt-2 p-3 rounded bg-[#070708] text-white text-sm border border-white/4" required />
                 </div>
-                <div className="w-36">
-                  <label className="text-xs text-zinc-400">Condizione</label>
-                  <select value={form.Condizione} onChange={(e)=>handleFormChange("Condizione", e.target.value)} className="w-full mt-1 p-2 rounded bg-[#0b0b0c] text-white text-sm">
-                    <option value="new">Nuovo</option>
-                    <option value="used">Usato</option>
-                    <option value="any">Indifferente</option>
-                  </select>
+
+                <div>
+                  <label className="text-xs text-zinc-400">Autore</label>
+                  <input value={form.Autore} onChange={(e)=>handleFormChange("Autore", e.target.value)} className="w-full mt-2 p-3 rounded bg-[#070708] text-white text-sm border border-white/4" />
                 </div>
-              </div>
 
-              <div>
-                <label className="text-xs text-zinc-400">Dove comprarlo (link / store)</label>
-                <input value={form.DoveComprare} onChange={(e)=>handleFormChange("DoveComprare", e.target.value)} placeholder="es. eBay, Vinted, negozio locale" className="w-full mt-1 p-2 rounded bg-[#0b0b0c] text-white text-sm" />
-              </div>
+                <div>
+                  <label className="text-xs text-zinc-400">Cover (URL o upload)</label>
+                  <input value={form.CoverURL} onChange={(e)=>handleFormChange("CoverURL", e.target.value)} placeholder="https://..." className="w-full mt-2 p-3 rounded bg-[#070708] text-white text-sm border border-white/4" />
+                  <div className="mt-2 flex items-center gap-3">
+                    <input ref={fileInputRef} onChange={handleFile} type="file" accept="image/*" className="text-xs text-zinc-400" />
+                    {form.CoverURL && <img src={form.CoverURL} alt="preview cover" className="w-16 h-24 rounded-md object-cover shadow-sm" />}
+                  </div>
+                </div>
 
-              <div className="flex gap-2">
-                <button type="submit" className="flex-1 py-2 rounded bg-yellow-500 text-black font-semibold">Aggiungi</button>
-                <button type="button" onClick={() => setForm({ Titolo: "", Autore: "", CoverURL: "", PrezzoDesiderato: "", Condizione: "new", DoveComprare: "" })} className="py-2 px-3 rounded bg-white/5">Reset</button>
-              </div>
-            </form>
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="text-xs text-zinc-400">Prezzo desiderato (€)</label>
+                    <input value={form.PrezzoDesiderato} onChange={(e)=>handleFormChange("PrezzoDesiderato", e.target.value)} type="number" step="0.01" className="w-full mt-2 p-3 rounded bg-[#070708] text-white text-sm border border-white/4" />
+                  </div>
+                  <div className="w-36">
+                    <label className="text-xs text-zinc-400">Condizione</label>
+                    <select value={form.Condizione} onChange={(e)=>handleFormChange("Condizione", e.target.value)} className="w-full mt-2 p-3 rounded bg-[#070708] text-white text-sm border border-white/4">
+                      <option value="new">Nuovo</option>
+                      <option value="used">Usato</option>
+                      <option value="any">Indifferente</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-zinc-400">Dove comprarlo (link / store)</label>
+                  <input value={form.DoveComprare} onChange={(e)=>handleFormChange("DoveComprare", e.target.value)} placeholder="es. eBay, Vinted, negozio locale" className="w-full mt-2 p-3 rounded bg-[#070708] text-white text-sm border border-white/4" />
+                </div>
+
+                <div className="flex gap-3 mt-2">
+                  <button type="submit" className="flex-1 py-3 rounded bg-yellow-400 text-black font-semibold hover:brightness-95">Aggiungi</button>
+                  <button type="button" onClick={() => setForm({ Titolo: "", Autore: "", CoverURL: "", PrezzoDesiderato: "", Condizione: "new", DoveComprare: "" })} className="py-3 px-4 rounded bg-white/5 hover:bg-white/6">Reset</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
 
