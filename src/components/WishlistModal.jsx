@@ -1,5 +1,13 @@
 import { useEffect, useState, useRef } from "react";
 
+/**
+ * WishlistModal.jsx
+ * - design coerente con MangaDetail (trasparenza, cover offset)
+ * - inserisci titolo per autofetch /api/manga/enrich
+ * - NON sovrascrive Autore automaticamente
+ * - salva su /api/wishlist e fallback su localStorage
+ */
+
 export default function WishlistModal({ onClose, onSaved }) {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -57,6 +65,7 @@ export default function WishlistModal({ onClose, onSaved }) {
           Trama: normalized.Trama,
           VolumiTotali: normalized.VolumiTotali,
           Genere: normalized.Genere
+          // Autore intentionally not overwritten
         }));
       }
     } catch (err) {
@@ -98,28 +107,40 @@ export default function WishlistModal({ onClose, onSaved }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Errore salvataggio");
-      // salva anche localmente
-      const existing = JSON.parse(localStorage.getItem("mv_wishlist_custom") || "[]");
-      localStorage.setItem("mv_wishlist_custom", JSON.stringify([data.item, ...existing]));
+      // salva anche localmente per immediatezza
+      try {
+        const existing = JSON.parse(localStorage.getItem("mv_wishlist_custom") || "[]");
+        localStorage.setItem("mv_wishlist_custom", JSON.stringify([data.item, ...existing]));
+      } catch {}
       setSaving(false);
-      if (onSaved) onSaved(data.item);
-      // piccolo toast: gestito dal parent (onSaved)
+      if (typeof onSaved === "function") onSaved(data.item);
       onClose();
     } catch (err) {
-      console.error(err);
+      console.error("Wishlist save error:", err);
       // fallback locale
-      const fallbackItem = { id: `c_${Date.now()}`, ...payload, created_at: new Date().toISOString() };
-      const existing = JSON.parse(localStorage.getItem("mv_wishlist_custom") || "[]");
-      localStorage.setItem("mv_wishlist_custom", JSON.stringify([fallbackItem, ...existing]));
+      const fallbackItem = {
+        id: `c_${Date.now()}`,
+        titolo: payload.titolo,
+        autori: payload.autori,
+        coverurl: payload.coverurl,
+        trama: payload.trama,
+        generi: payload.generi,
+        volumitotali: payload.volumitotali,
+        created_at: new Date().toISOString()
+      };
+      try {
+        const existing = JSON.parse(localStorage.getItem("mv_wishlist_custom") || "[]");
+        localStorage.setItem("mv_wishlist_custom", JSON.stringify([fallbackItem, ...existing]));
+      } catch {}
       setSaving(false);
-      if (onSaved) onSaved(fallbackItem);
+      if (typeof onSaved === "function") onSaved(fallbackItem);
       onClose();
     }
   };
 
   return (
     <div className="fixed inset-0 z-[999] overflow-y-auto" onClick={onClose}>
-      {/* patterned translucent background like MangaDetail */}
+      {/* patterned translucent background */}
       <div
         className="absolute inset-0"
         style={{
@@ -138,13 +159,15 @@ export default function WishlistModal({ onClose, onSaved }) {
       </button>
 
       <div
-        className="relative max-w-5xl mx-auto mt-16 mb-16 p-6 rounded-3xl shadow-2xl border border-white/10 bg-white/6 backdrop-blur-md"
+        className="relative max-w-5xl mx-auto mt-16 mb-16 p-6 rounded-3xl shadow-2xl border border-white/10 bg-white/10 backdrop-blur-md"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
         <div className="flex gap-8">
-          <div className="flex-shrink-0 w-[260px]">
+          <div className="flex-shrink-0 w-[260px] relative">
+            {/* left offset bar to emulate MangaDetail separation */}
+            <div className="absolute -left-6 top-6 w-3 h-[380px] rounded-r-lg bg-gradient-to-b from-black/0 to-white/6 pointer-events-none" />
             <div className="rounded-xl overflow-hidden shadow-2xl transform-gpu transition-transform duration-300">
               <div className="bg-black relative">
                 <img
@@ -165,8 +188,6 @@ export default function WishlistModal({ onClose, onSaved }) {
                 </div>
               </div>
             </div>
-            {/* small left offset bar to emulate MangaDetail separation */}
-            <div className="relative -ml-3 -mt-6 w-3 h-[380px] pointer-events-none" />
           </div>
 
           <div className="flex-1 text-white">
