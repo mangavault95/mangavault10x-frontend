@@ -6,8 +6,6 @@ import RecordsPage from "./pages/RecordsPage";
 function App() {
   const [adminMode, setAdminMode] = useState(false);
   const [recordsMode, setRecordsMode] = useState(false);
-const wishlistRouter = require("./routes/wishlist");
-app.use("/api/wishlist", wishlistRouter);
 
   const [darkMode, setDarkMode] = useState(() => {
     try {
