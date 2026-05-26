@@ -2,6 +2,27 @@ import { useEffect, useState } from "react";
 import HomePage from "./pages/HomePage";
 import AdminPage from "./pages/AdminPage";
 import RecordsPage from "./pages/RecordsPage";
+const express = require("express");
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.use(express.json());
+
+// importa le tue route esistenti
+const mangaRouter = require("./routes/manga");
+app.use("/api/manga", mangaRouter);
+
+// importa la nuova route marketplace
+const marketplaceRouter = require("./routes/marketplace");
+app.use("/api/marketplace", marketplaceRouter);
+
+// healthcheck
+app.get("/health", (req, res) => res.json({ ok: true }));
+
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
+});
+
 
 function App() {
   const [adminMode, setAdminMode] = useState(false);
