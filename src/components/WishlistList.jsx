@@ -15,12 +15,14 @@ export default function WishlistList({ onGlobalToast }) {
   const [localToast, setLocalToast] = useState({ show: false, text: "", tone: "success" });
 
   useEffect(() => {
+    // carica prima da localStorage per immediatezza
     try {
       const localItems = JSON.parse(localStorage.getItem("mv_wishlist_custom") || "[]");
       setItems(Array.isArray(localItems) ? localItems : []);
     } catch {
       setItems([]);
     }
+    // opzionale: potresti anche fetchare dal DB qui per sincronizzare
   }, []);
 
   const pushItem = (item) => {
@@ -80,7 +82,6 @@ export default function WishlistList({ onGlobalToast }) {
                 alt={it.titolo || "Copertina"}
                 className="w-full h-56 object-cover"
               />
-              {/* subtle left offset bar */}
               <div className="absolute left-0 top-0 h-full w-3 bg-gradient-to-b from-black/0 to-white/6 transform -translate-x-1 pointer-events-none" />
             </div>
 
@@ -102,7 +103,6 @@ export default function WishlistList({ onGlobalToast }) {
         />
       )}
 
-      {/* fallback toast interno */}
       {localToast.show && (
         <div className={`fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-xl text-lg font-semibold z-50 ${localToast.tone === "success" ? "bg-green-500 text-white" : "bg-red-600 text-white"}`}>
           {localToast.text}
