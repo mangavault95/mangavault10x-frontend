@@ -2,11 +2,11 @@ import { useEffect, useState, useRef } from "react";
 
 /**
  * WishlistModal.jsx
- * - pannello usa variabili CSS per colore (coerenza con app.css)
- * - cover leggermente staccata dalla barra sinistra
- * - autofetch /api/manga/enrich (Anilist)
+ * - pannello con variabili CSS per colore
+ * - autofetch /api/manga/enrich
  * - NON sovrascrive Autore automaticamente
  * - salva su /api/wishlist e fallback su localStorage
+ * - include console.log per debug della POST
  */
 
 export default function WishlistModal({ onClose, onSaved }) {
@@ -100,12 +100,15 @@ export default function WishlistModal({ onClose, onSaved }) {
     };
 
     try {
+      console.log("POST payload:", payload);
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/wishlist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
+      console.log("Response status:", res.status);
+      const data = await res.json().catch(() => null);
+      console.log("Response body:", data);
       if (!res.ok) throw new Error(data?.error || "Errore salvataggio");
       try {
         const existing = JSON.parse(localStorage.getItem("mv_wishlist_custom") || "[]");
@@ -136,7 +139,6 @@ export default function WishlistModal({ onClose, onSaved }) {
     }
   };
 
-  // style using CSS variables so the panel color matches app.css
   const panelStyle = {
     backgroundColor: "var(--panel-bg, rgba(255,255,255,0.06))",
     borderColor: "var(--border, rgba(255,255,255,0.08))"
@@ -144,51 +146,25 @@ export default function WishlistModal({ onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-[999] overflow-y-auto" onClick={onClose}>
-      <div
-        className="absolute inset-0"
-        style={{
-          background: `linear-gradient(135deg, rgba(10,10,10,0.92), rgba(30,30,30,0.92))`,
-          opacity: 0.92
-        }}
-      />
+      <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, rgba(10,10,10,0.92), rgba(30,30,30,0.92))`, opacity: 0.92 }} />
       <div className="absolute inset-0 bg-black/64" />
 
-      <button
-        onClick={onClose}
-        className="absolute top-6 right-6 w-12 h-12 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-2xl text-white hover:bg-white/20 transition z-[999]"
-        aria-label="Chiudi wishlist"
-      >
-        ✕
-      </button>
+      <button onClick={onClose} className="absolute top-6 right-6 w-12 h-12 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-2xl text-white hover:bg-white/20 transition z-[999]" aria-label="Chiudi wishlist">✕</button>
 
-      <div
-        className="relative max-w-5xl mx-auto mt-16 mb-16 p-6 rounded-3xl shadow-2xl border backdrop-blur-md"
-        style={panelStyle}
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
+      <div className="relative max-w-5xl mx-auto mt-16 mb-16 p-6 rounded-3xl shadow-2xl border backdrop-blur-md" style={panelStyle} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="flex gap-8">
           <div className="flex-shrink-0 w-[260px] relative">
             <div className="absolute -left-6 top-6 w-3 h-[380px] rounded-r-lg bg-gradient-to-b from-black/0 to-white/6 pointer-events-none" />
             <div className="rounded-xl overflow-hidden shadow-2xl transform-gpu transition-transform duration-300">
               <div className="bg-black relative">
-                <img
-                  src={form.CoverURL || meta?.CoverURL || "https://placehold.co/300x450"}
-                  className="w-full h-[380px] object-contain block"
-                  alt={form.Titolo || query || "Copertina"}
-                />
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="cover-shine" />
-                </div>
+                <img src={form.CoverURL || meta?.CoverURL || "https://placehold.co/300x450"} className="w-full h-[380px] object-contain block" alt={form.Titolo || query || "Copertina"} />
+                <div className="absolute inset-0 pointer-events-none"><div className="cover-shine" /></div>
               </div>
 
               <div className="bg-white/6 backdrop-blur-md text-white p-3">
                 <div className="text-sm font-semibold truncate" title={form.Titolo}>{form.Titolo || "Titolo"}</div>
                 <div className="text-xs text-zinc-300 truncate" title={form.Autore}>{form.Autore || "Autore"}</div>
-                <div className="mt-3 text-xs text-zinc-300">
-                  {form.VolumiTotali ? `${form.VolumiTotali} volumi` : "Volumi: ?"}
-                </div>
+                <div className="mt-3 text-xs text-zinc-300">{form.VolumiTotali ? `${form.VolumiTotali} volumi` : "Volumi: ?"}</div>
               </div>
             </div>
           </div>
@@ -201,21 +177,14 @@ export default function WishlistModal({ onClose, onSaved }) {
               </div>
 
               <div className="flex gap-2">
-                <button className="px-3 py-1 text-sm bg-white/8 rounded hover:bg-white/12" onClick={() => { setQuery(""); setMeta(null); setForm({ Titolo: "", Autore: "", CoverURL: "", Trama: "", Genere: "", VolumiTotali: "" }); }}>
-                  Reset
-                </button>
+                <button className="px-3 py-1 text-sm bg-white/8 rounded hover:bg-white/12" onClick={() => { setQuery(""); setMeta(null); setForm({ Titolo: "", Autore: "", CoverURL: "", Trama: "", Genere: "", VolumiTotali: "" }); }}>Reset</button>
                 <button className="px-3 py-1 text-sm bg-red-600 rounded hover:bg-red-700" onClick={onClose}>Chiudi</button>
               </div>
             </div>
 
             <div className="mt-4 space-y-3">
               <label className="text-xs text-zinc-400">Titolo</label>
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Scrivi il titolo..."
-                className="w-full mt-2 p-3 rounded bg-[#070708] text-white text-sm border border-white/4"
-              />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Scrivi il titolo..." className="w-full mt-2 p-3 rounded bg-[#070708] text-white text-sm border border-white/4" />
               <div className="text-xs text-zinc-500">Digita almeno 3 caratteri per avviare la ricerca automatica.</div>
 
               {loading && <div className="text-sm text-zinc-300">Sto cercando…</div>}
