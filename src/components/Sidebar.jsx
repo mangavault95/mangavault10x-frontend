@@ -1,3 +1,4 @@
+import React from "react";
 import { Link, useLocation } from "react-router-dom";
 
 export default function Sidebar() {
@@ -47,7 +48,6 @@ export default function Sidebar() {
           <button
             onClick={() => {
               document.documentElement.classList.toggle("light");
-              // keep theme persistence minimal — app-level state handles full logic
               try {
                 const isLight = document.documentElement.classList.contains("light");
                 localStorage.setItem("mv_theme", isLight ? "light" : "dark");
