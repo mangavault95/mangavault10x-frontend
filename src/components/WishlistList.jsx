@@ -6,25 +6,26 @@ import WishlistModal from "./WishlistModal";
  * - mostra la griglia degli elementi in wishlist
  * - apre il modal solo con il pulsante "+"
  * - aggiorna la lista dopo salvataggio
- * - se non viene passato onGlobalToast, mostra un toast interno
+ * - usa onGlobalToast se passato, altrimenti mostra toast interno
  */
 
 export default function WishlistList({ onGlobalToast }) {
   const [items, setItems] = useState([]);
   const [openAdd, setOpenAdd] = useState(false);
-
-  // fallback toast interno (se non hai un toast globale)
   const [localToast, setLocalToast] = useState({ show: false, text: "", tone: "success" });
 
   useEffect(() => {
-    const localItems = JSON.parse(localStorage.getItem("mv_wishlist_custom") || "[]");
-    setItems(Array.isArray(localItems) ? localItems : []);
+    try {
+      const localItems = JSON.parse(localStorage.getItem("mv_wishlist_custom") || "[]");
+      setItems(Array.isArray(localItems) ? localItems : []);
+    } catch {
+      setItems([]);
+    }
   }, []);
 
-  // aggiorna localStorage e stato
   const pushItem = (item) => {
     const normalized = {
-      id: item.id || item.ID || `c_${Date.now()}`,
+      id: item.id || item.ID || item.titolo?.replace(/\s+/g, "_").toLowerCase() || `c_${Date.now()}`,
       titolo: item.titolo || item.Titolo || "",
       autori: item.autori || item.Autore || "",
       coverurl: item.coverurl || item.CoverURL || "",
@@ -40,8 +41,6 @@ export default function WishlistList({ onGlobalToast }) {
 
   const handleSaved = (item) => {
     pushItem(item);
-
-    // preferisci il toast globale se fornito
     if (typeof onGlobalToast === "function") {
       onGlobalToast({ show: true, text: "Salvataggio riuscito", tone: "success" });
     } else {
@@ -81,7 +80,7 @@ export default function WishlistList({ onGlobalToast }) {
                 alt={it.titolo || "Copertina"}
                 className="w-full h-56 object-cover"
               />
-              {/* left offset bar (subtle) */}
+              {/* subtle left offset bar */}
               <div className="absolute left-0 top-0 h-full w-3 bg-gradient-to-b from-black/0 to-white/6 transform -translate-x-1 pointer-events-none" />
             </div>
 
