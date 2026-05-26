@@ -23,6 +23,29 @@ export default function Sidebar({ open = true }) {
     window.addEventListener("favoriteAdded", handler);
     return () => window.removeEventListener("favoriteAdded", handler);
   }, []);
+import { Link, useLocation } from "react-router-dom";
+
+export default function Sidebar() {
+  const location = useLocation();
+
+  const linkClass = (path) =>
+    `px-3 py-2 rounded text-sm ${location.pathname === path ? "bg-white/6 text-white font-semibold" : "text-zinc-300 hover:text-white"}`;
+
+  return (
+    <aside className="w-56 min-h-screen p-4 border-r" style={{ borderColor: "var(--border)" }}>
+      <div className="mb-6">
+        <div className="text-lg font-extrabold text-white">MangaVault</div>
+      </div>
+
+      <nav className="flex flex-col gap-2">
+        <Link to="/" className={linkClass("/")}>Home</Link>
+        <Link to="/wishlist" className={linkClass("/wishlist")}>Wishlist</Link>
+        <Link to="/records" className={linkClass("/records")}>Records</Link>
+        <Link to="/admin" className={linkClass("/admin")}>Admin</Link>
+      </nav>
+    </aside>
+  );
+}
 
   const stats = useMemo(() => {
     let total = 0, completed = 0, ongoing = 0, spent = 0;
