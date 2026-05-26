@@ -6,7 +6,7 @@ const LS = {
 };
 
 function safeParse(v, fallback = []) {
-  try { return JSON.parse(v); } catch { return fallback; }
+  try { const p = JSON.parse(v); return Array.isArray(p) ? p : fallback; } catch { return fallback; }
 }
 
 function uid() {
@@ -14,9 +14,12 @@ function uid() {
 }
 
 export default function WishlistModal({ onClose }) {
-  const [wishlist, setWishlist] = useState([]);
+  const [wishlist, setWishlist] = useState(() => {
+    if (typeof window === "undefined") return [];
+    return safeParse(localStorage.getItem(LS.WISHLIST), []);
+  });
   const [mangaList, setMangaList] = useState([]);
-  const [custom, setCustom] = useState([]);
+  const [custom, setCustom] = useState(() => safeParse(localStorage.getItem(LS.WISHLIST_CUSTOM), []));
   const [form, setForm] = useState({
     Titolo: "",
     Autore: "",
@@ -30,6 +33,7 @@ export default function WishlistModal({ onClose }) {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
+    // rilegge localStorage all'avvio
     setWishlist(safeParse(localStorage.getItem(LS.WISHLIST), []));
     setCustom(safeParse(localStorage.getItem(LS.WISHLIST_CUSTOM), []));
     fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
@@ -39,15 +43,19 @@ export default function WishlistModal({ onClose }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(LS.WISHLIST_CUSTOM, JSON.stringify(custom));
+    // salva custom ogni volta che cambia
+    try { localStorage.setItem(LS.WISHLIST_CUSTOM, JSON.stringify(custom)); } catch {}
   }, [custom]);
 
+  // assicurati che wishlist sia sempre array e normalizza gli ID a stringa
+  const wishlistSet = useMemo(() => new Set((Array.isArray(wishlist) ? wishlist : []).map(String)), [wishlist]);
+
   const wishManga = useMemo(() => {
-    return mangaList.filter(m => wishlist.includes(m.ID));
-  }, [mangaList, wishlist]);
+    if (!Array.isArray(mangaList)) return [];
+    return mangaList.filter(m => wishlistSet.has(String(m.ID)));
+  }, [mangaList, wishlistSet]);
 
   const combined = useMemo(() => {
-    // custom items first, then site manga
     return [...custom, ...wishManga];
   }, [custom, wishManga]);
 
@@ -55,7 +63,7 @@ export default function WishlistModal({ onClose }) {
 
   const addCustom = (e) => {
     e.preventDefault();
-    if (!form.Titolo.trim()) return;
+    if (!form.Titolo?.trim()) return;
     const item = {
       ID: uid(),
       ...form,
@@ -68,25 +76,16 @@ export default function WishlistModal({ onClose }) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const removeCustom = (id) => {
-    setCustom(prev => prev.filter(c => c.ID !== id));
-  };
-
-  const editCustom = (id, patch) => {
-    setCustom(prev => prev.map(c => c.ID === id ? { ...c, ...patch } : c));
-  };
+  const removeCustom = (id) => setCustom(prev => prev.filter(c => c.ID !== id));
+  const editCustom = (id, patch) => setCustom(prev => prev.map(c => c.ID === id ? { ...c, ...patch } : c));
 
   const fetchAvgPrice = async (item) => {
-    // item can be custom or site manga; use title + author as query
     const key = item.ID;
     setLoadingPriceId(key);
     try {
       const q = encodeURIComponent(`${item.Titolo} ${item.Autore || ""}`);
-      // backend endpoint: /api/marketplace/avg-price?query=...&market=ebay
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/marketplace/avg-price?query=${q}&market=ebay`);
-      if (!res.ok) throw new Error("fetch failed");
       const data = await res.json();
-      // expected shape: { median: number, mean: number, samples: number, timeframe: "3m" }
       setPriceCache(prev => ({ ...prev, [key]: data }));
     } catch (err) {
       setPriceCache(prev => ({ ...prev, [key]: { error: true } }));
@@ -96,7 +95,6 @@ export default function WishlistModal({ onClose }) {
   };
 
   const uploadCover = async (file) => {
-    // semplice preview: convert to data URL (client-side). For production, upload to server or CDN.
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
@@ -120,7 +118,6 @@ export default function WishlistModal({ onClose }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Lista wishlist */}
           <div>
             <p className="text-xs uppercase tracking-wider text-zinc-400 mb-2">Elementi in wishlist</p>
             <div className="space-y-2 max-h-72 overflow-y-auto pr-2">
@@ -137,15 +134,9 @@ export default function WishlistModal({ onClose }) {
                       </div>
 
                       <div className="flex flex-col items-end gap-1">
-                        {/* prezzo desiderato */}
                         {item.PrezzoDesiderato != null && <div className="text-sm text-yellow-300">€{Number(item.PrezzoDesiderato).toFixed(2)}</div>}
                         <div className="flex gap-1">
-                          {/* fetch prezzo medio */}
-                          <button
-                            onClick={() => fetchAvgPrice(item)}
-                            className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/6"
-                            title="Controlla prezzo medio venduto"
-                          >
+                          <button onClick={() => fetchAvgPrice(item)} className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/6" title="Controlla prezzo medio venduto">
                             {loadingPriceId === item.ID ? "..." : "Prezzo medio"}
                           </button>
                           {item._custom && <button onClick={() => removeCustom(item.ID)} className="text-xs px-2 py-1 rounded bg-red-600/20">Elimina</button>}
@@ -153,7 +144,6 @@ export default function WishlistModal({ onClose }) {
                       </div>
                     </div>
 
-                    {/* risultato prezzo */}
                     <div className="mt-2">
                       {priceCache[item.ID] ? (
                         priceCache[item.ID].error ? (
@@ -172,7 +162,6 @@ export default function WishlistModal({ onClose }) {
             </div>
           </div>
 
-          {/* Form per aggiungere custom */}
           <div>
             <p className="text-xs uppercase tracking-wider text-zinc-400 mb-2">Aggiungi manga non presente</p>
             <form onSubmit={addCustom} className="space-y-2">
