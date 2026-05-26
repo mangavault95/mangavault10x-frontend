@@ -1,12 +1,5 @@
 import { useEffect, useState, useRef } from "react";
 
-/**
- * WishlistModal - design coerente con MangaDetail
- * - usa /api/manga/enrich per precompilare Titolo, CoverURL, Trama, VolumiTotali, Genere
- * - NON imposta automaticamente Autore (lascio vuoto per evitare mismatch)
- * - salva su /api/wishlist e fallback su localStorage
- */
-
 export default function WishlistModal({ onClose, onSaved }) {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,7 +10,7 @@ export default function WishlistModal({ onClose, onSaved }) {
 
   const [form, setForm] = useState({
     Titolo: "",
-    Autore: "",        // intentionally left blank by autofill
+    Autore: "",
     CoverURL: "",
     Trama: "",
     Genere: "",
@@ -49,7 +42,6 @@ export default function WishlistModal({ onClose, onSaved }) {
         setError(data.error || "Nessun risultato");
         setMeta(null);
       } else {
-        // popola solo i campi affidabili; NON imposta Autore automaticamente
         const normalized = {
           Titolo: data.titolo || title,
           CoverURL: data.coverurl || "",
@@ -64,8 +56,7 @@ export default function WishlistModal({ onClose, onSaved }) {
           CoverURL: normalized.CoverURL,
           Trama: normalized.Trama,
           VolumiTotali: normalized.VolumiTotali,
-          Genere: normalized.Genere,
-          // Autore intentionally left as prev.Autore (do not override)
+          Genere: normalized.Genere
         }));
       }
     } catch (err) {
@@ -107,15 +98,16 @@ export default function WishlistModal({ onClose, onSaved }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Errore salvataggio");
-      // salva anche localmente per immediatezza
+      // salva anche localmente
       const existing = JSON.parse(localStorage.getItem("mv_wishlist_custom") || "[]");
       localStorage.setItem("mv_wishlist_custom", JSON.stringify([data.item, ...existing]));
       setSaving(false);
       if (onSaved) onSaved(data.item);
+      // piccolo toast: gestito dal parent (onSaved)
       onClose();
     } catch (err) {
       console.error(err);
-      // fallback: salva localmente
+      // fallback locale
       const fallbackItem = { id: `c_${Date.now()}`, ...payload, created_at: new Date().toISOString() };
       const existing = JSON.parse(localStorage.getItem("mv_wishlist_custom") || "[]");
       localStorage.setItem("mv_wishlist_custom", JSON.stringify([fallbackItem, ...existing]));
@@ -173,6 +165,8 @@ export default function WishlistModal({ onClose, onSaved }) {
                 </div>
               </div>
             </div>
+            {/* small left offset bar to emulate MangaDetail separation */}
+            <div className="relative -ml-3 -mt-6 w-3 h-[380px] pointer-events-none" />
           </div>
 
           <div className="flex-1 text-white">
