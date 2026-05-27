@@ -124,52 +124,176 @@ function SaveIcon() {
   );
 }
 
+function ChevronLeftIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="w-4 h-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M15 18 9 12l6-6" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="w-4 h-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
+/* -------------------- PREVIEW CHIP -------------------- */
+
+function SessionPreview({ session, direction = "left", onClick }) {
+  if (!session) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="
+        group flex flex-col items-center gap-2
+        transition-all duration-200
+        hover:scale-[1.03]
+      "
+      title={session.titolo || "Sessione lettura"}
+    >
+      <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+        {direction === "left" ? "Precedente" : "Successivo"}
+      </div>
+
+      <div className="w-14 h-20 rounded-2xl overflow-hidden border border-white/[0.08] bg-white/[0.04] shadow-[0_12px_28px_rgba(0,0,0,0.18)] relative">
+        {session.coverurl ? (
+          <img
+            src={session.coverurl}
+            alt={session.titolo || "Cover manga"}
+            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-500">
+            No cover
+          </div>
+        )}
+
+        <div className="absolute inset-0 bg-black/10" />
+      </div>
+
+      <div className="w-16 text-[10px] text-zinc-400 text-center truncate">
+        {session.titolo || "Manga"}
+      </div>
+    </button>
+  );
+}
+
 /* -------------------- COMPONENT -------------------- */
 
 export default function Sidebar({ open = true }) {
+  const API = import.meta.env.VITE_API_URL;
+
   const [manga, setManga] = useState([]);
-  const [currentReading, setCurrentReading] = useState(null);
-  const [currentVol, setCurrentVol] = useState("");
+  const [sessions, setSessions] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   function loadManga() {
-    fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
+    fetch(`${API}/api/manga`)
       .then((r) => r.json())
       .then((d) => setManga(Array.isArray(d) ? d : []))
       .catch(() => setManga([]));
   }
 
-  function loadCurrentReading() {
+  async function loadSessions() {
     try {
-      const selected = JSON.parse(
-        localStorage.getItem("mv_selected_manga") || "null"
-      );
-      const vol = localStorage.getItem("mv_current_vol") || "";
+      const res = await fetch(`${API}/api/reading-sessions`);
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : [];
+      setSessions(list);
 
-      setCurrentReading(selected);
-      setCurrentVol(vol);
-    } catch {
-      setCurrentReading(null);
-      setCurrentVol("");
+      const storedActiveId = localStorage.getItem("mv_active_session_manga_id");
+      if (storedActiveId && list.length > 0) {
+        const idx = list.findIndex(
+          (s) => String(s.manga_id) === String(storedActiveId)
+        );
+        setActiveIndex(idx >= 0 ? idx : 0);
+      } else {
+        setActiveIndex(0);
+      }
+
+      // Migrazione soft dal vecchio localStorage se non ci sono sessioni
+      if (list.length === 0) {
+        try {
+          const oldSelected = JSON.parse(
+            localStorage.getItem("mv_selected_manga") || "null"
+          );
+          const oldVol = localStorage.getItem("mv_current_vol") || "0";
+
+          if (oldSelected?.ID && oldSelected?.Titolo) {
+            await fetch(`${API}/api/reading-sessions`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                manga_id: oldSelected.ID,
+                titolo: oldSelected.Titolo,
+                autore: oldSelected.Autore || "",
+                coverurl: oldSelected.CoverURL || "",
+                volume: Number(oldVol) || 0,
+                volumitotali:
+                  oldSelected.VolumiTotali !== null &&
+                  oldSelected.VolumiTotali !== undefined
+                    ? Number(oldSelected.VolumiTotali) || 0
+                    : null
+              })
+            });
+
+            const retry = await fetch(`${API}/api/reading-sessions`);
+            const retryData = await retry.json();
+            const retryList = Array.isArray(retryData) ? retryData : [];
+            setSessions(retryList);
+            setActiveIndex(0);
+          }
+        } catch (e) {
+          console.error("Errore migrazione reading session locale:", e);
+        }
+      }
+    } catch (err) {
+      console.error("Errore caricamento reading sessions:", err);
+      setSessions([]);
+      setActiveIndex(0);
     }
   }
 
   useEffect(() => {
     loadManga();
-    loadCurrentReading();
+    loadSessions();
   }, []);
 
   useEffect(() => {
-    const refreshReading = () => loadCurrentReading();
-    const refreshAll = () => loadManga();
+    const refreshAll = () => {
+      loadManga();
+      loadSessions();
+    };
 
-    window.addEventListener("storage", refreshReading);
-    window.addEventListener("currentReadingUpdated", refreshReading);
     window.addEventListener("favoritesUpdated", refreshAll);
+    window.addEventListener("currentReadingUpdated", refreshAll);
 
     return () => {
-      window.removeEventListener("storage", refreshReading);
-      window.removeEventListener("currentReadingUpdated", refreshReading);
       window.removeEventListener("favoritesUpdated", refreshAll);
+      window.removeEventListener("currentReadingUpdated", refreshAll);
     };
   }, []);
 
@@ -177,7 +301,31 @@ export default function Sidebar({ open = true }) {
     return manga.filter((m) => Number(m.Valutazione) >= 5);
   }, [manga]);
 
-  const navigate = (page) => {
+  const activeSession = sessions[activeIndex] || null;
+
+  const prevIndex =
+    sessions.length > 1
+      ? (activeIndex - 1 + sessions.length) % sessions.length
+      : null;
+
+  const nextIndex =
+    sessions.length > 1
+      ? (activeIndex + 1) % sessions.length
+      : null;
+
+  const prevSession = prevIndex !== null ? sessions[prevIndex] : null;
+  const nextSession = nextIndex !== null ? sessions[nextIndex] : null;
+
+  useEffect(() => {
+    if (activeSession?.manga_id) {
+      localStorage.setItem(
+        "mv_active_session_manga_id",
+        String(activeSession.manga_id)
+      );
+    }
+  }, [activeSession]);
+
+  function navigate(page) {
     window.dispatchEvent(
       new CustomEvent("navigate", {
         detail: { page }
@@ -191,59 +339,65 @@ export default function Sidebar({ open = true }) {
     if (page === "history") {
       window.dispatchEvent(new Event("openHistoryModal"));
     }
-  };
+  }
 
   function onLogoToggle() {
     window.dispatchEvent(new Event("toggleSidebar"));
   }
 
-  function updateCurrentVolume(delta) {
-    if (!currentReading) return;
+  async function updateCurrentVolume(delta) {
+    if (!activeSession) return;
 
-    const current = Number(currentVol) || 0;
-    const total = Number(currentReading.VolumiTotali) || 0;
+    const current = Number(activeSession.volume) || 0;
+    const total = Number(activeSession.volumitotali) || 0;
 
     let next = current + delta;
 
     if (next < 0) next = 0;
     if (total && next > total) next = total;
 
-    setCurrentVol(String(next));
-    localStorage.setItem("mv_current_vol", String(next));
-    localStorage.setItem("mv_selected_manga", JSON.stringify(currentReading));
+    try {
+      await fetch(`${API}/api/reading-sessions/${activeSession.manga_id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          volume: next
+        })
+      });
 
-    window.dispatchEvent(new Event("currentReadingUpdated"));
+      await loadSessions();
+      window.dispatchEvent(new Event("currentReadingUpdated"));
+    } catch (err) {
+      console.error("Errore update reading session:", err);
+    }
   }
 
   async function saveCurrentReading() {
-    if (!currentReading) return;
-
-    localStorage.setItem("mv_selected_manga", JSON.stringify(currentReading));
-    localStorage.setItem("mv_current_vol", String(currentVol || "0"));
+    if (!activeSession) return;
 
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/reading-history`, {
+      await fetch(`${API}/api/reading-history`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          manga_id: currentReading.ID,
-          titolo: currentReading.Titolo,
-          autore: currentReading.Autore || "",
-          coverurl: currentReading.CoverURL || "",
-          volume: Number(currentVol) || 0
+          manga_id: activeSession.manga_id,
+          titolo: activeSession.titolo,
+          autore: activeSession.autore || "",
+          coverurl: activeSession.coverurl || "",
+          volume: Number(activeSession.volume) || 0
         })
       });
     } catch (err) {
       console.error("Errore salvataggio cronologia lettura:", err);
     }
-
-    window.dispatchEvent(new Event("currentReadingUpdated"));
   }
 
-  const readingOwned = Number(currentVol) || 0;
-  const readingTotal = Number(currentReading?.VolumiTotali) || 0;
+  const readingOwned = Number(activeSession?.volume) || 0;
+  const readingTotal = Number(activeSession?.volumitotali) || 0;
   const readingPercent = readingTotal
     ? Math.min(100, Math.round((readingOwned / readingTotal) * 100))
     : 0;
@@ -385,8 +539,8 @@ export default function Sidebar({ open = true }) {
         ))}
       </nav>
 
-      {/* CURRENT READING */}
-      {open && currentReading && (
+      {/* JUKEBOX PLAYER */}
+      {open && activeSession && (
         <section
           className="relative z-10 rounded-[28px] border border-white/[0.08] p-4 shadow-[0_20px_45px_rgba(0,0,0,0.22)]"
           style={{
@@ -406,22 +560,67 @@ export default function Sidebar({ open = true }) {
             </div>
           </div>
 
+          {/* PREVIEW SWITCHER */}
+          {sessions.length > 1 && (
+            <div className="mb-4 flex items-end justify-between gap-3">
+              <SessionPreview
+                session={prevSession}
+                direction="left"
+                onClick={() => setActiveIndex(prevIndex)}
+              />
+
+              <div className="flex items-center gap-2 pb-7">
+                <button
+                  type="button"
+                  onClick={() => setActiveIndex(prevIndex)}
+                  className="w-9 h-9 rounded-full border border-white/[0.08] bg-white/[0.05] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/30 hover:bg-yellow-400/10 transition flex items-center justify-center"
+                  title="Manga precedente"
+                >
+                  <ChevronLeftIcon />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveIndex(nextIndex)}
+                  className="w-9 h-9 rounded-full border border-white/[0.08] bg-white/[0.05] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/30 hover:bg-yellow-400/10 transition flex items-center justify-center"
+                  title="Manga successivo"
+                >
+                  <ChevronRightIcon />
+                </button>
+              </div>
+
+              <SessionPreview
+                session={nextSession}
+                direction="right"
+                onClick={() => setActiveIndex(nextIndex)}
+              />
+            </div>
+          )}
+
+          {/* MAIN ACTIVE */}
           <div className="flex items-center gap-4">
             <button
               onClick={() =>
                 window.dispatchEvent(
                   new CustomEvent("openMangaDetail", {
-                    detail: currentReading
+                    detail: {
+                      ID: activeSession.manga_id,
+                      Titolo: activeSession.titolo,
+                      Autore: activeSession.autore,
+                      CoverURL: activeSession.coverurl,
+                      VolumiTotali: activeSession.volumitotali,
+                      VolumiPosseduti: activeSession.volume
+                    }
                   })
                 )
               }
               className="relative w-20 h-28 shrink-0 rounded-2xl overflow-hidden bg-black/20 border border-white/10 shadow-2xl group"
               title="Apri dettaglio"
             >
-              {currentReading.CoverURL ? (
+              {activeSession.coverurl ? (
                 <img
-                  src={currentReading.CoverURL}
-                  alt={currentReading.Titolo || "Cover manga"}
+                  src={activeSession.coverurl}
+                  alt={activeSession.titolo || "Cover manga"}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -440,18 +639,25 @@ export default function Sidebar({ open = true }) {
                 onClick={() =>
                   window.dispatchEvent(
                     new CustomEvent("openMangaDetail", {
-                      detail: currentReading
+                      detail: {
+                        ID: activeSession.manga_id,
+                        Titolo: activeSession.titolo,
+                        Autore: activeSession.autore,
+                        CoverURL: activeSession.coverurl,
+                        VolumiTotali: activeSession.volumitotali,
+                        VolumiPosseduti: activeSession.volume
+                      }
                     })
                   )
                 }
                 className="text-left w-full"
               >
                 <div className="text-base font-bold text-white truncate">
-                  {currentReading.Titolo}
+                  {activeSession.titolo}
                 </div>
 
                 <div className="text-xs text-zinc-400 truncate">
-                  {currentReading.Autore || "Autore sconosciuto"}
+                  {activeSession.autore || "Autore sconosciuto"}
                 </div>
               </button>
 
@@ -471,6 +677,7 @@ export default function Sidebar({ open = true }) {
             </div>
           </div>
 
+          {/* CONTROLS */}
           <div className="mt-4 flex items-center justify-center gap-4">
             <button
               onClick={() => updateCurrentVolume(-1)}
