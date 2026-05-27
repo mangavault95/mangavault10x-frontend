@@ -1,81 +1,79 @@
-import { useMemo } from "react";
-
 export default function MangaGrid({ searchResults = [], filter }) {
-  function parseTotal(raw) {
-    if (raw === null || raw === undefined || raw === "") return null;
+  function parseTotal(value) {
+    if (value === null || value === undefined || value === "") return null;
 
-    const cleaned = String(raw).replace(/[^0-9]/g, "");
+    const cleaned = String(value).replace(/[^0-9]/g, "");
     if (!cleaned) return null;
 
     const num = Number(cleaned);
     return Number.isNaN(num) ? null : num;
   }
 
-  function getMeta(m) {
-    const total = parseTotal(m?.VolumiTotali);
-    const owned = Number(m?.VolumiPosseduti) || 0;
-    const hasKnownTotal = total !== null;
-
-    return {
-      total,
-      owned,
-      hasKnownTotal
-    };
+  function getOwned(manga) {
+    return Number(manga?.VolumiPosseduti) || 0;
   }
 
-  function getStatus(m) {
-    const { total, owned, hasKnownTotal } = getMeta(m);
-
-    if (!hasKnownTotal && owned > 0) return "ongoing";
-    if (hasKnownTotal && owned < total) return "to_complete";
-    if (hasKnownTotal && owned === total) return "completed";
-    return "ongoing";
+  function getTotal(manga) {
+    return parseTotal(manga?.VolumiTotali);
   }
 
-  function progressPercent(m) {
-    const { total, "bg-gradient-to-r from-blue-400 to-blue-500";    const { total, owned, hasKnownTotal } = getMeta(m);
+  function getStatus(manga) {
+    const owned = getOwned(manga);
+    const total = getTotal(manga);
+
+    if (total === null) {
+      return owned > 0 ? "ongoing" : "ongoing";
+    }
+
+    if (owned >= total) return "completed";
+    return "to_complete";
   }
 
-  const filtered = useMemo(() => {
-    let list = [...searchResults].sort((a, b) =>
-      String(a?.Titolo || "").localeCompare(String(b?.Titolo || ""))
-    );
+  function getPercent(manga) {
+    const owned = getOwned(manga);
+    const total = getTotal(manga);
+
+    if (total === null) {
+      return owned > 0 ? 50 : 0;
+    }
+
+    if (total <= 0) return 0;
+
+    return Math.min(100, (owned / total) * 100);
+  }
+
+  function matchesFilter(manga) {
+    if (!filter) return true;
+
+    const owned = getOwned(manga);
+    const total = getTotal(manga);
 
     switch (filter) {
       case "ongoing":
-        return list.filter((m) => {
-          const { owned, hasKnownTotal } = getMeta(m);
-          return !hasKnownTotal && owned > 0;
-        });
+        return total === null && owned > 0;
 
       case "to_complete":
-        return list.filter((m) => {
-          const { total, owned, hasKnownTotal } = getMeta(m);
-          return hasKnownTotal && owned < total;
-        });
+        return total !== null && owned < total;
 
       case "completed":
-        return list.filter((m) => {
-          const { total, owned, hasKnownTotal } = getMeta(m);
-          return hasKnownTotal && owned === total;
-        });
+        return total !== null && owned >= total;
 
       case "short":
-        return list.filter((m) => {
-          const { total, hasKnownTotal } = getMeta(m);
-          return hasKnownTotal && total >= 2 && total < 8;
-        });
+        return total !== null && total >= 2 && total < 8;
 
       case "oneshot":
-        return list.filter((m) => {
-          const { total, owned, hasKnownTotal } = getMeta(m);
-          return hasKnownTotal && total === 1 && owned >= 1;
-        });
+        return total === 1 && owned >= 1;
 
       default:
-        return list;
+        return true;
     }
-  }, [searchResults, filter]);
+  }
+
+  const filtered = [...searchResults]
+    .filter(matchesFilter)
+    .sort((a, b) =>
+      String(a?.Titolo || "").localeCompare(String(b?.Titolo || ""))
+    );
 
   function openDetail(manga) {
     window.dispatchEvent(
@@ -88,31 +86,28 @@ export default function MangaGrid({ searchResults = [], filter }) {
   return (
     <div className="grid grid-cols-5 gap-5">
       {filtered.map((manga) => {
-        const { total, owned, hasKnownTotal } = getMeta(manga);
+        const owned = getOwned(manga);
+        const total = getTotal(manga);
         const status = getStatus(manga);
-        const percent = progressPercent(manga);
+        const percent = getPercent(manga);
 
-        const statusLabel =
-          status === "completed"
-            ? "Completo"
-            : status === "to_complete"
-            ? "Da completare"
-            : "In corso";
+        let statusLabel = "In corso";
+        if (status === "completed") statusLabel = "Completo";
+        if (status === "to_complete") statusLabel = "Da completare";
+
+        let progressClass = "bg-gradient-to-r from-blue-400 to-blue-500";
+        if (status === "completed") {
+          progressClass = "bg-gradient-to-r from-green-400 to-green-600";
+        } else if (status === "to_complete") {
+          progressClass = "bg-gradient-to-r from-yellow-300 to-yellow-500";
+        }
 
         return (
           <button
             key={manga.ID}
             type="button"
             onClick={() => openDetail(manga)}
-            className="
-              group text-left
-              rounded-2xl overflow-hidden
-              border border-white/[0.10]
-              backdrop-blur-lg
-              hover:border-yellow-400/25
-              hover:shadow-[0_0_28px_rgba(99,102,241,0.18)]
-              transition-all duration-300
-            "
+            className="group text-left rounded-2xl overflow-hidden border border-white/10 backdrop-blur-lg hover:border-yellow-400/25 hover:shadow-[0_0_28px_rgba(99,102,241,0.18)] transition-all duration-300"
             style={{
               background:
                 "linear-gradient(180deg, rgba(24,30,56,0.34), rgba(12,16,28,0.52))",
@@ -123,34 +118,19 @@ export default function MangaGrid({ searchResults = [], filter }) {
             <div className="relative h-[250px] overflow-hidden">
               {manga.CoverURL ? (
                 <>
-                  {/* ambient fill */}
                   <img
                     src={manga.CoverURL}
                     alt=""
                     aria-hidden="true"
-                    className="
-                      absolute inset-0
-                      w-full h-full
-                      object-cover
-                      scale-110
-                      blur-md
-                      opacity-35
-                    "
+                    className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-35"
                   />
 
                   <div className="absolute inset-0 bg-black/10" />
 
-                  {/* real cover */}
                   <img
                     src={manga.CoverURL}
                     alt={manga.Titolo || "Cover manga"}
-                    className="
-                      relative z-10
-                      w-full h-full
-                      object-contain
-                      transition-transform duration-300
-                      group-hover:scale-[1.02]
-                    "
+                    className="relative z-10 w-full h-full object-contain transition-transform duration-300 group-hover:scale-[1.02]"
                   />
                 </>
               ) : (
@@ -196,7 +176,7 @@ export default function MangaGrid({ searchResults = [], filter }) {
               <div className="mt-3">
                 <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-2">
                   <span>
-                    {owned}/{hasKnownTotal ? total : "?"} vol
+                    {owned}/{total !== null ? total : "?"} vol
                   </span>
 
                   <span>{statusLabel}</span>
@@ -204,9 +184,7 @@ export default function MangaGrid({ searchResults = [], filter }) {
 
                 <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-300 ${progressBarClass(
-                      status
-                    )}`}
+                    className={`h-full rounded-full transition-all duration-300 ${progressClass}`}
                     style={{ width: `${percent}%` }}
                   />
                 </div>
@@ -218,20 +196,3 @@ export default function MangaGrid({ searchResults = [], filter }) {
     </div>
   );
 }
-``
-
-    if (!hasKnownTotal) return owned > 0 ? 50 : 0;
-    if (!total || total <= 0) return 0;
-
-    return Math.min(100, (owned / total) * 100);
-  }
-
-  function progressBarClass(status) {
-    if (status === "completed") {
-      return "bg-gradient-to-r from-green-400 to-green-600";
-    }
-
-    if (status === "to_complete") {
-      return "bg-gradient-to-r from-yellow-300 to-yellow-500";
-    }
-
