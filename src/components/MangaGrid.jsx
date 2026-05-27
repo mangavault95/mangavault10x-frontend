@@ -33,24 +33,7 @@ export default function MangaGrid({ searchResults = [], filter }) {
   }
 
   function progressPercent(m) {
-    const { total, owned, hasKnownTotal } = getMeta(m);
-
-    if (!hasKnownTotal) return owned > 0 ? 50 : 0;
-    if (!total || total <= 0) return 0;
-
-    return Math.min(100, (owned / total) * 100);
-  }
-
-  function progressBarClass(status) {
-    if (status === "completed") {
-      return "bg-gradient-to-r from-green-400 to-green-600";
-    }
-
-    if (status === "to_complete") {
-      return "bg-gradient-to-r from-yellow-300 to-yellow-500";
-    }
-
-    return "bg-gradient-to-r from-blue-400 to-blue-500";
+    const { total, "bg-gradient-to-r from-blue-400 to-blue-500";    const { total, owned, hasKnownTotal } = getMeta(m);
   }
 
   const filtered = useMemo(() => {
@@ -124,14 +107,17 @@ export default function MangaGrid({ searchResults = [], filter }) {
             className="
               group text-left
               rounded-2xl overflow-hidden
-              border border-white/[0.09]
-              bg-white/[0.035]
-              backdrop-blur-md
-              hover:bg-white/[0.055]
+              border border-white/[0.10]
+              backdrop-blur-lg
               hover:border-yellow-400/25
-              hover:shadow-[0_0_28px_rgba(99,102,241,0.12)]
+              hover:shadow-[0_0_28px_rgba(99,102,241,0.18)]
               transition-all duration-300
             "
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(24,30,56,0.34), rgba(12,16,28,0.52))",
+              boxShadow: "0 12px 32px rgba(0,0,0,0.18)"
+            }}
           >
             {/* COVER */}
             <div className="relative h-[250px] overflow-hidden">
@@ -194,14 +180,14 @@ export default function MangaGrid({ searchResults = [], filter }) {
               </div>
 
               <div
-                className="text-xs text-zinc-400 mt-1 truncate"
+                className="text-xs text-zinc-300 mt-1 truncate"
                 title={manga.Autore || ""}
               >
                 {manga.Autore || "Autore sconosciuto"}
               </div>
 
               <div
-                className="text-[11px] text-zinc-500 mt-1 truncate"
+                className="text-[11px] text-zinc-400 mt-1 truncate"
                 title={manga.Genere || ""}
               >
                 {manga.Genere || "Nessun genere"}
@@ -232,3 +218,20 @@ export default function MangaGrid({ searchResults = [], filter }) {
     </div>
   );
 }
+``
+
+    if (!hasKnownTotal) return owned > 0 ? 50 : 0;
+    if (!total || total <= 0) return 0;
+
+    return Math.min(100, (owned / total) * 100);
+  }
+
+  function progressBarClass(status) {
+    if (status === "completed") {
+      return "bg-gradient-to-r from-green-400 to-green-600";
+    }
+
+    if (status === "to_complete") {
+      return "bg-gradient-to-r from-yellow-300 to-yellow-500";
+    }
+
