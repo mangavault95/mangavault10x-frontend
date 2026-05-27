@@ -16,7 +16,7 @@ export default function MangaGrid({ searchResults = [], filter }) {
   function getTotal(manga) {
     return parseTotal(manga?.VolumiTotali);
   }
-  
+   
   function getStatus(manga) {
     const owned = getOwned(manga);
     const total = getTotal(manga);
