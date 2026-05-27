@@ -126,43 +126,58 @@ export default function WishlistList({ onClose }) {
                         {m.autori || "Autore sconosciuto"}
                       </p>
 
-                      {/* ✅ BOTTONI ELEGANTI */}
-                      <div className="flex justify-between mt-3 text-sm">
+                      <div className="flex justify-between mt-3">
 
-                        <button
-                          title="Modifica"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditItem(m);
-                          }}
-                          className="text-zinc-400 hover:text-yellow-400 transition"
-                        >
-                          ✏️
-                        </button>
+  {/* MODIFICA */}
+  <button
+    title="Modifica"
+    onClick={(e) => {
+      e.stopPropagation();
+      setEditItem(m);
+    }}
+    className="flex items-center justify-center w-8 h-8 rounded-md
+               bg-white/5 border border-white/10
+               text-zinc-400 hover:text-yellow-400
+               hover:border-yellow-400/40 hover:bg-yellow-400/10
+               transition"
+  >
+    ✎
+  </button>
 
-                        <button
-                          title="Elimina"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeItem(m.id);
-                          }}
-                          className="text-zinc-400 hover:text-red-400 transition"
-                        >
-                          🗑️
-                        </button>
+  {/* ELIMINA */}
+  <button
+    title="Elimina"
+    onClick={(e) => {
+      e.stopPropagation();
+      removeItem(m.id);
+    }}
+    className="flex items-center justify-center w-8 h-8 rounded-md
+               bg-white/5 border border-white/10
+               text-zinc-400 hover:text-red-400
+               hover:border-red-400/40 hover:bg-red-400/10
+               transition"
+  >
+    ⨯
+  </button>
 
-                        <button
-                          title="Acquistato"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            markAsOwned(m.id);
-                          }}
-                          className="text-zinc-400 hover:text-green-400 transition"
-                        >
-                          ✓
-                        </button>
+  {/* ACQUISTATO */}
+  <button
+    title="Segna come acquistato"
+    onClick={(e) => {
+      e.stopPropagation();
+      markAsOwned(m.id);
+    }}
+    className="flex items-center justify-center w-8 h-8 rounded-md
+               bg-white/5 border border-white/10
+               text-zinc-400 hover:text-green-400
+               hover:border-green-400/40 hover:bg-green-400/10
+               transition"
+  >
+    ✓
+  </button>
 
-                      </div>
+</div>
+                
 
                     </div>
 
