@@ -6,6 +6,7 @@ import MangaDetail from "../components/MangaDetail";
 import FavoritesModal from "../components/FavoritesModal";
 import HistoryModal from "../components/HistoryModal";
 import WishlistModal from "../components/WishlistModal";
+import WishlistPage from "../pages/WishlistPage";
 import { getManga } from "../services/api";
 import Fuse from "fuse.js";
 
