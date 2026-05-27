@@ -82,6 +82,7 @@ function MinusIcon() {
       stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <path d="M6 12h12" />
     </svg>
@@ -90,12 +91,14 @@ function MinusIcon() {
 
 function PlusIcon() {
   return (
-    <24 24"    <svg
+    <svg
+      viewBox="0 0 24 24"
       className="w-4 h-4"
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <path d="M12 5v14" />
       <path d="M5 12h14" />
@@ -190,9 +193,9 @@ export default function Sidebar({ open = true }) {
     }
   };
 
-  const onLogoToggle = () => {
+  function onLogoToggle() {
     window.dispatchEvent(new Event("toggleSidebar"));
-  };
+  }
 
   function updateCurrentVolume(delta) {
     if (!currentReading) return;
@@ -248,10 +251,8 @@ export default function Sidebar({ open = true }) {
   return (
     <aside
       className={`
-        h-full flex flex-col
-        px-5 py-5
-        transition-all duration-300
-        relative
+        h-full flex flex-col relative
+        px-5 py-5 transition-all duration-300
         ${open ? "w-full gap-5" : "w-full items-center gap-4"}
       `}
       style={{
@@ -450,7 +451,12 @@ export default function Sidebar({ open = true }) {
                 </div>
 
                 <div className="text-xs text-zinc-400 truncate">
-                  {currentReading.Autore || "Auten text-xs text-zinc-400 mb-2">
+                  {currentReading.Autore || "Autore sconosciuto"}
+                </div>
+              </button>
+
+              <div className="mt-3">
+                <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
                   <span>Vol {readingOwned}</span>
                   <span>{readingTotal || "?"}</span>
                 </div>
