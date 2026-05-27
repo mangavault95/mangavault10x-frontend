@@ -108,15 +108,10 @@ export default function StatsPanel() {
 
   return (
     <div
-      className="
-        rounded-[24px]
-        border border-white/[0.08]
-        p-4
-        shadow-[0_18px_40px_rgba(0,0,0,0.26)]
-      "
+      className="rounded-[24px] border border-white/[0.08] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.22)]"
       style={{
         background:
-          "linear-gradient(180deg, rgba(18,22,42,0.44), rgba(12,14,28,0.40))",
+          "linear-gradient(180deg, rgba(22,26,48,0.42), rgba(12,14,28,0.42))",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)"
       }}
