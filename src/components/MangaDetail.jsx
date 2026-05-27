@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
-export default function MangaDetail({ manga, onClose }) {
+export default function MangaDetail({ manga, onClose, onSave }) {
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -9,83 +9,85 @@ export default function MangaDetail({ manga, onClose }) {
 
   if (!manga) return null;
 
-  const owned = Number(manga.VolumiPosseduti) || 0;
-  const total = Number(manga.VolumiTotali) || 0;
+  const [rating, setRating] = useState(Number(manga.Valutazione) || 0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [toast, setToast] = useState({ show: false, text: "", tone: "success" });
+  const debounceRef = useRef(null);
 
-  const percent = total ? Math.min((owned / total) * 100, 100) : 0;
+  const [local, setLocal] = useState({
+    Titolo: manga.Titolo || "",
+    Autore: manga.Autore || "",
+    Trama: manga.Trama || "",
+    Genere: manga.Genere || "",
+    VolumiPosseduti: Number(manga.VolumiPosseduti) || 0,
+    VolumiTotali: manga.VolumiTotali ? Number(manga.VolumiTotali) : null,
+    CoverURL: manga.CoverURL || "",
+    Costo: manga.Costo ? Number(manga.Costo) : 0,
+    Editore: manga.Editore || ""
+  });
 
+  // ✅ FIX CLICK (non passa sotto)
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center">
-
-      {/* ✅ BACKGROUND IDENTICO */}
+    <div
+      className="fixed inset-0 z-[999] overflow-y-auto pointer-events-auto"
+      onClick={onClose}
+    >
+      {/* ✅ background IDENTICO al tuo */}
       <div
         className="absolute inset-0"
         style={{
-          background: manga.CoverURL
-            ? `linear-gradient(120deg, rgba(8,10,25,0.9), rgba(40,20,60,0.9)), url(${manga.CoverURL})`
-            : `linear-gradient(120deg, #0f172a, #1e1b4b)`,
-          backgroundSize: "160px",
-          opacity: 0.25
+          background: `linear-gradient(135deg, rgba(10,10,10,0.96), rgba(30,30,30,0.96)), url(${local.CoverURL})`,
+          backgroundSize: "120px",
+          backgroundRepeat: "repeat",
+          opacity: 0.14
         }}
       />
-      <div className="absolute inset-0 backdrop-blur-md" />
 
-      {/* ✅ PANEL GRANDE */}
+      {/* ✅ overlay leggero */}
+      <div className="absolute inset-0 bg-black/60" />
+
+      {/* ✅ bottone close */}
+      <button
+        onClick={onClose}
+        className="absolute top-6 right-6 w-12 h-12 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-2xl text-white hover:bg-white/20 transition z-[1000]"
+      >
+        ✕
+      </button>
+
+      {/* ✅ PANEL ORIGINALE */}
       <div
-        className="relative w-[1250px] max-w-[96vw] rounded-3xl border border-white/10 shadow-2xl manga-detail-card"
+        className="relative max-w-6xl mx-auto mt-16 mb-16 p-8 rounded-3xl shadow-2xl border border-white/10 manga-detail-card"
         onClick={(e) => e.stopPropagation()}
       >
 
-        <div className="flex gap-12 p-10">
+        <div className="flex gap-8">
 
-          {/* ✅ COLONNA SINISTRA */}
-          <div className="w-[320px] flex flex-col">
-
-            {/* COVER */}
-            <div className="rounded-2xl overflow-hidden bg-black shadow-xl">
+          {/* COVER */}
+          <div className="w-[260px]">
+            <div className="rounded-xl overflow-hidden shadow-2xl">
               <img
-                src={manga.CoverURL}
-                className="w-full h-[440px] object-cover"
+                src={local.CoverURL}
+                className="w-full h-[380px] object-contain"
               />
-            </div>
-
-            {/* INFO CARD SOTTO */}
-            <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/10">
-              <p className="font-semibold text-white">
-                {manga.Titolo}
-              </p>
-              <p className="text-sm text-zinc-400">
-                {manga.Autore}
-              </p>
-
-              <div className="mt-2 text-xs text-green-400">
-                {total && owned === total ? "Completo" : "In corso"}
-              </div>
             </div>
           </div>
 
-          {/* ✅ COLONNA DESTRA */}
-          <div className="flex-1 text-white">
+          {/* CONTENUTO */}
+          <div className="flex-1 bg-white/8 backdrop-blur-md rounded-xl p-6 text-white">
 
-            {/* HEADER */}
-            <div className="flex justify-between items-start mb-4">
-
+            <div className="flex justify-between">
               <div>
-                <h1 className="text-3xl font-bold">
-                  {manga.Titolo}
-                </h1>
-                <p className="text-zinc-400 mt-1">
-                  {manga.Autore}
-                </p>
+                <h1 className="text-3xl font-extrabold">{local.Titolo}</h1>
+                <div className="text-zinc-300">{local.Autore}</div>
               </div>
 
               <div className="flex gap-2">
-                <button className="px-3 py-1 bg-white/10 rounded">
+                <button className="px-3 py-1 bg-white/8 rounded">
                   Modifica
                 </button>
                 <button
                   onClick={onClose}
-                  className="px-3 py-1 bg-red-500 rounded"
+                  className="px-3 py-1 bg-red-600 rounded"
                 >
                   Chiudi
                 </button>
@@ -93,64 +95,75 @@ export default function MangaDetail({ manga, onClose }) {
             </div>
 
             {/* TAG */}
-            <div className="flex gap-2 mb-4 flex-wrap">
-              {String(manga.Genere || "")
-                .split(",")
-                .filter(Boolean)
-                .map((g, i) => (
-                  <span
-                    key={i}
-                    className="text-xs bg-white/10 px-2 py-1 rounded"
-                  >
-                    {g.trim()}
-                  </span>
-                ))}
+            <div className="mt-3 flex gap-2 flex-wrap">
+              {local.Genere.split(",").map((g, i) => (
+                <span key={i} className="text-xs bg-white/8 px-2 py-1 rounded">
+                  {g.trim()}
+                </span>
+              ))}
             </div>
 
             {/* DESCRIZIONE */}
-            <p className="text-sm text-zinc-300 mb-6 max-h-[140px] overflow-auto leading-relaxed">
-              {manga.Trama}
-            </p>
+            <div className="mt-4 text-sm text-zinc-300 max-h-40 overflow-auto">
+              {local.Trama}
+            </div>
 
             {/* STATS */}
-            <div className="grid grid-cols-3 gap-10 mb-6">
-
+            <div className="mt-5 grid grid-cols-3 gap-3">
               <div>
                 <p className="text-xs text-zinc-400">Volumi posseduti</p>
-                <p className="text-xl font-semibold">{owned}</p>
+                <p className="text-xl">{local.VolumiPosseduti}</p>
               </div>
 
               <div>
                 <p className="text-xs text-zinc-400">Volumi totali</p>
-                <p className="text-xl font-semibold">{total || "?"}</p>
+                <p className="text-xl">{local.VolumiTotali || "?"}</p>
               </div>
 
               <div>
-                <p className="text-xs text-zinc-400">Completamento</p>
-                <p className="text-xl font-semibold">{Math.round(percent)}%</p>
+                <p className="text-xs text-zinc-400">Costo</p>
+                <p className="text-xl">€ {local.Costo || 0}</p>
               </div>
-
             </div>
 
-            {/* PROGRESS BAR */}
-            <div className="w-full h-3 bg-white/10 rounded overflow-hidden mb-6">
-              <div
-                className="h-full bg-green-500"
-                style={{ width: `${percent}%` }}
-              />
+            {/* STELLE ✅ RIPRISTINATE */}
+            <div className="mt-4 flex items-center gap-1">
+              {[1,2,3,4,5].map(i => {
+                const active = hoverRating ? i <= hoverRating : i <= rating;
+                return (
+                  <span
+                    key={i}
+                    onMouseEnter={() => setHoverRating(i)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    onClick={() => setRating(i)}
+                    className={`text-2xl cursor-pointer ${
+                      active ? "text-yellow-400" : "text-zinc-600"
+                    }`}
+                  >
+                    ★
+                  </span>
+                );
+              })}
             </div>
 
-            {/* ✅ AZIONI COME NEL PRIMO SCREEN */}
-            <div className="flex gap-4">
+            {/* PROGRESS */}
+            <div className="mt-4">
+              <div className="w-full bg-white/10 h-3 rounded">
+                <div
+                  className="bg-green-500 h-full"
+                  style={{ width: "60%" }}
+                />
+              </div>
+            </div>
 
-              <button className="px-5 py-2 bg-blue-600 rounded-lg">
+            {/* BOTTONI */}
+            <div className="mt-4 flex gap-3">
+              <button className="px-4 py-2 bg-blue-600 rounded">
                 Segna come completato
               </button>
-
-              <button className="px-5 py-2 bg-white/10 rounded-lg">
+              <button className="px-4 py-2 bg-white/10 rounded">
                 Salva modifiche
               </button>
-
             </div>
 
           </div>
