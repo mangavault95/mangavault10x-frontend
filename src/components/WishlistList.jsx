@@ -108,7 +108,7 @@ export default function WishlistList({ onClose }) {
 
       await load();
 
-      // forza refresh grid collezione
+      // forza refresh della collezione principale
       window.dispatchEvent(new Event("favoritesUpdated"));
     } catch (err) {
       console.error("Errore acquisto wishlist:", err);
@@ -140,7 +140,7 @@ export default function WishlistList({ onClose }) {
       <div className="absolute inset-0" />
 
       <div
-        className="relative w-[1120px] max-w-[95vw] max-h-[84vh] rounded-3xl border border-white/10 shadow-2xl manga-detail-card overflow-hidden"
+        className="relative w-[1100px] max-w-[95vw] max-h-[84vh] rounded-3xl border border-white/10 shadow-2xl manga-detail-card overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
@@ -187,20 +187,33 @@ export default function WishlistList({ onClose }) {
               {items.map((m) => (
                 <div
                   key={m.id}
-                  className="group rounded-2xl overflow-hidden border border-white/10 bg-white/[0.04] backdrop-blur-lg hover:border-yellow-400/20 hover:shadow-[0_0_28px_rgba(234,179,8,0.08)] transition-all duration-300 cursor-pointer"
+                  className="
+                    group rounded-2xl overflow-hidden
+                    border border-white/8
+                    bg-white/[0.03]
+                    backdrop-blur-md
+                    hover:border-yellow-400/20
+                    hover:bg-white/[0.05]
+                    hover:shadow-[0_0_24px_rgba(234,179,8,0.08)]
+                    transition-all duration-300
+                    cursor-pointer
+                  "
                   onClick={() => openDetail(m)}
                 >
                   {/* COVER */}
-                  <div className="relative h-[250px] overflow-hidden bg-black/30">
+                  <div className="relative h-[250px] overflow-hidden">
                     {m.coverurl ? (
                       <>
+                        {/* sfondo riempitivo soft per evitare bande nere */}
                         <img
                           src={m.coverurl}
                           alt=""
                           aria-hidden="true"
-                          className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-40"
+                          className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-35"
                         />
-                        <div className="absolute inset-0 bg-black/15" />
+                        <div className="absolute inset-0 bg-black/10" />
+
+                        {/* cover vera intera */}
                         <img
                           src={m.coverurl}
                           alt={m.titolo || "cover"}
@@ -208,7 +221,7 @@ export default function WishlistList({ onClose }) {
                         />
                       </>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-zinc-500 text-sm bg-black/20">
+                      <div className="w-full h-full flex items-center justify-center text-zinc-500 text-sm bg-white/[0.02]">
                         Nessuna cover
                       </div>
                     )}
@@ -248,7 +261,22 @@ export default function WishlistList({ onClose }) {
                           e.stopPropagation();
                           setEditItem(m);
                         }}
-                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] text-zinc-400 transition-all duration-200 ease-out hover:-translate-y-[1px] hover:scale-[1.03] hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 hover:shadow-[0_0_14px_rgba(234,179,8,0.28)] active:scale-95 active:translate-y-0 active:shadow-[0_0_22px_rgba(234,179,8,0.45)]"
+                        className="
+                          flex items-center justify-center w-10 h-10 rounded-xl
+                          bg-white/[0.04] backdrop-blur-sm
+                          border border-white/[0.08]
+                          text-zinc-400
+                          transition-all duration-200 ease-out
+                          hover:-translate-y-[1px]
+                          hover:scale-[1.03]
+                          hover:text-yellow-400
+                          hover:border-yellow-400/35
+                          hover:bg-yellow-400/10
+                          hover:shadow-[0_0_14px_rgba(234,179,8,0.28)]
+                          active:scale-95
+                          active:translate-y-0
+                          active:shadow-[0_0_22px_rgba(234,179,8,0.45)]
+                        "
                       >
                         <EditIcon />
                       </button>
@@ -259,7 +287,22 @@ export default function WishlistList({ onClose }) {
                           e.stopPropagation();
                           removeItem(m.id);
                         }}
-                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] text-zinc-400 transition-all duration-200 ease-out hover:-translate-y-[1px] hover:scale-[1.03] hover:text-red-400 hover:border-red-400/35 hover:bg-red-400/10 hover:shadow-[0_0_14px_rgba(248,113,113,0.28)] active:scale-95 active:translate-y-0 active:shadow-[0_0_22px_rgba(248,113,113,0.45)]"
+                        className="
+                          flex items-center justify-center w-10 h-10 rounded-xl
+                          bg-white/[0.04] backdrop-blur-sm
+                          border border-white/[0.08]
+                          text-zinc-400
+                          transition-all duration-200 ease-out
+                          hover:-translate-y-[1px]
+                          hover:scale-[1.03]
+                          hover:text-red-400
+                          hover:border-red-400/35
+                          hover:bg-red-400/10
+                          hover:shadow-[0_0_14px_rgba(248,113,113,0.28)]
+                          active:scale-95
+                          active:translate-y-0
+                          active:shadow-[0_0_22px_rgba(248,113,113,0.45)]
+                        "
                       >
                         <TrashIcon />
                       </button>
@@ -270,7 +313,22 @@ export default function WishlistList({ onClose }) {
                           e.stopPropagation();
                           markAsOwned(m.id);
                         }}
-                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] text-zinc-400 transition-all duration-200 ease-out hover:-translate-y-[1px] hover:scale-[1.03] hover:text-green-400 hover:border-green-400/35 hover:bg-green-400/10 hover:shadow-[0_0_14px_rgba(74,222,128,0.28)] active:scale-95 active:translate-y-0 active:shadow-[0_0_22px_rgba(74,222,128,0.45)]"
+                        className="
+                          flex items-center justify-center w-10 h-10 rounded-xl
+                          bg-white/[0.04] backdrop-blur-sm
+                          border border-white/[0.08]
+                          text-zinc-400
+                          transition-all duration-200 ease-out
+                          hover:-translate-y-[1px]
+                          hover:scale-[1.03]
+                          hover:text-green-400
+                          hover:border-green-400/35
+                          hover:bg-green-400/10
+                          hover:shadow-[0_0_14px_rgba(74,222,128,0.28)]
+                          active:scale-95
+                          active:translate-y-0
+                          active:shadow-[0_0_22px_rgba(74,222,128,0.45)]
+                        "
                       >
                         <CheckIcon />
                       </button>
