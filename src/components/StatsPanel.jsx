@@ -14,7 +14,8 @@ function StatIcon({ type }) {
       >
         <path d="M6 4h11a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2V4Z" />
         <path d="M8 4v14a2 2 0 0 0 2 2" />
-    );      </svg>
+      </svg>
+    );
   }
 
   if (type === "complete") {
@@ -97,7 +98,12 @@ export default function StatsPanel() {
       }
     });
 
-    return { total, completed, ongoing, spent };
+    return {
+      total,
+      completed,
+      ongoing,
+      spent
+    };
   }, [manga]);
 
   return (
@@ -107,6 +113,7 @@ export default function StatsPanel() {
           <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">
             Statistiche
           </div>
+
           <div className="text-sm text-white font-semibold mt-1">
             Libreria
           </div>
