@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import HomePage from "./pages/HomePage";
 import AdminPage from "./pages/AdminPage";
-
+ 
 function App() {
   const [adminMode, setAdminMode] = useState(false);
   const [recordsMode, setRecordsMode] = useState(false);
