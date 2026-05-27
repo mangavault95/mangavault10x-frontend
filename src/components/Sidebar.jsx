@@ -3,7 +3,6 @@ import StatsPanel from "./StatsPanel";
 import ReadingSessionAddModal from "./ReadingSessionAddModal";
 
 /* -------------------- ICONS -------------------- */
-
 function StarIcon({ className = "w-5 h-5" }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor">
