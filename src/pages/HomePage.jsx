@@ -108,15 +108,22 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
 
   return (
     <div
-      className="min-h-screen text-white"
+      className="min-h-screen text-white relative overflow-hidden"
       style={{
         background:
           "linear-gradient(180deg, rgba(10,12,22,1), rgba(8,10,18,1))"
       }}
     >
+      {/* ambient lights pagina */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute top-[-120px] left-[180px] w-[420px] h-[420px] rounded-full bg-blue-500/8 blur-[120px]" />
+        <div className="absolute top-[180px] right-[120px] w-[360px] h-[360px] rounded-full bg-violet-500/8 blur-[120px]" />
+        <div className="absolute bottom-[-140px] left-[38%] w-[420px] h-[420px] rounded-full bg-indigo-500/6 blur-[120px]" />
+      </div>
+
       {/* SIDEBAR */}
       <div
-        className="fixed left-0 top-0 h-screen transition-all duration-300"
+        className="fixed left-0 top-0 h-screen transition-all duration-300 z-20"
         style={{
           width: openSidebar ? sidebarOpenWidth : sidebarClosedWidth
         }}
@@ -129,7 +136,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
         style={{
           marginLeft: openSidebar ? sidebarOpenWidth : sidebarClosedWidth
         }}
-        className="px-10 py-6 space-y-8 transition-all duration-300"
+        className="relative z-10 px-10 py-6 space-y-8 transition-all duration-300"
       >
         <TopHero manga={mangaList} onSelect={setSelectedManga} />
 
@@ -142,19 +149,45 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cerca titolo, autore..."
-              className="px-5 py-2.5 w-56 rounded-full bg-white/[0.04] border border-white/10 text-sm placeholder:text-zinc-500 outline-none focus:w-64 focus:border-yellow-400 transition-all duration-300 hover:border-white/20"
+              className="
+                px-5 py-2.5 w-56 rounded-full
+                bg-white/[0.04]
+                border border-white/10
+                text-sm placeholder:text-zinc-500
+                outline-none
+                focus:w-64 focus:border-yellow-400
+                transition-all duration-300
+                hover:border-white/20
+              "
             />
 
             <div className="relative">
               <button
                 onClick={() => setOpenMenu((p) => !p)}
-                className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/10 hover:border-yellow-400 transition"
+                className="
+                  w-10 h-10 rounded-xl
+                  bg-white/[0.04]
+                  border border-white/10
+                  hover:border-yellow-400
+                  transition
+                "
               >
                 ☰
               </button>
 
               {openMenu && (
-                <div className="absolute right-0 mt-2 w-44 bg-[rgba(18,22,42,0.92)] backdrop-blur-xl rounded-xl border border-white/10 shadow-xl z-50">
+                <div
+                  className="
+                    absolute right-0 mt-2 w-44
+                    rounded-xl border border-white/10 shadow-xl z-50
+                  "
+                  style={{
+                    background:
+                      "linear-gradient(180deg, rgba(18,22,42,0.92), rgba(12,14,28,0.92))",
+                    backdropFilter: "blur(12px)",
+                    WebkitBackdropFilter: "blur(12px)"
+                  }}
+                >
                   <button
                     onClick={() => {
                       setAdminMode(true);
@@ -193,21 +226,11 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
           })}
         </div>
 
-        {/* GRID */}
-        <div
-          className="rounded-[28px] p-5 border border-white/8"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(18,22,42,0.20), rgba(12,14,28,0.20))",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)"
-          }}
-        >
-          <MangaGrid
-            searchResults={filteredSearch}
-            filter={activeFilter === "all" ? undefined : activeFilter}
-          />
-        </div>
+        {/* GRID — niente più cornice/container */}
+        <MangaGrid
+          searchResults={filteredSearch}
+          filter={activeFilter === "all" ? undefined : activeFilter}
+        />
       </div>
 
       {selectedManga && (
