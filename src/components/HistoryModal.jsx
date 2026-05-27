@@ -2,14 +2,27 @@ import { useEffect, useState } from "react";
 
 export default function HistoryModal({ onClose }) {
   const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    try {
-      const h = JSON.parse(localStorage.getItem("mv_history") || "[]");
-      setHistory(Array.isArray(h) ? h.slice().reverse() : []);
-    } catch {
-      setHistory([]);
+    async function load() {
+      setLoading(true);
+
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/reading-history`
+        );
+        const data = await res.json();
+        setHistory(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Errore caricamento cronologia:", err);
+        setHistory([]);
+      } finally {
+        setLoading(false);
+      }
     }
+
+    load();
   }, []);
 
   return (
@@ -23,12 +36,11 @@ export default function HistoryModal({ onClose }) {
         className="relative w-[900px] max-w-[94vw] max-h-[80vh] rounded-3xl border border-white/10 shadow-2xl manga-detail-card overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* HEADER */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <div>
             <h2 className="text-xl font-extrabold text-white">Ultime letture</h2>
             <p className="text-sm text-zinc-400 mt-1">
-              La cronologia recente delle letture salvate localmente.
+              Cronologia sincronizzata delle letture salvate dal media player.
             </p>
           </div>
 
@@ -40,37 +52,67 @@ export default function HistoryModal({ onClose }) {
           </button>
         </div>
 
-        {/* CONTENT */}
         <div className="p-6 overflow-y-auto max-h-[calc(80vh-88px)] custom-scrollbar">
-          {history.length === 0 ? (
+          {loading ? (
             <div className="text-center text-zinc-400 py-20">
-              <div className="text-lg font-semibold text-white">Nessuna lettura recente</div>
-              <div className="text-sm mt-2">La cronologia apparirà qui quando inizierai a salvarla.</div>
+              Caricamento cronologia...
+            </div>
+          ) : history.length === 0 ? (
+            <div className="text-center text-zinc-400 py-20">
+              <div className="text-lg font-semibold text-white">
+                Nessuna lettura recente
+              </div>
+              <div className="text-sm mt-2">
+                Salva un avanzamento dal media player per iniziare la cronologia.
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
-              {history.map((h, idx) => (
+              {history.map((item) => (
                 <div
-                  key={`${h.title || "history"}-${idx}`}
+                  key={item.id}
                   className="panel-section p-4 text-white"
                 >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-20 rounded-xl overflow-hidden bg-black/20 border border-white/10 shrink-0">
+                      {item.coverurl ? (
+                        <img
+                          src={item.coverurl}
+                          alt={item.titolo || "Cover manga"}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-500">
+                          No cover
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
                       <div
                         className="text-sm font-semibold truncate"
-                        title={h.title || "Lettura"}
+                        title={item.titolo || ""}
                       >
-                        {h.title || "Titolo sconosciuto"}
+                        {item.titolo || "Titolo sconosciuto"}
                       </div>
 
-                      <div className="text-xs text-zinc-400 mt-1">
-                        {h.at ? new Date(h.at).toLocaleString() : "Data non disponibile"}
+                      <div
+                        className="text-xs text-zinc-400 truncate mt-1"
+                        title={item.autore || ""}
+                      >
+                        {item.autore || "Autore sconosciuto"}
+                      </div>
+
+                      <div className="text-xs text-zinc-500 mt-2">
+                        Volume salvato: {item.volume || 0}
                       </div>
                     </div>
 
-                    <span className="inline-flex px-2 py-1 rounded-full bg-white/8 border border-white/10 text-[11px] text-zinc-300 shrink-0">
-                      Recente
-                    </span>
+                    <div className="shrink-0 text-xs text-zinc-500 text-right">
+                      {item.read_at
+                        ? new Date(item.read_at).toLocaleString()
+                        : "Data non disponibile"}
+                    </div>
                   </div>
                 </div>
               ))}
