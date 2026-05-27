@@ -36,14 +36,9 @@ export default function WishlistList({ onClose }) {
   return (
     <div className="fixed inset-0 z-[999]">
 
-      {/* ✅ niente sfondo scuro */}
-      
-      <div
-        className="absolute inset-0"
-        onClick={onClose}
-      />
+      {/* click fuori */}
+      <div className="absolute inset-0" onClick={onClose} />
 
-      {/* ✅ PANEL glass coerente */}
       <div className="flex items-center justify-center h-full">
 
         <div
@@ -54,12 +49,9 @@ export default function WishlistList({ onClose }) {
           {/* HEADER */}
           <div className="flex justify-between items-center px-6 py-4 border-b border-white/10 text-white">
 
-            <h2 className="text-lg font-semibold">
-              Wishlist
-            </h2>
+            <h2 className="text-lg font-semibold">Wishlist</h2>
 
             <div className="flex gap-2">
-
               <button
                 onClick={() => setOpenAdd(true)}
                 className="px-4 py-2 rounded-lg bg-yellow-400 text-black font-semibold hover:brightness-110 transition"
@@ -73,7 +65,6 @@ export default function WishlistList({ onClose }) {
               >
                 Chiudi
               </button>
-
             </div>
           </div>
 
@@ -88,7 +79,6 @@ export default function WishlistList({ onClose }) {
               <div className="grid grid-cols-5 gap-5">
 
                 {items.map(m => (
-
                   <div
                     key={m.id}
                     className="group bg-[#151515]/70 backdrop-blur-md rounded-xl border border-white/5 overflow-hidden hover:scale-[1.03] transition"
@@ -107,7 +97,7 @@ export default function WishlistList({ onClose }) {
                     }
                   >
 
-                    {/* ✅ COVER (NO bande nere) */}
+                    {/* COVER */}
                     <div className="h-[230px] overflow-hidden bg-black">
                       <img
                         src={m.coverurl}
@@ -115,10 +105,10 @@ export default function WishlistList({ onClose }) {
                       />
                     </div>
 
-                    {/* ✅ INFO */}
+                    {/* INFO */}
                     <div className="p-3 text-white">
 
-                      <p className="text-sm font-semibold leading-tight truncate">
+                      <p className="text-sm font-semibold truncate">
                         {m.titolo}
                       </p>
 
@@ -126,45 +116,114 @@ export default function WishlistList({ onClose }) {
                         {m.autori || "Autore sconosciuto"}
                       </p>
 
+                      {/* ✅ BOTTONI PROFESSIONALI */}
                       <div className="flex justify-between mt-3">
 
- <div className="flex justify-between mt-3">
+                        <button
+                          title="Modifica"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditItem(m);
+                          }}
+                          className="
+                            flex items-center justify-center w-9 h-9 rounded-md
+                            bg-white/[0.04] border border-white/[0.08]
+                            text-zinc-400
 
-  {/* MODIFICA */}
-  <button
-    title="Modifica"
-    onClick={(e) => {
-      e.stopPropagation();
-      setEditItem(m);
-    }}
-    className="
-      flex items-center justify-center w-9 h-9 rounded-md
-      bg-white/[0.04] border border-white/[0.08]
-      text-zinc-400
+                            transition-all duration-200 ease-out
 
-      transition-all duration-200 ease-out
+                            hover:scale-105
+                            hover:text-yellow-400
+                            hover:border-yellow-400/40
+                            hover:shadow-[0_0_12px_rgba(234,179,8,0.35)]
 
-      hover:scale-105
-      hover:text-yellow-400
-      hover:border-yellow-400/40
-      hover:shadow-[0_0_12px_rgba(234,179,8,0.35)]
+                            active:scale-95
+                            active:shadow-[0_0_20px_rgba(234,179,8,0.6)]
+                          "
+                        >
+                          ✎
+                        </button>
 
-      active:scale-95
-      active:shadow-[0_0_20px_rgba(234,179,8,0.6)]
-    "
-  >
-    ✎
-  </button>
+                        <button
+                          title="Elimina"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeItem(m.id);
+                          }}
+                          className="
+                            flex items-center justify-center w-9 h-9 rounded-md
+                            bg-white/[0.04] border border-white/[0.08]
+                            text-zinc-400
 
-  {/* ELIMINA */}
-  <button
-    title="Elimina"
-    onClick={(e) => {
-      e.stopPropagation();
-      removeItem(m.id);
-    }}
-    className="
-      flex items-center justify-center w-9 h-9 rounded-md
+                            transition-all duration-200 ease-out
 
+                            hover:scale-105
+                            hover:text-red-400
+                            hover:border-red-400/40
+                            hover:shadow-[0_0_12px_rgba(248,113,113,0.35)]
+
+                            active:scale-95
+                            active:shadow-[0_0_20px_rgba(248,113,113,0.6)]
+                          "
+                        >
+                          ⨯
+                        </button>
+
+                        <button
+                          title="Acquistato"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markAsOwned(m.id);
+                          }}
+                          className="
+                            flex items-center justify-center w-9 h-9 rounded-md
+                            bg-white/[0.04] border border-white/[0.08]
+                            text-zinc-400
+
+                            transition-all duration-200 ease-out
+
+                            hover:scale-105
+                            hover:text-green-400
+                            hover:border-green-400/40
+                            hover:shadow-[0_0_12px_rgba(74,222,128,0.35)]
+
+                            active:scale-95
+                            active:shadow-[0_0_20px_rgba(74,222,128,0.6)]
+                          "
+                        >
+                          ✓
+                        </button>
+
+                      </div>
+
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {openAdd && (
+        <WishlistModal onClose={() => setOpenAdd(false)} onSaved={load} />
+      )}
+
+      {editItem && (
+        <WishlistModal
+          initialData={editItem}
+          onClose={() => setEditItem(null)}
+          onSaved={load}
+        />
+      )}
+
+      {selected && (
+        <MangaDetail
+          manga={selected}
+          onClose={() => setSelected(null)}
+        />
+      )}
+
+    </div>
   );
 }
