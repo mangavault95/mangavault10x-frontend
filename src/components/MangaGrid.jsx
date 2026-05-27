@@ -1,57 +1,98 @@
+import { useMemo } from "react";
+
 export default function MangaGrid({ searchResults = [], filter }) {
-  function getOwned(m) {
-    return Number(m?.VolumiPosseduti) || 0;
+  function parseTotal(raw) {
+    if (raw === null || raw === undefined || raw === "") return null;
+
+    const cleaned = String(raw).replace(/[^0-9]/g, "");
+    if (!cleaned) return null;
+
+    const num = Number(cleaned);
+    return Number.isNaN(num) ? null : num;
   }
 
-  function getTotal(m) {
-    const total = Number(m?.VolumiTotali);
-    return Number.isFinite(total) ? total : 0;
+  function getMeta(m) {
+    const total = parseTotal(m?.VolumiTotali);
+    const owned = Number(m?.VolumiPosseduti) || 0;
+    const hasKnownTotal = total !== null;
+
+    return {
+      total,
+      owned,
+      hasKnownTotal
+    };
   }
 
-  function isCompleted(m) {
-    const owned = getOwned(m);
-    const total = getTotal(m);
+  function getStatus(m) {
+    const { total, owned, hasKnownTotal } = getMeta(m);
 
-    return (!!total && total > 0 && owned >= total) || m?.Concluso === 1;
+    if (!hasKnownTotal && owned > 0) return "ongoing";
+    if (hasKnownTotal && owned < total) return "to_complete";
+    if (hasKnownTotal && owned === total) return "completed";
+    return "ongoing";
   }
 
-  function isOngoing(m) {
-    const total = getTotal(m);
+  function progressPercent(m) {
+    const { total, owned, hasKnownTotal } = getMeta(m);
 
-    return (
-      !isCompleted(m) &&
-      (!total || total === 0 || m?.VolumiTotali === "?" || m?.Concluso === 0)
+    if (!hasKnownTotal) return owned > 0 ? 50 : 0;
+    if (!total || total <= 0) return 0;
+
+    return Math.min(100, (owned / total) * 100);
+  }
+
+  function progressBarClass(status) {
+    if (status === "completed") {
+      return "bg-gradient-to-r from-green-400 to-green-600";
+    }
+
+    if (status === "to_complete") {
+      return "bg-gradient-to-r from-yellow-300 to-yellow-500";
+    }
+
+    return "bg-gradient-to-r from-blue-400 to-blue-500";
+  }
+
+  const filtered = useMemo(() => {
+    let list = [...searchResults].sort((a, b) =>
+      String(a?.Titolo || "").localeCompare(String(b?.Titolo || ""))
     );
-  }
-
-  function matchesFilter(m) {
-    if (!filter) return true;
-
-    const owned = getOwned(m);
-    const total = getTotal(m);
 
     switch (filter) {
       case "ongoing":
-        return isOngoing(m);
+        return list.filter((m) => {
+          const { owned, hasKnownTotal } = getMeta(m);
+          return !hasKnownTotal && owned > 0;
+        });
 
       case "to_complete":
-        return !isCompleted(m) && owned > 0 && total > 0;
+        return list.filter((m) => {
+          const { total, owned, hasKnownTotal } = getMeta(m);
+          return hasKnownTotal && owned < total;
+        });
 
       case "completed":
-        return isCompleted(m);
+        return list.filter((m) => {
+          const { total, owned, hasKnownTotal } = getMeta(m);
+          return hasKnownTotal && owned === total;
+        });
 
       case "short":
-        return total > 0 && total <= 5;
+        return list.filter((m) => {
+          const { total, hasKnownTotal } = getMeta(m);
+          return hasKnownTotal && total >= 2 && total < 8;
+        });
 
       case "oneshot":
-        return total === 1;
+        return list.filter((m) => {
+          const { total, owned, hasKnownTotal } = getMeta(m);
+          return hasKnownTotal && total === 1 && owned >= 1;
+        });
 
       default:
-        return true;
+        return list;
     }
-  }
-
-  const filtered = (searchResults || []).filter(matchesFilter);
+  }, [searchResults, filter]);
 
   function openDetail(manga) {
     window.dispatchEvent(
@@ -64,21 +105,16 @@ export default function MangaGrid({ searchResults = [], filter }) {
   return (
     <div className="grid grid-cols-5 gap-5">
       {filtered.map((manga) => {
-        const owned = getOwned(manga);
-        const total = getTotal(manga);
+        const { total, owned, hasKnownTotal } = getMeta(manga);
+        const status = getStatus(manga);
+        const percent = progressPercent(manga);
 
-        const percent =
-          total > 0
-            ? Math.min((owned / total) * 100, 100)
-            : isOngoing(manga)
-            ? 50
-            : 0;
-
-        const statusLabel = isCompleted(manga)
-          ? "Completo"
-          : isOngoing(manga)
-          ? "In corso"
-          : "Da completare";
+        const statusLabel =
+          status === "completed"
+            ? "Completo"
+            : status === "to_complete"
+            ? "Da completare"
+            : "In corso";
 
         return (
           <button
@@ -101,7 +137,7 @@ export default function MangaGrid({ searchResults = [], filter }) {
             <div className="relative h-[250px] overflow-hidden">
               {manga.CoverURL ? (
                 <>
-                  {/* riempimento soft per evitare bande nere */}
+                  {/* ambient fill */}
                   <img
                     src={manga.CoverURL}
                     alt=""
@@ -118,6 +154,7 @@ export default function MangaGrid({ searchResults = [], filter }) {
 
                   <div className="absolute inset-0 bg-black/10" />
 
+                  {/* real cover */}
                   <img
                     src={manga.CoverURL}
                     alt={manga.Titolo || "Cover manga"}
@@ -171,4 +208,27 @@ export default function MangaGrid({ searchResults = [], filter }) {
               </div>
 
               <div className="mt-3">
-                <div className="flex items-center justify-between text-[11px] text-zinc-400
+                <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-2">
+                  <span>
+                    {owned}/{hasKnownTotal ? total : "?"} vol
+                  </span>
+
+                  <span>{statusLabel}</span>
+                </div>
+
+                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${progressBarClass(
+                      status
+                    )}`}
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
