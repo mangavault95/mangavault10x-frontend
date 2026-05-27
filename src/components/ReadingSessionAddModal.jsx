@@ -93,6 +93,13 @@ export default function ReadingSessionAddModal({ onClose, onSaved }) {
     }
   }
 
+  const baseCardClass =
+    "w-full text-left rounded-2xl border px-4 py-3 transition-all";
+  const activeCardClass =
+    "border-yellow-400/40 bg-yellow-400/10 shadow-[0_0_18px_rgba(234,179,8,0.18)]";
+  const inactiveCardClass =
+    "border-white/10 bg-white/[0.04] hover:bg-white/[0.07] hover:border-yellow-400/20";
+
   return (
     <div
       className="fixed inset-0 z-[1100] flex items-center justify-center"
@@ -150,19 +157,16 @@ export default function ReadingSessionAddModal({ onClose, onSaved }) {
                   </div>
                 ) : (
                   filtered.map((m) => {
-                    const active = selected?.ID === m.ID;
+                    const isActive = selected?.ID === m.ID;
 
                     return (
                       <button
                         key={m.ID}
                         type="button"
                         onClick={() => setSelected(m)}
-                        className={
-                          "w-full text-left rounded-2xl border px-4 py-3 transition-all " +
-                          (active
-                            ? "border-yellow-400/40 bg-yellow-400/10 shadow-[0_0_18px_rgba(234,179,8,0.18)]"
-                            : "border-white/10 bg-white/[0.04] hover:bg-white/[0.07] hover:border-yellow-400/20")
-                        }
+                        className={`${baseCardClass} ${
+                          isActive ? activeCardClass : inactiveCardClass
+                        }`}
                       >
                         <div className="text-sm font-semibold text-white truncate">
                           {m.Titolo || "Titolo sconosciuto"}
