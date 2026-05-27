@@ -1,207 +1,136 @@
 import { useEffect, useState } from "react";
+import WishlistModal from "./WishlistModal";
 
-export default function WishlistModal({ onClose, onSaved }) {
-  const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
+export default function WishlistList({ onClose }) {
+  const [items, setItems] = useState([]);
+  const [openAdd, setOpenAdd] = useState(false);
 
-  const [form, setForm] = useState({
-    Titolo: "",
-    Autore: "",
-    CoverURL: "",
-    Trama: "",
-    Genere: "",
-    VolumiTotali: ""
-  });
-
-  useEffect(() => {
-    if (!query || query.trim().length < 3) return;
-
-    const timeout = setTimeout(async () => {
-      setLoading(true);
-
-      try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ titolo: query })
-          }
-        );
-
-        const data = await res.json();
-
-        if (!data.error) {
-          setForm(prev => ({
-            ...prev,
-            Titolo: data.titolo || "",
-            Autore: data.autore || "",
-            CoverURL: data.coverurl || "",
-            Trama: data.trama || "",
-            Genere: data.genere || "",
-            VolumiTotali: data.volumitotali || ""
-          }));
-        }
-
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }, 600);
-
-    return () => clearTimeout(timeout);
-  }, [query]);
-
-  async function handleSave() {
+  async function load() {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/wishlist`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            titolo: form.Titolo,
-            autori: form.Autore,
-            coverurl: form.CoverURL,
-            trama: form.Trama,
-            generi: form.Genere,
-            volumitotali: form.VolumiTotali
-          })
-        }
+        `${import.meta.env.VITE_API_URL}/api/wishlist/all`
       );
-
       const data = await res.json();
-
-      if (data.item) onSaved(data.item);
-
-      onClose();
-    } catch (err) {
-      console.error(err);
+      setItems(data || []);
+    } catch {
+      setItems([]);
     }
   }
 
-  return (
-    // ✅ BLOCCA TUTTO IL CLICK SOTTO
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-auto"
-      onClick={onClose}
-    >
-      {/* ❗ niente background = lascia vedere il sito */}
-      <div className="absolute inset-0 bg-transparent" />
+  useEffect(() => {
+    load();
+  }, []);
+
+  // 🔥 PRENDE UNA COVER PER LO SFONDO
+  const bgCover = items[0]?.coverurl;
+
+return (
+  <div className="fixed inset-0 z-[999] pointer-events-none">
+
+
+      {/* ✅ BACKGROUND stile MangaDetail */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: bgCover
+            ? `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(20,20,20,0.95)), url(${bgCover})`
+            : `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(30,30,30,0.95))`,
+          backgroundSize: "120px",
+          backgroundRepeat: "repeat",
+          opacity: 0.18
+        }}
+      />
+
 
       {/* ✅ PANEL */}
-      <div
-        className="relative w-[900px] rounded-3xl border border-white/10 shadow-2xl manga-detail-card flex"
-        onClick={(e) => e.stopPropagation()}
-      >
+<div className="relative w-full h-full flex items-center justify-center pointer-events-auto">
 
-        {/* LEFT */}
-        <div className="w-[260px] p-4">
-          <div className="h-[360px] bg-black rounded overflow-hidden flex items-center justify-center">
-            {form.CoverURL ? (
-              <img
-                src={form.CoverURL}
-                className="w-full h-full object-cover"
-                alt=""
-              />
+        <div
+          className="w-[1100px] max-h-[85vh] rounded-3xl shadow-2xl border border-white/10 flex flex-col manga-detail-card"
+          onClick={(e) => e.stopPropagation()}
+        >
+
+          {/* HEADER */}
+          <div className="flex justify-between items-center px-6 py-4 border-b border-white/10">
+
+            <h2 className="text-xl font-bold text-white">Wishlist</h2>
+
+            <div className="flex gap-2">
+
+              <button
+                onClick={() => setOpenAdd(true)}
+                className="px-4 py-2 bg-yellow-400 text-black rounded-lg font-semibold hover:scale-105 transition"
+              >
+                + Aggiungi
+              </button>
+
+              <button
+                onClick={onClose}
+                className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition"
+              >
+                Chiudi
+              </button>
+
+            </div>
+          </div>
+
+          {/* CONTENT */}
+          <div className="p-6 overflow-y-auto flex-1">
+
+            {items.length === 0 ? (
+              <div className="text-center text-zinc-400 mt-20">
+                <p className="text-lg font-semibold">Wishlist vuota</p>
+                <p className="text-sm opacity-60">
+                  Aggiungi il tuo primo manga ✨
+                </p>
+              </div>
             ) : (
-              <span className="text-zinc-500">300x450</span>
+              <div className="grid grid-cols-5 gap-4">
+
+                {items.map((m) => (
+                  <div
+                    key={m.id}
+                    className="bg-[#1a1a1a]/70 backdrop-blur-sm rounded-xl overflow-hidden border border-white/5 hover:scale-[1.04] hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition"
+                  >
+                    {/* COVER */}
+                    <div className="h-[220px] overflow-hidden bg-black">
+                      <img
+                        src={m.coverurl || "https://placehold.co/200x300"}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* INFO */}
+                    <div className="p-3">
+                      <p className="text-sm font-semibold text-white truncate">
+                        {m.titolo}
+                      </p>
+                      <p className="text-xs text-zinc-400 truncate">
+                        {m.autori || "Autore sconosciuto"}
+                      </p>
+                    </div>
+
+                  </div>
+                ))}
+
+              </div>
             )}
           </div>
 
-          <div className="mt-4 text-white">
-            <p className="font-semibold truncate">
-              {form.Titolo || "Titolo"}
-            </p>
-            <p className="text-sm text-zinc-400">
-              {form.Autore || "Autore"}
-            </p>
-          </div>
-        </div>
-
-        {/* RIGHT */}
-        <div className="flex-1 p-6 text-white">
-
-          <div className="flex justify-between mb-4">
-            <h2 className="text-xl font-bold">
-              Aggiungi alla Wishlist
-            </h2>
-
-            <button
-              onClick={onClose}
-              className="px-3 py-1 bg-red-500 rounded"
-            >
-              Chiudi
-            </button>
-          </div>
-
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Scrivi titolo..."
-            className="w-full p-3 mb-4 bg-black/60 rounded"
-          />
-
-          {loading && (
-            <p className="text-yellow-400 text-sm mb-2">
-              Ricerca...
-            </p>
-          )}
-
-          <div className="grid grid-cols-2 gap-3 mb-3">
-
-            <input
-              value={form.Titolo}
-              onChange={(e) => setForm({ ...form, Titolo: e.target.value })}
-              className="p-2 bg-black/60 rounded"
-            />
-
-            <input
-              value={form.Autore}
-              onChange={(e) => setForm({ ...form, Autore: e.target.value })}
-              className="p-2 bg-black/60 rounded"
-            />
-
-            <input
-              value={form.VolumiTotali}
-              onChange={(e) => setForm({ ...form, VolumiTotali: e.target.value })}
-              className="p-2 bg-black/60 rounded"
-            />
-
-            <input
-              value={form.Genere}
-              onChange={(e) => setForm({ ...form, Genere: e.target.value })}
-              className="p-2 bg-black/60 rounded"
-            />
-
-          </div>
-
-          <textarea
-            value={form.Trama}
-            onChange={(e) => setForm({ ...form, Trama: e.target.value })}
-            className="w-full h-28 p-2 bg-black/60 rounded mb-4"
-          />
-
-          <div className="flex justify-end gap-2">
-
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-white/10 rounded"
-            >
-              Annulla
-            </button>
-
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 bg-yellow-400 text-black rounded"
-            >
-              Aggiungi
-            </button>
-
-          </div>
         </div>
       </div>
+
+      {/* ✅ MODAL ADD */}
+      {openAdd && (
+        <WishlistModal
+          onClose={() => setOpenAdd(false)}
+          onSaved={() => {
+            load();
+            setOpenAdd(false);
+          }}
+        />
+      )}
+
     </div>
   );
 }
