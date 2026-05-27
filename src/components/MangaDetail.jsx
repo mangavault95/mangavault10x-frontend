@@ -11,44 +11,6 @@ export default function MangaDetail({ manga, onClose }) {
 
   const [rating, setRating] = useState(Number(manga.Valutazione) || 0);
   const [hoverRating, setHoverRating] = useState(0);
-  const debounceRef = useRef(null);
-
-  const [toast, setToast] = useState({
-    show: false,
-    text: "",
-    tone: "success"
-  });
-
-  async function handleRating(stars) {
-    setRating(stars);
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    debounceRef.current = setTimeout(async () => {
-      try {
-        await fetch(
-          `${import.meta.env.VITE_API_URL}/api/manga/updateRating`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("token") || ""}`
-            },
-            body: JSON.stringify({
-              id: manga.ID,
-              rating: stars
-            })
-          }
-        );
-
-        setToast({ show: true, text: "Valutazione salvata ✅", tone: "success" });
-        setTimeout(() => setToast({ show: false, text: "", tone: "success" }), 1500);
-
-      } catch (err) {
-        console.error(err);
-      }
-    }, 400);
-  }
 
   const owned = Number(manga.VolumiPosseduti) || 0;
   const total = Number(manga.VolumiTotali) || 0;
@@ -59,127 +21,146 @@ export default function MangaDetail({ manga, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[999] flex items-center justify-center pointer-events-auto"
+      className="fixed inset-0 z-[999] flex items-center justify-center"
       onClick={onClose}
     >
 
-      {/* ✅ NO overlay scuro */}
-      <div className="absolute inset-0" />
-
+      {/* ✅ SFONDO COME PRIMA */}
       <div
-        className="relative w-[900px] rounded-3xl border border-white/10 shadow-2xl manga-detail-card"
+        className="absolute inset-0"
+        style={{
+          background: manga.CoverURL
+            ? `linear-gradient(135deg, rgba(20,25,50,0.9), rgba(40,20,60,0.9)), url(${manga.CoverURL})`
+            : `linear-gradient(135deg, #0f172a, #1e1b4b)`,
+          backgroundSize: "150px",
+          opacity: 0.25
+        }}
+      />
+
+      <div className="absolute inset-0 backdrop-blur-md" />
+
+      {/* ✅ PANEL GRANDE */}
+      <div
+        className="relative w-[1200px] max-w-[95vw] rounded-3xl border border-white/10 shadow-2xl manga-detail-card"
         onClick={(e) => e.stopPropagation()}
       >
 
-        {/* CLOSE */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 w-10 h-10 bg-black/40 rounded-full flex items-center justify-center text-white text-xl"
-        >
-          ✕
-        </button>
+        <div className="flex gap-10 p-8">
 
-        {/* TOAST */}
-        {toast.show && (
-          <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-green-600 px-4 py-2 rounded text-white z-[9999]">
-            {toast.text}
-          </div>
-        )}
+          {/* ✅ LEFT COVER */}
+          <div className="w-[300px] flex flex-col">
 
-        <div className="flex gap-6 p-6">
-
-          {/* COVER */}
-          <div className="w-[220px]">
-            <div className="bg-black rounded overflow-hidden flex items-center justify-center h-[320px]">
-              {manga.CoverURL ? (
+            <div className="rounded-2xl overflow-hidden bg-black">
+              {manga.CoverURL && (
                 <img
                   src={manga.CoverURL}
-                  className="w-full h-full object-contain"
+                  className="w-full h-[420px] object-cover"
                 />
-              ) : (
-                <span className="text-zinc-500">No cover</span>
               )}
             </div>
 
-            <div className="mt-3 text-sm text-zinc-300">
-              ⭐ {rating || "N/A"}
+            <div className="mt-4 text-white">
+              <p className="font-semibold">{manga.Titolo}</p>
+              <p className="text-sm text-zinc-400">{manga.Autore}</p>
             </div>
+
           </div>
 
-          {/* INFO */}
+          {/* ✅ RIGHT CONTENT */}
           <div className="flex-1 text-white">
 
-            <h1 className="text-2xl font-bold">
-              {manga.Titolo}
-            </h1>
+            {/* HEADER */}
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h1 className="text-3xl font-bold">
+                  {manga.Titolo}
+                </h1>
+                <p className="text-zinc-400 mt-1">
+                  {manga.Autore}
+                </p>
+              </div>
 
-            <p className="text-zinc-400 mb-2">
-              {manga.Autore}
-            </p>
+              <button
+                onClick={onClose}
+                className="px-3 py-1 bg-red-500 rounded text-sm"
+              >
+                Chiudi
+              </button>
+            </div>
 
-            <div className="flex flex-wrap gap-2 mb-3">
+            {/* TAG */}
+            <div className="flex gap-2 mb-4 flex-wrap">
               {String(manga.Genere || "")
                 .split(",")
                 .filter(Boolean)
                 .map((g, i) => (
-                  <span key={i} className="text-xs bg-white/10 px-2 py-1 rounded">
+                  <span
+                    key={i}
+                    className="text-xs bg-white/10 px-2 py-1 rounded"
+                  >
                     {g.trim()}
                   </span>
                 ))}
             </div>
 
-            <p className="text-sm text-zinc-300 mb-4 max-h-32 overflow-auto">
-              {manga.Trama || "Nessuna descrizione"}
+            {/* TRAMA */}
+            <p className="text-sm text-zinc-300 mb-6 max-h-[140px] overflow-auto">
+              {manga.Trama}
             </p>
 
             {/* STATS */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="bg-white/10 p-3 rounded">
-                <p className="text-xs">Posseduti</p>
-                <p className="text-xl">{owned}</p>
+            <div className="grid grid-cols-3 gap-6 mb-6">
+
+              <div>
+                <p className="text-xs text-zinc-400">Volumi posseduti</p>
+                <p className="text-xl font-semibold">{owned}</p>
               </div>
 
-              <div className="bg-white/10 p-3 rounded">
-                <p className="text-xs">Totali</p>
-                <p className="text-xl">{total || "?"}</p>
+              <div>
+                <p className="text-xs text-zinc-400">Volumi totali</p>
+                <p className="text-xl font-semibold">{total || "?"}</p>
               </div>
 
-              <div className="bg-white/10 p-3 rounded">
-                <p className="text-xs">Completamento</p>
-                <p className="text-xl">{Math.round(percent)}%</p>
+              <div>
+                <p className="text-xs text-zinc-400">Completamento</p>
+                <p className="text-xl font-semibold">{Math.round(percent)}%</p>
               </div>
+
             </div>
 
-            {/* PROGRESS */}
-            <div className="w-full bg-white/10 h-3 rounded overflow-hidden mb-4">
+            {/* PROGRESS BAR */}
+            <div className="w-full h-3 bg-white/10 rounded overflow-hidden mb-6">
               <div
-                className="bg-yellow-400 h-full"
+                className="h-full bg-green-500"
                 style={{ width: `${percent}%` }}
               />
             </div>
 
             {/* RATING */}
-            <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map(i => {
-                const active = hoverRating ? i <= hoverRating : i <= rating;
+            <div className="flex items-center gap-2 mb-6">
+              {[1, 2, 3, 4, 5].map(i => (
+                <span
+                  key={i}
+                  onMouseEnter={() => setHoverRating(i)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  onClick={() => setRating(i)}
+                  className={`text-2xl cursor-pointer ${
+                    (hoverRating || rating) >= i
+                      ? "text-yellow-400"
+                      : "text-zinc-600"
+                  }`}
+                >
+                  ★
+                </span>
+              ))}
 
-                return (
-                  <span
-                    key={i}
-                    onMouseEnter={() => setHoverRating(i)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    onClick={() => handleRating(i)}
-                    className={`text-2xl cursor-pointer ${
-                      active ? "text-yellow-400" : "text-zinc-600"
-                    }`}
-                  >
-                    ★
-                  </span>
-                );
-              })}
+              <span className="text-sm text-zinc-400 ml-2">
+                {rating}/5
+              </span>
             </div>
 
           </div>
+
         </div>
       </div>
     </div>
