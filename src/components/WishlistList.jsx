@@ -126,44 +126,42 @@ export default function WishlistList({ onClose }) {
                       </p>
                     </div>
 
-                    {/* ACTIONS */}
-                    <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 flex flex-col justify-center items-center gap-2 transition">
+                   <div className="p-3 border-t border-white/5 flex justify-around text-sm">
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditItem(m);
-                        }}
-                        className="px-3 py-1 bg-blue-600 rounded text-sm"
-                      >
-                        Modifica
-                      </button>
+  <button
+    title="Modifica"
+    onClick={(e) => {
+      e.stopPropagation();
+      setEditItem(m);
+    }}
+    className="hover:text-blue-400"
+  >
+    ✏️
+  </button>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeItem(m.id);
-                        }}
-                        className="px-3 py-1 bg-red-600 rounded text-sm"
-                      >
-                        Elimina
-                      </button>
+  <button
+    title="Elimina"
+    onClick={(e) => {
+      e.stopPropagation();
+      removeItem(m.id);
+    }}
+    className="hover:text-red-400"
+  >
+    🗑️
+  </button>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          markAsOwned(m);
-                        }}
-                        className="px-3 py-1 bg-green-500 rounded text-sm"
-                      >
-                        Acquistato ✅
-                      </button>
+  <button
+    title="Segna come acquistato"
+    onClick={(e) => {
+      e.stopPropagation();
+      markAsOwned(m);
+    }}
+    className="hover:text-green-400"
+  >
+    ✅
+  </button>
 
-                    </div>
-
-                  </div>
-                ))}
-
+</div>
               </div>
             )}
 
