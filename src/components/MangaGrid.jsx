@@ -28,7 +28,7 @@ export default function MangaGrid({ searchResults = [], filter }) {
     if (owned >= total) return "completed";
     return "to_complete";
   }
-
+ 
   function getPercent(manga) {
     const owned = getOwned(manga);
     const total = getTotal(manga);
