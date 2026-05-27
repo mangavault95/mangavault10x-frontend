@@ -7,8 +7,11 @@ export default function MangaDetail({ manga, onClose, onSave }) {
   }, []);
 
   if (!manga) return null;
-
-  const [rating, setRating] = useState(Number(manga.Valutazione) || 0);
+<div
+  className="fixed inset-0 z-[999] overflow-y-auto pointer-events-auto"
+  onClick={onClose}
+>
+  <div className="absolute inset-0 bg-transparent" />  const [rating, setRating] = useState(Number(manga.Valutazione) || 0);
   const [hoverRating, setHoverRating] = useState(0);
   const [toast, setToast] = useState({ show: false, text: "", tone: "success" });
   const debounceRef = useRef(null);
