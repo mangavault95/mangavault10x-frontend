@@ -3,7 +3,7 @@ import StatsPanel from "./StatsPanel";
 
 /* -------------------- ICONS -------------------- */
 
-function StarIcon({ className = "w-6 h-6" }) {
+function StarIcon({ className = "w-5 h-5" }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor">
       <path d="M12 2.7 14.9 8.6l6.5.95-4.7 4.58 1.1 6.47L12 17.55 6.2 20.6l1.1-6.47-4.7-4.58 6.5-.95L12 2.7Z" />
@@ -11,11 +11,11 @@ function StarIcon({ className = "w-6 h-6" }) {
   );
 }
 
-function ClockIcon() {
+function ClockIcon({ className = "w-5 h-5" }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="w-6 h-6"
+      className={className}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.9"
@@ -28,11 +28,11 @@ function ClockIcon() {
   );
 }
 
-function CalendarIcon() {
+function CalendarIcon({ className = "w-5 h-5" }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="w-6 h-6"
+      className={className}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.9"
@@ -52,11 +52,11 @@ function CalendarIcon() {
   );
 }
 
-function TrophyIcon() {
+function TrophyIcon({ className = "w-5 h-5" }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="w-6 h-6"
+      className={className}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
@@ -77,7 +77,7 @@ function MinusIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="w-5 h-5"
+      className="w-4 h-4"
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
@@ -92,7 +92,7 @@ function PlusIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="w-5 h-5"
+      className="w-4 h-4"
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
@@ -108,7 +108,7 @@ function SaveIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="w-6 h-6"
+      className="w-5 h-5"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.9"
@@ -126,7 +126,6 @@ function SaveIcon() {
 
 export default function Sidebar({ open = true }) {
   const [manga, setManga] = useState([]);
-
   const [favorites, setFavorites] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("mv_favorites") || "[]");
@@ -141,11 +140,8 @@ export default function Sidebar({ open = true }) {
 
   function loadCurrentReading() {
     try {
-      const selected = JSON.parse(
-        localStorage.getItem("mv_selected_manga") || "null"
-      );
+      const selected = JSON.parse(localStorage.getItem("mv_selected_manga") || "null");
       const vol = localStorage.getItem("mv_current_vol") || "";
-
       setCurrentReading(selected);
       setCurrentVol(vol);
     } catch {
@@ -237,7 +233,6 @@ export default function Sidebar({ open = true }) {
     setCurrentVol(String(next));
     localStorage.setItem("mv_current_vol", String(next));
     localStorage.setItem("mv_selected_manga", JSON.stringify(currentReading));
-
     window.dispatchEvent(new Event("currentReadingUpdated"));
   }
 
@@ -268,7 +263,6 @@ export default function Sidebar({ open = true }) {
 
   const readingOwned = Number(currentVol) || 0;
   const readingTotal = Number(currentReading?.VolumiTotali) || 0;
-
   const readingPercent = readingTotal
     ? Math.min(100, Math.round((readingOwned / readingTotal) * 100))
     : 0;
@@ -277,14 +271,19 @@ export default function Sidebar({ open = true }) {
     <aside
       className={`
         h-full flex flex-col
-        px-5 py-5 gap-5
-        bg-gradient-to-b from-[#050505] via-[#0b0b0d] to-[#050505]
-        border-r border-white/6
-        shadow-[18px_0_45px_rgba(0,0,0,0.45)]
+        px-5 py-5
+        bg-[linear-gradient(180deg,rgba(14,18,36,0.72),rgba(10,10,18,0.78))]
+        backdrop-blur-xl
+        shadow-[18px_0_55px_rgba(0,0,0,0.42)]
         transition-all duration-300
-        ${open ? "w-full" : "w-full items-center"}
+        relative
+        ${open ? "w-full gap-5" : "w-full items-center gap-4"}
       `}
     >
+      {/* ambient light */}
+      <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-yellow-400/20 to-transparent pointer-events-none" />
+      <div className="absolute top-0 right-0 w-28 h-28 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
+
       {/* LOGO */}
       <div
         className={`
@@ -294,7 +293,7 @@ export default function Sidebar({ open = true }) {
       >
         {open ? (
           <div className="min-w-0">
-            <div className="text-3xl font-black tracking-tight text-white leading-none">
+            <div className="text-[2.05rem] font-black tracking-tight text-white leading-none">
               MangaVault
             </div>
 
@@ -302,7 +301,7 @@ export default function Sidebar({ open = true }) {
               onClick={onLogoToggle}
               className="
                 mt-1 inline-flex items-center
-                text-3xl font-black tracking-tight
+                text-[2.1rem] font-black tracking-tight
                 text-yellow-400
                 hover:text-yellow-300
                 drop-shadow-[0_0_16px_rgba(250,204,21,0.35)]
@@ -319,7 +318,7 @@ export default function Sidebar({ open = true }) {
             onClick={onLogoToggle}
             title="Apri sidebar"
             className="
-              text-3xl font-black tracking-tight
+              text-[2rem] font-black tracking-tight
               text-yellow-400
               drop-shadow-[0_0_16px_rgba(250,204,21,0.35)]
               hover:text-yellow-300
@@ -334,112 +333,72 @@ export default function Sidebar({ open = true }) {
 
       {/* NAV */}
       <nav className={`flex flex-col gap-3 ${open ? "" : "items-center w-full"}`}>
-        <button
-          onClick={() => navigate("favorites")}
-          title="Preferiti"
-          className={`
-            group flex items-center gap-4 w-full
-            rounded-2xl
-            border border-white/[0.06]
-            bg-white/[0.045]
-            hover:bg-white/[0.075]
-            hover:border-yellow-400/25
-            transition-all duration-200
-            ${open ? "px-4 py-3" : "p-3 justify-center"}
-          `}
-        >
-          <span
+        {[
+          {
+            key: "favorites",
+            label: "Preferiti",
+            icon: (
+              <StarIcon className="w-5 h-5" />
+            ),
+            count: favoritesList.length,
+            pulse: pulseFav
+          },
+          {
+            key: "history",
+            label: "Ultime letture",
+            icon: <ClockIcon className="w-5 h-5" />
+          },
+          {
+            key: "wishlist",
+            label: "Wishlist",
+            icon: <CalendarIcon className="w-5 h-5" />
+          },
+          {
+            key: "records",
+            label: "Records",
+            icon: <TrophyIcon className="w-5 h-5" />
+          }
+        ].map((item) => (
+          <button
+            key={item.key}
+            onClick={() => navigate(item.key)}
+            title={item.label}
             className={`
-              text-yellow-400 transition-transform duration-200
-              ${pulseFav ? "scale-125" : "group-hover:scale-110"}
+              group flex items-center gap-4 w-full
+              rounded-2xl
+              border border-white/[0.06]
+              bg-white/[0.05]
+              hover:bg-white/[0.08]
+              hover:border-yellow-400/25
+              transition-all duration-200
+              ${open ? "px-4 py-3" : "p-3 justify-center"}
             `}
           >
-            <StarIcon />
-          </span>
-
-          {open && (
-            <div className="flex-1 flex justify-between items-center min-w-0">
-              <span className="text-sm font-medium text-white">Preferiti</span>
-              <span className="text-xs text-zinc-400">{favoritesList.length}</span>
-            </div>
-          )}
-        </button>
-
-        <button
-          onClick={() => navigate("history")}
-          title="Ultime letture"
-          className={`
-            group flex items-center gap-4 w-full
-            rounded-2xl
-            border border-white/[0.06]
-            bg-white/[0.045]
-            hover:bg-white/[0.075]
-            hover:border-yellow-400/25
-            transition-all duration-200
-            ${open ? "px-4 py-3" : "p-3 justify-center"}
-          `}
-        >
-          <span className="text-zinc-300 group-hover:text-yellow-400 transition">
-            <ClockIcon />
-          </span>
-
-          {open && (
-            <span className="text-sm font-medium text-white">
-              Ultime letture
+            <span
+              className={`
+                ${item.key === "favorites" ? "text-yellow-400" : "text-zinc-300"}
+                transition-transform duration-200
+                ${item.pulse ? "scale-125" : "group-hover:scale-110"}
+              `}
+            >
+              {item.icon}
             </span>
-          )}
-        </button>
 
-        <button
-          onClick={() => navigate("wishlist")}
-          title="Wishlist"
-          className={`
-            group flex items-center gap-4 w-full
-            rounded-2xl
-            border border-white/[0.06]
-            bg-white/[0.045]
-            hover:bg-white/[0.075]
-            hover:border-yellow-400/25
-            transition-all duration-200
-            ${open ? "px-4 py-3" : "p-3 justify-center"}
-          `}
-        >
-          <span className="text-zinc-300 group-hover:text-yellow-400 transition">
-            <CalendarIcon />
-          </span>
-
-          {open && (
-            <span className="text-sm font-medium text-white">Wishlist</span>
-          )}
-        </button>
-
-        <button
-          onClick={() => navigate("records")}
-          title="Records"
-          className={`
-            group flex items-center gap-4 w-full
-            rounded-2xl
-            border border-white/[0.06]
-            bg-white/[0.045]
-            hover:bg-white/[0.075]
-            hover:border-yellow-400/25
-            transition-all duration-200
-            ${open ? "px-4 py-3" : "p-3 justify-center"}
-          `}
-        >
-          <span className="text-zinc-300 group-hover:text-yellow-400 transition">
-            <TrophyIcon />
-          </span>
-
-          {open && (
-            <span className="text-sm font-medium text-white">Records</span>
-          )}
-        </button>
+            {open && (
+              <div className="flex-1 flex justify-between items-center min-w-0">
+                <span className="text-sm font-medium text-white">{item.label}</span>
+                {typeof item.count === "number" && (
+                  <span className="text-xs text-zinc-400">{item.count}</span>
+                )}
+              </div>
+            )}
+          </button>
+        ))}
       </nav>
 
-      {/* CURRENT READING PLAYER */}
+      {/* CURRENT READING PLAYER (centrale) */}
       {open && currentReading && (
-        <section className="rounded-[28px] border border-white/[0.08] bg-white/[0.035] p-4 shadow-[0_20px_45px_rgba(0,0,0,0.28)]">
+        <section className="rounded-[28px] border border-white/[0.08] bg-white/[0.045] p-4 shadow-[0_20px_45px_rgba(0,0,0,0.24)]">
           <div className="flex items-center justify-between mb-3">
             <div className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
               Stai leggendo
@@ -459,7 +418,7 @@ export default function Sidebar({ open = true }) {
                   })
                 )
               }
-              className="relative w-20 h-28 shrink-0 rounded-2xl overflow-hidden bg-black/40 border border-white/10 shadow-2xl group"
+              className="relative w-20 h-28 shrink-0 rounded-2xl overflow-hidden bg-black/30 border border-white/10 shadow-2xl group"
               title="Apri dettaglio"
             >
               {currentReading.CoverURL ? (
