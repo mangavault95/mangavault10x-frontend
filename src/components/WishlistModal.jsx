@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 
 export default function WishlistModal({ onClose, onSaved, initialData }) {
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
     Titolo: "",
@@ -13,6 +12,7 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
     VolumiTotali: ""
   });
 
+  // ✅ preload edit
   useEffect(() => {
     if (initialData) {
       setForm({
@@ -26,12 +26,11 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
     }
   }, [initialData]);
 
+  // ✅ enrich
   useEffect(() => {
     if (!query || query.length < 3) return;
 
     const t = setTimeout(async () => {
-      setLoading(true);
-
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
         {
@@ -53,13 +52,12 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
           VolumiTotali: data.volumitotali || ""
         });
       }
-
-      setLoading(false);
     }, 500);
 
     return () => clearTimeout(t);
   }, [query]);
 
+  // ✅ save
   async function handleSave() {
     const url = initialData
       ? `${import.meta.env.VITE_API_URL}/api/wishlist/${initialData.id}`
@@ -87,50 +85,73 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-auto">
 
+      {/* click fuori */}
       <div className="absolute inset-0" onClick={onClose} />
 
       <div
-        className="relative w-[900px] rounded-3xl border border-white/10 shadow-2xl manga-detail-card flex"
+        className="relative w-[900px] rounded-2xl bg-[#121212] border border-white/10 flex"
         onClick={(e) => e.stopPropagation()}
       >
 
+        {/* LEFT */}
         <div className="w-[260px] p-4">
-          <div className="h-[360px] bg-black rounded overflow-hidden flex items-center justify-center">
-            {form.CoverURL && <img src={form.CoverURL} className="w-full h-full object-contain" />}
+          <div className="h-[360px] bg-black rounded flex items-center justify-center overflow-hidden">
+            {form.CoverURL ? (
+              <img
+                src={form.CoverURL}
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <span className="text-zinc-500">No cover</span>
+            )}
           </div>
         </div>
 
+        {/* RIGHT */}
         <div className="flex-1 p-6 text-white">
 
-          <h2 className="text-xl font-bold mb-4">Wishlist</h2>
+          <h2 className="text-xl mb-4">
+            {initialData ? "Modifica" : "Aggiungi"}
+          </h2>
 
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Cerca..."
-            className="w-full p-2 bg-black/60 rounded mb-3"
+            className="w-full p-2 mb-3 bg-black/60 rounded"
           />
 
           <input
             value={form.Titolo}
-            onChange={(e) => setForm(p => ({ ...p, Titolo: e.target.value }))}
-            className="w-full p-2 bg-black/60 rounded mb-2"
+            onChange={(e) =>
+              setForm(p => ({ ...p, Titolo: e.target.value }))
+            }
+            placeholder="Titolo"
+            className="w-full p-2 mb-2 bg-black/60 rounded"
           />
 
           <input
             value={form.Autore}
-            onChange={(e) => setForm(p => ({ ...p, Autore: e.target.value }))}
-            className="w-full p-2 bg-black/60 rounded mb-2"
+            onChange={(e) =>
+              setForm(p => ({ ...p, Autore: e.target.value }))
+            }
+            placeholder="Autore"
+            className="w-full p-2 mb-2 bg-black/60 rounded"
           />
 
           <textarea
             value={form.Trama}
-            onChange={(e) => setForm(p => ({ ...p, Trama: e.target.value }))}
-            className="w-full p-2 bg-black/60 rounded mb-3"
+            onChange={(e) =>
+              setForm(p => ({ ...p, Trama: e.target.value }))
+            }
+            placeholder="Trama"
+            className="w-full p-2 mb-3 bg-black/60 rounded"
           />
 
           <div className="flex justify-end gap-2">
-            <button onClick={onClose} className="px-3 py-1 bg-white/10 rounded">Annulla</button>
+            <button onClick={onClose} className="px-3 py-1 bg-white/10 rounded">
+              Annulla
+            </button>
             <button onClick={handleSave} className="px-3 py-1 bg-yellow-400 text-black rounded">
               Salva
             </button>
