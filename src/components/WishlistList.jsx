@@ -41,8 +41,7 @@ export default function WishlistList({ onClose }) {
       />
 
       {/* overlay scuro morbido */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-
+<div className="absolute inset-0 backdrop-blur-md" />
       {/* ✅ PANEL */}
       <div className="relative w-full h-full flex items-center justify-center">
 
