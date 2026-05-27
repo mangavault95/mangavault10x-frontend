@@ -246,7 +246,6 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
       className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-auto"
       onClick={onClose}
     >
-      {/* Sfondo trasparente: si vede il sito sotto */}
       <div className="absolute inset-0" />
 
       <div
@@ -266,8 +265,8 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
                 {form.CoverURL ? (
                   <img
                     src={form.CoverURL}
-                    alt={form.Titolo || "Cover wishlist"}
-                    className="w-full h-full object-cover"
+                    alt={form.Titolo || "cover"}
+                    className="w-full h-full object-contain"
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#111827]/80 to-[#020617]/80 text-zinc-500">
