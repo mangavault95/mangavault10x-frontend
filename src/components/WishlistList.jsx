@@ -70,7 +70,6 @@ export default function WishlistList({ onClose }) {
     try {
       const res = await fetch(`${API_URL}/api/wishlist/all`);
       const data = await res.json().catch(() => []);
-
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Errore caricamento wishlist:", err);
@@ -87,7 +86,7 @@ export default function WishlistList({ onClose }) {
   async function removeItem(id) {
     try {
       await fetch(`${API_URL}/api/wishlist/${id}`, {
-        method: "DELETE"
+        method: "DELETE",
       });
 
       load();
@@ -101,7 +100,7 @@ export default function WishlistList({ onClose }) {
       const res = await fetch(
         `${API_URL}/api/wishlist-actions/purchase/${id}`,
         {
-          method: "POST"
+          method: "POST",
         }
       );
 
@@ -113,7 +112,6 @@ export default function WishlistList({ onClose }) {
       }
 
       await load();
-
       window.dispatchEvent(new Event("favoritesUpdated"));
     } catch (err) {
       console.error("Errore acquisto wishlist:", err);
@@ -132,72 +130,54 @@ export default function WishlistList({ onClose }) {
       CoverURL: m.coverurl || "",
       Costo: 0,
       Editore: "",
-      Valutazione: 0
+      Valutazione: 0,
     });
   }
 
   return (
     <div
-      className="fixed inset-0 z-[999] overflow-y-auto"
+      className="fixed inset-0 z-[999] flex items-center justify-center pointer-events-auto"
       onClick={onClose}
     >
-      {/* AMBIENT BACKGROUND */}
+      {/* Questo NON ha background: il sito resta visibile sotto */}
+      <div className="absolute inset-0" />
+
       <div
-        className="absolute inset-0"
+        className="
+          relative
+          w-[1120px]
+          max-w-[95vw]
+          max-h-[84vh]
+          rounded-3xl
+          overflow-hidden
+          border
+          border-white/10
+          shadow-2xl
+        "
         style={{
-          background: `
-            radial-gradient(circle at top left, rgba(59,130,246,0.16), transparent 34%),
-            radial-gradient(circle at bottom right, rgba(168,85,247,0.18), transparent 38%),
-            linear-gradient(
-              135deg,
-              rgba(8,8,12,0.90),
-              rgba(18,18,28,0.92)
-            )
-          `
+          background:
+            "linear-gradient(180deg, rgba(12,14,30,0.48), rgba(24,18,40,0.38))",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          boxShadow:
+            "0 24px 70px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04)",
         }}
-      />
-
-      {/* GLASS VEIL */}
-      <div className="absolute inset-0 bg-black/52 backdrop-blur-[2px]" />
-
-      <div className="min-h-screen flex items-center justify-center p-8">
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* lieve glow interno, NON sfondo esterno */}
         <div
-          className="
-            relative
-            w-[1120px]
-            max-w-[95vw]
-            max-h-[84vh]
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle at top left, rgba(99,102,241,0.10), transparent 34%), radial-gradient(circle at bottom right, rgba(168,85,247,0.10), transparent 36%)",
+          }}
+        />
 
-            rounded-[32px]
-            overflow-hidden
-
-            manga-detail-card
-
-            border border-white/10
-
-            shadow-[0_25px_80px_rgba(0,0,0,0.55)]
-
-            before:absolute
-            before:inset-0
-            before:pointer-events-none
-            before:bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent_35%)]
-
-            after:absolute
-            after:inset-0
-            after:pointer-events-none
-            after:bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.10),transparent_40%)]
-
-            backdrop-blur-xl
-          "
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="relative z-10">
           {/* HEADER */}
-          <div className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
             <div>
-              <h2 className="text-xl font-extrabold text-white">
-                Wishlist
-              </h2>
-
+              <h2 className="text-xl font-extrabold text-white">Wishlist</h2>
               <p className="text-sm text-zinc-400 mt-1">
                 I manga che vuoi recuperare, modificare o segnare come acquistati.
               </p>
@@ -209,12 +189,9 @@ export default function WishlistList({ onClose }) {
                 className="
                   px-4 py-2 rounded-xl
                   bg-yellow-400 text-black font-semibold
-
                   hover:brightness-110
                   active:scale-95
-
                   transition-all duration-200
-
                   shadow-[0_0_18px_rgba(234,179,8,0.18)]
                   hover:shadow-[0_0_26px_rgba(234,179,8,0.35)]
                 "
@@ -239,7 +216,7 @@ export default function WishlistList({ onClose }) {
           </div>
 
           {/* CONTENT */}
-          <div className="relative z-10 p-6 overflow-y-auto max-h-[calc(84vh-88px)] custom-scrollbar">
+          <div className="p-6 overflow-y-auto max-h-[calc(84vh-88px)] custom-scrollbar">
             {loading ? (
               <div className="text-center text-zinc-400 py-20">
                 Caricamento wishlist...
@@ -249,7 +226,6 @@ export default function WishlistList({ onClose }) {
                 <div className="text-lg font-semibold text-white">
                   Wishlist vuota
                 </div>
-
                 <div className="text-sm mt-2">
                   Clicca su{" "}
                   <span className="text-yellow-400 font-medium">
@@ -265,23 +241,15 @@ export default function WishlistList({ onClose }) {
                     key={m.id}
                     className="
                       group
-
                       rounded-2xl
                       overflow-hidden
-
-                      bg-white/[0.025]
-
-                      border border-white/[0.08]
-
-                      backdrop-blur-lg
-
-                      hover:bg-white/[0.045]
-                      hover:border-white/[0.14]
-
-                      hover:shadow-[0_0_30px_rgba(99,102,241,0.12)]
-
+                      border border-white/[0.09]
+                      bg-white/[0.035]
+                      backdrop-blur-md
+                      hover:bg-white/[0.055]
+                      hover:border-yellow-400/25
+                      hover:shadow-[0_0_28px_rgba(234,179,8,0.10)]
                       transition-all duration-300
-
                       cursor-pointer
                     "
                     onClick={() => openDetail(m)}
@@ -290,7 +258,6 @@ export default function WishlistList({ onClose }) {
                     <div className="relative h-[250px] overflow-hidden">
                       {m.coverurl ? (
                         <>
-                          {/* AMBIENT FILL */}
                           <img
                             src={m.coverurl}
                             alt=""
@@ -307,7 +274,6 @@ export default function WishlistList({ onClose }) {
 
                           <div className="absolute inset-0 bg-black/10" />
 
-                          {/* REAL COVER */}
                           <img
                             src={m.coverurl}
                             alt={m.titolo || "cover"}
@@ -315,14 +281,13 @@ export default function WishlistList({ onClose }) {
                               relative z-10
                               w-full h-full
                               object-contain
-
                               transition-transform duration-300
                               group-hover:scale-[1.02]
                             "
                           />
                         </>
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-zinc-500 text-sm">
+                        <div className="w-full h-full flex items-center justify-center text-zinc-500 text-sm bg-white/[0.02]">
                           Nessuna cover
                         </div>
                       )}
@@ -341,7 +306,7 @@ export default function WishlistList({ onClose }) {
                           display: "-webkit-box",
                           WebkitLineClamp: 2,
                           WebkitBoxOrient: "vertical",
-                          overflow: "hidden"
+                          overflow: "hidden",
                         }}
                       >
                         {m.titolo || "Titolo sconosciuto"}
@@ -356,7 +321,6 @@ export default function WishlistList({ onClose }) {
 
                       {/* ACTIONS */}
                       <div className="mt-3 flex justify-between gap-2">
-                        {/* EDIT */}
                         <button
                           title="Modifica"
                           onClick={(e) => {
@@ -366,32 +330,23 @@ export default function WishlistList({ onClose }) {
                           className="
                             flex items-center justify-center
                             w-10 h-10 rounded-xl
-
                             bg-white/[0.04]
                             backdrop-blur-sm
-
                             border border-white/[0.08]
-
                             text-zinc-400
-
                             transition-all duration-200 ease-out
-
                             hover:-translate-y-[1px]
                             hover:scale-[1.03]
-
                             hover:text-yellow-400
                             hover:border-yellow-400/35
                             hover:bg-yellow-400/10
-
                             hover:shadow-[0_0_14px_rgba(234,179,8,0.28)]
-
                             active:scale-95
                           "
                         >
                           <EditIcon />
                         </button>
 
-                        {/* DELETE */}
                         <button
                           title="Elimina"
                           onClick={(e) => {
@@ -401,32 +356,23 @@ export default function WishlistList({ onClose }) {
                           className="
                             flex items-center justify-center
                             w-10 h-10 rounded-xl
-
                             bg-white/[0.04]
                             backdrop-blur-sm
-
                             border border-white/[0.08]
-
                             text-zinc-400
-
                             transition-all duration-200 ease-out
-
                             hover:-translate-y-[1px]
                             hover:scale-[1.03]
-
                             hover:text-red-400
                             hover:border-red-400/35
                             hover:bg-red-400/10
-
                             hover:shadow-[0_0_14px_rgba(248,113,113,0.28)]
-
                             active:scale-95
                           "
                         >
                           <TrashIcon />
                         </button>
 
-                        {/* PURCHASE */}
                         <button
                           title="Segna come acquistato"
                           onClick={(e) => {
@@ -436,25 +382,17 @@ export default function WishlistList({ onClose }) {
                           className="
                             flex items-center justify-center
                             w-10 h-10 rounded-xl
-
                             bg-white/[0.04]
                             backdrop-blur-sm
-
                             border border-white/[0.08]
-
                             text-zinc-400
-
                             transition-all duration-200 ease-out
-
                             hover:-translate-y-[1px]
                             hover:scale-[1.03]
-
                             hover:text-green-400
                             hover:border-green-400/35
                             hover:bg-green-400/10
-
                             hover:shadow-[0_0_14px_rgba(74,222,128,0.28)]
-
                             active:scale-95
                           "
                         >
@@ -492,10 +430,7 @@ export default function WishlistList({ onClose }) {
       )}
 
       {selected && (
-        <MangaDetail
-          manga={selected}
-          onClose={() => setSelected(null)}
-        />
+        <MangaDetail manga={selected} onClose={() => setSelected(null)} />
       )}
     </div>
   );
