@@ -174,6 +174,43 @@ function CloseIcon() {
   );
 }
 
+function SessionPreview({ session, label, onClick }) {
+  if (!session) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex flex-col items-center gap-2 transition-all duration-200 hover:scale-[1.03]"
+      title={session.titolo || "Sessione lettura"}
+    >
+      <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+        {label}
+      </div>
+
+      <div className="w-14 h-20 rounded-2xl overflow-hidden border border-white/[0.08] bg-white/[0.04] shadow-[0_12px_28px_rgba(0,0,0,0.18)] relative">
+        {session.coverurl ? (
+          <img
+            src={session.coverurl}
+            alt={session.titolo || "Cover manga"}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-500">
+            No cover
+          </div>
+        )}
+
+        <div className="absolute inset-0 bg-black/10" />
+      </div>
+
+      <div className="w-16 text-[10px] text-zinc-400 text-center truncate">
+        {session.titolo || "Manga"}
+      </div>
+    </button>
+  );
+}
+
 /* -------------------- COMPONENT -------------------- */
 
 export default function Sidebar({ open = true }) {
@@ -378,7 +415,6 @@ export default function Sidebar({ open = true }) {
           boxShadow: "18px 0 55px rgba(0,0,0,0.34)"
         }}
       >
-        {/* ambient lights */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-10 -right-12 w-32 h-32 rounded-full bg-blue-500/12 blur-3xl" />
           <div className="absolute bottom-20 -left-10 w-28 h-28 rounded-full bg-violet-500/10 blur-3xl" />
@@ -542,9 +578,9 @@ export default function Sidebar({ open = true }) {
               </div>
             </div>
 
-            {/* main jukebox row */}
+            {/* jukebox row */}
             <div className="grid grid-cols-[70px_minmax(0,1fr)_70px] items-center gap-3">
-              {/* left switch */}
+              {/* left */}
               <div className="flex flex-col items-center justify-center gap-2">
                 {prevSession ? (
                   <>
@@ -569,7 +605,7 @@ export default function Sidebar({ open = true }) {
                 )}
               </div>
 
-              {/* current manga */}
+              {/* current */}
               <div className="flex items-center gap-3 min-w-0">
                 <button
                   type="button"
@@ -591,7 +627,11 @@ export default function Sidebar({ open = true }) {
                   title="Apri dettaglio"
                 >
                   {activeSession.coverurl ? (
-                    {activeSession.coverurl}
+                    <img
+                      src={activeSession.coverurl}
+                      alt={activeSession.titolo || "Cover manga"}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-500">
                       No cover
@@ -647,7 +687,7 @@ export default function Sidebar({ open = true }) {
                 </div>
               </div>
 
-              {/* right switch */}
+              {/* right */}
               <div className="flex flex-col items-center justify-center gap-2">
                 {nextSession ? (
                   <>
