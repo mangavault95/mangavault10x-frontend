@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useState } from "react";import { useEffect, useMemo, useState }(a.DataAggiunta || a.created_at || 0).getTime();
-        const db = new Date(b.DataAggiunta || b.created_at || 0).getTime();
+import { useEffect, useMemo, useState } from "react";
+
+export default function TopHero({ manga = [], onSelect }) {
+  const latest = useMemo(() => {
+    return [...manga]
+      .sort((a, b) => {
+        const da = new Date(a?.DataAggiunta || a?.created_at || 0).getTime();
+        const db = new Date(b?.DataAggiunta || b?.created_at || 0).getTime();
 
         if (Number.isNaN(da) || Number.isNaN(db)) {
-          return Number(b.ID || 0) - Number(a.ID || 0);
+          return Number(b?.ID || 0) - Number(a?.ID || 0);
         }
 
         return db - da;
@@ -40,39 +46,33 @@ import { useEffect, useMemo, useState } from "react";import { useEffect, useMemo
 
   return (
     <section
-      className="
-        relative
-        overflow-hidden
-        rounded-[32px]
-        border border-white/10
-        shadow-2xl
-      "
+      className="relative overflow-hidden rounded-[32px] border border-white/10 shadow-2xl"
       style={{
         background:
           "linear-gradient(180deg, rgba(16,20,40,0.62), rgba(24,18,40,0.52))",
         backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)"
+        WebkitBackdropFilter: "blur(10px)",
       }}
     >
-      {/* AMBIENT LIGHTS */}
+      {/* luci ambientali */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(circle at top left, rgba(99,102,241,0.14), transparent 32%), radial-gradient(circle at bottom right, rgba(168,85,247,0.12), transparent 34%)"
+            "radial-gradient(circle at top left, rgba(99,102,241,0.14), transparent 32%), radial-gradient(circle at bottom right, rgba(168,85,247,0.12), transparent 34%)",
         }}
       />
 
-      {/* SOFT COVER GLOW on right */}
+      {/* glow cover a destra */}
       {currentManga?.CoverURL && (
         <div className="absolute right-0 top-0 h-full w-[42%] overflow-hidden pointer-events-none">
           <img
             src={currentManga.CoverURL}
             alt=""
             aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-20"
+            className="w-full h-full object-cover opacity-20 blur-[2px] scale-110"
           />
-          <div className="absolute inset-0 bg-gradient-to-l from-black/10 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-l from-black/15 via-transparent to-transparent" />
         </div>
       )}
 
@@ -85,9 +85,10 @@ import { useEffect, useMemo, useState } from "react";import { useEffect, useMemo
             </div>
 
             <div
-              className={`transition-opacity duration-300 ${
-                fade ? "opacity-100" : "opacity-0"
-              }`}
+              className={
+                "transition-opacity duration-300 " +
+                (fade ? "opacity-100" : "opacity-0")
+              }
             >
               <h1 className="text-4xl font-black text-white leading-tight truncate">
                 {currentManga?.Titolo || "Titolo sconosciuto"}
@@ -117,7 +118,7 @@ import { useEffect, useMemo, useState } from "react";import { useEffect, useMemo
                 style={{
                   display: "-webkit-box",
                   WebkitLineClamp: 3,
-                  WebkitBoxOrient: "vertical"
+                  WebkitBoxOrient: "vertical",
                 }}
               >
                 {currentManga?.Trama || "Nessuna descrizione disponibile."}
@@ -129,14 +130,7 @@ import { useEffect, useMemo, useState } from "react";import { useEffect, useMemo
             <button
               type="button"
               onClick={() => onSelect?.(currentManga)}
-              className="
-                px-5 py-2.5 rounded-xl
-                bg-yellow-400 text-black font-semibold
-                hover:brightness-110 active:scale-95
-                transition-all duration-200
-                shadow-[0_0_20px_rgba(234,179,8,0.25)]
-                hover:shadow-[0_0_28px_rgba(234,179,8,0.38)]
-              "
+              className="px-5 py-2.5 rounded-xl bg-yellow-400 text-black font-semibold hover:brightness-110 active:scale-95 transition-all duration-200 shadow-[0_0_20px_rgba(234,179,8,0.25)] hover:shadow-[0_0_28px_rgba(234,179,8,0.38)]"
             >
               Dettagli
             </button>
@@ -151,12 +145,13 @@ import { useEffect, useMemo, useState } from "react";import { useEffect, useMemo
                   key={i}
                   type="button"
                   onClick={() => setCurrent(i)}
-                  className={`h-2 rounded-full transition-all duration-200 ${
-                    i === current
-                      ? "w-8 bg-yellow-400 shadow-[0_0_12px_rgba(234,179,8,0.4)]"
-                      : "w-2 bg-white/20 hover:bg-white/40"
-                  }`}
                   aria-label={`Vai al manga ${i + 1}`}
+                  className={
+                    "h-2 rounded-full transition-all duration-200 " +
+                    (i === current
+                      ? "w-8 bg-yellow-400 shadow-[0_0_12px_rgba(234,179,8,0.4)]"
+                      : "w-2 bg-white/20 hover:bg-white/40")
+                  }
                 />
               ))}
             </div>
@@ -170,8 +165,8 @@ import { useEffect, useMemo, useState } from "react";import { useEffect, useMemo
               {currentManga?.CoverURL ? (
                 <img
                   src={currentManga.CoverURL}
-                  alt={currentManga.Titolo || "Cover manga"}
-                  className="w-full h-full object-cover"
+                  alt={currentManga?.Titolo || "Cover manga"}
+                  className="w-full h-full object-contain"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-zinc-500 text-xs">
@@ -188,20 +183,21 @@ import { useEffect, useMemo, useState } from "react";import { useEffect, useMemo
           <div className="flex justify-end gap-2 mt-4">
             {latest.slice(0, 4).map((m, i) => (
               <button
-                key={m.ID || `${m.Titolo}-${i}`}
+                key={m?.ID || `${m?.Titolo || "manga"}-${i}`}
                 type="button"
                 onClick={() => setCurrent(i)}
-                className={`w-14 h-20 rounded-xl overflow-hidden border transition-all ${
-                  i === current
+                title={m?.Titolo || "Manga"}
+                className={
+                  "w-14 h-20 rounded-xl overflow-hidden border transition-all " +
+                  (i === current
                     ? "border-yellow-400 shadow-[0_0_16px_rgba(234,179,8,0.35)]"
-                    : "border-white/10 opacity-70 hover:opacity-100"
-                }`}
-                title={m.Titolo || "Manga"}
+                    : "border-white/10 opacity-70 hover:opacity-100")
+                }
               >
-                {m.CoverURL ? (
+                {m?.CoverURL ? (
                   <img
                     src={m.CoverURL}
-                    alt={m.Titolo || "Cover manga"}
+                    alt={m?.Titolo || "Cover manga"}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -215,8 +211,3 @@ import { useEffect, useMemo, useState } from "react";import { useEffect, useMemo
     </section>
   );
 }
-
-export default function TopHero({ manga = [], onSelect }) {
-  const latest = useMemo(() => {
-    return [...(manga || [])]
-      .sort((a, b) => {
