@@ -249,12 +249,7 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
       <div className="absolute inset-0" />
 
       <div
-        className="
-          relative w-[980px] max-w-[94vw] max-h-[88vh]
-          rounded-3xl border border-white/10 shadow-2xl
-          manga-detail-card backdrop-blur-xl
-          overflow-hidden
-        "
+        className="relative w-[980px] max-w-[94vw] max-h-[88vh] rounded-3xl border border-white/10 shadow-2xl manga-detail-card overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex">
@@ -304,12 +299,7 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="
-                mt-4 w-full px-4 py-2 rounded-xl
-                bg-white/8 border border-white/10
-                text-sm text-white hover:bg-white/12
-                transition-all duration-200
-              "
+              className="mt-4 w-full px-4 py-2 rounded-xl bg-white/8 border border-white/10 text-sm text-white hover:bg-white/12 transition-all duration-200"
             >
               Cambia cover locale
             </button>
@@ -340,10 +330,7 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="
-                    px-3 py-2 rounded-lg bg-white/8 border border-white/10
-                    text-sm hover:bg-white/12 transition
-                  "
+                  className="px-3 py-2 rounded-lg bg-white/8 border border-white/10 text-sm hover:bg-white/12 transition"
                 >
                   Reset
                 </button>
@@ -351,10 +338,7 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="
-                    px-3 py-2 rounded-lg bg-red-600/90
-                    text-sm hover:bg-red-600 transition
-                  "
+                  className="px-3 py-2 rounded-lg bg-red-600/90 text-sm hover:bg-red-600 transition"
                 >
                   Chiudi
                 </button>
@@ -378,27 +362,14 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
                       }
                     }}
                     placeholder="Es. Cross Game, Berserk, Monster..."
-                    className="
-                      flex-1 px-4 py-3 rounded-xl
-                      bg-black/35 border border-white/10
-                      text-sm outline-none
-                      focus:border-yellow-400/60
-                      focus:shadow-[0_0_14px_rgba(234,179,8,0.18)]
-                      transition
-                    "
+                    className="flex-1 px-4 py-3 rounded-xl bg-black/35 border border-white/10 text-sm outline-none focus:border-yellow-400/60 focus:shadow-[0_0_14px_rgba(234,179,8,0.18)] transition"
                   />
 
                   <button
                     type="button"
                     onClick={() => searchManga(query)}
                     disabled={loading}
-                    className="
-                      px-4 py-3 rounded-xl
-                      bg-yellow-400 text-black font-semibold text-sm
-                      hover:brightness-110 active:scale-95
-                      disabled:opacity-60 disabled:cursor-not-allowed
-                      transition-all duration-200
-                    "
+                    className="px-4 py-3 rounded-xl bg-yellow-400 text-black font-semibold text-sm hover:brightness-110 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
                   >
                     {loading ? "Cerco..." : "Cerca"}
                   </button>
@@ -425,12 +396,7 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
                   value={form.Titolo}
                   onChange={(e) => updateField("Titolo", e.target.value)}
                   placeholder="Titolo"
-                  className="
-                    w-full mt-1 px-3 py-2 rounded-lg
-                    bg-black/35 border border-white/10
-                    outline-none focus:border-yellow-400/50
-                    transition
-                  "
+                  className="w-full mt-1 px-3 py-2 rounded-lg bg-black/35 border border-white/10 outline-none focus:border-yellow-400/50 transition"
                 />
               </label>
 
@@ -440,12 +406,7 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
                   value={form.Autore}
                   onChange={(e) => updateField("Autore", e.target.value)}
                   placeholder="Autore"
-                  className="
-                    w-full mt-1 px-3 py-2 rounded-lg
-                    bg-black/35 border border-white/10
-                    outline-none focus:border-yellow-400/50
-                    transition
-                  "
+                  className="w-full mt-1 px-3 py-2 rounded-lg bg-black/35 border border-white/10 outline-none focus:border-yellow-400/50 transition"
                 />
               </label>
 
@@ -456,12 +417,7 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
                   value={form.VolumiTotali}
                   onChange={(e) => updateField("VolumiTotali", e.target.value)}
                   placeholder="Volumi totali"
-                  className="
-                    w-full mt-1 px-3 py-2 rounded-lg
-                    bg-black/35 border border-white/10
-                    outline-none focus:border-yellow-400/50
-                    transition
-                  "
+                  className="w-full mt-1 px-3 py-2 rounded-lg bg-black/35 border border-white/10 outline-none focus:border-yellow-400/50 transition"
                 />
               </label>
 
@@ -471,12 +427,7 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
                   value={form.Genere}
                   onChange={(e) => updateField("Genere", e.target.value)}
                   placeholder="Drama, Mystery..."
-                  className="
-                    w-full mt-1 px-3 py-2 rounded-lg
-                    bg-black/35 border border-white/10
-                    outline-none focus:border-yellow-400/50
-                    transition
-                  "
+                  className="w-full mt-1 px-3 py-2 rounded-lg bg-black/35 border border-white/10 outline-none focus:border-yellow-400/50 transition"
                 />
               </label>
 
@@ -486,12 +437,7 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
                   value={form.CoverURL}
                   onChange={(e) => updateField("CoverURL", e.target.value)}
                   placeholder="https://..."
-                  className="
-                    w-full mt-1 px-3 py-2 rounded-lg
-                    bg-black/35 border border-white/10
-                    outline-none focus:border-yellow-400/50
-                    transition
-                  "
+                  className="w-full mt-1 px-3 py-2 rounded-lg bg-black/35 border border-white/10 outline-none focus:border-yellow-400/50 transition"
                 />
               </label>
 
@@ -501,12 +447,7 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
                   value={form.DoveComprare}
                   onChange={(e) => updateField("DoveComprare", e.target.value)}
                   placeholder="Amazon, Star Shop, eBay..."
-                  className="
-                    w-full mt-1 px-3 py-2 rounded-lg
-                    bg-black/35 border border-white/10
-                    outline-none focus:border-yellow-400/50
-                    transition
-                  "
+                  className="w-full mt-1 px-3 py-2 rounded-lg bg-black/35 border border-white/10 outline-none focus:border-yellow-400/50 transition"
                 />
               </label>
 
@@ -516,13 +457,7 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
                   value={form.Trama}
                   onChange={(e) => updateField("Trama", e.target.value)}
                   placeholder="Descrizione del manga..."
-                  className="
-                    w-full mt-1 px-3 py-2 rounded-lg h-28
-                    bg-black/35 border border-white/10
-                    outline-none focus:border-yellow-400/50
-                    custom-scrollbar
-                    transition resize-none
-                  "
+                  className="w-full mt-1 px-3 py-2 rounded-lg h-28 bg-black/35 border border-white/10 outline-none focus:border-yellow-400/50 custom-scrollbar transition resize-none"
                 />
               </label>
             </div>
@@ -531,12 +466,7 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="
-                  px-4 py-2 rounded-xl
-                  bg-white/8 border border-white/10
-                  text-white hover:bg-white/12
-                  transition-all duration-200
-                "
+                className="px-4 py-2 rounded-xl bg-white/8 border border-white/10 text-white hover:bg-white/12 transition-all duration-200"
               >
                 Annulla
               </button>
@@ -545,16 +475,7 @@ export default function WishlistModal({ onClose, onSaved, initialData }) {
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="
-                  px-5 py-2 rounded-xl
-                  bg-yellow-400 text-black font-semibold
-                  hover:brightness-110
-                  active:scale-95
-                  disabled:opacity-60 disabled:cursor-not-allowed
-                  transition-all duration-200
-                  shadow-[0_0_18px_rgba(234,179,8,0.18)]
-                  hover:shadow-[0_0_26px_rgba(234,179,8,0.35)]
-                "
+                className="px-5 py-2 rounded-xl bg-yellow-400 text-black font-semibold hover:brightness-110 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 shadow-[0_0_18px_rgba(234,179,8,0.18)] hover:shadow-[0_0_26px_rgba(234,179,8,0.35)]"
               >
                 {saving ? "Salvataggio..." : isEditing ? "Salva modifiche" : "Aggiungi"}
               </button>
