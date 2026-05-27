@@ -6,7 +6,34 @@ import StatsPanel from "./StatsPanel";
 function StarIcon({ className = "w-5 h-5" }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor">
-     none"      <path d="M12 2.7 14.9 8.6l6.5.95-4.7 4.58 1.1 6.47L12 17.55 6.2 20.6l1.1-6.47-4.7-4.58 6.5-.95L12 2.7Z" />
+      <path d="M12 2.7 14.9 8.6l6.5.95-4.7 4.58 1.1 6.47L12 17.55 6.2 20.6l1.1-6.47-4.7-4.58 6.5-.95L12 2.7Z" />
+    </svg>
+  );
+}
+
+function ClockIcon({ className = "w-5 h-5" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5v5l3.2 2" />
+    </svg>
+  );
+}
+
+function CalendarIcon({ className = "w-5 h-5" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
       stroke="currentColor"
       strokeWidth="1.9"
       strokeLinecap="round"
@@ -63,8 +90,7 @@ function MinusIcon() {
 
 function PlusIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
+    <24 24"    <svg
       className="w-4 h-4"
       fill="none"
       stroke="currentColor"
@@ -111,7 +137,9 @@ export default function Sidebar({ open = true }) {
 
   function loadCurrentReading() {
     try {
-      const selected = JSON.parse(localStorage.getItem("mv_selected_manga") || "null");
+      const selected = JSON.parse(
+        localStorage.getItem("mv_selected_manga") || "null"
+      );
       const vol = localStorage.getItem("mv_current_vol") || "";
 
       setCurrentReading(selected);
@@ -234,6 +262,7 @@ export default function Sidebar({ open = true }) {
         boxShadow: "18px 0 55px rgba(0,0,0,0.34)"
       }}
     >
+      {/* ambient lights */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -top-10 -right-12 w-32 h-32 rounded-full bg-blue-500/12 blur-3xl" />
         <div className="absolute bottom-20 -left-10 w-28 h-28 rounded-full bg-violet-500/10 blur-3xl" />
@@ -287,7 +316,11 @@ export default function Sidebar({ open = true }) {
       </div>
 
       {/* NAV */}
-      <nav className={`relative z-10 flex flex-col gap-3 ${open ? "" : "items-center w-full"}`}>
+      <nav
+        className={`relative z-10 flex flex-col gap-3 ${
+          open ? "" : "items-center w-full"
+        }`}
+      >
         {[
           {
             key: "favorites",
@@ -330,13 +363,18 @@ export default function Sidebar({ open = true }) {
               ${open ? "px-4 py-3" : "p-3 justify-center"}
             `}
           >
-            <span className={`${item.accent} transition-transform duration-200 group-hover:scale-110`}>
+            <span
+              className={`${item.accent} transition-transform duration-200 group-hover:scale-110`}
+            >
               {item.icon}
             </span>
 
             {open && (
               <div className="flex-1 flex justify-between items-center min-w-0">
-                <span className="text-sm font-medium text-white">{item.label}</span>
+                <span className="text-sm font-medium text-white">
+                  {item.label}
+                </span>
+
                 {typeof item.count === "number" && (
                   <span className="text-xs text-zinc-400">{item.count}</span>
                 )}
@@ -412,12 +450,7 @@ export default function Sidebar({ open = true }) {
                 </div>
 
                 <div className="text-xs text-zinc-400 truncate">
-                  {currentReading.Autore || "Autore sconosciuto"}
-                </div>
-              </button>
-
-              <div className="mt-3">
-                <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
+                  {currentReading.Autore || "Auten text-xs text-zinc-400 mb-2">
                   <span>Vol {readingOwned}</span>
                   <span>{readingTotal || "?"}</span>
                 </div>
@@ -460,6 +493,7 @@ export default function Sidebar({ open = true }) {
         </section>
       )}
 
+      {/* STATS */}
       {open && (
         <div className="relative z-10 mt-auto">
           <StatsPanel />
@@ -468,29 +502,3 @@ export default function Sidebar({ open = true }) {
     </aside>
   );
 }
-    </svg>
-  );
-}
-
-function ClockIcon({ className = "w-5 h-5" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 7.5v5l3.2 2" />
-    </svg>
-  );
-}
-
-function CalendarIcon({ className = "w-5 h-5" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
