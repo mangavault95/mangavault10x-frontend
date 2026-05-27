@@ -24,8 +24,9 @@ export default function WishlistList({ onClose }) {
   // 🔥 PRENDE UNA COVER PER LO SFONDO
   const bgCover = items[0]?.coverurl;
 
-  return (
-    <div className="fixed inset-0 z-[999]" onClick={onClose}>
+return (
+  <div className="fixed inset-0 z-[999] pointer-events-none">
+
 
       {/* ✅ BACKGROUND stile MangaDetail */}
       <div
@@ -40,10 +41,9 @@ export default function WishlistList({ onClose }) {
         }}
       />
 
-      {/* overlay scuro morbido */}
-<div className="absolute inset-0 backdrop-blur-md" />
+
       {/* ✅ PANEL */}
-      <div className="relative w-full h-full flex items-center justify-center">
+<div className="relative w-full h-full flex items-center justify-center pointer-events-auto">
 
         <div
           className="w-[1100px] max-h-[85vh] rounded-3xl shadow-2xl border border-white/10 flex flex-col manga-detail-card"
