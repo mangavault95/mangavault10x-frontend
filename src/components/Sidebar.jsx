@@ -3,16 +3,6 @@ import StatsPanel from "./StatsPanel";
 
 /* -------------------- ICONS -------------------- */
 
-function LogoMark() {
-  return (
-    <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-300 via-yellow-400 to-yellow-700 shadow-[0_0_28px_rgba(250,204,21,0.42)] overflow-hidden">
-      <div className="absolute inset-[2px] rounded-[14px] bg-gradient-to-br from-yellow-300/80 to-yellow-600/80" />
-      <div className="absolute -top-4 -right-4 w-10 h-10 rounded-full bg-white/35 blur-xl" />
-      <div className="absolute bottom-2 left-2 w-5 h-1 rounded-full bg-black/25" />
-    </div>
-  );
-}
-
 function StarIcon({ className = "w-6 h-6" }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor">
@@ -196,12 +186,6 @@ export default function Sidebar({ open = true }) {
     return manga.filter((m) => favorites.includes(m.ID));
   }, [manga, favorites]);
 
-  const latest = useMemo(() => {
-    return [...manga]
-      .sort((a, b) => new Date(b.DataAggiunta) - new Date(a.DataAggiunta))
-      .slice(0, 3);
-  }, [manga]);
-
   const toggleFavorite = (id) => {
     const updated = favorites.includes(id)
       ? favorites.filter((f) => f !== id)
@@ -302,24 +286,49 @@ export default function Sidebar({ open = true }) {
       `}
     >
       {/* LOGO */}
-      <div className={`flex items-center ${open ? "gap-4" : "justify-center"}`}>
-        <button
-          onClick={onLogoToggle}
-          title={open ? "Chiudi sidebar" : "Apri sidebar"}
-          className="shrink-0 transition-transform duration-200 hover:scale-105 active:scale-95"
-        >
-          <LogoMark />
-        </button>
-
-        {open && (
+      <div
+        className={`
+          flex items-start
+          ${open ? "justify-between gap-3" : "justify-center"}
+        `}
+      >
+        {open ? (
           <div className="min-w-0">
-            <div className="text-2xl font-black tracking-tight text-white leading-none">
+            <div className="text-3xl font-black tracking-tight text-white leading-none">
               MangaVault
             </div>
-            <div className="text-xl font-black tracking-tight text-yellow-400 leading-tight">
+
+            <button
+              onClick={onLogoToggle}
+              className="
+                mt-1 inline-flex items-center
+                text-3xl font-black tracking-tight
+                text-yellow-400
+                hover:text-yellow-300
+                drop-shadow-[0_0_16px_rgba(250,204,21,0.35)]
+                transition-all duration-200
+                active:scale-95
+              "
+              title="Chiudi sidebar"
+            >
               10X
-            </div>
+            </button>
           </div>
+        ) : (
+          <button
+            onClick={onLogoToggle}
+            title="Apri sidebar"
+            className="
+              text-3xl font-black tracking-tight
+              text-yellow-400
+              drop-shadow-[0_0_16px_rgba(250,204,21,0.35)]
+              hover:text-yellow-300
+              transition-all duration-200
+              active:scale-95
+            "
+          >
+            10X
+          </button>
         )}
       </div>
 
@@ -430,26 +439,33 @@ export default function Sidebar({ open = true }) {
 
       {/* CURRENT READING PLAYER */}
       {open && currentReading && (
-        <section className="mt-4 rounded-[28px] border border-white/[0.08] bg-white/[0.035] p-4 shadow-[0_20px_45px_rgba(0,0,0,0.28)]">
-          <div className="text-[11px] uppercase tracking-[0.18em] text-zinc-500 mb-3">
-            Stai leggendo
+        <section className="rounded-[28px] border border-white/[0.08] bg-white/[0.035] p-4 shadow-[0_20px_45px_rgba(0,0,0,0.28)]">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+              Stai leggendo
+            </div>
+
+            <div className="text-[11px] text-zinc-500">
+              {readingPercent}%
+            </div>
           </div>
 
-          <button
-            onClick={() =>
-              window.dispatchEvent(
-                new CustomEvent("openMangaDetail", {
-                  detail: currentReading
-                })
-              )
-            }
-            className="w-full flex flex-col items-center text-center group"
-          >
-            <div className="relative w-28 h-40 rounded-2xl overflow-hidden bg-black/40 border border-white/10 shadow-2xl">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("openMangaDetail", {
+                    detail: currentReading
+                  })
+                )
+              }
+              className="relative w-20 h-28 shrink-0 rounded-2xl overflow-hidden bg-black/40 border border-white/10 shadow-2xl group"
+              title="Apri dettaglio"
+            >
               {currentReading.CoverURL ? (
                 <img
                   src={currentReading.CoverURL}
-                  alt={currentReading.Titolo || "Cover manga corrente"}
+                  alt={currentReading.Titolo || "Cover manga"}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -461,30 +477,41 @@ export default function Sidebar({ open = true }) {
               <div className="absolute inset-0 pointer-events-none">
                 <div className="cover-shine" />
               </div>
-            </div>
+            </button>
 
-            <div className="mt-3 max-w-full">
-              <div className="text-base font-bold text-white truncate">
-                {currentReading.Titolo}
+            <div className="min-w-0 flex-1">
+              <button
+                onClick={() =>
+                  window.dispatchEvent(
+                    new CustomEvent("openMangaDetail", {
+                      detail: currentReading
+                    })
+                  )
+                }
+                className="text-left w-full"
+              >
+                <div className="text-base font-bold text-white truncate">
+                  {currentReading.Titolo}
+                </div>
+
+                <div className="text-xs text-zinc-400 truncate">
+                  {currentReading.Autore || "Autore sconosciuto"}
+                </div>
+              </button>
+
+              <div className="mt-3">
+                <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
+                  <span>Vol {readingOwned}</span>
+                  <span>{readingTotal || "?"}</span>
+                </div>
+
+                <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-yellow-300 to-yellow-500 shadow-[0_0_12px_rgba(250,204,21,0.38)] transition-all duration-300"
+                    style={{ width: `${readingPercent}%` }}
+                  />
+                </div>
               </div>
-
-              <div className="text-xs text-zinc-400 truncate">
-                {currentReading.Autore || "Autore sconosciuto"}
-              </div>
-            </div>
-          </button>
-
-          <div className="mt-4">
-            <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
-              <span>Vol {readingOwned}</span>
-              <span>{readingTotal || "?"}</span>
-            </div>
-
-            <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-yellow-300 to-yellow-500 shadow-[0_0_12px_rgba(250,204,21,0.38)] transition-all duration-300"
-                style={{ width: `${readingPercent}%` }}
-              />
             </div>
           </div>
 
@@ -499,7 +526,7 @@ export default function Sidebar({ open = true }) {
 
             <button
               onClick={saveCurrentReading}
-              className="w-16 h-16 rounded-full bg-yellow-400 text-black shadow-[0_0_28px_rgba(250,204,21,0.35)] hover:brightness-110 active:scale-95 transition flex items-center justify-center"
+              className="w-14 h-14 rounded-full bg-yellow-400 text-black shadow-[0_0_28px_rgba(250,204,21,0.35)] hover:brightness-110 active:scale-95 transition flex items-center justify-center"
               title="Salva avanzamento"
             >
               <SaveIcon />
@@ -512,64 +539,6 @@ export default function Sidebar({ open = true }) {
             >
               <PlusIcon />
             </button>
-          </div>
-        </section>
-      )}
-
-      {/* LATEST */}
-      {open && (
-        <section className="mt-2">
-          <p className="text-xs uppercase tracking-[0.18em] text-zinc-500 mb-3">
-            Ultimi aggiunti
-          </p>
-
-          <div className="space-y-2">
-            {latest.map((m) => (
-              <div
-                key={m.ID}
-                onClick={() =>
-                  window.dispatchEvent(
-                    new CustomEvent("openMangaDetail", {
-                      detail: m
-                    })
-                  )
-                }
-                className="group flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer bg-white/[0.035] border border-white/[0.05] hover:bg-white/[0.065] hover:border-yellow-400/20 transition-all"
-              >
-                <img
-                  src={m.CoverURL || "https://placehold.co/60x90"}
-                  className="w-11 h-14 rounded-xl object-cover flex-shrink-0"
-                  alt={m.Titolo || "Cover manga"}
-                />
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium truncate text-white">
-                      {m.Titolo}
-                    </span>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(m.ID);
-                      }}
-                      className="text-yellow-400 opacity-80 hover:opacity-100 transition"
-                      title={
-                        favorites.includes(m.ID)
-                          ? "Rimuovi preferito"
-                          : "Aggiungi ai preferiti"
-                      }
-                    >
-                      <StarIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="text-xs text-zinc-500 truncate">
-                    {m.Autore}
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </section>
       )}
