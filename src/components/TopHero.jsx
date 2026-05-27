@@ -1,21 +1,30 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function TopHero({ manga, onSelect }) {
+  const latest = useMemo(() => {
+    return [...(manga || [])]
+      .sort((a, b) => {
+        const da = new Date(a.DataAggiunta || a.created_at || 0).getTime();
+        const db = new Date(b.DataAggiunta || b.created_at || 0).getTime();
+        return db - da;
+      })
+      .slice(0, 5);
+  }, [manga]);
+
   const [current, setCurrent] = useState(0);
   const [fade, setFade] = useState(true);
-
-  const latest = (manga || []).slice(0, 3);
 
   useEffect(() => {
     if (!latest.length) return;
 
     const interval = setInterval(() => {
       setFade(false);
+
       setTimeout(() => {
         setCurrent((prev) => (prev + 1) % latest.length);
         setFade(true);
-      }, 250);
-    }, 5000);
+      }, 240);
+    }, 5200);
 
     return () => clearInterval(interval);
   }, [latest.length]);
@@ -25,71 +34,136 @@ export default function TopHero({ manga, onSelect }) {
   const currentManga = latest[current];
 
   return (
-    <div className="
-      relative w-full h-[340px]
-      rounded-2xl overflow-hidden
-      bg-[#141414]
-      border border-white/10
-      shadow-[0_0_40px_rgba(0,0,0,0.6)]
-      hover:shadow-[0_0_60px_rgba(250,204,21,0.2)]
-      transition
-    ">
-
-      {/* BG */}
-      <img
-        src={currentManga?.CoverURL || "https://placehold.co/1200x400"}
-        className="absolute inset-0 w-full h-full object-cover opacity-20 blur-sm scale-110"
+    <section className="relative overflow-hidden rounded-[32px] border border-white/10 shadow-2xl manga-detail-card">
+      {/* BACKGROUND */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: currentManga?.CoverURL
+            ? `linear-gradient(135deg, rgba(10,10,10,0.90), rgba(24,18,40,0.84)), url(${currentManga.CoverURL})`
+            : "linear-gradient(135deg, rgba(10,10,10,0.90), rgba(24,18,40,0.84))",
+          backgroundSize: "160px",
+          backgroundRepeat: "repeat",
+          opacity: 0.28
+        }}
       />
 
-      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
+      <div className="absolute inset-0 bg-black/35" />
 
-      <div className={`relative z-10 h-full flex items-center px-10 transition-opacity duration-300 ${fade ? "opacity-100" : "opacity-0"}`}>
+      <div className="relative z-10 px-8 py-7 flex items-center gap-8">
+        {/* LEFT TEXT */}
+        <div className="flex-1 min-w-0">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400/15 border border-yellow-400/20 text-yellow-300 text-xs font-semibold mb-4">
+            Ultimi aggiunti
+          </div>
 
-        <img
-          src={currentManga?.CoverURL || "https://placehold.co/300x450"}
-          className="w-40 h-[260px] object-cover rounded-xl shadow-lg"
-        />
-
-        <div className="ml-8 max-w-xl">
-
-          <h2 className="text-3xl font-bold text-white mb-2">
-            {currentManga?.Titolo}
-          </h2>
-
-          <p className="text-sm text-zinc-400 mb-5 line-clamp-3">
-            {(currentManga?.Trama || "").slice(0, 150)}...
-          </p>
-
-          <button
-            onClick={() => onSelect(currentManga)}
-            className="
-              px-6 py-2 rounded-xl
-              bg-yellow-400 text-black font-semibold
-              hover:bg-yellow-300
-              hover:scale-105
-              hover:shadow-[0_0_12px_rgba(250,204,21,0.5)]
-              transition
-            "
+          <div
+            className={`transition-opacity duration-300 ${
+              fade ? "opacity-100" : "opacity-0"
+            }`}
           >
-            ✦ Dettagli
-          </button>
+            <h1 className="text-4xl font-black text-white leading-tight truncate">
+              {currentManga?.Titolo}
+            </h1>
+
+            <p className="text-sm text-zinc-400 mt-1 truncate">
+              {currentManga?.Autore || "Autore sconosciuto"}
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {String(currentManga?.Genere || "")
+                .split(",")
+                .filter(Boolean)
+                .slice(0, 5)
+                .map((g, i) => (
+                  <span
+                    key={i}
+                    className="px-2 py-1 rounded-full bg-white/8 border border-white/10 text-xs text-zinc-300"
+                  >
+                    {g.trim()}
+                  </span>
+                ))}
+            </div>
+
+            <p className="mt-4 max-w-2xl text-sm text-zinc-300 leading-relaxed line-clamp-3">
+              {currentManga?.Trama || "Nessuna descrizione disponibile."}
+            </p>
+
+            <div className="mt-6 flex items-center gap-3">
+              <button
+                onClick={() => onSelect(currentManga)}
+                className="px-5 py-2.5 rounded-xl bg-yellow-400 text-black font-semibold hover:brightness-110 active:scale-95 transition-all duration-200 shadow-[0_0_20px_rgba(234,179,8,0.25)] hover:shadow-[0_0_28px_rgba(234,179,8,0.38)]"
+              >
+                Dettagli
+              </button>
+
+              <div className="text-xs text-zinc-500">
+                {current + 1} / {latest.length}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COVER STACK */}
+        <div className="hidden lg:flex items-center gap-4">
+          <div className="relative w-[150px] h-[220px] rounded-2xl overflow-hidden bg-black/40 border border-white/10 shadow-2xl">
+            {currentManga?.CoverURL ? (
+              <img
+                src={currentManga.CoverURL}
+                alt={currentManga.Titolo || "Cover manga"}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-zinc-500 text-xs">
+                No cover
+              </div>
+            )}
+
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="cover-shine" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2">
+            {latest.slice(0, 3).map((m, i) => (
+              <button
+                key={m.ID || i}
+                onClick={() => setCurrent(i)}
+                className={`
+                  w-14 h-20 rounded-xl overflow-hidden border transition-all
+                  ${
+                    i === current
+                      ? "border-yellow-400 shadow-[0_0_16px_rgba(234,179,8,0.35)]"
+                      : "border-white/10 opacity-60 hover:opacity-100"
+                 .Titolo || "Cover manga"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-black/40" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+      {/* DOTS */}
+      <div className="relative z-10 px-8 pb-5 flex gap-2">
         {latest.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            className={`rounded-full ${
-              i === current
-                ? "w-4 h-4 bg-yellow-400"
-                : "w-3 h-3 bg-white/30"
-            }`}
+            className={`
+              h-2 rounded-full transition-all duration-200
+              ${
+                i === current
+                  ? "w-8 bg-yellow-400 shadow-[0_0_12px_rgba(234,179,8,0.4)]"
+                  : "w-2 bg-white/20 hover:bg-white/40"
+              }
+            `}
           />
         ))}
       </div>
-
-    </div>
+    </section>
   );
 }
