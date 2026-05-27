@@ -6,6 +6,7 @@ import MangaDetail from "../components/MangaDetail";
 import FavoritesModal from "../components/FavoritesModal";
 import HistoryModal from "../components/HistoryModal";
 import WishlistList from "../components/WishlistList";
+import RecordsModal from "../components/RecordsModal";
 import { getManga } from "../services/api";
 import Fuse from "fuse.js";
 
@@ -20,8 +21,8 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showWishlist, setShowWishlist] = useState(false);
+  const [showRecords, setShowRecords] = useState(false);
 
-  // ✅ filtro MangaGrid
   const [activeFilter, setActiveFilter] = useState("all");
 
   function refreshManga() {
@@ -40,8 +41,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
       if (!page) return;
 
       if (page === "records") {
-        setRecordsMode(true);
-        setAdminMode(false);
+        setShowRecords(true);
       } else if (page === "favorites") {
         setShowFavorites(true);
       } else if (page === "history") {
@@ -88,7 +88,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     const fuse = new Fuse(mangaList, {
       keys: ["Titolo", "Autore", "Genere"],
       threshold: 0.3,
-      ignoreLocation: true,
+      ignoreLocation: true
     });
 
     return fuse.search(search).map((r) => r.item);
@@ -100,7 +100,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     { key: "to_complete", label: "Da completare" },
     { key: "completed", label: "Completati" },
     { key: "short", label: "Serie brevi" },
-    { key: "oneshot", label: "One-shot" },
+    { key: "oneshot", label: "One-shot" }
   ];
 
   return (
@@ -143,30 +143,15 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
 
               {openMenu && (
                 <div className="absolute right-0 mt-2 w-44 bg-[#151515]/95 backdrop-blur rounded-xl border border-white/10 shadow-xl z-50">
-                  <button className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f] border-b border-white/5">
-                    Tema
-                  </button>
-
                   <button
                     onClick={() => {
                       setAdminMode(true);
                       setRecordsMode(false);
                       setOpenMenu(false);
                     }}
-                    className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f] border-b border-white/5"
-                  >
-                    Admin
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setRecordsMode(true);
-                      setAdminMode(false);
-                      setOpenMenu(false);
-                    }}
                     className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f]"
                   >
-                    Records
+                    Admin
                   </button>
                 </div>
               )}
@@ -174,7 +159,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
           </div>
         </div>
 
-        {/* ✅ FILTRI MANGAGRID */}
+        {/* FILTRI */}
         <div className="flex flex-wrap items-center gap-2">
           {filterButtons.map((f) => {
             const active = activeFilter === f.key;
@@ -199,7 +184,6 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
           })}
         </div>
 
-        {/* GRID */}
         <MangaGrid
           searchResults={filteredSearch}
           filter={activeFilter === "all" ? undefined : activeFilter}
@@ -223,6 +207,10 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
 
       {showWishlist && (
         <WishlistList onClose={() => setShowWishlist(false)} />
+      )}
+
+      {showRecords && (
+        <RecordsModal onClose={() => setShowRecords(false)} />
       )}
     </div>
   );
