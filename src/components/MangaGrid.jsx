@@ -1,6 +1,6 @@
 export default function MangaGrid({ searchResults = [], filter }) {
   function getOwned(m) {
-    return Number(muti) || 0;
+    return Number(m?.VolumiPosseduti) || 0;
   }
 
   function getTotal(m) {
@@ -11,11 +11,13 @@ export default function MangaGrid({ searchResults = [], filter }) {
   function isCompleted(m) {
     const owned = getOwned(m);
     const total = getTotal(m);
+
     return (!!total && total > 0 && owned >= total) || m?.Concluso === 1;
   }
 
   function isOngoing(m) {
     const total = getTotal(m);
+
     return (
       !isCompleted(m) &&
       (!total || total === 0 || m?.VolumiTotali === "?" || m?.Concluso === 0)
@@ -49,7 +51,7 @@ export default function MangaGrid({ searchResults = [], filter }) {
     }
   }
 
-  const filtered = searchResults.filter(matchesFilter);
+  const filtered = (searchResults || []).filter(matchesFilter);
 
   function openDetail(manga) {
     window.dispatchEvent(
@@ -66,7 +68,17 @@ export default function MangaGrid({ searchResults = [], filter }) {
         const total = getTotal(manga);
 
         const percent =
-          total > 0 ? Math.min((owned / total) * 100, 100) : isOngoing(manga) ? 50 : 0;
+          total > 0
+            ? Math.min((owned / total) * 100, 100)
+            : isOngoing(manga)
+            ? 50
+            : 0;
+
+        const statusLabel = isCompleted(manga)
+          ? "Completo"
+          : isOngoing(manga)
+          ? "In corso"
+          : "Da completare";
 
         return (
           <button
@@ -159,35 +171,4 @@ export default function MangaGrid({ searchResults = [], filter }) {
               </div>
 
               <div className="mt-3">
-                <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-2">
-                  <span>
-                    {owned}/{total || "?"} vol
-                  </span>
-
-                  <span>
-                    {isCompleted(manga)
-                      ? "Completo"
-                      : isOngoing(manga)
-                      ? "In corso"
-                      : "Da completare"}
-                  </span>
-                </div>
-
-                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      isCompleted(manga)
-                        ? "bg-gradient-to-r from-green-400 to-green-600"
-                        : "bg-gradient-to-r from-yellow-300 to-yellow-500"
-                    }`}
-                    style={{ width: `${percent}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+                <div className="flex items-center justify-between text-[11px] text-zinc-400
