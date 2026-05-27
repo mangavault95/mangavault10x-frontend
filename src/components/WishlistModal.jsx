@@ -34,12 +34,12 @@ export default function WishlistModal({ onClose, onSaved }) {
         if (!data.error) {
           setForm(prev => ({
             ...prev,
-            Titolo: data.titolo || prev.Titolo,
-            Autore: data.autore || prev.Autore,
-            CoverURL: data.coverurl || prev.CoverURL,
-            Trama: data.trama || prev.Trama,
-            Genere: data.genere || prev.Genere,
-            VolumiTotali: data.volumitotali || prev.VolumiTotali
+            Titolo: data.titolo || "",
+            Autore: data.autore || "",
+            CoverURL: data.coverurl || "",
+            Trama: data.trama || "",
+            Genere: data.genere || "",
+            VolumiTotali: data.volumitotali || ""
           }));
         }
 
@@ -74,8 +74,8 @@ export default function WishlistModal({ onClose, onSaved }) {
       const data = await res.json();
 
       if (data.item) onSaved(data.item);
-      onClose();
 
+      onClose();
     } catch (err) {
       console.error(err);
     }
@@ -87,19 +87,27 @@ export default function WishlistModal({ onClose, onSaved }) {
       onClick={onClose}
     >
 
-      {/* ✅ BACKGROUND stile MangaDetail */}
+      {/* ✅ BLUR BACKGROUND */}
       <div className="absolute inset-0 backdrop-blur-md" />
 
       {/* ✅ PANEL */}
       <div
-        className="relative w-[950px] rounded-3xl border border-white/10 shadow-2xl manga-detail-card flex"
+        className="relative w-[900px] rounded-3xl border border-white/10 shadow-2xl manga-detail-card flex"
         onClick={(e) => e.stopPropagation()}
       >
 
-        {/* LEFT */}
+        {/* LEFT PREVIEW */}
         <div className="w-[260px] p-4">
-          <div className="h-[360px] bg-black rounded overflow-hidden">
-            {form.CoverURL
+          <div className="h-[360px] bg-black rounded overflow-hidden flex items-center justify-center">
+            {form.CoverURL ? (
+              <img
+                src={form.CoverURL}
+                alt="cover"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-zinc-500">300x450</span>
+            )}
           </div>
 
           <div className="mt-4 text-white">
@@ -109,10 +117,13 @@ export default function WishlistModal({ onClose, onSaved }) {
             <p className="text-sm text-zinc-400">
               {form.Autore || "Autore"}
             </p>
+            <p className="text-xs text-zinc-500">
+              Volumi: {form.VolumiTotali || "?"}
+            </p>
           </div>
         </div>
 
-        {/* RIGHT */}
+        {/* RIGHT FORM */}
         <div className="flex-1 p-6 text-white">
 
           <div className="flex justify-between mb-4">
@@ -132,29 +143,63 @@ export default function WishlistModal({ onClose, onSaved }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Scrivi titolo..."
-            className="w-full p-2 mb-4 bg-black/60 rounded"
+            className="w-full p-3 mb-4 bg-black/60 rounded"
           />
 
+          {loading && (
+            <p className="text-yellow-400 text-sm mb-2">
+              Ricerca...
+            </p>
+          )}
+
           <div className="grid grid-cols-2 gap-3 mb-3">
+
             <input
               value={form.Titolo}
               onChange={(e) => setForm({ ...form, Titolo: e.target.value })}
+              placeholder="Titolo"
               className="p-2 bg-black/60 rounded"
             />
+
             <input
               value={form.Autore}
               onChange={(e) => setForm({ ...form, Autore: e.target.value })}
+              placeholder="Autore"
               className="p-2 bg-black/60 rounded"
             />
+
+            <input
+              value={form.VolumiTotali}
+              onChange={(e) => setForm({ ...form, VolumiTotali: e.target.value })}
+              placeholder="Volumi totali"
+              className="p-2 bg-black/60 rounded"
+            />
+
+            <input
+              value={form.Genere}
+              onChange={(e) => setForm({ ...form, Genere: e.target.value })}
+              placeholder="Genere"
+              className="p-2 bg-black/60 rounded"
+            />
+
           </div>
 
           <textarea
             value={form.Trama}
             onChange={(e) => setForm({ ...form, Trama: e.target.value })}
+            placeholder="Trama"
             className="w-full h-28 p-2 bg-black/60 rounded mb-4"
           />
 
+          <input
+            value={form.CoverURL}
+            onChange={(e) => setForm({ ...form, CoverURL: e.target.value })}
+            placeholder="URL Cover"
+            className="w-full p-2 bg-black/60 rounded mb-4"
+          />
+
           <div className="flex justify-end gap-2">
+
             <button
               onClick={onClose}
               className="px-4 py-2 bg-white/10 rounded"
@@ -166,8 +211,9 @@ export default function WishlistModal({ onClose, onSaved }) {
               onClick={handleSave}
               className="px-4 py-2 bg-yellow-400 text-black rounded"
             >
-              Aggiungi
+              Aggiungi alla wishlist
             </button>
+
           </div>
         </div>
       </div>
