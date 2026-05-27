@@ -121,9 +121,6 @@ export default function StatsPanel() {
           Statistiche
         </div>
 
-        <div className="text-sm text-white font-semibold mt-1">
-          Libreria
-        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -141,7 +138,7 @@ export default function StatsPanel() {
         <div className="rounded-2xl bg-yellow-400/[0.08] border border-yellow-400/20 p-3">
           <div className="flex items-center gap-2 text-yellow-300 text-xs mb-1">
             <MoneyIcon />
-            <span>Spesa</span>
+            <span>Valore Collezione</span>
           </div>
 
           <div className="text-lg font-black text-yellow-300">
@@ -152,7 +149,7 @@ export default function StatsPanel() {
         <div className="rounded-2xl bg-green-400/[0.08] border border-green-400/20 p-3">
           <div className="flex items-center gap-2 text-green-300 text-xs mb-1">
             <CompleteIcon />
-            <span>Completi</span>
+            <span>Serie complete</span>
           </div>
 
           <div className="text-lg font-black text-green-300">
@@ -163,7 +160,7 @@ export default function StatsPanel() {
         <div className="rounded-2xl bg-blue-400/[0.08] border border-blue-400/20 p-3">
           <div className="flex items-center gap-2 text-blue-300 text-xs mb-1">
             <OngoingIcon />
-            <span>In corso</span>
+            <span>Serie in corso</span>
           </div>
 
           <div className="text-lg font-black text-blue-300">
