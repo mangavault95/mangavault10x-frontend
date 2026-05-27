@@ -30,8 +30,6 @@ function App() {
     >
       {adminMode ? (
         <AdminPage darkMode={darkMode} setAdminMode={setAdminMode} />
-      ) : recordsMode ? (
-        <RecordsPage darkMode={darkMode} setRecordsMode={setRecordsMode} />
       ) : (
         <HomePage
           darkMode={darkMode}
