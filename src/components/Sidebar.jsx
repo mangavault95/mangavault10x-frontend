@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import StatsPanel from "./StatsPanel";
+import ReadingSessionAddModal from "./ReadingSessionAddModal";
 
 /* -------------------- ICONS -------------------- */
 
@@ -156,24 +157,18 @@ function ChevronRightIcon() {
   );
 }
 
-/* -------------------- PREVIEW CHIP -------------------- */
-
-function SessionPreview({ session, direction = "left", onClick }) {
+function SessionPreview({ session, label, onClick }) {
   if (!session) return null;
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="
-        group flex flex-col items-center gap-2
-        transition-all duration-200
-        hover:scale-[1.03]
-      "
+      className="group flex flex-col items-center gap-2 transition-all duration-200 hover:scale-[1.03]"
       title={session.titolo || "Sessione lettura"}
     >
       <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-        {direction === "left" ? "Precedente" : "Successivo"}
+        {label}
       </div>
 
       <div className="w-14 h-20 rounded-2xl overflow-hidden border border-white/[0.08] bg-white/[0.04] shadow-[0_12px_28px_rgba(0,0,0,0.18)] relative">
@@ -181,7 +176,7 @@ function SessionPreview({ session, direction = "left", onClick }) {
           <img
             src={session.coverurl}
             alt={session.titolo || "Cover manga"}
-            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition"
+            className="w-full h-full object-cover"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-500">
@@ -207,12 +202,17 @@ export default function Sidebar({ open = true }) {
   const [manga, setManga] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [openAddSession, setOpenAddSession] = useState(false);
 
-  function loadManga() {
-    fetch(`${API}/api/manga`)
-      .then((r) => r.json())
-      .then((d) => setManga(Array.isArray(d) ? d : []))
-      .catch(() => setManga([]));
+  async function loadManga() {
+    try {
+      const res = await fetch(`${API}/api/manga`);
+      const data = await res.json();
+      setManga(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Errore caricamento manga:", err);
+      setManga([]);
+    }
   }
 
   async function loadSessions() {
@@ -220,6 +220,7 @@ export default function Sidebar({ open = true }) {
       const res = await fetch(`${API}/api/reading-sessions`);
       const data = await res.json();
       const list = Array.isArray(data) ? data : [];
+
       setSessions(list);
 
       const storedActiveId = localStorage.getItem("mv_active_session_manga_id");
@@ -232,7 +233,7 @@ export default function Sidebar({ open = true }) {
         setActiveIndex(0);
       }
 
-      // Migrazione soft dal vecchio localStorage se non ci sono sessioni
+      // migrazione soft dal vecchio localStorage se non ci sono sessioni
       if (list.length === 0) {
         try {
           const oldSelected = JSON.parse(
@@ -267,7 +268,7 @@ export default function Sidebar({ open = true }) {
             setActiveIndex(0);
           }
         } catch (e) {
-          console.error("Errore migrazione reading session locale:", e);
+          console.error("Errore migrazione sessione locale:", e);
         }
       }
     } catch (err) {
@@ -392,7 +393,7 @@ export default function Sidebar({ open = true }) {
         })
       });
     } catch (err) {
-      console.error("Errore salvataggio cronologia lettura:", err);
+      console.error("Errore salvataggio reading history:", err);
     }
   }
 
@@ -403,238 +404,214 @@ export default function Sidebar({ open = true }) {
     : 0;
 
   return (
-    <aside
-      className={`
-        h-full flex flex-col relative
-        px-5 py-5 transition-all duration-300
-        ${open ? "w-full gap-5" : "w-full items-center gap-4"}
-      `}
-      style={{
-        background:
-          "linear-gradient(180deg, rgba(18,22,42,0.56), rgba(10,12,24,0.74))",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
-        boxShadow: "18px 0 55px rgba(0,0,0,0.34)"
-      }}
-    >
-      {/* ambient lights */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-10 -right-12 w-32 h-32 rounded-full bg-blue-500/12 blur-3xl" />
-        <div className="absolute bottom-20 -left-10 w-28 h-28 rounded-full bg-violet-500/10 blur-3xl" />
-      </div>
-
-      {/* LOGO */}
-      <div
+    <>
+      <aside
         className={`
-          relative z-10 flex items-center
-          ${open ? "justify-between gap-3" : "justify-center"}
+          h-full flex flex-col relative
+          px-5 py-5 transition-all duration-300
+          ${open ? "w-full gap-5" : "w-full items-center gap-4"}
         `}
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(18,22,42,0.56), rgba(10,12,24,0.74))",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          boxShadow: "18px 0 55px rgba(0,0,0,0.34)"
+        }}
       >
-        {open ? (
-          <div className="min-w-0 flex items-end gap-3">
-            <div className="text-[2rem] font-black tracking-tight text-white leading-none">
-              MangaVault
-            </div>
+        {/* ambient lights */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-10 -right-12 w-32 h-32 rounded-full bg-blue-500/12 blur-3xl" />
+          <div className="absolute bottom-20 -left-10 w-28 h-28 rounded-full bg-violet-500/10 blur-3xl" />
+        </div>
 
+        {/* LOGO */}
+        <div
+          className={`
+            relative z-10 flex items-center
+            ${open ? "justify-between gap-3" : "justify-center"}
+          `}
+        >
+          {open ? (
+            <div className="min-w-0 flex items-end gap-3">
+              <div className="text-[2rem] font-black tracking-tight text-white leading-none">
+                MangaVault
+              </div>
+
+              <button
+                onClick={onLogoToggle}
+                className="
+                  inline-flex items-center
+                  text-[2.25rem] font-black tracking-tight leading-none
+                  text-yellow-400
+                  hover:text-yellow-300
+                  drop-shadow-[0_0_18px_rgba(250,204,21,0.38)]
+                  transition-all duration-200
+                  active:scale-95
+                "
+                title="Chiudi sidebar"
+              >
+                10X
+              </button>
+            </div>
+          ) : (
             <button
               onClick={onLogoToggle}
+              title="Apri sidebar"
               className="
-                inline-flex items-center
-                text-[2.25rem] font-black tracking-tight leading-none
+                text-[2rem] font-black tracking-tight leading-none
                 text-yellow-400
                 hover:text-yellow-300
                 drop-shadow-[0_0_18px_rgba(250,204,21,0.38)]
                 transition-all duration-200
                 active:scale-95
               "
-              title="Chiudi sidebar"
             >
               10X
             </button>
-          </div>
-        ) : (
-          <button
-            onClick={onLogoToggle}
-            title="Apri sidebar"
-            className="
-              text-[2rem] font-black tracking-tight leading-none
-              text-yellow-400
-              hover:text-yellow-300
-              drop-shadow-[0_0_18px_rgba(250,204,21,0.38)]
-              transition-all duration-200
-              active:scale-95
-            "
-          >
-            10X
-          </button>
-        )}
-      </div>
-
-      {/* NAV */}
-      <nav
-        className={`relative z-10 flex flex-col gap-3 ${
-          open ? "" : "items-center w-full"
-        }`}
-      >
-        {[
-          {
-            key: "favorites",
-            label: "Preferiti",
-            icon: <StarIcon className="w-5 h-5" />,
-            count: favoritesList.length,
-            accent: "text-yellow-400"
-          },
-          {
-            key: "history",
-            label: "Ultime letture",
-            icon: <ClockIcon className="w-5 h-5" />,
-            accent: "text-zinc-300"
-          },
-          {
-            key: "wishlist",
-            label: "Wishlist",
-            icon: <CalendarIcon className="w-5 h-5" />,
-            accent: "text-zinc-300"
-          },
-          {
-            key: "records",
-            label: "Records",
-            icon: <TrophyIcon className="w-5 h-5" />,
-            accent: "text-zinc-300"
-          }
-        ].map((item) => (
-          <button
-            key={item.key}
-            onClick={() => navigate(item.key)}
-            title={item.label}
-            className={`
-              group flex items-center gap-4 w-full
-              rounded-2xl
-              border border-white/[0.06]
-              bg-white/[0.05]
-              hover:bg-white/[0.08]
-              hover:border-yellow-400/25
-              transition-all duration-200
-              ${open ? "px-4 py-3" : "p-3 justify-center"}
-            `}
-          >
-            <span
-              className={`${item.accent} transition-transform duration-200 group-hover:scale-110`}
-            >
-              {item.icon}
-            </span>
-
-            {open && (
-              <div className="flex-1 flex justify-between items-center min-w-0">
-                <span className="text-sm font-medium text-white">
-                  {item.label}
-                </span>
-
-                {typeof item.count === "number" && (
-                  <span className="text-xs text-zinc-400">{item.count}</span>
-                )}
-              </div>
-            )}
-          </button>
-        ))}
-      </nav>
-
-      {/* JUKEBOX PLAYER */}
-      {open && activeSession && (
-        <section
-          className="relative z-10 rounded-[28px] border border-white/[0.08] p-4 shadow-[0_20px_45px_rgba(0,0,0,0.22)]"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(22,26,48,0.42), rgba(12,14,28,0.42))",
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)"
-          }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
-              Stai leggendo
-            </div>
-
-            <div className="text-[11px] text-zinc-500">
-              {readingPercent}%
-            </div>
-          </div>
-
-          {/* PREVIEW SWITCHER */}
-          {sessions.length > 1 && (
-            <div className="mb-4 flex items-end justify-between gap-3">
-              <SessionPreview
-                session={prevSession}
-                direction="left"
-                onClick={() => setActiveIndex(prevIndex)}
-              />
-
-              <div className="flex items-center gap-2 pb-7">
-                <button
-                  type="button"
-                  onClick={() => setActiveIndex(prevIndex)}
-                  className="w-9 h-9 rounded-full border border-white/[0.08] bg-white/[0.05] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/30 hover:bg-yellow-400/10 transition flex items-center justify-center"
-                  title="Manga precedente"
-                >
-                  <ChevronLeftIcon />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveIndex(nextIndex)}
-                  className="w-9 h-9 rounded-full border border-white/[0.08] bg-white/[0.05] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/30 hover:bg-yellow-400/10 transition flex items-center justify-center"
-                  title="Manga successivo"
-                >
-                  <ChevronRightIcon />
-                </button>
-              </div>
-
-              <SessionPreview
-                session={nextSession}
-                direction="right"
-                onClick={() => setActiveIndex(nextIndex)}
-              />
-            </div>
           )}
+        </div>
 
-          {/* MAIN ACTIVE */}
-          <div className="flex items-center gap-4">
+        {/* NAV */}
+        <nav
+          className={`relative z-10 flex flex-col gap-3 ${
+            open ? "" : "items-center w-full"
+          }`}
+        >
+          {[
+            {
+              key: "favorites",
+              label: "Preferiti",
+              icon: <StarIcon className="w-5 h-5" />,
+              count: favoritesList.length,
+              accent: "text-yellow-400"
+            },
+            {
+              key: "history",
+              label: "Ultime letture",
+              icon: <ClockIcon className="w-5 h-5" />,
+              accent: "text-zinc-300"
+            },
+            {
+              key: "wishlist",
+              label: "Wishlist",
+              icon: <CalendarIcon className="w-5 h-5" />,
+              accent: "text-zinc-300"
+            },
+            {
+              key: "records",
+              label: "Records",
+              icon: <TrophyIcon className="w-5 h-5" />,
+              accent: "text-zinc-300"
+            }
+          ].map((item) => (
             <button
-              onClick={() =>
-                window.dispatchEvent(
-                  new CustomEvent("openMangaDetail", {
-                    detail: {
-                      ID: activeSession.manga_id,
-                      Titolo: activeSession.titolo,
-                      Autore: activeSession.autore,
-                      CoverURL: activeSession.coverurl,
-                      VolumiTotali: activeSession.volumitotali,
-                      VolumiPosseduti: activeSession.volume
-                    }
-                  })
-                )
-              }
-              className="relative w-20 h-28 shrink-0 rounded-2xl overflow-hidden bg-black/20 border border-white/10 shadow-2xl group"
-              title="Apri dettaglio"
+              key={item.key}
+              onClick={() => navigate(item.key)}
+              title={item.label}
+              className={`
+                group flex items-center gap-4 w-full
+                rounded-2xl
+                border border-white/[0.06]
+                bg-white/[0.05]
+                hover:bg-white/[0.08]
+                hover:border-yellow-400/25
+                transition-all duration-200
+                ${open ? "px-4 py-3" : "p-3 justify-center"}
+              `}
             >
-              {activeSession.coverurl ? (
-                <img
-                  src={activeSession.coverurl}
-                  alt={activeSession.titolo || "Cover manga"}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs text-zinc-500">
-                  No cover
+              <span
+                className={`${item.accent} transition-transform duration-200 group-hover:scale-110`}
+              >
+                {item.icon}
+              </span>
+
+              {open && (
+                <div className="flex-1 flex justify-between items-center min-w-0">
+                  <span className="text-sm font-medium text-white">
+                    {item.label}
+                  </span>
+
+                  {typeof item.count === "number" && (
+                    <span className="text-xs text-zinc-400">{item.count}</span>
+                  )}
                 </div>
               )}
-
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="cover-shine" />
-              </div>
             </button>
+          ))}
+        </nav>
 
-            <div className="min-w-0 flex-1">
+        {/* JUKEBOX PLAYER */}
+        {open && activeSession && (
+          <section
+            className="relative z-10 rounded-[28px] border border-white/[0.08] p-4 shadow-[0_20px_45px_rgba(0,0,0,0.22)]"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(22,26,48,0.42), rgba(12,14,28,0.42))",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)"
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                Stai leggendo
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="text-[11px] text-zinc-500">
+                  {readingPercent}%
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setOpenAddSession(true)}
+                  className="w-7 h-7 rounded-full border border-white/[0.08] bg-white/[0.05] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/30 hover:bg-yellow-400/10 transition flex items-center justify-center"
+                  title="Aggiungi manga al player"
+                >
+                  <PlusIcon />
+                </button>
+              </div>
+            </div>
+
+            {/* preview prev / next */}
+            {sessions.length > 1 && (
+              <div className="mb-4 flex items-end justify-between gap-3">
+                <SessionPreview
+                  session={prevSession}
+                  label="Precedente"
+                  onClick={() => setActiveIndex(prevIndex)}
+                />
+
+                <div className="flex items-center gap-2 pb-7">
+                  <button
+                    type="button"
+                    onClick={() => setActiveIndex(prevIndex)}
+                    className="w-9 h-9 rounded-full border border-white/[0.08] bg-white/[0.05] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/30 hover:bg-yellow-400/10 transition flex items-center justify-center"
+                    title="Manga precedente"
+                  >
+                    <ChevronLeftIcon />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveIndex(nextIndex)}
+                    className="w-9 h-9 rounded-full border border-white/[0.08] bg-white/[0.05] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/30 hover:bg-yellow-400/10 transition flex items-center justify-center"
+                    title="Manga successivo"
+                  >
+                    <ChevronRightIcon />
+                  </button>
+                </div>
+
+                <SessionPreview
+                  session={nextSession}
+                  label="Successivo"
+                  onClick={() => setActiveIndex(nextIndex)}
+                />
+              </div>
+            )}
+
+            {/* main active */}
+            <div className="flex items-center gap-4">
               <button
                 onClick={() =>
                   window.dispatchEvent(
@@ -650,68 +627,115 @@ export default function Sidebar({ open = true }) {
                     })
                   )
                 }
-                className="text-left w-full"
+                className="relative w-20 h-28 shrink-0 rounded-2xl overflow-hidden bg-black/20 border border-white/10 shadow-2xl group"
+                title="Apri dettaglio"
               >
-                <div className="text-base font-bold text-white truncate">
-                  {activeSession.titolo}
-                </div>
+                {activeSession.coverurl ? (
+                  <img
+                    src={activeSession.coverurl}
+                    alt={activeSession.titolo || "Cover manga"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-xs text-zinc-500">
+                    No cover
+                  </div>
+                )}
 
-                <div className="text-xs text-zinc-400 truncate">
-                  {activeSession.autore || "Autore sconosciuto"}
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="cover-shine" />
                 </div>
               </button>
 
-              <div className="mt-3">
-                <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
-                  <span>Vol {readingOwned}</span>
-                  <span>{readingTotal || "?"}</span>
-                </div>
+              <div className="min-w-0 flex-1">
+                <button
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new CustomEvent("openMangaDetail", {
+                        detail: {
+                          ID: activeSession.manga_id,
+                          Titolo: activeSession.titolo,
+                          Autore: activeSession.autore,
+                          CoverURL: activeSession.coverurl,
+                          VolumiTotali: activeSession.volumitotali,
+                          VolumiPosseduti: activeSession.volume
+                        }
+                      })
+                    )
+                  }
+                  className="text-left w-full"
+                >
+                  <div className="text-base font-bold text-white truncate">
+                    {activeSession.titolo}
+                  </div>
 
-                <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-yellow-300 to-yellow-500 shadow-[0_0_12px_rgba(250,204,21,0.38)] transition-all duration-300"
-                    style={{ width: `${readingPercent}%` }}
-                  />
+                  <div className="text-xs text-zinc-400 truncate">
+                    {activeSession.autore || "Autore sconosciuto"}
+                  </div>
+                </button>
+
+                <div className="mt-3">
+                  <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
+                    <span>Vol {readingOwned}</span>
+                    <span>{readingTotal || "?"}</span>
+                  </div>
+
+                  <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-yellow-300 to-yellow-500 shadow-[0_0_12px_rgba(250,204,21,0.38)] transition-all duration-300"
+                      style={{ width: `${readingPercent}%` }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* controls */}
+            <div className="mt-4 flex items-center justify-center gap-4">
+              <button
+                onClick={() => updateCurrentVolume(-1)}
+                className="w-11 h-11 rounded-2xl bg-white/[0.055] border border-white/[0.08] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 transition flex items-center justify-center active:scale-95"
+                title="Togli un volume"
+              >
+                <MinusIcon />
+              </button>
+
+              <button
+                onClick={saveCurrentReading}
+                className="w-14 h-14 rounded-full bg-yellow-400 text-black shadow-[0_0_28px_rgba(250,204,21,0.35)] hover:brightness-110 active:scale-95 transition flex items-center justify-center"
+                title="Salva avanzamento"
+              >
+                <SaveIcon />
+              </button>
+
+              <button
+                onClick={() => updateCurrentVolume(1)}
+                className="w-11 h-11 rounded-2xl bg-white/[0.055] border border-white/[0.08] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 transition flex items-center justify-center active:scale-95"
+                title="Aggiungi un volume"
+              >
+                <PlusIcon />
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* STATS */}
+        {open && (
+          <div className="relative z-10 mt-auto">
+            <StatsPanel />
           </div>
+        )}
+      </aside>
 
-          {/* CONTROLS */}
-          <div className="mt-4 flex items-center justify-center gap-4">
-            <button
-              onClick={() => updateCurrentVolume(-1)}
-              className="w-11 h-11 rounded-2xl bg-white/[0.055] border border-white/[0.08] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 transition flex items-center justify-center active:scale-95"
-              title="Togli un volume"
-            >
-              <MinusIcon />
-            </button>
-
-            <button
-              onClick={saveCurrentReading}
-              className="w-14 h-14 rounded-full bg-yellow-400 text-black shadow-[0_0_28px_rgba(250,204,21,0.35)] hover:brightness-110 active:scale-95 transition flex items-center justify-center"
-              title="Salva avanzamento"
-            >
-              <SaveIcon />
-            </button>
-
-            <button
-              onClick={() => updateCurrentVolume(1)}
-              className="w-11 h-11 rounded-2xl bg-white/[0.055] border border-white/[0.08] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 transition flex items-center justify-center active:scale-95"
-              title="Aggiungi un volume"
-            >
-              <PlusIcon />
-            </button>
-          </div>
-        </section>
+      {openAddSession && (
+        <ReadingSessionAddModal
+          onClose={() => setOpenAddSession(false)}
+          onSaved={() => {
+            loadSessions();
+            setOpenAddSession(false);
+          }}
+        />
       )}
-
-      {/* STATS */}
-      {open && (
-        <div className="relative z-10 mt-auto">
-          <StatsPanel />
-        </div>
-      )}
-    </aside>
+    </>
   );
 }
