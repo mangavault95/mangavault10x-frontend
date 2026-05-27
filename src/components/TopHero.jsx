@@ -4,8 +4,8 @@ export default function TopHero({ manga = [], onSelect }) {
   const latest = useMemo(() => {
     return [...(manga || [])]
       .sort((a, b) => {
-        const da = new Date(a.DataAggiunta || a.created_at || a.ID || 0).getTime();
-        const db = new Date(b.DataAggiunta || b.created_at || b.ID || 0).getTime();
+        const da = new Date(a.DataAggiunta || a.created_at || 0).getTime();
+        const db = new Date(b.DataAggiunta || b.created_at || 0).getTime();
 
         if (Number.isNaN(da) || Number.isNaN(db)) {
           return Number(b.ID || 0) - Number(a.ID || 0);
@@ -124,11 +124,11 @@ export default function TopHero({ manga = [], onSelect }) {
 
         {/* COVER PRINCIPALE + MINIATURE */}
         <div className="hidden lg:flex items-center gap-4">
-          <div class150px] h-[220px] rounded-2xl overflow-hidden bg-black/40 border border-white/10 shadow-2xl">
+          <div className="relative w-[150px] h-[220px] rounded-2xl overflow-hidden bg-black/40 border border-white/10 shadow-2xl">
             {currentManga?.CoverURL ? (
               <img
                 src={currentManga.CoverURL}
-                alt={currentManga?.Titolo || "Cover manga"}
+                alt={currentManga.Titolo || "Cover manga"}
                 className="w-full h-full object-contain"
               />
             ) : (
@@ -147,7 +147,7 @@ export default function TopHero({ manga = [], onSelect }) {
               <button
                 key={m.ID || `${m.Titolo}-${i}`}
                 onClick={() => setCurrent(i)}
-                className={`w-14 h-20 rounded-xl overflow-hidden border transition-all ${
+                className={`w-14 h-20 rounded-all ${
                   i === current
                     ? "border-yellow-400 shadow-[0_0_16px_rgba(234,179,8,0.35)]"
                     : "border-white/10 opacity-60 hover:opacity-100"
@@ -177,10 +177,7 @@ export default function TopHero({ manga = [], onSelect }) {
             onClick={() => setCurrent(i)}
             className={`h-2 rounded-full transition-all duration-200 ${
               i === current
-                ? "w-8 bg-yellow-400 shadow-[0_0_12px_rgba(234,179,8,0.4)]"
-                : "w-2 bg-white/20 hover:bg-white/40"
-            }`}
-            aria-label={`Vai al manga ${i + 1}`}
+                ? "w-8nga ${i + 1}`}
           />
         ))}
       </div>
