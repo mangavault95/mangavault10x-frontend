@@ -36,9 +36,9 @@ export default function WishlistList({ onClose }) {
   return (
     <div className="fixed inset-0 z-[999] pointer-events-none">
 
-      <div className="flex items-center justify-center h-full pointer-events-auto">
+      <div className="h-full flex justify-center items-center pointer-events-auto">
 
-        <div className="w-[1000px] bg-[#121212] rounded-2xl p-6">
+        <div className="w-[1000px] bg-[#121212] p-6 rounded-2xl">
 
           <div className="flex justify-between mb-4">
             <h2>Wishlist</h2>
@@ -50,25 +50,39 @@ export default function WishlistList({ onClose }) {
             {items.map(m => (
               <div
                 key={m.id}
-                className="bg-[#1a1a1a] rounded"
-                onClick={() => setSelected({
-                  ...m,
-                  Titolo: m.titolo,
-                  Autore: m.autori
-                })}
+                className="bg-[#1a1a1a] rounded cursor-pointer"
+                onClick={() =>
+                  setSelected({
+                    ...m,
+                    Titolo: m.titolo,
+                    Autore: m.autori,
+                    CoverURL: m.coverurl,
+                    Trama: m.trama,
+                    Genere: m.generi,
+                    VolumiTotali: m.volumitotali,
+                    VolumiPosseduti: 0
+                  })
+                }
               >
 
-                {m.coverurl}
+                <div className="h-[200px] bg-black flex items-center justify-center">
+                  {m.coverurl ? (
+                    <img
+                      src={m.coverurl}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <span>No cover</span>
+                  )}
+                </div>
 
                 <div className="p-2">
-                  <p>{m.titolo}</p>
+                  <p className="text-sm">{m.titolo}</p>
 
                   <div className="flex justify-around mt-2">
-
                     <button onClick={(e) => { e.stopPropagation(); setEditItem(m); }}>✏️</button>
                     <button onClick={(e) => { e.stopPropagation(); removeItem(m.id); }}>🗑️</button>
                     <button onClick={(e) => { e.stopPropagation(); markAsOwned(m.id); }}>✅</button>
-
                   </div>
 
                 </div>
@@ -83,6 +97,7 @@ export default function WishlistList({ onClose }) {
       {openAdd && <WishlistModal onClose={() => setOpenAdd(false)} onSaved={load} />}
       {editItem && <WishlistModal initialData={editItem} onClose={() => setEditItem(null)} onSaved={load} />}
       {selected && <MangaDetail manga={selected} onClose={() => setSelected(null)} />}
+
     </div>
   );
 }
