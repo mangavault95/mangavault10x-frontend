@@ -109,6 +109,7 @@ export default function TopHero({ manga = [], onSelect }) {
 
             <div className="mt-6 flex items-center gap-3">
               <button
+                type="button"
                 onClick={() => onSelect?.(currentManga)}
                 className="px-5 py-2.5 rounded-xl bg-yellow-400 text-black font-semibold hover:brightness-110 active:scale-95 transition-all duration-200 shadow-[0_0_20px_rgba(234,179,8,0.25)] hover:shadow-[0_0_28px_rgba(234,179,8,0.38)]"
               >
@@ -146,8 +147,9 @@ export default function TopHero({ manga = [], onSelect }) {
             {latest.slice(0, 3).map((m, i) => (
               <button
                 key={m.ID || `${m.Titolo}-${i}`}
+                type="button"
                 onClick={() => setCurrent(i)}
-                className={`w-14 h-20 rounded-all ${
+                className={`w-14 h-20 rounded-xl overflow-hidden border transition-all ${
                   i === current
                     ? "border-yellow-400 shadow-[0_0_16px_rgba(234,179,8,0.35)]"
                     : "border-white/10 opacity-60 hover:opacity-100"
@@ -174,10 +176,14 @@ export default function TopHero({ manga = [], onSelect }) {
         {latest.map((_, i) => (
           <button
             key={i}
+            type="button"
             onClick={() => setCurrent(i)}
             className={`h-2 rounded-full transition-all duration-200 ${
               i === current
-                ? "w-8nga ${i + 1}`}
+                ? "w-8 bg-yellow-400 shadow-[0_0_12px_rgba(234,179,8,0.4)]"
+                : "w-2 bg-white/20 hover:bg-white/40"
+            }`}
+            aria-label={`Vai al manga ${i + 1}`}
           />
         ))}
       </div>
