@@ -138,7 +138,7 @@ export default function StatsPanel() {
         <div className="rounded-2xl bg-yellow-400/[0.08] border border-yellow-400/20 p-3">
           <div className="flex items-center gap-2 text-yellow-300 text-xs mb-1">
             <MoneyIcon />
-            <span>Valore Collezione</span>
+            <span>Valore</span>
           </div>
 
           <div className="text-lg font-black text-yellow-300">
