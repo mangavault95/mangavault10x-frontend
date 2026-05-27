@@ -91,7 +91,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     const fuse = new Fuse(mangaList, {
       keys: ["Titolo", "Autore", "Genere"],
       threshold: 0.3,
-      ignoreLocation: true
+      ignoreLocation: true,
     });
 
     return fuse.search(search).map((r) => r.item);
@@ -103,7 +103,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     { key: "to_complete", label: "Da completare" },
     { key: "completed", label: "Completati" },
     { key: "short", label: "Serie brevi" },
-    { key: "oneshot", label: "One-shot" }
+    { key: "oneshot", label: "One-shot" },
   ];
 
   return (
@@ -111,7 +111,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
       className="min-h-screen text-white relative overflow-hidden"
       style={{
         background:
-          "linear-gradient(180deg, rgb(8, 11, 22), rgb(10, 12, 24) 30%, rgb(8, 10, 18) 100%)"
+          "linear-gradient(180deg, rgb(8, 11, 22), rgb(10, 12, 24) 30%, rgb(8, 10, 18) 100%)",
       }}
     >
       {/* AMBIENT LIGHTS */}
@@ -125,7 +125,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
       <div
         className="fixed left-0 top-0 h-screen transition-all duration-300 z-20"
         style={{
-          width: openSidebar ? sidebarOpenWidth : sidebarClosedWidth
+          width: openSidebar ? sidebarOpenWidth : sidebarClosedWidth,
         }}
       >
         <Sidebar open={openSidebar} />
@@ -134,7 +134,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
       {/* MAIN */}
       <div
         style={{
-          marginLeft: openSidebar ? sidebarOpenWidth : sidebarClosedWidth
+          marginLeft: openSidebar ? sidebarOpenWidth : sidebarClosedWidth,
         }}
         className="relative z-10 px-10 py-6 space-y-8 transition-all duration-300"
       >
@@ -185,7 +185,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
                     background:
                       "linear-gradient(180deg, rgba(20,26,52,0.92), rgba(12,16,32,0.92))",
                     backdropFilter: "blur(12px)",
-                    WebkitBackdropFilter: "blur(12px)"
+                    WebkitBackdropFilter: "blur(12px)",
                   }}
                 >
                   <button
@@ -209,11 +209,56 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
           {filterButtons.map((f) => {
             const active = activeFilter === f.key;
 
+            const baseClasses =
+              "px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200";
+            const activeClasses =
+              "bg-yellow-400 text-black border-yellow-400 shadow-[0_0_18px_rgba(234,179,8,0.28)]";
+            const inactiveClasses =
+              "bg-[rgba(24,30,56,0.42)] text-zinc-300 border-white/10 hover:bg-[rgba(32,40,72,0.52)] hover:text-white hover:border-yellow-400/30";
+
             return (
               <button
                 key={f.key}
                 onClick={() => setActiveFilter(f.key)}
-                className={
-                  "px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 " +
-                  (active
-                    ? "bg-yellow-400 text-black border-yellow-400 shadow-[0_0_18px_rgba(234,179,8,0.28
+                className={`${baseClasses} ${
+                  active ? activeClasses : inactiveClasses
+                }`}
+              >
+                {f.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* GRID */}
+        <MangaGrid
+          searchResults={filteredSearch}
+          filter={activeFilter === "all" ? undefined : activeFilter}
+        />
+      </div>
+
+      {selectedManga && (
+        <MangaDetail
+          manga={selectedManga}
+          onClose={() => setSelectedManga(null)}
+        />
+      )}
+
+      {showFavorites && (
+        <FavoritesModal onClose={() => setShowFavorites(false)} />
+      )}
+
+      {showHistory && (
+        <HistoryModal onClose={() => setShowHistory(false)} />
+      )}
+
+      {showWishlist && (
+        <WishlistList onClose={() => setShowWishlist(false)} />
+      )}
+
+      {showRecords && (
+        <RecordsModal onClose={() => setShowRecords(false)} />
+      )}
+    </div>
+  );
+}
