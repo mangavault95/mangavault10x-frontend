@@ -107,7 +107,16 @@ export default function MangaGrid({ searchResults = [], filter }) {
             key={manga.ID}
             type="button"
             onClick={() => openDetail(manga)}
-            className="group text-left rounded-2xl overflow-hidden border border-white/10 backdrop-blur-lg hover:border-yellow-400/25 hover:shadow-[0_0_28px_rgba(99,102,241,0.18)] transition-all duration-300"
+            className="
+  group text-left
+  rounded-2xl overflow-hidden
+  border border-white/10
+  backdrop-blur-lg
+  hover:border-yellow-400/25
+  hover:shadow-[0_0_24px_rgba(99,102,241,0.16)]
+  transition-all duration-300
+"
+
             style={{
               background:
                 "linear-gradient(180deg, rgba(24,30,56,0.34), rgba(12,16,28,0.52))",
