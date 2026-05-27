@@ -142,6 +142,7 @@ export default function Sidebar({ open = true }) {
     try {
       const selected = JSON.parse(localStorage.getItem("mv_selected_manga") || "null");
       const vol = localStorage.getItem("mv_current_vol") || "";
+
       setCurrentReading(selected);
       setCurrentVol(vol);
     } catch {
@@ -272,39 +273,45 @@ export default function Sidebar({ open = true }) {
       className={`
         h-full flex flex-col
         px-5 py-5
-        bg-[linear-gradient(180deg,rgba(14,18,36,0.72),rgba(10,10,18,0.78))]
-        backdrop-blur-xl
-        shadow-[18px_0_55px_rgba(0,0,0,0.42)]
         transition-all duration-300
         relative
         ${open ? "w-full gap-5" : "w-full items-center gap-4"}
       `}
+      style={{
+        background:
+          "linear-gradient(180deg, rgba(18,22,42,0.56), rgba(10,12,24,0.74))",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        boxShadow: "18px 0 55px rgba(0,0,0,0.34)"
+      }}
     >
-      {/* ambient light */}
-      <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-yellow-400/20 to-transparent pointer-events-none" />
-      <div className="absolute top-0 right-0 w-28 h-28 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
+      {/* luci ambientali */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute -top-10 -right-12 w-32 h-32 rounded-full bg-blue-500/12 blur-3xl" />
+        <div className="absolute bottom-20 -left-10 w-28 h-28 rounded-full bg-violet-500/10 blur-3xl" />
+      </div>
 
       {/* LOGO */}
       <div
         className={`
-          flex items-start
+          relative z-10 flex items-center
           ${open ? "justify-between gap-3" : "justify-center"}
         `}
       >
         {open ? (
-          <div className="min-w-0">
-            <div className="text-[2.05rem] font-black tracking-tight text-white leading-none">
+          <div className="min-w-0 flex items-end gap-3">
+            <div className="text-[2rem] font-black tracking-tight text-white leading-none">
               MangaVault
             </div>
 
             <button
               onClick={onLogoToggle}
               className="
-                mt-1 inline-flex items-center
-                text-[2.1rem] font-black tracking-tight
+                inline-flex items-center
+                text-[2.25rem] font-black tracking-tight leading-none
                 text-yellow-400
                 hover:text-yellow-300
-                drop-shadow-[0_0_16px_rgba(250,204,21,0.35)]
+                drop-shadow-[0_0_18px_rgba(250,204,21,0.38)]
                 transition-all duration-200
                 active:scale-95
               "
@@ -318,10 +325,10 @@ export default function Sidebar({ open = true }) {
             onClick={onLogoToggle}
             title="Apri sidebar"
             className="
-              text-[2rem] font-black tracking-tight
+              text-[2rem] font-black tracking-tight leading-none
               text-yellow-400
-              drop-shadow-[0_0_16px_rgba(250,204,21,0.35)]
               hover:text-yellow-300
+              drop-shadow-[0_0_18px_rgba(250,204,21,0.38)]
               transition-all duration-200
               active:scale-95
             "
@@ -332,31 +339,33 @@ export default function Sidebar({ open = true }) {
       </div>
 
       {/* NAV */}
-      <nav className={`flex flex-col gap-3 ${open ? "" : "items-center w-full"}`}>
+      <nav className={`relative z-10 flex flex-col gap-3 ${open ? "" : "items-center w-full"}`}>
         {[
           {
             key: "favorites",
             label: "Preferiti",
-            icon: (
-              <StarIcon className="w-5 h-5" />
-            ),
+            icon: <StarIcon className="w-5 h-5" />,
             count: favoritesList.length,
-            pulse: pulseFav
+            pulse: pulseFav,
+            accent: "text-yellow-400"
           },
           {
             key: "history",
             label: "Ultime letture",
-            icon: <ClockIcon className="w-5 h-5" />
+            icon: <ClockIcon className="w-5 h-5" />,
+            accent: "text-zinc-300"
           },
           {
             key: "wishlist",
             label: "Wishlist",
-            icon: <CalendarIcon className="w-5 h-5" />
+            icon: <CalendarIcon className="w-5 h-5" />,
+            accent: "text-zinc-300"
           },
           {
             key: "records",
             label: "Records",
-            icon: <TrophyIcon className="w-5 h-5" />
+            icon: <TrophyIcon className="w-5 h-5" />,
+            accent: "text-zinc-300"
           }
         ].map((item) => (
           <button
@@ -368,7 +377,7 @@ export default function Sidebar({ open = true }) {
               rounded-2xl
               border border-white/[0.06]
               bg-white/[0.05]
-              hover:bg-white/[0.08]
+              hover:bg-white/[0.085]
               hover:border-yellow-400/25
               transition-all duration-200
               ${open ? "px-4 py-3" : "p-3 justify-center"}
@@ -376,7 +385,7 @@ export default function Sidebar({ open = true }) {
           >
             <span
               className={`
-                ${item.key === "favorites" ? "text-yellow-400" : "text-zinc-300"}
+                ${item.accent}
                 transition-transform duration-200
                 ${item.pulse ? "scale-125" : "group-hover:scale-110"}
               `}
@@ -396,9 +405,17 @@ export default function Sidebar({ open = true }) {
         ))}
       </nav>
 
-      {/* CURRENT READING PLAYER (centrale) */}
+      {/* CURRENT READING */}
       {open && currentReading && (
-        <section className="rounded-[28px] border border-white/[0.08] bg-white/[0.045] p-4 shadow-[0_20px_45px_rgba(0,0,0,0.24)]">
+        <section
+          className="relative z-10 rounded-[28px] border border-white/[0.08] p-4 shadow-[0_20px_45px_rgba(0,0,0,0.22)]"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(22,26,48,0.42), rgba(12,14,28,0.42))",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)"
+          }}
+        >
           <div className="flex items-center justify-between mb-3">
             <div className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
               Stai leggendo
@@ -418,7 +435,7 @@ export default function Sidebar({ open = true }) {
                   })
                 )
               }
-              className="relative w-20 h-28 shrink-0 rounded-2xl overflow-hidden bg-black/30 border border-white/10 shadow-2xl group"
+              className="relative w-20 h-28 shrink-0 rounded-2xl overflow-hidden bg-black/20 border border-white/10 shadow-2xl group"
               title="Apri dettaglio"
             >
               {currentReading.CoverURL ? (
@@ -504,7 +521,7 @@ export default function Sidebar({ open = true }) {
 
       {/* STATS */}
       {open && (
-        <div className="mt-auto">
+        <div className="relative z-10 mt-auto">
           <StatsPanel />
         </div>
       )}
