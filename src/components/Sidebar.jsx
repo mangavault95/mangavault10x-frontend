@@ -11,7 +11,7 @@ function StarIcon({ className = "w-5 h-5" }) {
     </svg>
   );
 }
-
+ 
 function ClockIcon({ className = "w-5 h-5" }) {
   return (
     <svg
