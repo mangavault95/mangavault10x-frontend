@@ -107,7 +107,13 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
   ];
 
   return (
-    <div className="bg-[#111] text-white min-h-screen">
+    <div
+      className="min-h-screen text-white"
+      style={{
+        background:
+          "linear-gradient(180deg, rgba(10,12,22,1), rgba(8,10,18,1))"
+      }}
+    >
       {/* SIDEBAR */}
       <div
         className="fixed left-0 top-0 h-screen transition-all duration-300"
@@ -136,26 +142,26 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cerca titolo, autore..."
-              className="px-5 py-2.5 w-56 rounded-full bg-[#151515] border border-white/6 text-sm placeholder:text-zinc-500 outline-none focus:w-64 focus:border-yellow-400 transition-all duration-300 hover:border-white/20"
+              className="px-5 py-2.5 w-56 rounded-full bg-white/[0.04] border border-white/10 text-sm placeholder:text-zinc-500 outline-none focus:w-64 focus:border-yellow-400 transition-all duration-300 hover:border-white/20"
             />
 
             <div className="relative">
               <button
                 onClick={() => setOpenMenu((p) => !p)}
-                className="w-10 h-10 rounded-xl bg-[#1a1a1a] border border-white/6 hover:border-yellow-400 transition"
+                className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/10 hover:border-yellow-400 transition"
               >
                 ☰
               </button>
 
               {openMenu && (
-                <div className="absolute right-0 mt-2 w-44 bg-[#151515]/95 backdrop-blur rounded-xl border border-white/10 shadow-xl z-50">
+                <div className="absolute right-0 mt-2 w-44 bg-[rgba(18,22,42,0.92)] backdrop-blur-xl rounded-xl border border-white/10 shadow-xl z-50">
                   <button
                     onClick={() => {
                       setAdminMode(true);
                       setRecordsMode(false);
                       setOpenMenu(false);
                     }}
-                    className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f]"
+                    className="w-full px-4 py-3 text-left hover:bg-white/10"
                   >
                     Admin
                   </button>
@@ -174,15 +180,12 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
               <button
                 key={f.key}
                 onClick={() => setActiveFilter(f.key)}
-                className={`
-                  px-4 py-2 rounded-xl text-sm font-medium
-                  border transition-all duration-200
-                  ${
-                    active
-                      ? "bg-yellow-400 text-black border-yellow-400 shadow-[0_0_18px_rgba(234,179,8,0.28)]"
-                      : "bg-white/6 text-zinc-300 border-white/10 hover:bg-white/10 hover:text-white hover:border-yellow-400/30"
-                  }
-                `}
+                className={
+                  "px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 " +
+                  (active
+                    ? "bg-yellow-400 text-black border-yellow-400 shadow-[0_0_18px_rgba(234,179,8,0.28)]"
+                    : "bg-white/[0.05] text-zinc-300 border-white/10 hover:bg-white/[0.09] hover:text-white hover:border-yellow-400/30")
+                }
               >
                 {f.label}
               </button>
@@ -190,10 +193,21 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
           })}
         </div>
 
-        <MangaGrid
-          searchResults={filteredSearch}
-          filter={activeFilter === "all" ? undefined : activeFilter}
-        />
+        {/* GRID */}
+        <div
+          className="rounded-[28px] p-5 border border-white/8"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(18,22,42,0.20), rgba(12,14,28,0.20))",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)"
+          }}
+        >
+          <MangaGrid
+            searchResults={filteredSearch}
+            filter={activeFilter === "all" ? undefined : activeFilter}
+          />
+        </div>
       </div>
 
       {selectedManga && (
