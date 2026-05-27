@@ -136,7 +136,17 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
       {/* MODALI */}
       {showFavorites && <FavoritesModal onClose={() => setShowFavorites(false)} />}
       {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
-      {showWishlist && <WishlistModal onClose={() => setShowWishlist(false)} />}
+   {showWishlist && (
+  <div className="fixed inset-0 z-50 bg-[#111] overflow-auto">
+    <WishlistPage />
+    <button
+      onClick={() => setShowWishlist(false)}
+      className="absolute top-6 right-6 px-4 py-2 bg-red-500 text-white rounded"
+    >
+      Chiudi
+    </button>
+  </div>
+)}
     </div>
   );
 }
