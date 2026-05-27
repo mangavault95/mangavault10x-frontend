@@ -2,10 +2,410 @@
 @tailwind components;
 @tailwind utilities;
 
-/* base layout (tieni il resto del tuo file) */
-
+/* =========================================================
+   BASE / DESIGN SYSTEM
+   ========================================================= */
 @layer components {
-  /* GRID helper */
+  :root {
+    --panel-bg-top: rgba(12, 14, 30, 0.62);
+    --panel-bg-bottom: rgba(24, 18, 40, 0.56);
+    --panel-border: rgba(255, 255, 255, 0.08);
+    --panel-border-strong: rgba(255, 255, 255, 0.12);
+
+    --panel-soft: rgba(255, 255, 255, 0.06);
+    --panel-soft-2: rgba(255, 255, 255, 0.08);
+    --panel-soft-3: rgba(255, 255, 255, 0.04);
+
+    --text-main: rgba(255, 255, 255, 0.96);
+    --text-soft: rgba(228, 228, 231, 0.72);
+    --text-muted: rgba(161, 161, 170, 0.85);
+
+    --accent-yellow: rgb(250, 204, 21);
+    --accent-yellow-soft: rgba(250, 204, 21, 0.14);
+    --accent-red-soft: rgba(248, 113, 113, 0.14);
+    --accent-green-soft: rgba(74, 222, 128, 0.14);
+    --accent-blue-soft: rgba(96, 165, 250, 0.16);
+  }
+
+  /* =========================================================
+     PANEL CORE
+     ========================================================= */
+
+  /* Pannello principale tipo MangaDetail */
+  .panel-shell,
+  .manga-detail-card {
+    background: linear-gradient(
+      180deg,
+      var(--panel-bg-top),
+      var(--panel-bg-bottom)
+    );
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--panel-border);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.38),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  /* Sezioni interne tipo lato destro di MangaDetail */
+  .panel-section {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 1rem;
+  }
+
+  /* Box più piccoli / secondari */
+  .panel-subtle {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0.9rem;
+  }
+
+  /* Overlay scuro di supporto */
+  .panel-overlay {
+    background: rgba(0, 0, 0, 0.64);
+  }
+
+  /* =========================================================
+     TYPOGRAPHY
+     ========================================================= */
+  .panel-title {
+    color: var(--text-main);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .panel-subtitle {
+    color: var(--text-soft);
+  }
+
+  .panel-muted {
+    color: var(--text-muted);
+  }
+
+  .panel-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .panel-badge--warning {
+    background: var(--accent-yellow-soft);
+    color: rgba(255, 232, 151, 0.96);
+    border-color: rgba(250, 204, 21, 0.22);
+  }
+
+  .panel-badge--success {
+    background: var(--accent-green-soft);
+    color: rgba(187, 247, 208, 0.96);
+    border-color: rgba(74, 222, 128, 0.2);
+  }
+
+  .panel-badge--danger {
+    background: var(--accent-red-soft);
+    color: rgba(254, 202, 202, 0.95);
+    border-color: rgba(248, 113, 113, 0.22);
+  }
+
+  /* =========================================================
+     BUTTONS
+     ========================================================= */
+
+  .panel-close-btn {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: white;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+  }
+
+  .panel-close-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    transform: translateY(-1px);
+  }
+
+  .panel-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.7rem 1rem;
+    border-radius: 0.85rem;
+    background: var(--accent-yellow);
+    color: #111;
+    font-weight: 700;
+    transition:
+      transform 180ms ease,
+      filter 180ms ease,
+      box-shadow 180ms ease;
+    box-shadow: 0 0 18px rgba(234, 179, 8, 0.18);
+  }
+
+  .panel-btn-primary:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 0 26px rgba(234, 179, 8, 0.34);
+    transform: translateY(-1px);
+  }
+
+  .panel-btn-primary:active {
+    transform: scale(0.97);
+  }
+
+  .panel-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.7rem 1rem;
+    border-radius: 0.85rem;
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition:
+      transform 180ms ease,
+      background 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .panel-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+  }
+
+  .panel-btn-secondary:active {
+    transform: scale(0.97);
+  }
+
+  .panel-btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.7rem 1rem;
+    border-radius: 0.85rem;
+    background: rgba(220, 38, 38, 0.92);
+    color: white;
+    transition:
+      transform 180ms ease,
+      filter 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .panel-btn-danger:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 0 18px rgba(248, 113, 113, 0.28);
+    transform: translateY(-1px);
+  }
+
+  .panel-btn-danger:active {
+    transform: scale(0.97);
+  }
+
+  /* Bottoni icona */
+  .panel-icon-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(161, 161, 170, 0.95);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition:
+      transform 180ms ease,
+      color 180ms ease,
+      border-color 180ms ease,
+      background 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .panel-icon-btn:hover {
+    transform: translateY(-1px) scale(1.03);
+  }
+
+  .panel-icon-btn:active {
+    transform: scale(0.95);
+  }
+
+  .panel-icon-btn--warning:hover {
+    color: rgb(250, 204, 21);
+    border-color: rgba(250, 204, 21, 0.35);
+    background: rgba(250, 204, 21, 0.1);
+    box-shadow: 0 0 14px rgba(234, 179, 8, 0.28);
+  }
+
+  .panel-icon-btn--warning:active {
+    box-shadow: 0 0 22px rgba(234, 179, 8, 0.45);
+  }
+
+  .panel-icon-btn--danger:hover {
+    color: rgb(248, 113, 113);
+    border-color: rgba(248, 113, 113, 0.35);
+    background: rgba(248, 113, 113, 0.1);
+    box-shadow: 0 0 14px rgba(248, 113, 113, 0.28);
+  }
+
+  .panel-icon-btn--danger:active {
+    box-shadow: 0 0 22px rgba(248, 113, 113, 0.45);
+  }
+
+  .panel-icon-btn--success:hover {
+    color: rgb(74, 222, 128);
+    border-color: rgba(74, 222, 128, 0.35);
+    background: rgba(74, 222, 128, 0.1);
+    box-shadow: 0 0 14px rgba(74, 222, 128, 0.28);
+  }
+
+  .panel-icon-btn--success:active {
+    box-shadow: 0 0 22px rgba(74, 222, 128, 0.45);
+  }
+
+  /* =========================================================
+     COVER SYSTEM
+     ========================================================= */
+
+  .cover-frame {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1rem;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .cover-fill {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.08);
+    filter: blur(10px);
+    opacity: 0.38;
+  }
+
+  .cover-main {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .cover-shine {
+    position: absolute;
+    left: -60%;
+    top: -40%;
+    width: 40%;
+    height: 180%;
+    background: linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.12) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    transform: rotate(20deg);
+    opacity: 0;
+    transition:
+      transform 0.9s cubic-bezier(.2, .9, .2, 1),
+      opacity 0.25s ease;
+    pointer-events: none;
+    filter: blur(6px);
+    z-index: 25;
+  }
+
+  .group:hover .cover-shine,
+  .cover-frame:hover .cover-shine {
+    transform: translateX(220%) rotate(20deg);
+    opacity: 1;
+  }
+
+  /* =========================================================
+     SCROLLBAR
+     ========================================================= */
+
+  .panel-scrollbar,
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  }
+
+  .panel-scrollbar::-webkit-scrollbar,
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .panel-scrollbar::-webkit-scrollbar-track,
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .panel-scrollbar::-webkit-scrollbar-thumb,
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.14),
+      rgba(255, 255, 255, 0.08)
+    );
+    border-radius: 999px;
+    border: 2px solid rgba(0, 0, 0, 0);
+  }
+
+  /* =========================================================
+     COMPAT LEGACY HELPERS
+     ========================================================= */
+
+  .bg-white\/6 {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .bg-white\/8 {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .bg-white\/4 {
+    background-color: rgba(255, 255, 255, 0.04);
+  }
+
+  .z-60 {
+    z-index: 60;
+  }
+
+  .z-70 {
+    z-index: 70;
+  }
+
+  .z-9999 {
+    z-index: 9999;
+  }
+
+  /* =========================================================
+     GRID helper / volume 3D (li mantengo come li usavi)
+     ========================================================= */
+
   .manga-grid {
     display: grid;
     gap: 1rem;
@@ -13,7 +413,6 @@
     align-items: start;
   }
 
-  /* wrapper perspective */
   .volume-3d-wrap {
     perspective: 1000px;
     -webkit-perspective: 1000px;
@@ -22,7 +421,6 @@
     overflow: visible;
   }
 
-  /* VOLUME: larghezza fissa per uniformità */
   .volume-3d {
     --thickness: 12px;
     width: 150px;
@@ -31,18 +429,19 @@
     position: relative;
     transform-style: preserve-3d;
     transform-origin: left center;
-    transition: transform 0.32s cubic-bezier(.2,.9,.2,1), box-shadow 0.32s ease;
-    box-shadow: 0 8px 18px rgba(0,0,0,0.32);
+    transition:
+      transform 0.32s cubic-bezier(.2, .9, .2, 1),
+      box-shadow 0.32s ease;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.32);
     overflow: visible;
     backface-visibility: hidden;
   }
 
   .volume-3d:hover {
     transform: translateY(-8px) rotateY(-10deg) translateZ(6px);
-    box-shadow: 0 26px 50px rgba(0,0,0,0.55);
+    box-shadow: 0 26px 50px rgba(0, 0, 0, 0.55);
   }
 
-  /* costina (sinistra) */
   .volume-3d::before {
     content: "";
     position: absolute;
@@ -59,7 +458,6 @@
     pointer-events: none;
   }
 
-  /* separatore sottile */
   .volume-3d::after {
     content: "";
     position: absolute;
@@ -73,7 +471,6 @@
     pointer-events: none;
   }
 
-  /* PAGES: larghezza fissa per tutti */
   .volume-3d .pages {
     position: absolute;
     right: -12px;
@@ -103,7 +500,6 @@
     transform: translateZ(2px);
   }
 
-  /* COVER area: altezza fissa */
   .volume-3d .cover {
     width: 100%;
     height: 210px;
@@ -127,7 +523,6 @@
     backface-visibility: hidden;
   }
 
-  /* SHINE effect (B) */
   .volume-3d .cover::after {
     content: "";
     position: absolute;
@@ -135,7 +530,12 @@
     top: -40%;
     width: 40%;
     height: 180%;
-    background: linear-gradient(120deg, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.0) 100%);
+    background: linear-gradient(
+      120deg,
+      rgba(255,255,255,0.0) 0%,
+      rgba(255,255,255,0.12) 50%,
+      rgba(255,255,255,0.0) 100%
+    );
     transform: rotate(20deg);
     opacity: 0;
     transition: transform 0.8s ease, opacity 0.4s ease;
@@ -147,14 +547,15 @@
   .volume-3d:hover .cover::after {
     transform: translateX(220%) rotate(20deg);
     opacity: 1;
-    transition: transform 0.9s cubic-bezier(.2,.9,.2,1), opacity 0.25s ease;
+    transition:
+      transform 0.9s cubic-bezier(.2,.9,.2,1),
+      opacity 0.25s ease;
   }
 
   .volume-3d:hover .cover img {
     transform: scale(1.03);
   }
 
-  /* INFO area: troncamento con ellipsis */
   .volume-3d .info {
     padding: 10px;
     padding-bottom: 14px;
@@ -194,67 +595,5 @@
   .volume-3d .progress > .bar {
     height: 100%;
     transition: width 0.45s ease;
-  }
-
-  /* Utilities for MangaDetail and modal */
-  .bg-white\/6 { background-color: rgba(255,255,255,0.06); }
-  .bg-white\/8 { background-color: rgba(255,255,255,0.08); }
-  .z-60 { z-index: 60; }
-  .z-9999 { z-index: 9999; }
-
-  /* cover shine (riutilizzabile) */
-  .cover-shine {
-    position: absolute;
-    left: -60%;
-    top: -40%;
-    width: 40%;
-    height: 180%;
-    background: linear-gradient(120deg, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.0) 100%);
-    transform: rotate(20deg);
-    opacity: 0;
-    transition: transform 0.9s cubic-bezier(.2,.9,.2,1), opacity 0.25s ease;
-    pointer-events: none;
-    filter: blur(6px);
-    z-index: 25;
-  }
-
-  /* show shine on hover/focus of the cover wrapper (escaped Tailwind width utility) */
-  .w-
-
-\[260px\]
-
-:hover .cover-shine,
-  .w-
-
-\[260px\]
-
-:focus .cover-shine {
-    transform: translateX(220%) rotate(20deg);
-    opacity: 1;
-  }
-
-  /* custom scrollbar per descrizione e textarea */
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,0.18) transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08));
-    border-radius: 999px;
-    border: 2px solid rgba(0,0,0,0.0);
-  }
-
-  /* pannello principale: semitrasparente, leggermente colorato e leggibile */
-  .manga-detail-card {
-    background: linear-gradient(180deg, rgba(12,14,30,0.62), rgba(24,18,40,0.56));
-    backdrop-filter: blur(6px);
-    border: 1px solid rgba(255,255,255,0.06);
   }
 }
