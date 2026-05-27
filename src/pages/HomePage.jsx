@@ -25,6 +25,9 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
 
   const [activeFilter, setActiveFilter] = useState("all");
 
+  const sidebarOpenWidth = 340;
+  const sidebarClosedWidth = 104;
+
   function refreshManga() {
     getManga().then((d) => setMangaList(d || []));
   }
@@ -107,16 +110,19 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     <div className="bg-[#111] text-white min-h-screen">
       {/* SIDEBAR */}
       <div
-        className={`fixed left-0 top-0 h-screen transition-all duration-300 ${
-          openSidebar ? "w-72" : "w-28"
-        }`}
+        className="fixed left-0 top-0 h-screen transition-all duration-300"
+        style={{
+          width: openSidebar ? sidebarOpenWidth : sidebarClosedWidth
+        }}
       >
         <Sidebar open={openSidebar} />
       </div>
 
       {/* MAIN */}
       <div
-        style={{ marginLeft: openSidebar ? 288 : 112 }}
+        style={{
+          marginLeft: openSidebar ? sidebarOpenWidth : sidebarClosedWidth
+        }}
         className="px-10 py-6 space-y-8 transition-all duration-300"
       >
         <TopHero manga={mangaList} onSelect={setSelectedManga} />
