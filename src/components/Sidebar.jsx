@@ -6,34 +6,7 @@ import StatsPanel from "./StatsPanel";
 function StarIcon({ className = "w-5 h-5" }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor">
-      <path d="M12 2.7 14.9 8.6l6.5.95-4.7 4.58 1.1 6.47L12 17.55 6.2 20.6l1.1-6.47-4.7-4.58 6.5-.95L12 2.7Z" />
-    </svg>
-  );
-}
-
-function ClockIcon({ className = "w-5 h-5" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 7.5v5l3.2 2" />
-    </svg>
-  );
-}
-
-function CalendarIcon({ className = "w-5 h-5" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
+     none"      <path d="M12 2.7 14.9 8.6l6.5.95-4.7 4.58 1.1 6.47L12 17.55 6.2 20.6l1.1-6.47-4.7-4.58 6.5-.95L12 2.7Z" />
       stroke="currentColor"
       strokeWidth="1.9"
       strokeLinecap="round"
@@ -126,17 +99,15 @@ function SaveIcon() {
 
 export default function Sidebar({ open = true }) {
   const [manga, setManga] = useState([]);
-  const [favorites, setFavorites] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("mv_favorites") || "[]");
-    } catch {
-      return [];
-    }
-  });
-
-  const [pulseFav, setPulseFav] = useState(false);
   const [currentReading, setCurrentReading] = useState(null);
   const [currentVol, setCurrentVol] = useState("");
+
+  function loadManga() {
+    fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
+      .then((r) => r.json())
+      .then((d) => setManga(Array.isArray(d) ? d : []))
+      .catch(() => setManga([]));
+  }
 
   function loadCurrentReading() {
     try {
@@ -152,53 +123,28 @@ export default function Sidebar({ open = true }) {
   }
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
-      .then((r) => r.json())
-      .then((d) => setManga(Array.isArray(d) ? d : []))
-      .catch(() => setManga([]));
-
+    loadManga();
     loadCurrentReading();
   }, []);
 
   useEffect(() => {
-    const favoriteHandler = () => {
-      setPulseFav(true);
-      setTimeout(() => setPulseFav(false), 900);
-    };
-
     const refreshReading = () => loadCurrentReading();
+    const refreshAll = () => loadManga();
 
-    window.addEventListener("favoriteAdded", favoriteHandler);
     window.addEventListener("storage", refreshReading);
     window.addEventListener("currentReadingUpdated", refreshReading);
+    window.addEventListener("favoritesUpdated", refreshAll);
 
     return () => {
-      window.removeEventListener("favoriteAdded", favoriteHandler);
       window.removeEventListener("storage", refreshReading);
       window.removeEventListener("currentReadingUpdated", refreshReading);
+      window.removeEventListener("favoritesUpdated", refreshAll);
     };
   }, []);
 
   const favoritesList = useMemo(() => {
-    return manga.filter((m) => favorites.includes(m.ID));
-  }, [manga, favorites]);
-
-  const toggleFavorite = (id) => {
-    const updated = favorites.includes(id)
-      ? favorites.filter((f) => f !== id)
-      : [...favorites, id];
-
-    setFavorites(updated);
-    localStorage.setItem("mv_favorites", JSON.stringify(updated));
-
-    window.dispatchEvent(
-      new CustomEvent("favoritesUpdated", {
-        detail: { favorites: updated }
-      })
-    );
-
-    window.dispatchEvent(new Event("favoriteAdded"));
-  };
+    return manga.filter((m) => Number(m.Valutazione) >= 5);
+  }, [manga]);
 
   const navigate = (page) => {
     window.dispatchEvent(
@@ -234,30 +180,33 @@ export default function Sidebar({ open = true }) {
     setCurrentVol(String(next));
     localStorage.setItem("mv_current_vol", String(next));
     localStorage.setItem("mv_selected_manga", JSON.stringify(currentReading));
+
     window.dispatchEvent(new Event("currentReadingUpdated"));
   }
 
-  function saveCurrentReading() {
+  async function saveCurrentReading() {
     if (!currentReading) return;
 
     localStorage.setItem("mv_selected_manga", JSON.stringify(currentReading));
     localStorage.setItem("mv_current_vol", String(currentVol || "0"));
 
     try {
-      const history = JSON.parse(localStorage.getItem("mv_history") || "[]");
-
-      const next = [
-        ...history,
-        {
-          title: currentReading.Titolo,
-          id: currentReading.ID,
-          volume: currentVol || "0",
-          at: new Date().toISOString()
-        }
-      ].slice(-50);
-
-      localStorage.setItem("mv_history", JSON.stringify(next));
-    } catch {}
+      await fetch(`${import.meta.env.VITE_API_URL}/api/reading-history`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          manga_id: currentReading.ID,
+          titolo: currentReading.Titolo,
+          autore: currentReading.Autore || "",
+          coverurl: currentReading.CoverURL || "",
+          volume: Number(currentVol) || 0
+        })
+      });
+    } catch (err) {
+      console.error("Errore salvataggio cronologia lettura:", err);
+    }
 
     window.dispatchEvent(new Event("currentReadingUpdated"));
   }
@@ -285,7 +234,6 @@ export default function Sidebar({ open = true }) {
         boxShadow: "18px 0 55px rgba(0,0,0,0.34)"
       }}
     >
-      {/* luci ambientali */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -top-10 -right-12 w-32 h-32 rounded-full bg-blue-500/12 blur-3xl" />
         <div className="absolute bottom-20 -left-10 w-28 h-28 rounded-full bg-violet-500/10 blur-3xl" />
@@ -346,7 +294,6 @@ export default function Sidebar({ open = true }) {
             label: "Preferiti",
             icon: <StarIcon className="w-5 h-5" />,
             count: favoritesList.length,
-            pulse: pulseFav,
             accent: "text-yellow-400"
           },
           {
@@ -377,19 +324,13 @@ export default function Sidebar({ open = true }) {
               rounded-2xl
               border border-white/[0.06]
               bg-white/[0.05]
-              hover:bg-white/[0.085]
+              hover:bg-white/[0.08]
               hover:border-yellow-400/25
               transition-all duration-200
               ${open ? "px-4 py-3" : "p-3 justify-center"}
             `}
           >
-            <span
-              className={`
-                ${item.accent}
-                transition-transform duration-200
-                ${item.pulse ? "scale-125" : "group-hover:scale-110"}
-              `}
-            >
+            <span className={`${item.accent} transition-transform duration-200 group-hover:scale-110`}>
               {item.icon}
             </span>
 
@@ -519,7 +460,6 @@ export default function Sidebar({ open = true }) {
         </section>
       )}
 
-      {/* STATS */}
       {open && (
         <div className="relative z-10 mt-auto">
           <StatsPanel />
@@ -528,3 +468,29 @@ export default function Sidebar({ open = true }) {
     </aside>
   );
 }
+    </svg>
+  );
+}
+
+function ClockIcon({ className = "w-5 h-5" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5v5l3.2 2" />
+    </svg>
+  );
+}
+
+function CalendarIcon({ className = "w-5 h-5" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
