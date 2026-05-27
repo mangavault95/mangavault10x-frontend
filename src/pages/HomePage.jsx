@@ -9,6 +9,20 @@ import WishlistList from "../components/WishlistList";
 import RecordsModal from "../components/RecordsModal";
 import { getManga } from "../services/api";
 import Fuse from "fuse.js";
+import MobileHomeView from "../mobile/MobileHomeView";
+
+const isMobile = window.innerWidth < 768;
+
+return isMobile ? (
+  <MobileHomeView
+    manga={manga}
+    filteredManga={filteredManga}
+    filter={filter}
+    setFilter={setFilter}
+  />
+) : (
+  // desktop già esistente
+);
 
 export default function HomePage({ setAdminMode, setRecordsMode }) {
   const [search, setSearch] = useState("");
