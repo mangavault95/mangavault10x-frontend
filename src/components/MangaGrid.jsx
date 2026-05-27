@@ -8,14 +8,15 @@ export default function MangaGrid({ searchResults = [], filter }) {
     const num = Number(cleaned);
     return Number.isNaN(num) ? null : num;
   }
-v
+
   function getOwned(manga) {
     return Number(manga?.VolumiPosseduti) || 0;
   }
+
   function getTotal(manga) {
     return parseTotal(manga?.VolumiTotali);
   }
- 
+
   function getStatus(manga) {
     const owned = getOwned(manga);
     const total = getTotal(manga);
@@ -83,7 +84,7 @@ v
   }
 
   return (
-   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
       {filtered.map((manga) => {
         const owned = getOwned(manga);
         const total = getTotal(manga);
@@ -107,15 +108,14 @@ v
             type="button"
             onClick={() => openDetail(manga)}
             className="
-  group text-left
-  rounded-2xl overflow-hidden
-  border border-white/10
-  backdrop-blur-lg
-  hover:border-yellow-400/25
-  hover:shadow-[0_0_24px_rgba(99,102,241,0.16)]
-  transition-all duration-300
-"
-
+              group text-left
+              rounded-2xl overflow-hidden
+              border border-white/10
+              backdrop-blur-lg
+              hover:border-yellow-400/25
+              hover:shadow-[0_0_24px_rgba(99,102,241,0.16)]
+              transition-all duration-300
+            "
             style={{
               background:
                 "linear-gradient(180deg, rgba(24,30,56,0.34), rgba(12,16,28,0.52))",
