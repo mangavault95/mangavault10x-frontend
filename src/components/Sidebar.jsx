@@ -401,11 +401,12 @@ export default function Sidebar({ open = true }) {
   return (
     <>
       <aside
-        className={`
-          h-full flex flex-col relative overflow-y-auto
-          px-5 py-4 transition-all duration-300
-          ${open ? "w-full gap-4" : "w-full items-center gap-3"}
-        `}
+  className={`
+    h-full flex flex-col relative overflow-y-auto no-scrollbar
+    px-4 py-4 transition-all duration-300
+    ${open ? "w-full gap-3.5" : "w-full items-center gap-3"}
+  `}
+
         style={{
           background:
             "linear-gradient(180deg, rgba(18,22,42,0.56), rgba(10,12,24,0.74))",
