@@ -1,7 +1,7 @@
 export default function MangaGrid({ searchResults = [], filter }) {
   function parseTotal(value) {
     if (value === null || value === undefined || value === "") return null;
-
+ 
     const cleaned = String(value).replace(/[^0-9]/g, "");
     if (!cleaned) return null;
 
