@@ -28,7 +28,7 @@ export default function ReadingSessionAddModal({ onClose, onSaved }) {
         setSessions([]);
       }
     }
-
+ 
     load();
   }, [API]);
 
