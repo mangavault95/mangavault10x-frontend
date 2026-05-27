@@ -13,9 +13,9 @@ function LogoMark() {
   );
 }
 
-function StarIcon() {
+function StarIcon({ className = "w-6 h-6" }) {
   return (
-    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor">
       <path d="M12 2.7 14.9 8.6l6.5.95-4.7 4.58 1.1 6.47L12 17.55 6.2 20.6l1.1-6.47-4.7-4.58 6.5-.95L12 2.7Z" />
     </svg>
   );
@@ -85,7 +85,14 @@ function TrophyIcon() {
 
 function MinusIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg
+      viewBox="0 0 24 24"
+      className="w-5 h-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
       <path d="M6 12h12" />
     </svg>
   );
@@ -93,7 +100,14 @@ function MinusIcon() {
 
 function PlusIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg
+      viewBox="0 0 24 24"
+      className="w-5 h-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
       <path d="M12 5v14" />
       <path d="M5 12h14" />
     </svg>
@@ -122,6 +136,7 @@ function SaveIcon() {
 
 export default function Sidebar({ open = true }) {
   const [manga, setManga] = useState([]);
+
   const [favorites, setFavorites] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("mv_favorites") || "[]");
@@ -136,7 +151,9 @@ export default function Sidebar({ open = true }) {
 
   function loadCurrentReading() {
     try {
-      const selected = JSON.parse(localStorage.getItem("mv_selected_manga") || "null");
+      const selected = JSON.parse(
+        localStorage.getItem("mv_selected_manga") || "null"
+      );
       const vol = localStorage.getItem("mv_current_vol") || "";
 
       setCurrentReading(selected);
@@ -157,19 +174,19 @@ export default function Sidebar({ open = true }) {
   }, []);
 
   useEffect(() => {
-    const handler = () => {
+    const favoriteHandler = () => {
       setPulseFav(true);
       setTimeout(() => setPulseFav(false), 900);
     };
 
     const refreshReading = () => loadCurrentReading();
 
-    window.addEventListener("favoriteAdded", handler);
+    window.addEventListener("favoriteAdded", favoriteHandler);
     window.addEventListener("storage", refreshReading);
     window.addEventListener("currentReadingUpdated", refreshReading);
 
     return () => {
-      window.removeEventListener("favoriteAdded", handler);
+      window.removeEventListener("favoriteAdded", favoriteHandler);
       window.removeEventListener("storage", refreshReading);
       window.removeEventListener("currentReadingUpdated", refreshReading);
     };
@@ -248,6 +265,7 @@ export default function Sidebar({ open = true }) {
 
     try {
       const history = JSON.parse(localStorage.getItem("mv_history") || "[]");
+
       const next = [
         ...history,
         {
@@ -266,6 +284,7 @@ export default function Sidebar({ open = true }) {
 
   const readingOwned = Number(currentVol) || 0;
   const readingTotal = Number(currentReading?.VolumiTotali) || 0;
+
   const readingPercent = readingTotal
     ? Math.min(100, Math.round((readingOwned / readingTotal) * 100))
     : 0;
@@ -355,7 +374,11 @@ export default function Sidebar({ open = true }) {
             <ClockIcon />
           </span>
 
-          {open && <span className="text-sm font-medium text-white">Ultime letture</span>}
+          {open && (
+            <span className="text-sm font-medium text-white">
+              Ultime letture
+            </span>
+          )}
         </button>
 
         <button
@@ -376,7 +399,9 @@ export default function Sidebar({ open = true }) {
             <CalendarIcon />
           </span>
 
-          {open && <span className="text-sm font-medium text-white">Wishlist</span>}
+          {open && (
+            <span className="text-sm font-medium text-white">Wishlist</span>
+          )}
         </button>
 
         <button
@@ -397,7 +422,9 @@ export default function Sidebar({ open = true }) {
             <TrophyIcon />
           </span>
 
-          {open && <span className="text-sm font-medium text-white">Records</span>}
+          {open && (
+            <span className="text-sm font-medium text-white">Records</span>
+          )}
         </button>
       </nav>
 
@@ -411,7 +438,9 @@ export default function Sidebar({ open = true }) {
           <button
             onClick={() =>
               window.dispatchEvent(
-                new CustomEvent("openMangaDetail", { detail: currentReading })
+                new CustomEvent("openMangaDetail", {
+                  detail: currentReading
+                })
               )
             }
             className="w-full flex flex-col items-center text-center group"
@@ -420,8 +449,8 @@ export default function Sidebar({ open = true }) {
               {currentReading.CoverURL ? (
                 <img
                   src={currentReading.CoverURL}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
-                  alt={currentReading.Titolo}
+                  alt={currentReading.Titolo || "Cover manga corrente"}
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-xs text-zinc-500">
@@ -500,7 +529,9 @@ export default function Sidebar({ open = true }) {
                 key={m.ID}
                 onClick={() =>
                   window.dispatchEvent(
-                    new CustomEvent("openMangaDetail", { detail: m })
+                    new CustomEvent("openMangaDetail", {
+                      detail: m
+                    })
                   )
                 }
                 className="group flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer bg-white/[0.035] border border-white/[0.05] hover:bg-white/[0.065] hover:border-yellow-400/20 transition-all"
@@ -508,7 +539,7 @@ export default function Sidebar({ open = true }) {
                 <img
                   src={m.CoverURL || "https://placehold.co/60x90"}
                   className="w-11 h-14 rounded-xl object-cover flex-shrink-0"
-                  alt={m.Titolo}
+                  alt={m.Titolo || "Cover manga"}
                 />
 
                 <div className="flex-1 min-w-0">
@@ -529,11 +560,13 @@ export default function Sidebar({ open = true }) {
                           : "Aggiungi ai preferiti"
                       }
                     >
-                      <StarIcon />
+                      <StarIcon className="w-4 h-4" />
                     </button>
                   </div>
 
-                  <div className="text-xs text-zinc-500 truncate">{m.Autore}</div>
+                  <div className="text-xs text-zinc-500 truncate">
+                    {m.Autore}
+                  </div>
                 </div>
               </div>
             ))}
@@ -541,6 +574,12 @@ export default function Sidebar({ open = true }) {
         </section>
       )}
 
+      {/* STATS */}
       {open && (
         <div className="mt-auto">
           <StatsPanel />
+        </div>
+      )}
+    </aside>
+  );
+}
