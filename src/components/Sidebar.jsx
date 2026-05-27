@@ -1,9 +1,127 @@
 import { useEffect, useMemo, useState } from "react";
 import StatsPanel from "./StatsPanel";
 
+/* -------------------- ICONS -------------------- */
+
+function LogoMark() {
+  return (
+    <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-300 via-yellow-400 to-yellow-700 shadow-[0_0_28px_rgba(250,204,21,0.42)] overflow-hidden">
+      <div className="absolute inset-[2px] rounded-[14px] bg-gradient-to-br from-yellow-300/80 to-yellow-600/80" />
+      <div className="absolute -top-4 -right-4 w-10 h-10 rounded-full bg-white/35 blur-xl" />
+      <div className="absolute bottom-2 left-2 w-5 h-1 rounded-full bg-black/25" />
+    </div>
+  );
+}
+
+function StarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+      <path d="M12 2.7 14.9 8.6l6.5.95-4.7 4.58 1.1 6.47L12 17.55 6.2 20.6l1.1-6.47-4.7-4.58 6.5-.95L12 2.7Z" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="w-6 h-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5v5l3.2 2" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="w-6 h-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="4" y="5" width="16" height="15" rx="3" />
+      <path d="M8 3.5v3" />
+      <path d="M16 3.5v3" />
+      <path d="M4 9h16" />
+      <path d="M8 13h.01" />
+      <path d="M12 13h.01" />
+      <path d="M16 13h.01" />
+      <path d="M8 17h.01" />
+      <path d="M12 17h.01" />
+    </svg>
+  );
+}
+
+function TrophyIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="w-6 h-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M8 4h8v4a4 4 0 0 1-8 0V4Z" />
+      <path d="M8 6H5.5A2.5 2.5 0 0 0 8 10" />
+      <path d="M16 6h2.5A2.5 2.5 0 0 1 16 10" />
+      <path d="M12 12v4" />
+      <path d="M9 20h6" />
+      <path d="M10 16h4" />
+    </svg>
+  );
+}
+
+function MinusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M6 12h12" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
+function SaveIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="w-6 h-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 4h11l3 3v13H5V4Z" />
+      <path d="M8 4v6h8" />
+      <path d="M8 17h8" />
+    </svg>
+  );
+}
+
+/* -------------------- COMPONENT -------------------- */
+
 export default function Sidebar({ open = true }) {
   const [manga, setManga] = useState([]);
-
   const [favorites, setFavorites] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("mv_favorites") || "[]");
@@ -13,12 +131,29 @@ export default function Sidebar({ open = true }) {
   });
 
   const [pulseFav, setPulseFav] = useState(false);
+  const [currentReading, setCurrentReading] = useState(null);
+  const [currentVol, setCurrentVol] = useState("");
+
+  function loadCurrentReading() {
+    try {
+      const selected = JSON.parse(localStorage.getItem("mv_selected_manga") || "null");
+      const vol = localStorage.getItem("mv_current_vol") || "";
+
+      setCurrentReading(selected);
+      setCurrentVol(vol);
+    } catch {
+      setCurrentReading(null);
+      setCurrentVol("");
+    }
+  }
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
       .then((r) => r.json())
       .then((d) => setManga(Array.isArray(d) ? d : []))
       .catch(() => setManga([]));
+
+    loadCurrentReading();
   }, []);
 
   useEffect(() => {
@@ -27,14 +162,21 @@ export default function Sidebar({ open = true }) {
       setTimeout(() => setPulseFav(false), 900);
     };
 
+    const refreshReading = () => loadCurrentReading();
+
     window.addEventListener("favoriteAdded", handler);
-    return () => window.removeEventListener("favoriteAdded", handler);
+    window.addEventListener("storage", refreshReading);
+    window.addEventListener("currentReadingUpdated", refreshReading);
+
+    return () => {
+      window.removeEventListener("favoriteAdded", handler);
+      window.removeEventListener("storage", refreshReading);
+      window.removeEventListener("currentReadingUpdated", refreshReading);
+    };
   }, []);
 
   const favoritesList = useMemo(() => {
-    return manga.filter(
-      (m) => favorites.includes(m.ID) && (Number(m.Rating) || 0) >= 5
-    );
+    return manga.filter((m) => favorites.includes(m.ID));
   }, [manga, favorites]);
 
   const latest = useMemo(() => {
@@ -50,10 +192,6 @@ export default function Sidebar({ open = true }) {
 
     setFavorites(updated);
     localStorage.setItem("mv_favorites", JSON.stringify(updated));
-
-    setManga((prev) =>
-      prev.map((m) => (m.ID === id ? { ...m, Rating: 5 } : m))
-    );
 
     window.dispatchEvent(
       new CustomEvent("favoritesUpdated", {
@@ -80,57 +218,121 @@ export default function Sidebar({ open = true }) {
     }
   };
 
-  const onLogoToggle = () => window.dispatchEvent(new Event("toggleSidebar"));
+  const onLogoToggle = () => {
+    window.dispatchEvent(new Event("toggleSidebar"));
+  };
+
+  function updateCurrentVolume(delta) {
+    if (!currentReading) return;
+
+    const current = Number(currentVol) || 0;
+    const total = Number(currentReading.VolumiTotali) || 0;
+
+    let next = current + delta;
+
+    if (next < 0) next = 0;
+    if (total && next > total) next = total;
+
+    setCurrentVol(String(next));
+    localStorage.setItem("mv_current_vol", String(next));
+    localStorage.setItem("mv_selected_manga", JSON.stringify(currentReading));
+
+    window.dispatchEvent(new Event("currentReadingUpdated"));
+  }
+
+  function saveCurrentReading() {
+    if (!currentReading) return;
+
+    localStorage.setItem("mv_selected_manga", JSON.stringify(currentReading));
+    localStorage.setItem("mv_current_vol", String(currentVol || "0"));
+
+    try {
+      const history = JSON.parse(localStorage.getItem("mv_history") || "[]");
+      const next = [
+        ...history,
+        {
+          title: currentReading.Titolo,
+          id: currentReading.ID,
+          volume: currentVol || "0",
+          at: new Date().toISOString()
+        }
+      ].slice(-50);
+
+      localStorage.setItem("mv_history", JSON.stringify(next));
+    } catch {}
+
+    window.dispatchEvent(new Event("currentReadingUpdated"));
+  }
+
+  const readingOwned = Number(currentVol) || 0;
+  const readingTotal = Number(currentReading?.VolumiTotali) || 0;
+  const readingPercent = readingTotal
+    ? Math.min(100, Math.round((readingOwned / readingTotal) * 100))
+    : 0;
 
   return (
-    <div
+    <aside
       className={`
-        h-full flex flex-col p-4 gap-4
-        bg-gradient-to-b from-[#070707] via-[#0f0f10] to-[#070707]
+        h-full flex flex-col
+        px-5 py-5 gap-5
+        bg-gradient-to-b from-[#050505] via-[#0b0b0d] to-[#050505]
+        border-r border-white/6
+        shadow-[18px_0_45px_rgba(0,0,0,0.45)]
         transition-all duration-300
-        ${open ? "w-full" : "w-28 items-center"}
+        ${open ? "w-full" : "w-full items-center"}
       `}
     >
       {/* LOGO */}
-      <div className={`flex items-center gap-3 ${open ? "" : "flex-col"}`}>
-        <div
+      <div className={`flex items-center ${open ? "gap-4" : "justify-center"}`}>
+        <button
           onClick={onLogoToggle}
           title={open ? "Chiudi sidebar" : "Apri sidebar"}
-          className="w-9 h-9 rounded-md cursor-pointer bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-[0_0_14px_rgba(250,204,21,0.45)] flex items-center justify-center"
-        />
+          className="shrink-0 transition-transform duration-200 hover:scale-105 active:scale-95"
+        >
+          <LogoMark />
+        </button>
 
         {open && (
-          <div className="text-lg font-black tracking-tight text-white select-none">
-            MangaVault <span className="text-yellow-400">10X</span>
+          <div className="min-w-0">
+            <div className="text-2xl font-black tracking-tight text-white leading-none">
+              MangaVault
+            </div>
+            <div className="text-xl font-black tracking-tight text-yellow-400 leading-tight">
+              10X
+            </div>
           </div>
         )}
       </div>
 
       {/* NAV */}
-      <nav className={`flex flex-col gap-2 ${open ? "" : "items-center"}`}>
+      <nav className={`flex flex-col gap-3 ${open ? "" : "items-center w-full"}`}>
         <button
           onClick={() => navigate("favorites")}
           title="Preferiti"
-          className={`flex items-center gap-3 w-full ${
-            open
-              ? "px-3 py-2 rounded-lg bg-white/4 hover:bg-white/6"
-              : "p-2 rounded-md"
-          }`}
+          className={`
+            group flex items-center gap-4 w-full
+            rounded-2xl
+            border border-white/[0.06]
+            bg-white/[0.045]
+            hover:bg-white/[0.075]
+            hover:border-yellow-400/25
+            transition-all duration-200
+            ${open ? "px-4 py-3" : "p-3 justify-center"}
+          `}
         >
           <span
-            className={`text-2xl ${
-              pulseFav ? "scale-110 animate-pulse" : ""
-            }`}
+            className={`
+              text-yellow-400 transition-transform duration-200
+              ${pulseFav ? "scale-125" : "group-hover:scale-110"}
+            `}
           >
-            ⭐
+            <StarIcon />
           </span>
 
           {open && (
-            <div className="flex-1 text-sm text-white flex justify-between items-center">
-              <span>Preferiti</span>
-              <span className="text-zinc-400 text-xs">
-                {favoritesList.length}
-              </span>
+            <div className="flex-1 flex justify-between items-center min-w-0">
+              <span className="text-sm font-medium text-white">Preferiti</span>
+              <span className="text-xs text-zinc-400">{favoritesList.length}</span>
             </div>
           )}
         </button>
@@ -138,112 +340,157 @@ export default function Sidebar({ open = true }) {
         <button
           onClick={() => navigate("history")}
           title="Ultime letture"
-          className={`flex items-center gap-3 w-full ${
-            open
-              ? "px-3 py-2 rounded-lg bg-white/4 hover:bg-white/6"
-              : "p-2 rounded-md"
-          }`}
+          className={`
+            group flex items-center gap-4 w-full
+            rounded-2xl
+            border border-white/[0.06]
+            bg-white/[0.045]
+            hover:bg-white/[0.075]
+            hover:border-yellow-400/25
+            transition-all duration-200
+            ${open ? "px-4 py-3" : "p-3 justify-center"}
+          `}
         >
-          <span className="text-2xl">🕒</span>
-          {open && <span className="text-sm text-white">Ultime letture</span>}
+          <span className="text-zinc-300 group-hover:text-yellow-400 transition">
+            <ClockIcon />
+          </span>
+
+          {open && <span className="text-sm font-medium text-white">Ultime letture</span>}
         </button>
 
         <button
           onClick={() => navigate("wishlist")}
           title="Wishlist"
-          className={`flex items-center gap-3 w-full ${
-            open
-              ? "px-3 py-2 rounded-lg bg-white/4 hover:bg-white/6"
-              : "p-2 rounded-md"
-          }`}
+          className={`
+            group flex items-center gap-4 w-full
+            rounded-2xl
+            border border-white/[0.06]
+            bg-white/[0.045]
+            hover:bg-white/[0.075]
+            hover:border-yellow-400/25
+            transition-all duration-200
+            ${open ? "px-4 py-3" : "p-3 justify-center"}
+          `}
         >
-          <span className="text-2xl">📅</span>
-          {open && <span className="text-sm text-white">Wishlist</span>}
+          <span className="text-zinc-300 group-hover:text-yellow-400 transition">
+            <CalendarIcon />
+          </span>
+
+          {open && <span className="text-sm font-medium text-white">Wishlist</span>}
         </button>
 
         <button
           onClick={() => navigate("records")}
           title="Records"
-          className={`flex items-center gap-3 w-full ${
-            open
-              ? "px-3 py-2 rounded-lg bg-white/4 hover:bg-white/6"
-              : "p-2 rounded-md"
-          }`}
+          className={`
+            group flex items-center gap-4 w-full
+            rounded-2xl
+            border border-white/[0.06]
+            bg-white/[0.045]
+            hover:bg-white/[0.075]
+            hover:border-yellow-400/25
+            transition-all duration-200
+            ${open ? "px-4 py-3" : "p-3 justify-center"}
+          `}
         >
-          <span className="text-2xl">🏆</span>
-          {open && <span className="text-sm text-white">Records</span>}
+          <span className="text-zinc-300 group-hover:text-yellow-400 transition">
+            <TrophyIcon />
+          </span>
+
+          {open && <span className="text-sm font-medium text-white">Records</span>}
         </button>
       </nav>
 
-      {open && <div className="my-2" />}
+      {/* CURRENT READING PLAYER */}
+      {open && currentReading && (
+        <section className="mt-4 rounded-[28px] border border-white/[0.08] bg-white/[0.035] p-4 shadow-[0_20px_45px_rgba(0,0,0,0.28)]">
+          <div className="text-[11px] uppercase tracking-[0.18em] text-zinc-500 mb-3">
+            Stai leggendo
+          </div>
 
-      {/* CURRENT READING */}
-      {open &&
-        (() => {
-          let selected = null;
-
-          try {
-            selected = JSON.parse(localStorage.getItem("mv_selected_manga"));
-          } catch {
-            selected = null;
-          }
-
-          const currentVol = localStorage.getItem("mv_current_vol") || "";
-
-          if (!selected) return null;
-
-          return (
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-[#121212] to-[#0f0f0f] shadow-sm">
-              <div className="flex gap-3">
+          <button
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent("openMangaDetail", { detail: currentReading })
+              )
+            }
+            className="w-full flex flex-col items-center text-center group"
+          >
+            <div className="relative w-28 h-40 rounded-2xl overflow-hidden bg-black/40 border border-white/10 shadow-2xl">
+              {currentReading.CoverURL ? (
                 <img
-                  src={selected.CoverURL || "https://placehold.co/80x120"}
-                  className="w-14 h-20 object-cover rounded-lg"
+                  src={currentReading.CoverURL}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                  alt={currentReading.Titolo}
                 />
-
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] text-zinc-400">Stai leggendo</p>
-                  <p className="text-sm font-semibold truncate text-white">
-                    {selected.Titolo}
-                  </p>
-                  <p className="text-xs text-zinc-500 mt-1">
-                    Vol {currentVol} / {selected.VolumiTotali || "?"}
-                  </p>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-xs text-zinc-500">
+                  No cover
                 </div>
-              </div>
+              )}
 
-              <div className="mt-3 flex gap-2">
-                <button
-                  onClick={() =>
-                    window.dispatchEvent(
-                      new CustomEvent("openMangaDetail", { detail: selected })
-                    )
-                  }
-                  className="flex-1 py-2 rounded-md bg-white/5 text-sm text-white"
-                >
-                  Vai al dettaglio
-                </button>
-
-                <button
-                  onClick={() =>
-                    window.dispatchEvent(
-                      new CustomEvent("quickUpdateVolume", {
-                        detail: selected
-                      })
-                    )
-                  }
-                  className="py-2 px-3 rounded-md bg-yellow-500/20 text-yellow-300 text-sm"
-                >
-                  Aggiorna
-                </button>
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="cover-shine" />
               </div>
             </div>
-          );
-        })()}
+
+            <div className="mt-3 max-w-full">
+              <div className="text-base font-bold text-white truncate">
+                {currentReading.Titolo}
+              </div>
+
+              <div className="text-xs text-zinc-400 truncate">
+                {currentReading.Autore || "Autore sconosciuto"}
+              </div>
+            </div>
+          </button>
+
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
+              <span>Vol {readingOwned}</span>
+              <span>{readingTotal || "?"}</span>
+            </div>
+
+            <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-yellow-300 to-yellow-500 shadow-[0_0_12px_rgba(250,204,21,0.38)] transition-all duration-300"
+                style={{ width: `${readingPercent}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center justify-center gap-4">
+            <button
+              onClick={() => updateCurrentVolume(-1)}
+              className="w-11 h-11 rounded-2xl bg-white/[0.055] border border-white/[0.08] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 transition flex items-center justify-center active:scale-95"
+              title="Togli un volume"
+            >
+              <MinusIcon />
+            </button>
+
+            <button
+              onClick={saveCurrentReading}
+              className="w-16 h-16 rounded-full bg-yellow-400 text-black shadow-[0_0_28px_rgba(250,204,21,0.35)] hover:brightness-110 active:scale-95 transition flex items-center justify-center"
+              title="Salva avanzamento"
+            >
+              <SaveIcon />
+            </button>
+
+            <button
+              onClick={() => updateCurrentVolume(1)}
+              className="w-11 h-11 rounded-2xl bg-white/[0.055] border border-white/[0.08] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 transition flex items-center justify-center active:scale-95"
+              title="Aggiungi un volume"
+            >
+              <PlusIcon />
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* LATEST */}
       {open && (
-        <div>
-          <p className="text-xs uppercase tracking-wider text-zinc-400 mb-3">
+        <section className="mt-2">
+          <p className="text-xs uppercase tracking-[0.18em] text-zinc-500 mb-3">
             Ultimi aggiunti
           </p>
 
@@ -256,16 +503,17 @@ export default function Sidebar({ open = true }) {
                     new CustomEvent("openMangaDetail", { detail: m })
                   )
                 }
-                className="flex items-center gap-3 p-2 rounded-lg cursor-pointer bg-gradient-to-r from-[#0f0f0f] to-[#121212] hover:scale-[1.01] transition-transform"
+                className="group flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer bg-white/[0.035] border border-white/[0.05] hover:bg-white/[0.065] hover:border-yellow-400/20 transition-all"
               >
                 <img
                   src={m.CoverURL || "https://placehold.co/60x90"}
-                  className="w-10 h-14 rounded-md object-cover flex-shrink-0"
+                  className="w-11 h-14 rounded-xl object-cover flex-shrink-0"
+                  alt={m.Titolo}
                 />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm truncate text-white">
+                    <span className="text-sm font-medium truncate text-white">
                       {m.Titolo}
                     </span>
 
@@ -274,30 +522,25 @@ export default function Sidebar({ open = true }) {
                         e.stopPropagation();
                         toggleFavorite(m.ID);
                       }}
-                      className="text-yellow-400 ml-2"
+                      className="text-yellow-400 opacity-80 hover:opacity-100 transition"
                       title={
                         favorites.includes(m.ID)
                           ? "Rimuovi preferito"
                           : "Aggiungi ai preferiti"
                       }
                     >
-                      {favorites.includes(m.ID) ? "★" : "☆"}
+                      <StarIcon />
                     </button>
                   </div>
 
-                  <div className="text-xs text-zinc-500">{m.Autore}</div>
+                  <div className="text-xs text-zinc-500 truncate">{m.Autore}</div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {open && (
         <div className="mt-auto">
           <StatsPanel />
-        </div>
-      )}
-    </div>
-  );
-}
