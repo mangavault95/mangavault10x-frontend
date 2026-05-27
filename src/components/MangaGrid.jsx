@@ -1,127 +1,193 @@
-import { useMemo, useState } from "react";
-import MangaDetail from "./MangaDetail";
-
 export default function MangaGrid({ searchResults = [], filter }) {
-  const [selectedManga, setSelectedManga] = useState(null);
-
-  function parseTotal(raw) {
-    if (!raw) return null;
-    const cleaned = String(raw).replace(/[^0-9]/g, "");
-    if (!cleaned) return null;
-    const num = Number(cleaned);
-    return isNaN(num) ? null : num;
+  function getOwned(m) {
+    return Number(muti) || 0;
   }
 
-  function getMeta(m) {
-    const total = parseTotal(m.VolumiTotali);
-    const owned = Number(m.VolumiPosseduti) || 0;
-    const hasKnownTotal = total !== null;
-    return { total, owned, hasKnownTotal };
+  function getTotal(m) {
+    const total = Number(m?.VolumiTotali);
+    return Number.isFinite(total) ? total : 0;
   }
 
-  function getStatus(m) {
-    const { total, owned, hasKnownTotal } = getMeta(m);
-    if (!hasKnownTotal && owned > 0) return "ongoing";
-    if (hasKnownTotal && owned < total) return "to_complete";
-    if (hasKnownTotal && owned === total) return "completed";
-    return "ongoing";
+  function isCompleted(m) {
+    const owned = getOwned(m);
+    const total = getTotal(m);
+    return (!!total && total > 0 && owned >= total) || m?.Concluso === 1;
   }
 
-  function barColor(status) {
-    if (status === "completed") return "bg-green-500";
-    if (status === "to_complete") return "bg-red-500";
-    return "bg-yellow-400";
-  }
-
-  const filtered = useMemo(() => {
-    let list = [...searchResults].sort((a, b) =>
-      (a.Titolo || "").localeCompare(b.Titolo || "")
+  function isOngoing(m) {
+    const total = getTotal(m);
+    return (
+      !isCompleted(m) &&
+      (!total || total === 0 || m?.VolumiTotali === "?" || m?.Concluso === 0)
     );
+  }
+
+  function matchesFilter(m) {
+    if (!filter) return true;
+
+    const owned = getOwned(m);
+    const total = getTotal(m);
 
     switch (filter) {
       case "ongoing":
-        return list.filter((m) => {
-          const { owned, hasKnownTotal } = getMeta(m);
-          return !hasKnownTotal && owned > 0;
-        });
+        return isOngoing(m);
+
       case "to_complete":
-        return list.filter((m) => {
-          const { total, owned, hasKnownTotal } = getMeta(m);
-          return hasKnownTotal && owned < total;
-        });
+        return !isCompleted(m) && owned > 0 && total > 0;
+
       case "completed":
-        return list.filter((m) => {
-          const { total, owned, hasKnownTotal } = getMeta(m);
-          return hasKnownTotal && owned === total;
-        });
+        return isCompleted(m);
+
       case "short":
-        return list.filter((m) => {
-          const { total, hasKnownTotal } = getMeta(m);
-          return hasKnownTotal && total >= 2 && total < 8;
-        });
+        return total > 0 && total <= 5;
+
       case "oneshot":
-        return list.filter((m) => {
-          const { total, owned, hasKnownTotal } = getMeta(m);
-          return hasKnownTotal && total === 1 && owned >= 1;
-        });
+        return total === 1;
+
       default:
-        return list;
+        return true;
     }
-  }, [searchResults, filter]);
+  }
+
+  const filtered = searchResults.filter(matchesFilter);
+
+  function openDetail(manga) {
+    window.dispatchEvent(
+      new CustomEvent("openMangaDetail", {
+        detail: manga
+      })
+    );
+  }
 
   return (
-    <>
-      <div className="manga-grid">
-        {filtered.map((m) => {
-          const { total, owned, hasKnownTotal } = getMeta(m);
-          const status = getStatus(m);
-          const percent = hasKnownTotal ? Math.min(100, (owned / total) * 100) : 50;
+    <div className="grid grid-cols-5 gap-5">
+      {filtered.map((manga) => {
+        const owned = getOwned(manga);
+        const total = getTotal(manga);
 
-          // thickness logic: più volumi -> più spessore della costina (clamp 6..28)
-          const thickness = hasKnownTotal
-            ? Math.min(28, Math.max(6, Math.round(total / 2)))
-            : 10;
+        const percent =
+          total > 0 ? Math.min((owned / total) * 100, 100) : isOngoing(manga) ? 50 : 0;
 
-          return (
-            <div key={m.ID} className="group cursor-pointer" onClick={() => setSelectedManga(m)}>
-              <div className="volume-3d-wrap">
-                <div
-                  className="volume-3d"
-                  style={{ ['--thickness']: `${thickness}px` }}
-                >
-                  <div className="cover">
-                    <img src={m.CoverURL || "https://placehold.co/300x450"} alt={m.Titolo} />
-                  </div>
+        return (
+          <button
+            key={manga.ID}
+            type="button"
+            onClick={() => openDetail(manga)}
+            className="
+              group text-left
+              rounded-2xl overflow-hidden
+              border border-white/[0.09]
+              bg-white/[0.035]
+              backdrop-blur-md
+              hover:bg-white/[0.055]
+              hover:border-yellow-400/25
+              hover:shadow-[0_0_28px_rgba(99,102,241,0.12)]
+              transition-all duration-300
+            "
+          >
+            {/* COVER */}
+            <div className="relative h-[250px] overflow-hidden">
+              {manga.CoverURL ? (
+                <>
+                  {/* riempimento soft per evitare bande nere */}
+                  <img
+                    src={manga.CoverURL}
+                    alt=""
+                    aria-hidden="true"
+                    className="
+                      absolute inset-0
+                      w-full h-full
+                      object-cover
+                      scale-110
+                      blur-md
+                      opacity-35
+                    "
+                  />
 
-                  {/* pages block (right side) - larghezza FISSA */}
-                  <div className="pages" aria-hidden="true" />
+                  <div className="absolute inset-0 bg-black/10" />
 
-                  <div className="info">
-                    <div className="title" title={m.Titolo}>{m.Titolo}</div>
-                    <div className="meta" title={m.Genere || "Nessun genere"}>{m.Genere || "Nessun genere"}</div>
+                  <img
+                    src={manga.CoverURL}
+                    alt={manga.Titolo || "Cover manga"}
+                    className="
+                      relative z-10
+                      w-full h-full
+                      object-contain
+                      transition-transform duration-300
+                      group-hover:scale-[1.02]
+                    "
+                  />
+                </>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-zinc-500 text-sm bg-white/[0.02]">
+                  Nessuna cover
+                </div>
+              )}
 
-                    <div className="progress" aria-hidden>
-                      <div
-                        className={`bar ${barColor(status)}`}
-                        style={{ width: `${percent}%` }}
-                        title={
-                          status === "completed"
-                            ? "Completato"
-                            : status === "to_complete"
-                            ? "Da completare"
-                            : "In corso"
-                        }
-                      />
-                    </div>
-                  </div>
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="cover-shine" />
+              </div>
+            </div>
+
+            {/* INFO */}
+            <div className="p-3 text-white">
+              <div
+                className="text-sm font-semibold leading-tight min-h-[2.6rem]"
+                title={manga.Titolo || ""}
+                style={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden"
+                }}
+              >
+                {manga.Titolo || "Titolo sconosciuto"}
+              </div>
+
+              <div
+                className="text-xs text-zinc-400 mt-1 truncate"
+                title={manga.Autore || ""}
+              >
+                {manga.Autore || "Autore sconosciuto"}
+              </div>
+
+              <div
+                className="text-[11px] text-zinc-500 mt-1 truncate"
+                title={manga.Genere || ""}
+              >
+                {manga.Genere || "Nessun genere"}
+              </div>
+
+              <div className="mt-3">
+                <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-2">
+                  <span>
+                    {owned}/{total || "?"} vol
+                  </span>
+
+                  <span>
+                    {isCompleted(manga)
+                      ? "Completo"
+                      : isOngoing(manga)
+                      ? "In corso"
+                      : "Da completare"}
+                  </span>
+                </div>
+
+                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      isCompleted(manga)
+                        ? "bg-gradient-to-r from-green-400 to-green-600"
+                        : "bg-gradient-to-r from-yellow-300 to-yellow-500"
+                    }`}
+                    style={{ width: `${percent}%` }}
+                  />
                 </div>
               </div>
             </div>
-          );
-        })}
-      </div>
-
-      {selectedManga && <MangaDetail manga={selectedManga} onClose={() => setSelectedManga(null)} />}
-    </>
+          </button>
+        );
+      })}
+    </div>
   );
 }
