@@ -21,6 +21,9 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
   const [showHistory, setShowHistory] = useState(false);
   const [showWishlist, setShowWishlist] = useState(false);
 
+  // ✅ filtro MangaGrid
+  const [activeFilter, setActiveFilter] = useState("all");
+
   function refreshManga() {
     getManga().then((d) => setMangaList(d || []));
   }
@@ -90,6 +93,15 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
 
     return fuse.search(search).map((r) => r.item);
   }, [search, mangaList]);
+
+  const filterButtons = [
+    { key: "all", label: "Tutti" },
+    { key: "ongoing", label: "In corso" },
+    { key: "to_complete", label: "Da completare" },
+    { key: "completed", label: "Completati" },
+    { key: "short", label: "Serie brevi" },
+    { key: "oneshot", label: "One-shot" },
+  ];
 
   return (
     <div className="bg-[#111] text-white min-h-screen">
@@ -162,7 +174,36 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
           </div>
         </div>
 
-        <MangaGrid searchResults={filteredSearch} />
+        {/* ✅ FILTRI MANGAGRID */}
+        <div className="flex flex-wrap items-center gap-2">
+          {filterButtons.map((f) => {
+            const active = activeFilter === f.key;
+
+            return (
+              <button
+                key={f.key}
+                onClick={() => setActiveFilter(f.key)}
+                className={`
+                  px-4 py-2 rounded-xl text-sm font-medium
+                  border transition-all duration-200
+                  ${
+                    active
+                      ? "bg-yellow-400 text-black border-yellow-400 shadow-[0_0_18px_rgba(234,179,8,0.28)]"
+                      : "bg-white/6 text-zinc-300 border-white/10 hover:bg-white/10 hover:text-white hover:border-yellow-400/30"
+                  }
+                `}
+              >
+                {f.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* GRID */}
+        <MangaGrid
+          searchResults={filteredSearch}
+          filter={activeFilter === "all" ? undefined : activeFilter}
+        />
       </div>
 
       {selectedManga && (
@@ -180,9 +221,6 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
         <HistoryModal onClose={() => setShowHistory(false)} />
       )}
 
-      {/* IMPORTANTISSIMO:
-          niente wrapper con background, niente blur, niente overlay scuro.
-          La wishlist si occupa solo del pannello. */}
       {showWishlist && (
         <WishlistList onClose={() => setShowWishlist(false)} />
       )}
