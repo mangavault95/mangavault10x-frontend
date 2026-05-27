@@ -13,7 +13,6 @@ export default function WishlistModal({ onClose, onSaved }) {
     VolumiTotali: ""
   });
 
-  // 🔍 FETCH AUTOMATICO ENRICH
   useEffect(() => {
     if (!query || query.trim().length < 3) return;
 
@@ -25,12 +24,8 @@ export default function WishlistModal({ onClose, onSaved }) {
           `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
           {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              titolo: query
-            })
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ titolo: query })
           }
         );
 
@@ -53,15 +48,12 @@ export default function WishlistModal({ onClose, onSaved }) {
       } finally {
         setLoading(false);
       }
-    }, 700);
+    }, 600);
 
     return () => clearTimeout(timeout);
   }, [query]);
 
-  // 💾 SAVE DB
   async function handleSave() {
-    if (!form.Titolo) return;
-
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/api/wishlist`,
@@ -81,10 +73,7 @@ export default function WishlistModal({ onClose, onSaved }) {
 
       const data = await res.json();
 
-      if (data.item) {
-        onSaved(data.item);
-      }
-
+      if (data.item) onSaved(data.item);
       onClose();
 
     } catch (err) {
@@ -92,151 +81,79 @@ export default function WishlistModal({ onClose, onSaved }) {
     }
   }
 
-  function updateField(k, v) {
-    setForm(prev => ({ ...prev, [k]: v }));
-  }
-
   return (
     <div
-      className="fixed inset-0 z-[999] flex items-center justify-center"
-      style={{
-        background:
-          "linear-gradient(135deg, rgba(10,10,10,0.92), rgba(30,30,30,0.92))",
-        backdropFilter: "blur(6px)"
-      }}
+      className="fixed inset-0 z-[1000] flex items-center justify-center"
       onClick={onClose}
     >
-      {/* CARD */}
+
+      {/* ✅ BACKGROUND stile MangaDetail */}
+      <div className="absolute inset-0 backdrop-blur-md" />
+
+      {/* ✅ PANEL */}
       <div
-        className="w-[900px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl flex"
+        className="relative w-[950px] rounded-3xl border border-white/10 shadow-2xl manga-detail-card flex"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* LEFT PREVIEW */}
-        <div className="w-[260px] bg-[#151515] p-4 flex flex-col">
-          <div className="w-full h-[350px] bg-black rounded overflow-hidden flex items-center justify-center">
-            {form.CoverURL ? (
-              <img
-                src={form.CoverURL}
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <span className="text-zinc-500 text-sm">300 × 450</span>
-            )}
+
+        {/* LEFT */}
+        <div className="w-[260px] p-4">
+          <div className="h-[360px] bg-black rounded overflow-hidden">
+            {form.CoverURL
           </div>
 
           <div className="mt-4 text-white">
             <p className="font-semibold truncate">
               {form.Titolo || "Titolo"}
             </p>
-            <p className="text-sm text-zinc-400 truncate">
+            <p className="text-sm text-zinc-400">
               {form.Autore || "Autore"}
-            </p>
-            <p className="text-xs text-zinc-500 mt-1">
-              Volumi: {form.VolumiTotali || "?"}
             </p>
           </div>
         </div>
 
-        {/* RIGHT FORM */}
+        {/* RIGHT */}
         <div className="flex-1 p-6 text-white">
-          {/* HEADER */}
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h2 className="text-xl font-bold">
-                Aggiungi alla Wishlist
-              </h2>
-              <p className="text-sm text-zinc-400">
-                Inserisci il titolo e correggi i dati
-              </p>
-            </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() =>
-                  setForm({
-                    Titolo: "",
-                    Autore: "",
-                    CoverURL: "",
-                    Trama: "",
-                    Genere: "",
-                    VolumiTotali: ""
-                  })
-                }
-                className="px-3 py-1 bg-white/10 rounded"
-              >
-                Reset
-              </button>
+          <div className="flex justify-between mb-4">
+            <h2 className="text-xl font-bold">
+              Aggiungi alla Wishlist
+            </h2>
 
-              <button
-                onClick={onClose}
-                className="px-3 py-1 bg-red-500 rounded"
-              >
-                Chiudi
-              </button>
-            </div>
+            <button
+              onClick={onClose}
+              className="px-3 py-1 bg-red-500 rounded"
+            >
+              Chiudi
+            </button>
           </div>
 
-          {/* SEARCH */}
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Scrivi il titolo..."
-            className="w-full mb-4 p-3 bg-black rounded"
+            placeholder="Scrivi titolo..."
+            className="w-full p-2 mb-4 bg-black/60 rounded"
           />
 
-          {loading && (
-            <p className="text-sm text-yellow-400 mb-2">
-              Ricerca in corso...
-            </p>
-          )}
-
-          {/* GRID FORM */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
-
+          <div className="grid grid-cols-2 gap-3 mb-3">
             <input
               value={form.Titolo}
-              onChange={(e) => updateField("Titolo", e.target.value)}
-              placeholder="Titolo"
-              className="p-2 bg-black rounded"
+              onChange={(e) => setForm({ ...form, Titolo: e.target.value })}
+              className="p-2 bg-black/60 rounded"
             />
-
             <input
               value={form.Autore}
-              onChange={(e) => updateField("Autore", e.target.value)}
-              placeholder="Autore"
-              className="p-2 bg-black rounded"
-            />
-
-            <input
-              value={form.VolumiTotali}
-              onChange={(e) => updateField("VolumiTotali", e.target.value)}
-              placeholder="Volumi totali"
-              className="p-2 bg-black rounded"
-            />
-
-            <input
-              value={form.Genere}
-              onChange={(e) => updateField("Genere", e.target.value)}
-              placeholder="Genere"
-              className="p-2 bg-black rounded"
+              onChange={(e) => setForm({ ...form, Autore: e.target.value })}
+              className="p-2 bg-black/60 rounded"
             />
           </div>
 
           <textarea
             value={form.Trama}
-            onChange={(e) => updateField("Trama", e.target.value)}
-            placeholder="Trama"
-            className="w-full h-28 p-3 bg-black rounded mb-4"
+            onChange={(e) => setForm({ ...form, Trama: e.target.value })}
+            className="w-full h-28 p-2 bg-black/60 rounded mb-4"
           />
 
-          <input
-            value={form.CoverURL}
-            onChange={(e) => updateField("CoverURL", e.target.value)}
-            placeholder="URL cover"
-            className="w-full p-2 bg-black rounded mb-4"
-          />
-
-          {/* ACTIONS */}
           <div className="flex justify-end gap-2">
             <button
               onClick={onClose}
@@ -247,9 +164,9 @@ export default function WishlistModal({ onClose, onSaved }) {
 
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-yellow-400 text-black rounded font-semibold"
+              className="px-4 py-2 bg-yellow-400 text-black rounded"
             >
-              Aggiungi alla wishlist
+              Aggiungi
             </button>
           </div>
         </div>
