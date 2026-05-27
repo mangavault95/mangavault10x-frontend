@@ -178,7 +178,7 @@ function CloseIcon() {
 
 function SideSwitch({ session, direction, onClick }) {
   if (!session) {
-    return <div className="h-[64px]" />;
+    return <div className="h-[56px]" />;
   }
 
   const isLeft = direction === "left";
@@ -186,7 +186,7 @@ function SideSwitch({ session, direction, onClick }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2">
       <div
-        className="text-[10px] text-zinc-500 text-center truncate w-full max-w-[64px]"
+        className="text-[10px] text-zinc-500 text-center truncate w-full max-w-[56px]"
         title={session.titolo || ""}
       >
         {session.titolo || (isLeft ? "Precedente" : "Successivo")}
@@ -195,7 +195,7 @@ function SideSwitch({ session, direction, onClick }) {
       <button
         type="button"
         onClick={onClick}
-        className="w-9 h-9 rounded-full border border-white/[0.08] bg-white/[0.05] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/30 hover:bg-yellow-400/10 transition flex items-center justify-center"
+        className="w-8 h-8 rounded-full border border-white/[0.08] bg-white/[0.05] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/30 hover:bg-yellow-400/10 transition flex items-center justify-center"
         title={isLeft ? "Manga precedente" : "Manga successivo"}
       >
         {isLeft ? <ChevronLeftIcon /> : <ChevronRightIcon />}
@@ -402,9 +402,9 @@ export default function Sidebar({ open = true }) {
     <>
       <aside
         className={`
-          h-full flex flex-col relative
-          px-5 py-5 transition-all duration-300
-          ${open ? "w-full gap-5" : "w-full items-center gap-4"}
+          h-full flex flex-col relative overflow-y-auto
+          px-5 py-4 transition-all duration-300
+          ${open ? "w-full gap-4" : "w-full items-center gap-3"}
         `}
         style={{
           background:
@@ -429,7 +429,7 @@ export default function Sidebar({ open = true }) {
         >
           {open ? (
             <div className="min-w-0 flex items-end gap-3">
-              <div className="text-[2rem] font-black tracking-tight text-white leading-none">
+              <div className="text-[1.9rem] font-black tracking-tight text-white leading-none">
                 MangaVault
               </div>
 
@@ -437,7 +437,7 @@ export default function Sidebar({ open = true }) {
                 onClick={onLogoToggle}
                 className="
                   inline-flex items-center
-                  text-[2.25rem] font-black tracking-tight leading-none
+                  text-[2.1rem] font-black tracking-tight leading-none
                   text-yellow-400
                   hover:text-yellow-300
                   drop-shadow-[0_0_18px_rgba(250,204,21,0.38)]
@@ -512,7 +512,7 @@ export default function Sidebar({ open = true }) {
                 hover:bg-white/[0.08]
                 hover:border-yellow-400/25
                 transition-all duration-200
-                ${open ? "px-4 py-3" : "p-3 justify-center"}
+                ${open ? "px-4 py-2.5" : "p-3 justify-center"}
               `}
             >
               <span
@@ -536,10 +536,10 @@ export default function Sidebar({ open = true }) {
           ))}
         </nav>
 
-        {/* COMPACT JUKEBOX */}
+        {/* JUKEBOX */}
         {open && activeSession && (
           <section
-            className="relative z-10 rounded-[26px] border border-white/[0.08] p-4 shadow-[0_20px_45px_rgba(0,0,0,0.22)]"
+            className="relative z-10 rounded-[24px] border border-white/[0.08] p-3 shadow-[0_18px_38px_rgba(0,0,0,0.20)]"
             style={{
               background:
                 "linear-gradient(180deg, rgba(22,26,48,0.42), rgba(12,14,28,0.42))",
@@ -547,14 +547,14 @@ export default function Sidebar({ open = true }) {
               WebkitBackdropFilter: "blur(10px)"
             }}
           >
-            {/* header */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+            {/* HEADER */}
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
                 Stai leggendo
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="text-[11px] text-zinc-500">
+                <div className="text-[10px] text-zinc-500">
                   {readingPercent}%
                 </div>
 
@@ -578,16 +578,14 @@ export default function Sidebar({ open = true }) {
               </div>
             </div>
 
-            {/* jukebox row */}
-            <div className="grid grid-cols-[64px_minmax(0,1fr)_64px] items-center gap-3">
-              {/* left switch */}
+            {/* MAIN PLAYER */}
+            <div className="grid grid-cols-[56px_minmax(0,1fr)_56px] items-center gap-2">
               <SideSwitch
                 session={prevSession}
                 direction="left"
                 onClick={() => setActiveIndex(prevIndex)}
               />
 
-              {/* current manga */}
               <div className="flex flex-col items-center min-w-0">
                 <button
                   type="button"
@@ -605,7 +603,7 @@ export default function Sidebar({ open = true }) {
                       })
                     )
                   }
-                  className="relative w-28 h-40 rounded-[22px] overflow-hidden bg-black/20 border border-white/10 shadow-2xl group"
+                  className="relative w-24 h-36 rounded-[20px] overflow-hidden bg-black/20 border border-white/10 shadow-xl group"
                   title="Apri dettaglio"
                 >
                   {activeSession.coverurl ? (
@@ -625,9 +623,8 @@ export default function Sidebar({ open = true }) {
                   </div>
                 </button>
 
-                {/* progress under cover */}
-                <div className="mt-3 w-full max-w-[180px]">
-                  <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-2">
+                <div className="mt-2.5 w-full max-w-[168px]">
+                  <div className="flex items-center justify-between text-[10px] text-zinc-400 mb-1.5">
                     <span>Vol {readingOwned}</span>
                     <span>{readingTotal || "?"}</span>
                   </div>
@@ -656,19 +653,18 @@ export default function Sidebar({ open = true }) {
                       })
                     )
                   }
-                  className="mt-3 text-center max-w-full"
+                  className="mt-2.5 text-center max-w-full"
                 >
-                  <div className="text-[1rem] font-bold text-white truncate max-w-[180px]">
+                  <div className="text-[0.95rem] font-bold text-white truncate max-w-[170px]">
                     {activeSession.titolo}
                   </div>
 
-                  <div className="text-xs text-zinc-400 truncate mt-0.5 max-w-[180px]">
+                  <div className="text-xs text-zinc-400 truncate mt-0.5 max-w-[170px]">
                     {activeSession.autore || "Autore sconosciuto"}
                   </div>
                 </button>
               </div>
 
-              {/* right switch */}
               <SideSwitch
                 session={nextSession}
                 direction="right"
@@ -676,11 +672,11 @@ export default function Sidebar({ open = true }) {
               />
             </div>
 
-            {/* controls */}
+            {/* CONTROLS */}
             <div className="mt-4 flex items-center justify-center gap-4">
               <button
                 onClick={() => updateCurrentVolume(-1)}
-                className="w-9 h-9 rounded-2xl bg-white/[0.055] border border-white/[0.08] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 transition flex items-center justify-center active:scale-95"
+                className="w-8 h-8 rounded-2xl bg-white/[0.055] border border-white/[0.08] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 transition flex items-center justify-center active:scale-95"
                 title="Togli un volume"
               >
                 <MinusIcon />
@@ -688,7 +684,7 @@ export default function Sidebar({ open = true }) {
 
               <button
                 onClick={saveCurrentReading}
-                className="w-16 h-16 rounded-full bg-yellow-400 text-black shadow-[0_0_28px_rgba(250,204,21,0.35)] hover:brightness-110 active:scale-95 transition flex items-center justify-center"
+                className="w-16 h-16 rounded-full bg-yellow-400 text-black shadow-[0_0_30px_rgba(250,204,21,0.35)] hover:brightness-110 active:scale-95 transition flex items-center justify-center"
                 title="Salva avanzamento"
               >
                 <SaveIcon />
@@ -696,7 +692,7 @@ export default function Sidebar({ open = true }) {
 
               <button
                 onClick={() => updateCurrentVolume(1)}
-                className="w-9 h-9 rounded-2xl bg-white/[0.055] border border-white/[0.08] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 transition flex items-center justify-center active:scale-95"
+                className="w-8 h-8 rounded-2xl bg-white/[0.055] border border-white/[0.08] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 transition flex items-center justify-center active:scale-95"
                 title="Aggiungi un volume"
               >
                 <PlusIcon />
@@ -705,7 +701,7 @@ export default function Sidebar({ open = true }) {
           </section>
         )}
 
-        {/* stats */}
+        {/* STATS */}
         {open && (
           <div className="relative z-10 mt-auto">
             <StatsPanel />
