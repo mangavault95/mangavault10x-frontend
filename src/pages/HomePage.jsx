@@ -183,7 +183,8 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
                   "
                   style={{
                     background:
-                      "linear-gradient(180deg, rgba(20,26,52,0.92), rgba(12,16,32(12px)",                      "linear-gradient(180deg, rgba(20,26,52,0.92), rgba(12,16,32,0.92))",
+                      "linear-gradient(180deg, rgba(20,26,52,0.92), rgba(12,16,32,0.92))",
+                    backdropFilter: "blur(12px)",
                     WebkitBackdropFilter: "blur(12px)"
                   }}
                 >
@@ -203,7 +204,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
           </div>
         </div>
 
-        {/* FILTERS */}
+        {/* FILTRI */}
         <div className="flex flex-wrap items-center gap-2">
           {filterButtons.map((f) => {
             const active = activeFilter === f.key;
@@ -215,45 +216,4 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
                 className={
                   "px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 " +
                   (active
-                    ? "bg-yellow-400 text-black border-yellow-400 shadow-[0_0_18px_rgba(234,179,8,0.28)]"
-                    : "bg-[rgba(24,30,56,0.42)] text-zinc-300 border-white/10 hover:bg-[rgba(32,40,72,0.52)] hover:text-white hover:border-yellow-400/30")
-                }
-              >
-                {f.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* GRID */}
-        <MangaGrid
-          searchResults={filteredSearch}
-          filter={activeFilter === "all" ? undefined : activeFilter}
-        />
-      </div>
-
-      {selectedManga && (
-        <MangaDetail
-          manga={selectedManga}
-          onClose={() => setSelectedManga(null)}
-        />
-      )}
-
-      {showFavorites && (
-        <FavoritesModal onClose={() => setShowFavorites(false)} />
-      )}
-
-      {showHistory && (
-        <HistoryModal onClose={() => setShowHistory(false)} />
-      )}
-
-      {showWishlist && (
-        <WishlistList onClose={() => setShowWishlist(false)} />
-      )}
-
-      {showRecords && (
-        <RecordsModal onClose={() => setShowRecords(false)} />
-      )}
-    </div>
-  );
-}
+                    ? "bg-yellow-400 text-black border-yellow-400 shadow-[0_0_18px_rgba(234,179,8,0.28
