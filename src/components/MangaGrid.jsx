@@ -8,7 +8,7 @@ export default function MangaGrid({ searchResults = [], filter }) {
     const num = Number(cleaned);
     return Number.isNaN(num) ? null : num;
   }
-
+v
   function getOwned(manga) {
     return Number(manga?.VolumiPosseduti) || 0;
   }
