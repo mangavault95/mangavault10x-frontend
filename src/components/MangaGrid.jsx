@@ -16,19 +16,23 @@ export default function MangaGrid({ searchResults = [], filter }) {
   function getTotal(manga) {
     return parseTotal(manga?.VolumiTotali);
   }
-   
+
   function getStatus(manga) {
     const owned = getOwned(manga);
     const total = getTotal(manga);
 
+    // Nessun totale noto -> consideriamo "in corso" se ha almeno un volume
     if (total === null) {
       return owned > 0 ? "ongoing" : "ongoing";
     }
 
+    // Se posseduti >= totali -> completo
     if (owned >= total) return "completed";
+
+    // Se ha un totale noto ma non è completo -> da completare
     return "to_complete";
   }
- 
+
   function getPercent(manga) {
     const owned = getOwned(manga);
     const total = getTotal(manga);
@@ -95,11 +99,22 @@ export default function MangaGrid({ searchResults = [], filter }) {
         if (status === "completed") statusLabel = "Completo";
         if (status === "to_complete") statusLabel = "Da completare";
 
-        let progressClass = "bg-gradient-to-r from-blue-400 to-blue-500";
+        // ✅ colori corretti:
+        // in corso = giallo
+        // da completare = rosso
+        // completato = verde
+        let progressClass = "bg-gradient-to-r from-yellow-300 to-yellow-500";
         if (status === "completed") {
           progressClass = "bg-gradient-to-r from-green-400 to-green-600";
         } else if (status === "to_complete") {
-          progressClass = "bg-gradient-to-r from-yellow-300 to-yellow-500";
+          progressClass = "bg-gradient-to-r from-red-400 to-red-600";
+        }
+
+        let statusTextClass = "text-yellow-400";
+        if (status === "completed") {
+          statusTextClass = "text-green-400";
+        } else if (status === "to_complete") {
+          statusTextClass = "text-red-400";
         }
 
         return (
@@ -119,11 +134,11 @@ export default function MangaGrid({ searchResults = [], filter }) {
             style={{
               background:
                 "linear-gradient(180deg, rgba(24,30,56,0.34), rgba(12,16,28,0.52))",
-              boxShadow: "0 12px 32px rgba(0,0,0,0.18)"
+              boxShadow: "0 10px 26px rgba(0,0,0,0.16)"
             }}
           >
             {/* COVER */}
-            <div className="relative h-[250px] overflow-hidden">
+            <div className="relative h-[220px] overflow-hidden">
               {manga.CoverURL ? (
                 <>
                   <img
@@ -153,9 +168,9 @@ export default function MangaGrid({ searchResults = [], filter }) {
             </div>
 
             {/* INFO */}
-            <div className="p-3 text-white">
+            <div className="p-2.5 text-white">
               <div
-                className="text-sm font-semibold leading-tight min-h-[2.6rem]"
+                className="text-[13px] font-semibold leading-tight min-h-[2.35rem]"
                 title={manga.Titolo || ""}
                 style={{
                   display: "-webkit-box",
@@ -168,26 +183,26 @@ export default function MangaGrid({ searchResults = [], filter }) {
               </div>
 
               <div
-                className="text-xs text-zinc-300 mt-1 truncate"
+                className="text-[11px] text-zinc-300 mt-0.5 truncate"
                 title={manga.Autore || ""}
               >
                 {manga.Autore || "Autore sconosciuto"}
               </div>
 
               <div
-                className="text-[11px] text-zinc-400 mt-1 truncate"
+                className="text-[10px] text-zinc-400 mt-0.5 truncate"
                 title={manga.Genere || ""}
               >
                 {manga.Genere || "Nessun genere"}
               </div>
 
-              <div className="mt-3">
-                <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-2">
+              <div className="mt-2.5">
+                <div className="flex items-center justify-between text-[10px] text-zinc-400 mb-1.5">
                   <span>
                     {owned}/{total !== null ? total : "?"} vol
                   </span>
 
-                  <span>{statusLabel}</span>
+                  <span className={statusTextClass}>{statusLabel}</span>
                 </div>
 
                 <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
