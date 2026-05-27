@@ -15,24 +15,46 @@ export default function ReadingHistoryAddModal({ onClose, onSaved }) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+
     if (!q) return manga.slice(0, 20);
 
     return manga
       .filter((m) =>
-        String(m.Titolo || "").toLowerCase().includes(q)
+        String(m?.Titolo || "").toLowerCase().includes(q)
       )
       .slice(0, 20);
   }, [manga, query]);
 
   async function handleSave() {
-    const selected = manga.find((m) => autore: selected.Autore || "",    const selected = manga.find((m) => String(m.ID) === String(selectedId));
-        coverurl: selected.CoverURL || "",
-        volume: Number(volume) || 0
-      })
-    });
+    const selected = manga.find(
+      (m) => String(m.ID) === String(selectedId)
+    );
 
-    onSaved?.();
-    onClose();
+    if (!selected) return;
+
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/reading-history`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          manga_id: selected.ID,
+          titolo: selected.Titolo,
+          autore: selected.Autore || "",
+          coverurl: selected.CoverURL || "",
+          volume: Number(volume) || 0
+        })
+      });
+
+      if (typeof onSaved === "function") {
+        onSaved();
+      }
+
+      onClose();
+    } catch (err) {
+      console.error("Errore salvataggio lettura manuale:", err);
+    }
   }
 
   return (
@@ -46,11 +68,13 @@ export default function ReadingHistoryAddModal({ onClose, onSaved }) {
         className="relative w-[640px] max-w-[92vw] rounded-3xl border border-white/10 shadow-2xl manga-detail-card overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* HEADER */}
         <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-white">
               Aggiungi lettura manualmente
             </h3>
+
             <p className="text-sm text-zinc-400 mt-1">
               Inserisci un volume letto senza passare dal media player.
             </p>
@@ -64,6 +88,7 @@ export default function ReadingHistoryAddModal({ onClose, onSaved }) {
           </button>
         </div>
 
+        {/* CONTENT */}
         <div className="p-6 space-y-4 text-white">
           <div>
             <label className="text-xs text-zinc-400 block mb-1">
@@ -89,6 +114,7 @@ export default function ReadingHistoryAddModal({ onClose, onSaved }) {
               className="w-full px-4 py-3 rounded-xl bg-black/25 border border-white/10 outline-none"
             >
               <option value="">Seleziona...</option>
+
               {filtered.map((m) => (
                 <option key={m.ID} value={m.ID}>
                   {m.Titolo}
@@ -131,13 +157,3 @@ export default function ReadingHistoryAddModal({ onClose, onSaved }) {
     </div>
   );
 }
-    if (!selected) return;
-
-    await fetch(`${import.meta.env.VITE_API_URL}/api/reading-history`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        manga_id: selected.ID,
-        titolo: selected.Titolo,
