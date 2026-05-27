@@ -5,8 +5,7 @@ import TopHero from "../components/TopHero";
 import MangaDetail from "../components/MangaDetail";
 import FavoritesModal from "../components/FavoritesModal";
 import HistoryModal from "../components/HistoryModal";
-import WishlistModal from "../components/WishlistModal";
-import WishlistPage from "../pages/WishlistPage";
+import WishlistList from "../components/WishlistList";
 import { getManga } from "../services/api";
 import Fuse from "fuse.js";
 
@@ -15,11 +14,9 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
   const [selectedManga, setSelectedManga] = useState(null);
   const [mangaList, setMangaList] = useState([]);
   const [openMenu, setOpenMenu] = useState(false);
-
-  // controllo apertura sidebar
   const [openSidebar, setOpenSidebar] = useState(true);
 
-  // modali
+  // MODALI
   const [showFavorites, setShowFavorites] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showWishlist, setShowWishlist] = useState(false);
@@ -35,6 +32,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     const navHandler = (e) => {
       const page = e.detail?.page;
       if (!page) return;
+
       if (page === "records") {
         setRecordsMode(true);
         setAdminMode(false);
@@ -46,108 +44,94 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
         setShowWishlist(true);
       }
     };
+
     window.addEventListener("navigate", navHandler);
 
-    // toggle via quadratino giallo
     const toggleHandler = () => setOpenSidebar(s => !s);
     window.addEventListener("toggleSidebar", toggleHandler);
-
-    // apri modali da sidebar
-    const favOpen = () => setShowFavorites(true);
-    const histOpen = () => setShowHistory(true);
-    const wishOpen = () => setShowWishlist(true);
-    window.addEventListener("openFavoritesModal", favOpen);
-    window.addEventListener("openHistoryModal", histOpen);
-    window.addEventListener("openWishlistModal", wishOpen);
-
-    // aggiornamento preferiti -> ricarica lista per badge
-    const favUpdated = () => getManga().then(d => setMangaList(d || []));
-    window.addEventListener("favoritesUpdated", favUpdated);
 
     return () => {
       window.removeEventListener("openMangaDetail", handler);
       window.removeEventListener("navigate", navHandler);
       window.removeEventListener("toggleSidebar", toggleHandler);
-      window.removeEventListener("openFavoritesModal", favOpen);
-      window.removeEventListener("openHistoryModal", histOpen);
-      window.removeEventListener("openWishlistModal", wishOpen);
-      window.removeEventListener("favoritesUpdated", favUpdated);
     };
   }, [setAdminMode, setRecordsMode]);
 
   const filteredSearch = useMemo(() => {
     if (!search) return mangaList;
+
     const fuse = new Fuse(mangaList, {
       keys: ["Titolo", "Autore", "Genere"],
       threshold: 0.3,
       ignoreLocation: true,
     });
+
     return fuse.search(search).map(r => r.item);
   }, [search, mangaList]);
 
   return (
     <div className="bg-[#111] text-white min-h-screen">
 
-      {/* Nota: il toggle è ora il quadratino giallo nel logo della sidebar.
-          Non serve più un pulsante separato in alto a sinistra. */}
-
       {/* SIDEBAR */}
-      <div className={`fixed left-0 top-0 h-screen transition-all duration-300 ${openSidebar ? "w-72" : "w-28"}`}>
+      <div className={`fixed left-0 top-0 h-screen ${openSidebar ? "w-72" : "w-28"}`}>
         <Sidebar open={openSidebar} />
       </div>
 
-      {/* MAIN: margine dinamico */}
-      <div style={{ marginLeft: openSidebar ? 288 : 112 }} className="px-10 py-6 space-y-8 transition-all duration-300">
+      {/* MAIN */}
+      <div
+        style={{ marginLeft: openSidebar ? 288 : 112 }}
+        className="px-10 py-6 space-y-8 transition-all duration-300"
+      >
         <TopHero manga={mangaList} onSelect={setSelectedManga} />
 
         {/* HEADER */}
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">La Mia Collezione</h2>
 
-          <div className="flex items-center gap-4">
-            <div className="relative flex items-center">
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cerca titolo, autore..."
-                className="px-5 py-2.5 w-56 rounded-full bg-[#151515] border border-white/6 text-sm placeholder:text-zinc-500 outline-none focus:w-64 focus:border-yellow-400 transition-all duration-300 hover:border-white/20"
-              />
-            </div>
-
-            <div className="relative">
-              <button onClick={() => setOpenMenu(p => !p)} className="w-10 h-10 rounded-xl bg-[#1a1a1a] border border-white/6 hover:border-yellow-400 transition">☰</button>
-              {openMenu && (
-                <div className="absolute right-0 mt-2 w-44 bg-[#151515]/95 backdrop-blur rounded-xl border border-white/10 shadow-xl">
-                  <button className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f] border-b border-white/5">Tema</button>
-                  <button onClick={() => { setAdminMode(true); setRecordsMode(false); setOpenMenu(false); }} className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f] border-b border-white/5">Admin</button>
-                  <button onClick={() => { setRecordsMode(true); setAdminMode(false); setOpenMenu(false); }} className="w-full px-4 py-3 text-left hover:bg-[#1f1f1f]">Records</button>
-                </div>
-              )}
-            </div>
+          <div className="flex gap-3">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cerca..."
+              className="px-4 py-2 rounded bg-[#1a1a1a]"
+            />
           </div>
         </div>
 
-        {/* GRID */}
         <MangaGrid searchResults={filteredSearch} />
-
       </div>
 
-      {selectedManga && <MangaDetail manga={selectedManga} onClose={() => setSelectedManga(null)} />}
+      {/* MODAL: MANGA DETAIL */}
+      {selectedManga && (
+        <MangaDetail
+          manga={selectedManga}
+          onClose={() => setSelectedManga(null)}
+        />
+      )}
 
-      {/* MODALI */}
-      {showFavorites && <FavoritesModal onClose={() => setShowFavorites(false)} />}
-      {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
-   {showWishlist && (
-  <div className="fixed inset-0 z-50 bg-[#111] overflow-auto">
-    <WishlistPage />
-    <button
-      onClick={() => setShowWishlist(false)}
-      className="absolute top-6 right-6 px-4 py-2 bg-red-500 text-white rounded"
-    >
-      Chiudi
-    </button>
-  </div>
-)}
+      {/* FAVORITES */}
+      {showFavorites && (
+        <FavoritesModal onClose={() => setShowFavorites(false)} />
+      )}
+
+      {/* HISTORY */}
+      {showHistory && (
+        <HistoryModal onClose={() => setShowHistory(false)} />
+      )}
+
+      {/* ✅ WISHLIST OVERLAY FINALE */}
+      {showWishlist && (
+        <div
+          className="fixed inset-0 z-[999]"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(10,10,10,0.85), rgba(20,20,20,0.85))",
+            backdropFilter: "blur(6px)"
+          }}
+        >
+          <WishlistList onClose={() => setShowWishlist(false)} />
+        </div>
+      )}
     </div>
   );
 }
