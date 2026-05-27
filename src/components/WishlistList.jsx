@@ -2,6 +2,61 @@ import { useEffect, useState } from "react";
 import WishlistModal from "./WishlistModal";
 import MangaDetail from "./MangaDetail";
 
+/* -------------------- ICONE INLINE -------------------- */
+function EditIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="w-[15px] h-[15px]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="w-[15px] h-[15px]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="w-[15px] h-[15px]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+/* -------------------- COMPONENTE -------------------- */
 export default function WishlistList({ onClose }) {
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -72,7 +127,7 @@ export default function WishlistList({ onClose }) {
       className="fixed inset-0 z-[999] flex items-center justify-center pointer-events-auto"
       onClick={onClose}
     >
-      {/* overlay trasparente: si vede il sito sotto */}
+      {/* Overlay trasparente: si vede il sito sotto */}
       <div className="absolute inset-0" />
 
       <div
@@ -146,25 +201,43 @@ export default function WishlistList({ onClose }) {
                     bg-white/[0.04] backdrop-blur-lg
                     hover:border-yellow-400/20
                     hover:shadow-[0_0_28px_rgba(234,179,8,0.08)]
-                    transition-all duration-250
+                    transition-all duration-300
                     cursor-pointer
                   "
                   onClick={() => openDetail(m)}
                 >
-                  {/* COVER */}
-                  <div className="relative h-[250px] bg-black/40 overflow-hidden">
+                  {/* COVER AREA */}
+                  <div className="relative h-[250px] overflow-hidden">
                     {m.coverurl ? (
-                      <img
-                        src={m.coverurl}
-                        alt={m.titolo || "cover"}
-                        className="
-                          w-full h-full object-cover
-                          transition-transform duration-300
-                          group-hover:scale-[1.03]
-                        "
-                      />
+                      <>
+                        {/* sfondo riempitivo per evitare bande nere */}
+                        <img
+                          src={m.coverurl}
+                          alt=""
+                          aria-hidden="true"
+                          className="
+                            absolute inset-0 w-full h-full
+                            object-cover scale-110 blur-md opacity-40
+                          "
+                        />
+
+                        {/* velo sopra lo sfondo */}
+                        <div className="absolute inset-0 bg-black/15" />
+
+                        {/* cover vera intera */}
+                        <img
+                          src={m.coverurl}
+                          alt={m.titolo || "cover"}
+                          className="
+                            relative z-10 w-full h-full
+                            object-contain
+                            transition-transform duration-300
+                            group-hover:scale-[1.02]
+                          "
+                        />
+                      </>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-zinc-500 text-sm">
+                      <div className="w-full h-full flex items-center justify-center text-zinc-500 text-sm bg-black/20">
                         Nessuna cover
                       </div>
                     )}
@@ -177,8 +250,14 @@ export default function WishlistList({ onClose }) {
                   {/* INFO */}
                   <div className="p-3 text-white">
                     <div
-                      className="text-sm font-semibold leading-tight line-clamp-2 min-h-[2.6rem]"
+                      className="text-sm font-semibold leading-tight min-h-[2.6rem]"
                       title={m.titolo || ""}
+                      style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden"
+                      }}
                     >
                       {m.titolo || "Titolo sconosciuto"}
                     </div>
@@ -190,6 +269,7 @@ export default function WishlistList({ onClose }) {
                       {m.autori || "Autore sconosciuto"}
                     </div>
 
+                    {/* ACTIONS */}
                     <div className="mt-3 flex justify-between gap-2">
                       {/* MODIFICA */}
                       <button
@@ -199,23 +279,26 @@ export default function WishlistList({ onClose }) {
                           setEditItem(m);
                         }}
                         className="
-                          flex items-center justify-center w-9 h-9 rounded-lg
-                          bg-white/[0.04] border border-white/[0.08]
+                          flex items-center justify-center w-10 h-10 rounded-xl
+                          bg-white/[0.04] backdrop-blur-sm
+                          border border-white/[0.08]
                           text-zinc-400
 
                           transition-all duration-200 ease-out
 
-                          hover:scale-105
+                          hover:-translate-y-[1px]
+                          hover:scale-[1.03]
                           hover:text-yellow-400
-                          hover:border-yellow-400/40
+                          hover:border-yellow-400/35
                           hover:bg-yellow-400/10
-                          hover:shadow-[0_0_12px_rgba(234,179,8,0.35)]
+                          hover:shadow-[0_0_14px_rgba(234,179,8,0.28)]
 
                           active:scale-95
-                          active:shadow-[0_0_20px_rgba(234,179,8,0.6)]
+                          active:translate-y-0
+                          active:shadow-[0_0_22px_rgba(234,179,8,0.45)]
                         "
                       >
-                        ✎
+                        <EditIcon />
                       </button>
 
                       {/* ELIMINA */}
@@ -226,23 +309,26 @@ export default function WishlistList({ onClose }) {
                           removeItem(m.id);
                         }}
                         className="
-                          flex items-center justify-center w-9 h-9 rounded-lg
-                          bg-white/[0.04] border border-white/[0.08]
+                          flex items-center justify-center w-10 h-10 rounded-xl
+                          bg-white/[0.04] backdrop-blur-sm
+                          border border-white/[0.08]
                           text-zinc-400
 
                           transition-all duration-200 ease-out
 
-                          hover:scale-105
+                          hover:-translate-y-[1px]
+                          hover:scale-[1.03]
                           hover:text-red-400
-                          hover:border-red-400/40
+                          hover:border-red-400/35
                           hover:bg-red-400/10
-                          hover:shadow-[0_0_12px_rgba(248,113,113,0.35)]
+                          hover:shadow-[0_0_14px_rgba(248,113,113,0.28)]
 
                           active:scale-95
-                          active:shadow-[0_0_20px_rgba(248,113,113,0.6)]
+                          active:translate-y-0
+                          active:shadow-[0_0_22px_rgba(248,113,113,0.45)]
                         "
                       >
-                        ⨯
+                        <TrashIcon />
                       </button>
 
                       {/* ACQUISTATO */}
@@ -253,23 +339,26 @@ export default function WishlistList({ onClose }) {
                           markAsOwned(m.id);
                         }}
                         className="
-                          flex items-center justify-center w-9 h-9 rounded-lg
-                          bg-white/[0.04] border border-white/[0.08]
+                          flex items-center justify-center w-10 h-10 rounded-xl
+                          bg-white/[0.04] backdrop-blur-sm
+                          border border-white/[0.08]
                           text-zinc-400
 
                           transition-all duration-200 ease-out
 
-                          hover:scale-105
+                          hover:-translate-y-[1px]
+                          hover:scale-[1.03]
                           hover:text-green-400
-                          hover:border-green-400/40
+                          hover:border-green-400/35
                           hover:bg-green-400/10
-                          hover:shadow-[0_0_12px_rgba(74,222,128,0.35)]
+                          hover:shadow-[0_0_14px_rgba(74,222,128,0.28)]
 
                           active:scale-95
-                          active:shadow-[0_0_20px_rgba(74,222,128,0.6)]
+                          active:translate-y-0
+                          active:shadow-[0_0_22px_rgba(74,222,128,0.45)]
                         "
                       >
-                        ✓
+                        <CheckIcon />
                       </button>
                     </div>
                   </div>
