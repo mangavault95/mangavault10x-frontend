@@ -5,7 +5,6 @@ export default function ReadingSessionAddModal({ onClose, onSaved }) {
 
   const [manga, setManga] = useState([]);
   const [sessions, setSessions] = useState([]);
-
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [volume, setVolume] = useState("");
@@ -77,13 +76,17 @@ export default function ReadingSessionAddModal({ onClose, onSaved }) {
           coverurl: selected.CoverURL || "",
           volume: Number(volume) || 0,
           volumitotali:
-            selected.VolumiTotali !== null && selected.VolumiTotali !== undefined
+            selected.VolumiTotali !== null &&
+            selected.VolumiTotali !== undefined
               ? Number(selected.VolumiTotali) || 0
               : null
         })
       });
 
-      onSaved?.();
+      if (typeof onSaved === "function") {
+        onSaved();
+      }
+
       onClose();
     } catch (err) {
       console.error("Errore salvataggio reading session:", err);
@@ -132,7 +135,10 @@ export default function ReadingSessionAddModal({ onClose, onSaved }) {
 
               <input
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setSelected(null);
+                }}
                 className="w-full px-4 py-3 rounded-xl bg-black/25 border border-white/10 outline-none focus:border-yellow-400/50"
                 placeholder="Es. Miyuki, GTO, Monster..."
               />
@@ -155,3 +161,93 @@ export default function ReadingSessionAddModal({ onClose, onSaved }) {
                           "w-full text-left rounded-2xl border px-4 py-3 transition-all " +
                           (active
                             ? "border-yellow-400/40 bg-yellow-400/10 shadow-[0_0_18px_rgba(234,179,8,0.18)]"
+                            : "border-white/10 bg-white/[0.04] hover:bg-white/[0.07] hover:border-yellow-400/20")
+                        }
+                      >
+                        <div className="text-sm font-semibold text-white truncate">
+                          {m.Titolo || "Titolo sconosciuto"}
+                        </div>
+
+                        <div className="text-xs text-zinc-400 truncate mt-1">
+                          {m.Autore || "Autore sconosciuto"}
+                        </div>
+
+                        <div className="text-[11px] text-zinc-500 truncate mt-1">
+                          {m.Genere || "Nessun genere"}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* RIGHT */}
+            <div>
+              <div className="text-xs text-zinc-400 mb-2">
+                Anteprima
+              </div>
+
+              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+                <div className="w-full h-[260px] rounded-2xl overflow-hidden bg-black/25 border border-white/10 flex items-center justify-center">
+                  {selected?.CoverURL ? (
+                    <img
+                      src={selected.CoverURL}
+                      alt={selected.Titolo || "Cover manga"}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="text-sm text-zinc-500">
+                      Seleziona un manga
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4">
+                  <div className="text-sm font-semibold text-white truncate">
+                    {selected?.Titolo || "Nessun manga selezionato"}
+                  </div>
+
+                  <div className="text-xs text-zinc-400 truncate mt-1">
+                    {selected?.Autore || "—"}
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <label className="text-xs text-zinc-400 block mb-2">
+                    Volume corrente iniziale
+                  </label>
+
+                  <input
+                    type="number"
+                    value={volume}
+                    onChange={(e) => setVolume(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-black/25 border border-white/10 outline-none focus:border-yellow-400/50"
+                    placeholder="Es. 1"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-6">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-white/8 border border-white/10 text-white hover:bg-white/12 transition"
+            >
+              Annulla
+            </button>
+
+            <button
+              onClick={handleSave}
+              disabled={!selected}
+              className="px-5 py-2 rounded-xl bg-yellow-400 text-black font-semibold hover:brightness-110 active:scale-95 transition-all duration-200 shadow-[0_0_18px_rgba(234,179,8,0.18)] hover:shadow-[0_0_26px_rgba(234,179,8,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Aggiungi
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
