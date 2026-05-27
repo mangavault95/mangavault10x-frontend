@@ -46,7 +46,10 @@ export default function RecordsModal({ onClose }) {
     safe.forEach((m) => {
       const key = m[field] || "Sconosciuto";
 
-      if (!groups[key]) groups[key] = [];
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+
       groups[key].push(m);
     });
 
@@ -68,15 +71,13 @@ export default function RecordsModal({ onClose }) {
     });
   }
 
-  const editori = useMemo(
-    () => groupBy("Editore").sort((a, b) => b.count - a.count),
-    [safe]
-  );
+  const editori = useMemo(() => {
+    return groupBy("Editore").sort((a, b) => b.count - a.count);
+  }, [safe]);
 
-  const autori = useMemo(
-    () => groupBy("Autore").sort((a, b) => b.count - a.count),
-    [safe]
-  );
+  const autori = useMemo(() => {
+    return groupBy("Autore").sort((a, b) => b.count - a.count);
+  }, [safe]);
 
   const topSerieCostose = useMemo(() => {
     return [...safe]
@@ -205,6 +206,7 @@ export default function RecordsModal({ onClose }) {
       className="fixed inset-0 z-[999] flex items-center justify-center pointer-events-auto"
       onClick={onClose}
     >
+      {/* Nessuno sfondo: resta visibile il sito sotto */}
       <div className="absolute inset-0" />
 
       <div
@@ -405,6 +407,7 @@ export default function RecordsModal({ onClose }) {
                     "
                   >
                     <span className="truncate text-sm">{m.Titolo}</span>
+
                     <span className="text-xs text-zinc-400">
                       € {Number(m.Costo || 0).toFixed(2)}
                     </span>
@@ -419,4 +422,9 @@ export default function RecordsModal({ onClose }) {
       {selectedManga && (
         <MangaDetail
           manga={selectedManga}
-          onClose={() => set
+          onClose={() => setSelectedManga(null)}
+        />
+      )}
+    </div>
+  );
+}
