@@ -12,7 +12,6 @@ v
   function getOwned(manga) {
     return Number(manga?.VolumiPosseduti) || 0;
   }
-
   function getTotal(manga) {
     return parseTotal(manga?.VolumiTotali);
   }
