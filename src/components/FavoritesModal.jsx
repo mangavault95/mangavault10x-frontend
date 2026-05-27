@@ -2,21 +2,17 @@ import { useEffect, useState } from "react";
 import MangaDetail from "./MangaDetail";
 
 export default function FavoritesModal({ onClose }) {
-  const API_URL = import.meta.env.VITE_API_URL;
-
   const [mangaList, setMangaList] = useState([]);
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/manga`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/manga`)
       .then((r) => r.json())
       .then((d) => setMangaList(Array.isArray(d) ? d : []))
       .catch(() => setMangaList([]));
-  }, [API_URL]);
+  }, []);
 
-  const favManga = mangaList.filter(
-    (m) => Number(m.Valutazione) >= 5
-  );
+  const favManga = mangaList.filter((m) => Number(m.Valutazione) >= 5);
 
   return (
     <div
@@ -29,17 +25,17 @@ export default function FavoritesModal({ onClose }) {
         className="relative w-[1100px] max-w-[95vw] max-h-[84vh] rounded-3xl border border-white/10 shadow-2xl manga-detail-card overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-extrabold text-white">Preferiti</h2>
             <p className="text-sm text-zinc-400 mt-1">
-              Tutti i manga che hanno ricevuto 5 stelle.
+              Tutti i manga valutati con 5 stelle.
             </p>
           </div>
 
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-white/8 border border-white/10 text-white hover:bg-white/12 transition-all duration-200"
+            className="px-4 py-2 rounded-xl bg-white/8 border border-white/10 text-white hover:bg-white/12 transition"
           >
             Chiudi
           </button>
@@ -52,16 +48,17 @@ export default function FavoritesModal({ onClose }) {
                 Nessun preferito
               </div>
               <div className="text-sm mt-2">
-                Un manga entrerà qui quando lo valuti con 5 stelle.
+                Un manga apparirà qui quando riceve 5 stelle.
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-5 gap-5">
               {favManga.map((m) => (
-                <div
+                <button
                   key={m.ID}
-                  className="group rounded-2xl overflow-hidden border border-white/10 bg-white/[0.04] backdrop-blur-lg hover:border-yellow-400/20 hover:shadow-[0_0_28px_rgba(234,179,8,0.08)] transition-all duration-300 cursor-pointer"
+                  type="button"
                   onClick={() => setSelected(m)}
+                  className="group text-left rounded-2xl overflow-hidden border border-white/10 bg-white/[0.04] backdrop-blur-lg hover:border-yellow-400/20 hover:shadow-[0_0_28px_rgba(234,179,8,0.08)] transition-all duration-300"
                 >
                   <div className="relative h-[250px] overflow-hidden bg-black/30">
                     {m.CoverURL ? (
@@ -121,7 +118,7 @@ export default function FavoritesModal({ onClose }) {
                       </span>
                     </div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
