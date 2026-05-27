@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import WishlistModal from "./WishlistModal";
 import MangaDetail from "./MangaDetail";
 
-/* -------------------- ICONE INLINE -------------------- */
 function EditIcon() {
   return (
     <svg
@@ -56,7 +55,6 @@ function CheckIcon() {
   );
 }
 
-/* -------------------- COMPONENTE -------------------- */
 export default function WishlistList({ onClose }) {
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -97,10 +95,22 @@ export default function WishlistList({ onClose }) {
 
   async function markAsOwned(id) {
     try {
-      await fetch(`${API_URL}/api/wishlist-actions/purchase/${id}`, {
+      const res = await fetch(`${API_URL}/api/wishlist-actions/purchase/${id}`, {
         method: "POST"
       });
-      load();
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        console.error("Errore acquisto wishlist:", data);
+        return;
+      }
+
+      // ricarica wishlist
+      await load();
+
+      // forza refresh della grid principale
+      window.dispatchEvent(new Event("favoritesUpdated"));
     } catch (err) {
       console.error("Errore acquisto wishlist:", err);
     }
@@ -127,7 +137,6 @@ export default function WishlistList({ onClose }) {
       className="fixed inset-0 z-[999] flex items-center justify-center pointer-events-auto"
       onClick={onClose}
     >
-      {/* Overlay trasparente: si vede il sito sotto */}
       <div className="absolute inset-0" />
 
       <div
@@ -139,7 +148,6 @@ export default function WishlistList({ onClose }) {
         "
         onClick={(e) => e.stopPropagation()}
       >
-        {/* HEADER */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <div>
             <h2 className="text-xl font-extrabold text-white">Wishlist</h2>
@@ -177,7 +185,6 @@ export default function WishlistList({ onClose }) {
           </div>
         </div>
 
-        {/* CONTENT */}
         <div className="p-6 overflow-y-auto max-h-[calc(84vh-88px)]">
           {loading ? (
             <div className="text-center text-zinc-400 py-20">
@@ -206,34 +213,20 @@ export default function WishlistList({ onClose }) {
                   "
                   onClick={() => openDetail(m)}
                 >
-                  {/* COVER AREA */}
                   <div className="relative h-[250px] overflow-hidden">
                     {m.coverurl ? (
                       <>
-                        {/* sfondo riempitivo per evitare bande nere */}
                         <img
                           src={m.coverurl}
                           alt=""
                           aria-hidden="true"
-                          className="
-                            absolute inset-0 w-full h-full
-                            object-cover scale-110 blur-md opacity-40
-                          "
+                          className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-40"
                         />
-
-                        {/* velo sopra lo sfondo */}
                         <div className="absolute inset-0 bg-black/15" />
-
-                        {/* cover vera intera */}
                         <img
                           src={m.coverurl}
                           alt={m.titolo || "cover"}
-                          className="
-                            relative z-10 w-full h-full
-                            object-contain
-                            transition-transform duration-300
-                            group-hover:scale-[1.02]
-                          "
+                          className="relative z-10 w-full h-full object-contain transition-transform duration-300 group-hover:scale-[1.02]"
                         />
                       </>
                     ) : (
@@ -247,7 +240,6 @@ export default function WishlistList({ onClose }) {
                     </div>
                   </div>
 
-                  {/* INFO */}
                   <div className="p-3 text-white">
                     <div
                       className="text-sm font-semibold leading-tight min-h-[2.6rem]"
@@ -269,9 +261,7 @@ export default function WishlistList({ onClose }) {
                       {m.autori || "Autore sconosciuto"}
                     </div>
 
-                    {/* ACTIONS */}
                     <div className="mt-3 flex justify-between gap-2">
-                      {/* MODIFICA */}
                       <button
                         title="Modifica"
                         onClick={(e) => {
@@ -283,16 +273,13 @@ export default function WishlistList({ onClose }) {
                           bg-white/[0.04] backdrop-blur-sm
                           border border-white/[0.08]
                           text-zinc-400
-
                           transition-all duration-200 ease-out
-
                           hover:-translate-y-[1px]
                           hover:scale-[1.03]
                           hover:text-yellow-400
                           hover:border-yellow-400/35
                           hover:bg-yellow-400/10
                           hover:shadow-[0_0_14px_rgba(234,179,8,0.28)]
-
                           active:scale-95
                           active:translate-y-0
                           active:shadow-[0_0_22px_rgba(234,179,8,0.45)]
@@ -301,7 +288,6 @@ export default function WishlistList({ onClose }) {
                         <EditIcon />
                       </button>
 
-                      {/* ELIMINA */}
                       <button
                         title="Elimina"
                         onClick={(e) => {
@@ -313,16 +299,13 @@ export default function WishlistList({ onClose }) {
                           bg-white/[0.04] backdrop-blur-sm
                           border border-white/[0.08]
                           text-zinc-400
-
                           transition-all duration-200 ease-out
-
                           hover:-translate-y-[1px]
                           hover:scale-[1.03]
                           hover:text-red-400
                           hover:border-red-400/35
                           hover:bg-red-400/10
                           hover:shadow-[0_0_14px_rgba(248,113,113,0.28)]
-
                           active:scale-95
                           active:translate-y-0
                           active:shadow-[0_0_22px_rgba(248,113,113,0.45)]
@@ -331,7 +314,6 @@ export default function WishlistList({ onClose }) {
                         <TrashIcon />
                       </button>
 
-                      {/* ACQUISTATO */}
                       <button
                         title="Segna come acquistato"
                         onClick={(e) => {
@@ -343,16 +325,13 @@ export default function WishlistList({ onClose }) {
                           bg-white/[0.04] backdrop-blur-sm
                           border border-white/[0.08]
                           text-zinc-400
-
                           transition-all duration-200 ease-out
-
                           hover:-translate-y-[1px]
                           hover:scale-[1.03]
                           hover:text-green-400
                           hover:border-green-400/35
                           hover:bg-green-400/10
                           hover:shadow-[0_0_14px_rgba(74,222,128,0.28)]
-
                           active:scale-95
                           active:translate-y-0
                           active:shadow-[0_0_22px_rgba(74,222,128,0.45)]
