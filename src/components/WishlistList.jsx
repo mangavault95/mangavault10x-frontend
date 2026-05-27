@@ -106,10 +106,9 @@ export default function WishlistList({ onClose }) {
         return;
       }
 
-      // ricarica wishlist
       await load();
 
-      // forza refresh della grid principale
+      // forza refresh grid collezione
       window.dispatchEvent(new Event("favoritesUpdated"));
     } catch (err) {
       console.error("Errore acquisto wishlist:", err);
@@ -137,17 +136,14 @@ export default function WishlistList({ onClose }) {
       className="fixed inset-0 z-[999] flex items-center justify-center pointer-events-auto"
       onClick={onClose}
     >
+      {/* overlay trasparente: si vede il sito sotto */}
       <div className="absolute inset-0" />
 
       <div
-        className="
-          relative w-[1120px] max-w-[95vw] max-h-[84vh]
-          rounded-3xl border border-white/10 shadow-2xl
-          manga-detail-card backdrop-blur-xl
-          overflow-hidden
-        "
+        className="relative w-[1120px] max-w-[95vw] max-h-[84vh] rounded-3xl border border-white/10 shadow-2xl manga-detail-card overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* HEADER */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <div>
             <h2 className="text-xl font-extrabold text-white">Wishlist</h2>
@@ -159,33 +155,22 @@ export default function WishlistList({ onClose }) {
           <div className="flex gap-2">
             <button
               onClick={() => setOpenAdd(true)}
-              className="
-                px-4 py-2 rounded-xl
-                bg-yellow-400 text-black font-semibold
-                hover:brightness-110 active:scale-95
-                transition-all duration-200
-                shadow-[0_0_18px_rgba(234,179,8,0.18)]
-                hover:shadow-[0_0_26px_rgba(234,179,8,0.35)]
-              "
+              className="px-4 py-2 rounded-xl bg-yellow-400 text-black font-semibold hover:brightness-110 active:scale-95 transition-all duration-200 shadow-[0_0_18px_rgba(234,179,8,0.18)] hover:shadow-[0_0_26px_rgba(234,179,8,0.35)]"
             >
               + Aggiungi
             </button>
 
             <button
               onClick={onClose}
-              className="
-                px-4 py-2 rounded-xl
-                bg-white/8 border border-white/10
-                text-white hover:bg-white/12
-                transition-all duration-200
-              "
+              className="px-4 py-2 rounded-xl bg-white/8 border border-white/10 text-white hover:bg-white/12 transition-all duration-200"
             >
               Chiudi
             </button>
           </div>
         </div>
 
-        <div className="p-6 overflow-y-auto max-h-[calc(84vh-88px)]">
+        {/* CONTENT */}
+        <div className="p-6 overflow-y-auto max-h-[calc(84vh-88px)] custom-scrollbar">
           {loading ? (
             <div className="text-center text-zinc-400 py-20">
               Caricamento wishlist...
@@ -202,18 +187,11 @@ export default function WishlistList({ onClose }) {
               {items.map((m) => (
                 <div
                   key={m.id}
-                  className="
-                    group rounded-2xl overflow-hidden
-                    border border-white/10
-                    bg-white/[0.04] backdrop-blur-lg
-                    hover:border-yellow-400/20
-                    hover:shadow-[0_0_28px_rgba(234,179,8,0.08)]
-                    transition-all duration-300
-                    cursor-pointer
-                  "
+                  className="group rounded-2xl overflow-hidden border border-white/10 bg-white/[0.04] backdrop-blur-lg hover:border-yellow-400/20 hover:shadow-[0_0_28px_rgba(234,179,8,0.08)] transition-all duration-300 cursor-pointer"
                   onClick={() => openDetail(m)}
                 >
-                  <div className="relative h-[250px] overflow-hidden">
+                  {/* COVER */}
+                  <div className="relative h-[250px] overflow-hidden bg-black/30">
                     {m.coverurl ? (
                       <>
                         <img
@@ -240,6 +218,7 @@ export default function WishlistList({ onClose }) {
                     </div>
                   </div>
 
+                  {/* INFO */}
                   <div className="p-3 text-white">
                     <div
                       className="text-sm font-semibold leading-tight min-h-[2.6rem]"
@@ -261,6 +240,7 @@ export default function WishlistList({ onClose }) {
                       {m.autori || "Autore sconosciuto"}
                     </div>
 
+                    {/* ACTIONS */}
                     <div className="mt-3 flex justify-between gap-2">
                       <button
                         title="Modifica"
@@ -268,22 +248,7 @@ export default function WishlistList({ onClose }) {
                           e.stopPropagation();
                           setEditItem(m);
                         }}
-                        className="
-                          flex items-center justify-center w-10 h-10 rounded-xl
-                          bg-white/[0.04] backdrop-blur-sm
-                          border border-white/[0.08]
-                          text-zinc-400
-                          transition-all duration-200 ease-out
-                          hover:-translate-y-[1px]
-                          hover:scale-[1.03]
-                          hover:text-yellow-400
-                          hover:border-yellow-400/35
-                          hover:bg-yellow-400/10
-                          hover:shadow-[0_0_14px_rgba(234,179,8,0.28)]
-                          active:scale-95
-                          active:translate-y-0
-                          active:shadow-[0_0_22px_rgba(234,179,8,0.45)]
-                        "
+                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] text-zinc-400 transition-all duration-200 ease-out hover:-translate-y-[1px] hover:scale-[1.03] hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 hover:shadow-[0_0_14px_rgba(234,179,8,0.28)] active:scale-95 active:translate-y-0 active:shadow-[0_0_22px_rgba(234,179,8,0.45)]"
                       >
                         <EditIcon />
                       </button>
@@ -294,22 +259,7 @@ export default function WishlistList({ onClose }) {
                           e.stopPropagation();
                           removeItem(m.id);
                         }}
-                        className="
-                          flex items-center justify-center w-10 h-10 rounded-xl
-                          bg-white/[0.04] backdrop-blur-sm
-                          border border-white/[0.08]
-                          text-zinc-400
-                          transition-all duration-200 ease-out
-                          hover:-translate-y-[1px]
-                          hover:scale-[1.03]
-                          hover:text-red-400
-                          hover:border-red-400/35
-                          hover:bg-red-400/10
-                          hover:shadow-[0_0_14px_rgba(248,113,113,0.28)]
-                          active:scale-95
-                          active:translate-y-0
-                          active:shadow-[0_0_22px_rgba(248,113,113,0.45)]
-                        "
+                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] text-zinc-400 transition-all duration-200 ease-out hover:-translate-y-[1px] hover:scale-[1.03] hover:text-red-400 hover:border-red-400/35 hover:bg-red-400/10 hover:shadow-[0_0_14px_rgba(248,113,113,0.28)] active:scale-95 active:translate-y-0 active:shadow-[0_0_22px_rgba(248,113,113,0.45)]"
                       >
                         <TrashIcon />
                       </button>
@@ -320,22 +270,7 @@ export default function WishlistList({ onClose }) {
                           e.stopPropagation();
                           markAsOwned(m.id);
                         }}
-                        className="
-                          flex items-center justify-center w-10 h-10 rounded-xl
-                          bg-white/[0.04] backdrop-blur-sm
-                          border border-white/[0.08]
-                          text-zinc-400
-                          transition-all duration-200 ease-out
-                          hover:-translate-y-[1px]
-                          hover:scale-[1.03]
-                          hover:text-green-400
-                          hover:border-green-400/35
-                          hover:bg-green-400/10
-                          hover:shadow-[0_0_14px_rgba(74,222,128,0.28)]
-                          active:scale-95
-                          active:translate-y-0
-                          active:shadow-[0_0_22px_rgba(74,222,128,0.45)]
-                        "
+                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] text-zinc-400 transition-all duration-200 ease-out hover:-translate-y-[1px] hover:scale-[1.03] hover:text-green-400 hover:border-green-400/35 hover:bg-green-400/10 hover:shadow-[0_0_14px_rgba(74,222,128,0.28)] active:scale-95 active:translate-y-0 active:shadow-[0_0_22px_rgba(74,222,128,0.45)]"
                       >
                         <CheckIcon />
                       </button>
