@@ -111,14 +111,14 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
       className="min-h-screen text-white relative overflow-hidden"
       style={{
         background:
-          "linear-gradient(180deg, rgba(10,12,22,1), rgba(8,10,18,1))"
+          "linear-gradient(180deg, rgb(8, 11, 22), rgb(10, 12, 24) 30%, rgb(8, 10, 18) 100%)"
       }}
     >
-      {/* ambient lights pagina */}
+      {/* AMBIENT LIGHTS */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-[-120px] left-[180px] w-[420px] h-[420px] rounded-full bg-blue-500/8 blur-[120px]" />
-        <div className="absolute top-[180px] right-[120px] w-[360px] h-[360px] rounded-full bg-violet-500/8 blur-[120px]" />
-        <div className="absolute bottom-[-140px] left-[38%] w-[420px] h-[420px] rounded-full bg-indigo-500/6 blur-[120px]" />
+        <div className="absolute top-[-80px] left-[180px] w-[420px] h-[420px] rounded-full bg-blue-500/15 blur-[130px]" />
+        <div className="absolute top-[180px] right-[120px] w-[420px] h-[420px] rounded-full bg-violet-500/12 blur-[140px]" />
+        <div className="absolute bottom-[-120px] left-[35%] w-[420px] h-[420px] rounded-full bg-indigo-500/10 blur-[130px]" />
       </div>
 
       {/* SIDEBAR */}
@@ -151,7 +151,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
               placeholder="Cerca titolo, autore..."
               className="
                 px-5 py-2.5 w-56 rounded-full
-                bg-white/[0.04]
+                bg-[rgba(24,30,56,0.42)]
                 border border-white/10
                 text-sm placeholder:text-zinc-500
                 outline-none
@@ -166,7 +166,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
                 onClick={() => setOpenMenu((p) => !p)}
                 className="
                   w-10 h-10 rounded-xl
-                  bg-white/[0.04]
+                  bg-[rgba(24,30,56,0.42)]
                   border border-white/10
                   hover:border-yellow-400
                   transition
@@ -183,8 +183,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
                   "
                   style={{
                     background:
-                      "linear-gradient(180deg, rgba(18,22,42,0.92), rgba(12,14,28,0.92))",
-                    backdropFilter: "blur(12px)",
+                      "linear-gradient(180deg, rgba(20,26,52,0.92), rgba(12,16,32(12px)",                      "linear-gradient(180deg, rgba(20,26,52,0.92), rgba(12,16,32,0.92))",
                     WebkitBackdropFilter: "blur(12px)"
                   }}
                 >
@@ -204,7 +203,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
           </div>
         </div>
 
-        {/* FILTRI */}
+        {/* FILTERS */}
         <div className="flex flex-wrap items-center gap-2">
           {filterButtons.map((f) => {
             const active = activeFilter === f.key;
@@ -217,7 +216,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
                   "px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 " +
                   (active
                     ? "bg-yellow-400 text-black border-yellow-400 shadow-[0_0_18px_rgba(234,179,8,0.28)]"
-                    : "bg-white/[0.05] text-zinc-300 border-white/10 hover:bg-white/[0.09] hover:text-white hover:border-yellow-400/30")
+                    : "bg-[rgba(24,30,56,0.42)] text-zinc-300 border-white/10 hover:bg-[rgba(32,40,72,0.52)] hover:text-white hover:border-yellow-400/30")
                 }
               >
                 {f.label}
@@ -226,7 +225,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
           })}
         </div>
 
-        {/* GRID — niente più cornice/container */}
+        {/* GRID */}
         <MangaGrid
           searchResults={filteredSearch}
           filter={activeFilter === "all" ? undefined : activeFilter}
