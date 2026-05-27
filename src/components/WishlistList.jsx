@@ -128,6 +128,8 @@ export default function WishlistList({ onClose }) {
 
                       <div className="flex justify-between mt-3">
 
+ <div className="flex justify-between mt-3">
+
   {/* MODIFICA */}
   <button
     title="Modifica"
@@ -135,11 +137,21 @@ export default function WishlistList({ onClose }) {
       e.stopPropagation();
       setEditItem(m);
     }}
-    className="flex items-center justify-center w-8 h-8 rounded-md
-               bg-white/5 border border-white/10
-               text-zinc-400 hover:text-yellow-400
-               hover:border-yellow-400/40 hover:bg-yellow-400/10
-               transition"
+    className="
+      flex items-center justify-center w-9 h-9 rounded-md
+      bg-white/[0.04] border border-white/[0.08]
+      text-zinc-400
+
+      transition-all duration-200 ease-out
+
+      hover:scale-105
+      hover:text-yellow-400
+      hover:border-yellow-400/40
+      hover:shadow-[0_0_12px_rgba(234,179,8,0.35)]
+
+      active:scale-95
+      active:shadow-[0_0_20px_rgba(234,179,8,0.6)]
+    "
   >
     ✎
   </button>
@@ -151,63 +163,8 @@ export default function WishlistList({ onClose }) {
       e.stopPropagation();
       removeItem(m.id);
     }}
-    className="flex items-center justify-center w-8 h-8 rounded-md
-               bg-white/5 border border-white/10
-               text-zinc-400 hover:text-red-400
-               hover:border-red-400/40 hover:bg-red-400/10
-               transition"
-  >
-    ⨯
-  </button>
+    className="
+      flex items-center justify-center w-9 h-9 rounded-md
 
-  {/* ACQUISTATO */}
-  <button
-    title="Segna come acquistato"
-    onClick={(e) => {
-      e.stopPropagation();
-      markAsOwned(m.id);
-    }}
-    className="flex items-center justify-center w-8 h-8 rounded-md
-               bg-white/5 border border-white/10
-               text-zinc-400 hover:text-green-400
-               hover:border-green-400/40 hover:bg-green-400/10
-               transition"
-  >
-    ✓
-  </button>
-
-</div>
-                
-
-                    </div>
-
-                  </div>
-
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {openAdd && (
-        <WishlistModal onClose={() => setOpenAdd(false)} onSaved={load} />
-      )}
-
-      {editItem && (
-        <WishlistModal
-          initialData={editItem}
-          onClose={() => setEditItem(null)}
-          onSaved={load}
-        />
-      )}
-
-      {selected && (
-        <MangaDetail
-          manga={selected}
-          onClose={() => setSelected(null)}
-        />
-      )}
-    </div>
   );
 }
