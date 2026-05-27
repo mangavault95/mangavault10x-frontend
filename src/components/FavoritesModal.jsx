@@ -4,25 +4,19 @@ import MangaDetail from "./MangaDetail";
 export default function FavoritesModal({ onClose }) {
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const [favorites, setFavorites] = useState([]);
   const [mangaList, setMangaList] = useState([]);
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    try {
-      const fav = JSON.parse(localStorage.getItem("mv_favorites") || "[]");
-      setFavorites(Array.isArray(fav) ? fav : []);
-    } catch {
-      setFavorites([]);
-    }
-
     fetch(`${API_URL}/api/manga`)
       .then((r) => r.json())
       .then((d) => setMangaList(Array.isArray(d) ? d : []))
       .catch(() => setMangaList([]));
   }, [API_URL]);
 
-  const favManga = mangaList.filter((m) => favorites.includes(m.ID));
+  const favManga = mangaList.filter(
+    (m) => Number(m.Valutazione) >= 5
+  );
 
   return (
     <div
@@ -35,12 +29,11 @@ export default function FavoritesModal({ onClose }) {
         className="relative w-[1100px] max-w-[95vw] max-h-[84vh] rounded-3xl border border-white/10 shadow-2xl manga-detail-card overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* HEADER */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <div>
             <h2 className="text-xl font-extrabold text-white">Preferiti</h2>
             <p className="text-sm text-zinc-400 mt-1">
-              Le serie che hai marcato come preferite.
+              Tutti i manga che hanno ricevuto 5 stelle.
             </p>
           </div>
 
@@ -52,12 +45,15 @@ export default function FavoritesModal({ onClose }) {
           </button>
         </div>
 
-        {/* CONTENT */}
         <div className="p-6 overflow-y-auto max-h-[calc(84vh-88px)] custom-scrollbar">
           {favManga.length === 0 ? (
             <div className="text-center text-zinc-400 py-20">
-              <div className="text-lg font-semibold text-white">Nessun preferito</div>
-              <div className="text-sm mt-2">Aggiungi una serie ai preferiti dalla collezione principale.</div>
+              <div className="text-lg font-semibold text-white">
+                Nessun preferito
+              </div>
+              <div className="text-sm mt-2">
+                Un manga entrerà qui quando lo valuti con 5 stelle.
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-5 gap-5">
@@ -117,7 +113,7 @@ export default function FavoritesModal({ onClose }) {
 
                     <div className="mt-3 flex items-center justify-between">
                       <span className="inline-flex px-2 py-1 rounded-full bg-yellow-400/15 text-yellow-300 border border-yellow-400/20 text-[11px]">
-                        Preferito
+                        5 stelle
                       </span>
 
                       <span className="text-xs text-zinc-400">
