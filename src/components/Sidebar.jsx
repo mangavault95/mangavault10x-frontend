@@ -174,40 +174,33 @@ function CloseIcon() {
   );
 }
 
-function SessionPreview({ session, label, onClick }) {
-  if (!session) return null;
+/* -------------------- SIDE SWITCH -------------------- */
+
+function SideSwitch({ session, direction, onClick }) {
+  if (!session) {
+    return <div className="h-[64px]" />;
+  }
+
+  const isLeft = direction === "left";
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex flex-col items-center gap-2 transition-all duration-200 hover:scale-[1.03]"
-      title={session.titolo || "Sessione lettura"}
-    >
-      <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-        {label}
+    <div className="flex flex-col items-center justify-center gap-2">
+      <div
+        className="text-[10px] text-zinc-500 text-center truncate w-full max-w-[64px]"
+        title={session.titolo || ""}
+      >
+        {session.titolo || (isLeft ? "Precedente" : "Successivo")}
       </div>
 
-      <div className="w-14 h-20 rounded-2xl overflow-hidden border border-white/[0.08] bg-white/[0.04] shadow-[0_12px_28px_rgba(0,0,0,0.18)] relative">
-        {session.coverurl ? (
-          <img
-            src={session.coverurl}
-            alt={session.titolo || "Cover manga"}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-500">
-            No cover
-          </div>
-        )}
-
-        <div className="absolute inset-0 bg-black/10" />
-      </div>
-
-      <div className="w-16 text-[10px] text-zinc-400 text-center truncate">
-        {session.titolo || "Manga"}
-      </div>
-    </button>
+      <button
+        type="button"
+        onClick={onClick}
+        className="w-9 h-9 rounded-full border border-white/[0.08] bg-white/[0.05] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/30 hover:bg-yellow-400/10 transition flex items-center justify-center"
+        title={isLeft ? "Manga precedente" : "Manga successivo"}
+      >
+        {isLeft ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+      </button>
+    </div>
   );
 }
 
@@ -275,6 +268,12 @@ export default function Sidebar({ open = true }) {
       window.removeEventListener("currentReadingUpdated", refreshAll);
     };
   }, []);
+
+  useEffect(() => {
+    if (activeIndex >= sessions.length && sessions.length > 0) {
+      setActiveIndex(0);
+    }
+  }, [sessions, activeIndex]);
 
   const favoritesList = useMemo(() => {
     return manga.filter((m) => Number(m.Valutazione) >= 5);
@@ -415,6 +414,7 @@ export default function Sidebar({ open = true }) {
           boxShadow: "18px 0 55px rgba(0,0,0,0.34)"
         }}
       >
+        {/* ambient lights */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-10 -right-12 w-32 h-32 rounded-full bg-blue-500/12 blur-3xl" />
           <div className="absolute bottom-20 -left-10 w-28 h-28 rounded-full bg-violet-500/10 blur-3xl" />
@@ -579,34 +579,16 @@ export default function Sidebar({ open = true }) {
             </div>
 
             {/* jukebox row */}
-            <div className="grid grid-cols-[70px_minmax(0,1fr)_70px] items-center gap-3">
-              {/* left */}
-              <div className="flex flex-col items-center justify-center gap-2">
-                {prevSession ? (
-                  <>
-                    <div
-                      className="text-[10px] text-zinc-500 text-center truncate w-full"
-                      title={prevSession.titolo || ""}
-                    >
-                      {prevSession.titolo || "Precedente"}
-                    </div>
+            <div className="grid grid-cols-[64px_minmax(0,1fr)_64px] items-center gap-3">
+              {/* left switch */}
+              <SideSwitch
+                session={prevSession}
+                direction="left"
+                onClick={() => setActiveIndex(prevIndex)}
+              />
 
-                    <button
-                      type="button"
-                      onClick={() => setActiveIndex(prevIndex)}
-                      className="w-10 h-10 rounded-full border border-white/[0.08] bg-white/[0.05] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/30 hover:bg-yellow-400/10 transition flex items-center justify-center"
-                      title="Manga precedente"
-                    >
-                      <ChevronLeftIcon />
-                    </button>
-                  </>
-                ) : (
-                  <div className="h-[54px]" />
-                )}
-              </div>
-
-              {/* current */}
-              <div className="flex items-center gap-3 min-w-0">
+              {/* current manga */}
+              <div className="flex flex-col items-center min-w-0">
                 <button
                   type="button"
                   onClick={() =>
@@ -623,7 +605,7 @@ export default function Sidebar({ open = true }) {
                       })
                     )
                   }
-                  className="relative w-16 h-24 shrink-0 rounded-2xl overflow-hidden bg-black/20 border border-white/10 shadow-xl group"
+                  className="relative w-28 h-40 rounded-[22px] overflow-hidden bg-black/20 border border-white/10 shadow-2xl group"
                   title="Apri dettaglio"
                 >
                   {activeSession.coverurl ? (
@@ -643,81 +625,62 @@ export default function Sidebar({ open = true }) {
                   </div>
                 </button>
 
-                <div className="min-w-0 flex-1">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      window.dispatchEvent(
-                        new CustomEvent("openMangaDetail", {
-                          detail: {
-                            ID: activeSession.manga_id,
-                            Titolo: activeSession.titolo,
-                            Autore: activeSession.autore,
-                            CoverURL: activeSession.coverurl,
-                            VolumiTotali: activeSession.volumitotali,
-                            VolumiPosseduti: activeSession.volume
-                          }
-                        })
-                      )
-                    }
-                    className="text-left w-full"
-                  >
-                    <div className="text-[1rem] font-bold text-white truncate">
-                      {activeSession.titolo}
-                    </div>
+                {/* progress under cover */}
+                <div className="mt-3 w-full max-w-[180px]">
+                  <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-2">
+                    <span>Vol {readingOwned}</span>
+                    <span>{readingTotal || "?"}</span>
+                  </div>
 
-                    <div className="text-xs text-zinc-400 truncate mt-0.5">
-                      {activeSession.autore || "Autore sconosciuto"}
-                    </div>
-                  </button>
-
-                  <div className="mt-2">
-                    <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-2">
-                      <span>Vol {readingOwned}</span>
-                      <span>{readingTotal || "?"}</span>
-                    </div>
-
-                    <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-yellow-300 to-yellow-500 shadow-[0_0_12px_rgba(250,204,21,0.38)] transition-all duration-300"
-                        style={{ width: `${readingPercent}%` }}
-                      />
-                    </div>
+                  <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-yellow-300 to-yellow-500 shadow-[0_0_12px_rgba(250,204,21,0.38)] transition-all duration-300"
+                      style={{ width: `${readingPercent}%` }}
+                    />
                   </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new CustomEvent("openMangaDetail", {
+                        detail: {
+                          ID: activeSession.manga_id,
+                          Titolo: activeSession.titolo,
+                          Autore: activeSession.autore,
+                          CoverURL: activeSession.coverurl,
+                          VolumiTotali: activeSession.volumitotali,
+                          VolumiPosseduti: activeSession.volume
+                        }
+                      })
+                    )
+                  }
+                  className="mt-3 text-center max-w-full"
+                >
+                  <div className="text-[1rem] font-bold text-white truncate max-w-[180px]">
+                    {activeSession.titolo}
+                  </div>
+
+                  <div className="text-xs text-zinc-400 truncate mt-0.5 max-w-[180px]">
+                    {activeSession.autore || "Autore sconosciuto"}
+                  </div>
+                </button>
               </div>
 
-              {/* right */}
-              <div className="flex flex-col items-center justify-center gap-2">
-                {nextSession ? (
-                  <>
-                    <div
-                      className="text-[10px] text-zinc-500 text-center truncate w-full"
-                      title={nextSession.titolo || ""}
-                    >
-                      {nextSession.titolo || "Successivo"}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveIndex(nextIndex)}
-                      className="w-10 h-10 rounded-full border border-white/[0.08] bg-white/[0.05] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/30 hover:bg-yellow-400/10 transition flex items-center justify-center"
-                      title="Manga successivo"
-                    >
-                      <ChevronRightIcon />
-                    </button>
-                  </>
-                ) : (
-                  <div className="h-[54px]" />
-                )}
-              </div>
+              {/* right switch */}
+              <SideSwitch
+                session={nextSession}
+                direction="right"
+                onClick={() => setActiveIndex(nextIndex)}
+              />
             </div>
 
             {/* controls */}
             <div className="mt-4 flex items-center justify-center gap-4">
               <button
                 onClick={() => updateCurrentVolume(-1)}
-                className="w-10 h-10 rounded-2xl bg-white/[0.055] border border-white/[0.08] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 transition flex items-center justify-center active:scale-95"
+                className="w-9 h-9 rounded-2xl bg-white/[0.055] border border-white/[0.08] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 transition flex items-center justify-center active:scale-95"
                 title="Togli un volume"
               >
                 <MinusIcon />
@@ -725,7 +688,7 @@ export default function Sidebar({ open = true }) {
 
               <button
                 onClick={saveCurrentReading}
-                className="w-12 h-12 rounded-full bg-yellow-400 text-black shadow-[0_0_24px_rgba(250,204,21,0.35)] hover:brightness-110 active:scale-95 transition flex items-center justify-center"
+                className="w-16 h-16 rounded-full bg-yellow-400 text-black shadow-[0_0_28px_rgba(250,204,21,0.35)] hover:brightness-110 active:scale-95 transition flex items-center justify-center"
                 title="Salva avanzamento"
               >
                 <SaveIcon />
@@ -733,7 +696,7 @@ export default function Sidebar({ open = true }) {
 
               <button
                 onClick={() => updateCurrentVolume(1)}
-                className="w-10 h-10 rounded-2xl bg-white/[0.055] border border-white/[0.08] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 transition flex items-center justify-center active:scale-95"
+                className="w-9 h-9 rounded-2xl bg-white/[0.055] border border-white/[0.08] text-zinc-300 hover:text-yellow-400 hover:border-yellow-400/35 hover:bg-yellow-400/10 transition flex items-center justify-center active:scale-95"
                 title="Aggiungi un volume"
               >
                 <PlusIcon />
