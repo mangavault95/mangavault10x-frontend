@@ -51,32 +51,20 @@ export default function TopHero({ manga = [], onSelect }) {
         background:
           "linear-gradient(180deg, rgba(16,20,40,0.62), rgba(24,18,40,0.52))",
         backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)"
       }}
     >
-      {/* luci ambientali */}
+      {/* ambient lights */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(circle at top left, rgba(99,102,241,0.14), transparent 32%), radial-gradient(circle at bottom right, rgba(168,85,247,0.12), transparent 34%)",
+            "radial-gradient(circle at top left, rgba(99,102,241,0.16), transparent 30%), radial-gradient(circle at bottom right, rgba(168,85,247,0.12), transparent 34%)"
         }}
       />
 
-      {/* glow cover a destra */}
-      {currentManga?.CoverURL && (
-        <div className="absolute right-0 top-0 h-full w-[42%] overflow-hidden pointer-events-none">
-          <img
-            src={currentManga.CoverURL}
-            alt=""
-            aria-hidden="true"
-            className="w-full h-full object-cover opacity-20 blur-[2px] scale-110"
-          />
-          <div className="absolute inset-0 bg-gradient-to-l from-black/15 via-transparent to-transparent" />
-        </div>
-      )}
-
-      <div className="relative z-10 px-8 py-7 flex items-stretch gap-8 min-h-[265px]">
+      {/* layout principale */}
+      <div className="relative z-10 px-8 py-7 flex items-stretch gap-8 min-h-[290px]">
         {/* LEFT CONTENT */}
         <div className="flex-1 min-w-0 flex flex-col justify-between">
           <div>
@@ -118,7 +106,7 @@ export default function TopHero({ manga = [], onSelect }) {
                 style={{
                   display: "-webkit-box",
                   WebkitLineClamp: 3,
-                  WebkitBoxOrient: "vertical",
+                  WebkitBoxOrient: "vertical"
                 }}
               >
                 {currentManga?.Trama || "Nessuna descrizione disponibile."}
@@ -158,53 +146,36 @@ export default function TopHero({ manga = [], onSelect }) {
           </div>
         </div>
 
-        {/* RIGHT VISUAL */}
-        <div className="hidden lg:flex w-[360px] flex-col justify-between">
-          <div className="flex justify-end">
-            <div className="relative w-[175px] h-[245px] rounded-[24px] overflow-hidden bg-black/30 border border-white/10 shadow-2xl">
-              {currentManga?.CoverURL ? (
+        {/* RIGHT BIG VISUAL */}
+        <div className="hidden lg:flex w-[420px] items-center justify-center">
+          <div className="relative w-[220px] h-[300px] rounded-[28px] overflow-hidden bg-black/20 border border-white/10 shadow-2xl">
+            {currentManga?.CoverURL ? (
+              <>
+                {/* soft ambient blur solo dietro la cover */}
+                <img
+                  src={currentManga.CoverURL}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-35"
+                />
+
+                <div className="absolute inset-0 bg-black/10" />
+
                 <img
                   src={currentManga.CoverURL}
                   alt={currentManga?.Titolo || "Cover manga"}
-                  className="w-full h-full object-contain"
+                  className="relative z-10 w-full h-full object-contain"
                 />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-zinc-500 text-xs">
-                  No cover
-                </div>
-              )}
-
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="cover-shine" />
+              </>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-zinc-500 text-xs">
+                No cover
               </div>
-            </div>
-          </div>
+            )}
 
-          <div className="flex justify-end gap-2 mt-4">
-            {latest.slice(0, 4).map((m, i) => (
-              <button
-                key={m?.ID || `${m?.Titolo || "manga"}-${i}`}
-                type="button"
-                onClick={() => setCurrent(i)}
-                title={m?.Titolo || "Manga"}
-                className={
-                  "w-14 h-20 rounded-xl overflow-hidden border transition-all " +
-                  (i === current
-                    ? "border-yellow-400 shadow-[0_0_16px_rgba(234,179,8,0.35)]"
-                    : "border-white/10 opacity-70 hover:opacity-100")
-                }
-              >
-                {m?.CoverURL ? (
-                  <img
-                    src={m.CoverURL}
-                    alt={m?.Titolo || "Cover manga"}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-black/30" />
-                )}
-              </button>
-            ))}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="cover-shine" />
+            </div>
           </div>
         </div>
       </div>
