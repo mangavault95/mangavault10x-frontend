@@ -11,15 +11,14 @@ export default function MangaDetail({ manga, onClose }) {
 
   const [rating, setRating] = useState(Number(manga.Valutazione) || 0);
   const [hoverRating, setHoverRating] = useState(0);
-
   const debounceRef = useRef(null);
+
   const [toast, setToast] = useState({
     show: false,
     text: "",
     tone: "success"
   });
 
-  // ✅ RATING
   async function handleRating(stars) {
     setRating(stars);
 
@@ -42,7 +41,7 @@ export default function MangaDetail({ manga, onClose }) {
           }
         );
 
-        setToast({ show: true, text: "Valutazione salvata", tone: "success" });
+        setToast({ show: true, text: "Valutazione salvata ✅", tone: "success" });
         setTimeout(() => setToast({ show: false, text: "", tone: "success" }), 1500);
 
       } catch (err) {
@@ -64,10 +63,9 @@ export default function MangaDetail({ manga, onClose }) {
       onClick={onClose}
     >
 
-      {/* ✅ niente sfondo scuro */}
+      {/* ✅ NO overlay scuro */}
       <div className="absolute inset-0" />
 
-      {/* ✅ PANEL */}
       <div
         className="relative w-[900px] rounded-3xl border border-white/10 shadow-2xl manga-detail-card"
         onClick={(e) => e.stopPropagation()}
@@ -81,6 +79,7 @@ export default function MangaDetail({ manga, onClose }) {
           ✕
         </button>
 
+        {/* TOAST */}
         {toast.show && (
           <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-green-600 px-4 py-2 rounded text-white z-[9999]">
             {toast.text}
@@ -91,9 +90,14 @@ export default function MangaDetail({ manga, onClose }) {
 
           {/* COVER */}
           <div className="w-[220px]">
-            <div className="bg-black rounded overflow-hidden">
-              {manga.CoverURL && (
-                {manga.CoverURL}
+            <div className="bg-black rounded overflow-hidden flex items-center justify-center h-[320px]">
+              {manga.CoverURL ? (
+                <img
+                  src={manga.CoverURL}
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <span className="text-zinc-500">No cover</span>
               )}
             </div>
 
@@ -116,6 +120,7 @@ export default function MangaDetail({ manga, onClose }) {
             <div className="flex flex-wrap gap-2 mb-3">
               {String(manga.Genere || "")
                 .split(",")
+                .filter(Boolean)
                 .map((g, i) => (
                   <span key={i} className="text-xs bg-white/10 px-2 py-1 rounded">
                     {g.trim()}
@@ -164,7 +169,9 @@ export default function MangaDetail({ manga, onClose }) {
                     onMouseEnter={() => setHoverRating(i)}
                     onMouseLeave={() => setHoverRating(0)}
                     onClick={() => handleRating(i)}
-                    className={`text-2xl cursor-pointer ${active ? "text-yellow-400" : "text-zinc-600"}`}
+                    className={`text-2xl cursor-pointer ${
+                      active ? "text-yellow-400" : "text-zinc-600"
+                    }`}
                   >
                     ★
                   </span>
