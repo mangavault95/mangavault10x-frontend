@@ -48,7 +48,7 @@ export default function MobileHomeView({
     };
   }, []);
 
-  /* ✅ SEARCH (NON rompe i filtri) */
+  /* ✅ SEARCH */
   const searchResults = useMemo(() => {
     const q = searchValue.toLowerCase();
 
@@ -62,7 +62,7 @@ export default function MobileHomeView({
     });
   }, [searchValue, filteredManga]);
 
-  /* FILTERS */
+  /* ✅ FILTRI */
   const filters = [
     { key: "all", label: "Tutti" },
     { key: "ongoing", label: "In corso" },
@@ -86,7 +86,6 @@ export default function MobileHomeView({
             ☰
           </button>
 
-          {/* ✅ LOGO GRANDE */}
           <div className="text-[22px] font-black tracking-tight">
             <span className="text-white">MangaVault</span>{" "}
             <span className="text-yellow-400 text-[28px] drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">
@@ -102,22 +101,22 @@ export default function MobileHomeView({
           </button>
         </div>
 
-        {/* FILTERS */}
+        {/* FILTRI */}
         <div className="px-4 pt-4 flex gap-2 overflow-x-auto pb-2">
           {filters.map((f) => (
-            <
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={`
-                  px-4 py-2 rounded-xl text-[12px] border whitespace-nowrap
-                  ${
-                    filter === f.key
-                      ? "bg-yellow-400 text-black border-yellow-400"
-                      : "bg-white/5 border-white/10 text-zinc-300"
-                  }
-                `}
-              >
-                {f.label}
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`
+                px-4 py-2 rounded-xl text-[12px] border whitespace-nowrap
+                ${
+                  filter === f.key
+                    ? "bg-yellow-400 text-black border-yellow-400"
+                    : "bg-white/5 border-white/10 text-zinc-300"
+                }
+              `}
+            >
+              {f.label}
             </button>
           ))}
         </div>
@@ -126,7 +125,7 @@ export default function MobileHomeView({
         <div className="px-3 mt-3">
           <MobileMangaGrid
             searchResults={filteredManga}
-            filter={}
+            filter={filter}
           />
         </div>
 
@@ -142,21 +141,20 @@ export default function MobileHomeView({
         <MobileReadingPlayer />
       </div>
 
-      {/* ✅ SEARCH OVERLAY FIXATO */}
+      {/* ✅ SEARCH OVERLAY */}
       <div
-        className={`fixed inset-0 z-[2000] bg-[#0b0b0f] transition-all duration-300 ${
-          searchOpen
+        className={`
+          fixed inset-0 z-[2000] bg-[#0b0b0f]
+          transition-all duration-300
+          ${searchOpen
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-full pointer-events-none"
-        }`}
+          }
+        `}
       >
-        {/* HEADER */}
         <div className="p-4 border-b border-white/10 flex gap-3">
 
-          <button
-            onClick={() => setSearchOpen(false)}
-            className="text-white"
-          >
+          <button onClick={() => setSearchOpen(false)}>
             ←
           </button>
 
@@ -169,7 +167,6 @@ export default function MobileHomeView({
           />
         </div>
 
-        {/* ✅ RISULTATI GRID */}
         <div className="p-3 grid grid-cols-2 gap-3 overflow-y-auto">
           {searchResults.map((m) => (
             <button
