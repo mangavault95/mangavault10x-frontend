@@ -8,6 +8,7 @@ export default function MobileDetailOverlay({
   const [index, setIndex] = useState(startIndex);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+  const contentRef = useRef(null);
 
   const current = list[index];
 
@@ -15,69 +16,99 @@ export default function MobileDetailOverlay({
     setIndex(startIndex);
   }, [startIndex]);
 
-  /* ---------------- SWIPE ---------------- */
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const previousTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.touchAction = previousTouchAction;
+    };
+  }, []);
+
   function onTouchStart(e) {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
+    const touch = e.touches[0];
+
+    touchStartX.current = touch.clientX;
+    touchStartY.current = touch.clientY;
   }
 
   function onTouchEnd(e) {
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartX.current;
+    const dy = touch.clientY - touchStartY.current;
 
-    // swipe orizzontale
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+    const horizontalIntent = Math.abs(dx) > 95 && Math.abs(dx) > Math.abs(dy) * 1.4;
+    const verticalIntent = dy > 150 && Math.abs(dx) < 55;
+
+    if (horizontalIntent) {
       if (dx < 0 && index < list.length - 1) {
-        setIndex(i => i + 1);
+        setIndex((i) => i + 1);
       } else if (dx > 0 && index > 0) {
-        setIndex(i => i - 1);
+        setIndex((i) => i - 1);
       }
+
+      return;
     }
 
-    // swipe down
-    if (dy > 120) {
+    const scrollTop = contentRef.current?.scrollTop || 0;
+
+    if (verticalIntent && scrollTop <= 4) {
       onClose();
     }
   }
 
   if (!current) return null;
 
-  /* ---------------- DATI ---------------- */
-  const owned = Number(current?.VolumiPosseduti) || 0;
-
-  let total = null;
-  if (current?.VolumiTotali) {
-    const n = Number(String(current.VolumiTotali).replace(/\D/g, ""));
-    if (!Number.isNaN(n)) total = n;
+  function getOwned(m) {
+    return Number(m?.VolumiPosseduti) || 0;
   }
+
+  function getTotal(m) {
+    const raw = m?.VolumiTotali;
+
+    if (raw === null || raw === undefined || raw === "") return null;
+
+    const cleaned = String(raw).replace(/[^0-9]/g, "");
+    if (!cleaned) return null;
+
+    const n = Number(cleaned);
+    return Number.isNaN(n) ? null : n;
+  }
+
+  const owned = getOwned(current);
+  const total = getTotal(current);
 
   const percent =
     total === null
-      ? owned > 0 ? 50 : 0
+      ? owned > 0
+        ? 50
+        : 0
       : Math.min(100, (owned / total) * 100);
 
   const rating = Number(current?.Valutazione) || 0;
 
-  function renderStars() {
-    return [...Array(5)].map((_, i) => (
-      <span key={i}>
-        {i < rating ? "★" : "☆"}
-      </span>
+  function stars() {
+    return Array.from({ length: 5 }).map((_, i) => (
+      <span key={i}>{i < rating ? "★" : "☆"}</span>
     ));
   }
 
   return (
     <div
-      className="fixed inset-0 z-[5000] bg-black flex flex-col"
+      className="fixed inset-0 z-[5000] bg-black/95 backdrop-blur-md flex flex-col mobile-app"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-
-      {/* HEADER */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+      <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/80 backdrop-blur-xl">
         <button
+          type="button"
           onClick={onClose}
-          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
+          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center active:scale-95 transition"
+          aria-label="Chiudi dettaglio"
         >
           ✕
         </button>
@@ -89,38 +120,41 @@ export default function MobileDetailOverlay({
         <div className="w-10" />
       </div>
 
-      {/* ✅ CONTENUTO SCROLLABILE */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-
-        {/* COVER */}
+      <div
+        ref={contentRef}
+        className="flex-1 overflow-y-auto no-scrollbar px-5 py-4 space-y-4 text-center"
+      >
         <div className="flex justify-center">
-          <div className="w-[160px] aspect-[3/4]">
-            {current.CoverURL && (
+          <div className="w-[155px] aspect-[3/4] rounded-2xl overflow-hidden bg-black/30 border border-white/10">
+            {current.CoverURL ? (
               <img
                 src={current.CoverURL}
-                className="w-full h-full object-contain rounded-lg"
+                alt={current.Titolo || "Cover manga"}
+                className="w-full h-full object-contain"
               />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-xs text-zinc-500">
+                No cover
+              </div>
             )}
           </div>
         </div>
 
-        {/* TITLE */}
-        <h2 className="text-lg font-bold text-center">
-          {current.Titolo}
-        </h2>
+        <div>
+          <h2 className="text-lg font-bold leading-snug text-white">
+            {current.Titolo || "Titolo sconosciuto"}
+          </h2>
 
-        {/* AUTHOR */}
-        <p className="text-sm text-center text-zinc-400">
-          {current.Autore}
-        </p>
-
-        {/* ⭐ RATING */}
-        <div className="text-center text-yellow-400 text-lg">
-          {renderStars()}
+          <p className="text-sm text-zinc-400 mt-1">
+            {current.Autore || "Autore sconosciuto"}
+          </p>
         </div>
 
-        {/* PROGRESS */}
-        <div className="mt-2">
+        <div className="text-yellow-400 text-lg">
+          {stars()}
+        </div>
+
+        <div className="w-full max-w-[260px] mx-auto">
           <div className="h-[5px] bg-white/10 rounded-full overflow-hidden">
             <div
               className="h-full bg-yellow-400"
@@ -128,45 +162,43 @@ export default function MobileDetailOverlay({
             />
           </div>
 
-          <div className="text-xs text-zinc-400 text-center mt-1">
+          <div className="text-xs text-zinc-400 mt-1">
             {owned} / {total ?? "?"} volumi
           </div>
         </div>
 
-        {/* INFO GRID */}
-        <div className="grid grid-cols-2 gap-3 text-sm">
-
-          <div className="bg-white/5 p-3 rounded-lg">
-            <div className="text-xs text-zinc-400">Volumi</div>
-            <div>{total ?? "?"}</div>
+        <div className="grid grid-cols-2 gap-3 text-left text-sm">
+          <div className="bg-white/5 border border-white/10 p-3 rounded-2xl">
+            <div className="text-xs text-zinc-400">Volumi totali</div>
+            <div className="text-white font-semibold mt-1">{total ?? "?"}</div>
           </div>
 
-          <div className="bg-white/5 p-3 rounded-lg">
+          <div className="bg-white/5 border border-white/10 p-3 rounded-2xl">
             <div className="text-xs text-zinc-400">Posseduti</div>
-            <div>{owned}</div>
+            <div className="text-white font-semibold mt-1">{owned}</div>
           </div>
 
-          {current?.CostoTotale && (
-            <div className="bg-white/5 p-3 rounded-lg col-span-2 text-center">
-              <div className="text-xs text-zinc-400">Costo totale</div>
-              <div>€ {current.CostoTotale}</div>
+          {current.Costo ? (
+            <div className="bg-white/5 border border-white/10 p-3 rounded-2xl col-span-2">
+              <div className="text-xs text-zinc-400">Costo</div>
+              <div className="text-white font-semibold mt-1">
+                € {Number(current.Costo).toFixed(2)}
+              </div>
             </div>
-          )}
+          ) : null}
         </div>
 
-        {/* GENERE */}
-        {current?.Genere && (
-          <div className="text-center text-xs text-zinc-400">
+        {current.Genere ? (
+          <div className="text-xs text-zinc-400 leading-relaxed">
             {current.Genere}
           </div>
-        )}
+        ) : null}
 
-        {/* TRAMA */}
-        {current?.Trama && (
-          <div className="text-sm text-zinc-300 leading-relaxed">
+        {current.Trama ? (
+          <div className="text-sm text-zinc-300 leading-relaxed text-left bg-white/[0.04] border border-white/10 rounded-2xl p-4">
             {current.Trama}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
