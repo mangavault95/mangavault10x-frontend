@@ -14,112 +14,198 @@ export default function MobileRecordsPanel({
     );
   }
 
-  function getTotal(m) {
-    const raw = m?.VolumiTotali;
-    if (!raw) return 0;
+  /* -------- NORMALIZZAZIONE (come desktop) -------- */
 
-    const n = Number(String(raw).replace(/\D/g, ""));
-    return Number.isNaN(n) ? 0 : n;
+  const safe = list.map((m) => ({
+    ...m,
+    Titolo: m?.Titolo || "",
+    VolumiPosseduti: Number(m?.VolumiPosseduti) || 0,
+    VolumiTotali: Number(m?.VolumiTotali) || 0,
+    Costo: Number(m?.Costo) || 0,
+    Editore: m?.Editore || "Sconosciuto",
+    Autore: m?.Autore || "Sconosciuto",
+    CoverURL: m?.CoverURL || ""
+  }));
+
+  /* -------- CALCOLI IDENTICI AL DESKTOP -------- */
+
+  function groupBy(field) {
+    const groups = {};
+
+    safe.forEach((m) => {
+      const key = m[field] || "Sconosciuto";
+
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(m);
+    });
+
+    return Object.entries(groups).map(([key, list]) => ({
+      name: key,
+      count: list.length,
+      avgCost:
+        list.reduce((sum, i) => sum + i.Costo, 0) /
+        (list.length || 1)
+    }));
   }
 
-  function getCost(m) {
-    return Number(m?.CostoTotale) || 0;
-  }
-
-  // ✅ top per volumi
-  const topVolumes = [...list]
-    .sort((a, b) => getTotal(b) - getTotal(a))
+  const editori = groupBy("Editore")
+    .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
-  // ✅ più costosi
-  const topCost = [...list]
-    .sort((a, b) => getCost(b) - getCost(a))
+  const autori = groupBy("Autore")
+    .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
-  // ✅ editori più presenti
-  const publishers = {};
-  list.forEach((m) => {
-    const p = m.Editore || "Sconosciuto";
-    publishers[p] = (publishers[p] || 0) + 1;
-  });
-
-  const topPublishers = Object.entries(publishers)
-    .sort((a, b) => b[1] - a[1])
+  const topSerieCostose = [...safe]
+    .sort(
+      (a, b) =>
+        b.Costo * b.VolumiPosseduti -
+        a.Costo * a.VolumiPosseduti
+    )
     .slice(0, 5);
+
+  const topVolumiSingoli = [...safe]
+    .filter((m) => m.VolumiPosseduti === 1)
+    .sort((a, b) => b.Costo - a.Costo)
+    .slice(0, 5);
+
+  const topLunghe = [...safe]
+    .sort(
+      (a, b) =>
+        b.VolumiPosseduti - a.VolumiPosseduti
+    )
+    .slice(0, 5);
+
+  /* -------- CLICK → DETAIL -------- */
 
   function open(m) {
     window.dispatchEvent(
-      new CustomEvent("openMangaDetail", { detail: m })
+      new CustomEvent("openMangaDetail", {
+        detail: m
+      })
+    );
+  }
+
+  /* -------- COMPONENT ROW -------- */
+
+  function Row({ label, value, img, onClick }) {
+    return (
+      <button
+        onClick={onClick}
+        className="flex items-center gap-3 w-full bg-white/5 p-2 rounded-lg text-left"
+      >
+        {img && (
+          <img
+            src={img}
+            className="w-10 h-14 object-cover"
+          />
+        )}
+
+        <div className="flex-1">
+          <div className="text-xs font-semibold truncate">
+            {label}
+          </div>
+        </div>
+
+        <div className="text-xs text-yellow-400">
+          {value}
+        </div>
+      </button>
     );
   }
 
   return (
     <MobilePanel title="Records" onClose={onClose}>
 
-      {/* TOP VOLUMI */}
+      {/* 💰 SERIE PIÙ COSTOSE */}
       <div>
         <div className="text-sm font-bold mb-2">
-          📚 Più volumi
+          💰 Serie più costose
         </div>
 
         <div className="space-y-2">
-          {topVolumes.map((m) => (
-            <button
+          {topSerieCostose.map((m) => (
+            <Row
               key={m.ID}
+              label={m.Titolo}
+              value={`€${(
+                m.Costo * m.VolumiPosseduti
+              ).toFixed(0)}`}
+              img={m.CoverURL}
               onClick={() => open(m)}
-              className="flex gap-3 w-full bg-white/5 p-2 rounded-lg text-left"
-            >
-              <img src={m.CoverURL} className="w-10 h-14 object-cover" />
-
-              <div>
-                <div className="text-xs font-semibold">{m.Titolo}</div>
-                <div className="text-[10px] text-zinc-400">
-                  {getTotal(m)} volumi
-                </div>
-              </div>
-            </button>
+            />
           ))}
         </div>
       </div>
 
-      {/* COSTO */}
+      {/* 💸 VOLUMI SINGOLI */}
       <div className="mt-4">
         <div className="text-sm font-bold mb-2">
-          💸 Più costosi
+          💸 Volumi singoli più costosi
         </div>
 
         <div className="space-y-2">
-          {topCost.map((m) => (
-            <button
+          {topVolumiSingoli.map((m) => (
+            <Row
               key={m.ID}
+              label={m.Titolo}
+              value={`€${m.Costo.toFixed(2)}`}
+              img={m.CoverURL}
               onClick={() => open(m)}
-              className="flex gap-3 w-full bg-white/5 p-2 rounded-lg text-left"
-            >
-              <img src={m.CoverURL} className="w-10 h-14 object-cover" />
-
-              <div>
-                <div className="text-xs font-semibold">{m.Titolo}</div>
-                <div className="text-[10px] text-zinc-400">
-                  € {getCost(m)}
-                </div>
-              </div>
-            </button>
+            />
           ))}
         </div>
       </div>
 
-      {/* EDITORI */}
+      {/* 📚 SERIE PIÙ LUNGHE */}
       <div className="mt-4">
         <div className="text-sm font-bold mb-2">
-          🏢 Editori più presenti
+          📚 Serie più lunghe
         </div>
 
-        <div className="space-y-2 text-xs">
-          {topPublishers.map(([name, count]) => (
-            <div key={name} className="flex justify-between bg-white/5 p-2 rounded-lg">
-              <span>{name}</span>
-              <span>{count}</span>
-            </div>
+        <div className="space-y-2">
+          {topLunghe.map((m) => (
+            <Row
+              key={m.ID}
+              label={m.Titolo}
+              value={`${m.VolumiPosseduti} vol`}
+              img={m.CoverURL}
+              onClick={() => open(m)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* 🏢 EDITORI */}
+      <div className="mt-4">
+        <div className="text-sm font-bold mb-2">
+          🏢 Editori con più serie
+        </div>
+
+        <div className="space-y-2">
+          {editori.map((e) => (
+            <Row
+              key={e.name}
+              label={e.name}
+              value={e.count}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* ✍️ AUTORI */}
+      <div className="mt-4">
+        <div className="text-sm font-bold mb-2">
+          ✍️ Autori con più serie
+        </div>
+
+        <div className="space-y-2">
+          {autori.map((a) => (
+            <Row
+              key={a.name}
+              label={a.name}
+              value={a.count}
+            />
           ))}
         </div>
       </div>
