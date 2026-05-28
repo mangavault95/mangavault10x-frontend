@@ -1,4 +1,4 @@
-import StatsPanel from "../components/StatsPanel";
+import MobileStatsPanel from "./MobileStatsPanel";
 
 function CloseIcon() {
   return (
@@ -60,22 +60,21 @@ function CalendarIcon() {
   );
 }
 
-function TrophyIcon() {
+function RankingIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
       className="w-5 h-5"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="1.9"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <path d="M8 4h8v4a4 4 0 0 1-8 0V4Z" />
-      <path d="M8 6H5.5A2.5 2.5 0 0 0 8 10" />
-      <path d="M16 6h2.5A2.5 2.5 0 0 1 16 10" />
-      <path d="M12 12v4" />
-      <path d="M9 20h6" />
+      <path d="M7 20V10" />
+      <path d="M12 20V4" />
+      <path d="M17 20v-7" />
+      <path d="M5 20h14" />
     </svg>
   );
 }
@@ -115,7 +114,7 @@ export default function MobileDrawer({ onClose }) {
     {
       key: "records",
       label: "Records",
-      icon: <TrophyIcon />,
+      icon: <RankingIcon />,
       accent: "text-zinc-300"
     }
   ];
@@ -153,6 +152,7 @@ export default function MobileDrawer({ onClose }) {
             <div className="text-[1.65rem] font-black tracking-tight text-white leading-none truncate">
               MangaVault
             </div>
+
             <div className="text-[1.9rem] font-black tracking-tight text-yellow-400 leading-none drop-shadow-[0_0_12px_rgba(234,179,8,0.45)]">
               10X
             </div>
@@ -188,7 +188,7 @@ export default function MobileDrawer({ onClose }) {
                 flex items-center justify-between gap-3
                 rounded-2xl
                 border border-white/[0.08]
-                bg-white/[0.055]
+                bg-white/[0.045]
                 px-4 py-3
                 text-left
                 active:scale-[0.98]
@@ -197,6 +197,7 @@ export default function MobileDrawer({ onClose }) {
             >
               <div className="flex items-center gap-3 min-w-0">
                 <span className={item.accent}>{item.icon}</span>
+
                 <span className="text-sm font-medium text-white truncate">
                   {item.label}
                 </span>
@@ -209,33 +210,7 @@ export default function MobileDrawer({ onClose }) {
 
         {/* STATS */}
         <div className="mt-5">
-          <div
-            className="
-              rounded-[24px]
-              border border-white/[0.08]
-              bg-white/[0.045]
-              p-3
-              shadow-[0_16px_38px_rgba(0,0,0,0.24)]
-              overflow-hidden
-            "
-          >
-            <div className="flex items-center justify-between mb-3 px-1">
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
-                  Dashboard
-                </div>
-                <div className="text-sm font-bold text-white mt-0.5">
-                  Statistiche
-                </div>
-              </div>
-
-              <div className="w-8 h-8 rounded-xl bg-yellow-400/15 border border-yellow-400/20 text-yellow-300 flex items-center justify-center">
-                <TrophyIcon />
-              </div>
-            </div>
-
-            <StatsPanel />
-          </div>
+          <MobileStatsPanel />
         </div>
       </aside>
     </div>
