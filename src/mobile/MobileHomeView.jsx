@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import MobileDrawer from "./MobileDrawer";
 import MobileReadingPlayer from "./MobileReadingPlayer";
 import MobileMangaGrid from "./MobileMangaGrid";
+import MangaDetail from "../components/MangaDetail";
 
 /* ICON */
 function SearchIcon() {
@@ -22,6 +23,10 @@ export default function MobileHomeView({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+
+  const [detailManga, setDetailManga] = useState(null);
+  const [originRect, setOriginRect] = useState(null);
+  const [animateDetail, setAnimateDetail] = useState(false);
 
   const touchStartX = useRef(0);
 
@@ -61,6 +66,24 @@ export default function MobileHomeView({
     });
   }, [searchValue, filteredManga]);
 
+  /* ✅ OPEN DETAIL (con animazione) */
+  function handleOpenDetail(manga, rect) {
+    setOriginRect(rect);
+    setDetailManga(manga);
+
+    requestAnimationFrame(() => {
+      setAnimateDetail(true);
+    });
+  }
+
+  function handleCloseDetail() {
+    setAnimateDetail(false);
+
+    setTimeout(() => {
+      setDetailManga(null);
+    }, 250);
+  }
+
   const filters = [
     { key: "all", label: "Tutti" },
     { key: "ongoing", label: "In corso" },
@@ -84,7 +107,6 @@ export default function MobileHomeView({
             ☰
           </button>
 
-          {/* LOGO */}
           <div className="text-[22px] font-black tracking-tight">
             <span className="text-white">MangaVault</span>{" "}
             <span className="text-yellow-400 text-[28px] drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">
@@ -125,10 +147,10 @@ export default function MobileHomeView({
           <MobileMangaGrid
             searchResults={filteredManga}
             filter={filter}
+            onOpenDetail={handleOpenDetail}
           />
         </div>
 
-        {/* DRAWER */}
         {drawerOpen && (
           <MobileDrawer
             onClose={() => setDrawerOpen(false)}
@@ -139,14 +161,16 @@ export default function MobileHomeView({
         <MobileReadingPlayer />
       </div>
 
-      {/* SEARCH OVERLAY */}
+      {/* ✅ SEARCH OVERLAY */}
       <div
         className={`
           fixed inset-0 z-[2000] bg-[#0b0b0f]
           transition-all duration-300
-          ${searchOpen
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-full pointer-events-none"}
+          ${
+            searchOpen
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-full pointer-events-none"
+          }
         `}
       >
         <div className="p-4 border-b border-white/10 flex gap-3">
@@ -166,10 +190,12 @@ export default function MobileHomeView({
           {searchResults.map((m) => (
             <button
               key={m.ID}
-              onClick={() => {
-                window.dispatchEvent(
-                  new CustomEvent("openMangaDetail", { detail: m })
-                );
+              onClick={(e) => {
+                const rect = e.currentTarget
+                  .querySelector("img")
+                  ?.getBoundingClientRect();
+
+                handleOpenDetail(m, rect);
                 setSearchOpen(false);
               }}
               className="bg-white/5 rounded-xl p-2 border border-white/10 active:scale-95 transition"
@@ -178,7 +204,6 @@ export default function MobileHomeView({
                 src={m.CoverURL}
                 className="w-full h-[120px] object-contain"
               />
-
               <div className="text-xs mt-1 line-clamp-2">
                 {m.Titolo}
               </div>
@@ -186,6 +211,50 @@ export default function MobileHomeView({
           ))}
         </div>
       </div>
+
+      {/* ✅ DETAIL OVERLAY CON COVER EXPAND */}
+      {detailManga && (
+        <div className="fixed inset-0 z-[3000]">
+
+          {/* BACKDROP */}
+          <div
+            className={`absolute inset-0 bg-black transition-all duration-300 ${
+              animateDetail ? "opacity-80" : "opacity-0"
+            }`}
+            onClick={handleCloseDetail}
+          />
+
+          {/* COVER ANIMATA */}
+          <div
+            className="absolute bg-black overflow-hidden"
+            style={{
+              top: animateDetail ? 0 : originRect?.top,
+              left: animateDetail ? 0 : originRect?.left,
+              width: animateDetail ? "100%" : originRect?.width,
+              height: animateDetail ? "100%" : originRect?.height,
+              borderRadius: animateDetail ? "0px" : "16px",
+              transition: "all 0.3s ease"
+            }}
+          >
+            <img
+              src={detailManga.CoverURL}
+              className="w-full h-full object-contain"
+            />
+          </div>
+
+          {/* DETAIL */}
+          <div
+            className={`absolute inset-0 transition-opacity duration-300 ${
+              animateDetail ? "opacity-100 delay-150" : "opacity-0"
+            }`}
+          >
+            <MangaDetail
+              manga={detailManga}
+              onClose={handleCloseDetail}
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 }
