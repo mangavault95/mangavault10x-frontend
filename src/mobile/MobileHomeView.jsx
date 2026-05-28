@@ -3,7 +3,10 @@ import MobileDrawer from "./MobileDrawer";
 import MobileReadingPlayer from "./MobileReadingPlayer";
 import MobileMangaGrid from "./MobileMangaGrid";
 import MobileDetailOverlay from "./MobileDetailOverlay";
-
+import MobileNavStack from "./MobileNavStack";
+import MobileHistoryPanel from "./MobileHistoryPanel";
+import MobileWishlistPanel from "./MobileWishlistPanel";
+import MobileRecordsPanel from "./MobileRecordsPanel";
 import MobileHistoryPanel from "./MobileHistoryPanel";
 import MobileWishlistPanel from "./MobileWishlistPanel";
 import MobileRecordsPanel from "./MobileRecordsPanel";
@@ -231,5 +234,13 @@ export default function MobileHomeView({
         <MobileRecordsPanel onClose={() => setPanel(null)} />
       )}
     </>
+    <MobileNavStack
+  screens={{
+    history: MobileHistoryPanel,
+    wishlist: MobileWishlistPanel,
+    records: MobileRecordsPanel
+  }}
+/>
+
   );
 }
