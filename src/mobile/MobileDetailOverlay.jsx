@@ -62,13 +62,72 @@ export default function MobileDetailOverlay({ manga, originRect, onClose }) {
       </div>
 
       {/* DETAIL */}
-      <div
-        className={`absolute inset-0 transition-opacity duration-300 ${
-          animate ? "opacity-100 delay-150" : "opacity-0"
-        }`}
+      {current && (
+  <div
+    className="fixed inset-0 z-[3000] bg-black/90 backdrop-blur-md flex flex-col"
+    onTouchStart={(e) => (touchStartX.current = e.touches[0].clientX)}
+    onTouchEnd={handleSwipe}
+  >
+    {/* CLOSE */}
+    <div className="flex justify-between items-center px-4 py-3">
+      <button
+        onClick={() => setActiveIndex(null)}
+        className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
       >
-        <MangaDetail manga={manga} onClose={handleClose} />
+        ✕
+      </button>
+
+      <div className="text-xs text-zinc-400">
+        {activeIndex + 1} / {filteredManga.length}
       </div>
     </div>
+
+    {/* CONTENT */}
+    <div className="flex-1 flex flex-col items-center justify-center text-center px-5 pb-10">
+
+      {/* ✅ COVER (RIDOTTA E CENTRATA) */}
+      <div className="w-[65%] max-w-[260px] aspect-[3/4] mb-4">
+        <img
+          src={current.CoverURL}
+          className="w-full h-full object-contain rounded-xl"
+        />
+      </div>
+
+      {/* TITLO */}
+      <h2 className="text-lg font-bold leading-snug">
+        {current.Titolo}
+      </h2>
+
+      {/* AUTORE */}
+      <p className="text-sm text-zinc-400 mt-1">
+        {current.Autore}
+      </p>
+
+      {/* PROGRESS */}
+      <div className="w-full max-w-[260px] mt-4">
+
+        <div className="h-[5px] bg-white/10 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-yellow-400"
+            style={{
+              width: `${
+                current.VolumiTotali
+                  ? Math.min(
+                      100,
+                      (current.VolumiPosseduti / current.VolumiTotali) * 100
+                    )
+                  : 50
+              }%`
+            }}
+          />
+        </div>
+
+        <div className="text-xs text-zinc-400 mt-1">
+          {current.VolumiPosseduti} / {current.VolumiTotali || "?"} volumi
+        </div>
+      </div>
+    </div>
+  </div>
+)}
   );
 }
