@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import MobilePanel from "./MobilePanel";
 
 export default function MobileWishlistPanel({ onClose }) {
@@ -15,10 +15,7 @@ export default function MobileWishlistPanel({ onClose }) {
     <MobilePanel title="Wishlist" onClose={onClose}>
       <div className="space-y-3">
         {list.map((m) => (
-          <div
-            key={m.ID}
-            className="flex gap-3 bg-white/5 p-3 rounded-xl"
-          >
+          <div key={m.ID} className="flex gap-3 bg-white/5 p-3 rounded-xl">
             <img src={m.CoverURL} className="w-12 h-16 object-cover" />
             <div>
               <div className="text-sm font-semibold">{m.Titolo}</div>
