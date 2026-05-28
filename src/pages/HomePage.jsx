@@ -11,19 +11,6 @@ import { getManga } from "../services/api";
 import Fuse from "fuse.js";
 import MobileHomeView from "../mobile/MobileHomeView";
 
-const isMobile = window.innerWidth < 768;
-
-return isMobile ? (
-  <MobileHomeView
-    manga={manga}
-    filteredManga={filteredManga}
-    filter={filter}
-    setFilter={setFilter}
-  />
-) : (
-  // desktop già esistente
-);
-
 export default function HomePage({ setAdminMode, setRecordsMode }) {
   const [search, setSearch] = useState("");
   const [selectedManga, setSelectedManga] = useState(null);
@@ -39,8 +26,25 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
 
   const [activeFilter, setActiveFilter] = useState("all");
 
+  const [isMobile, setIsMobile] = useState(false);
+
   const sidebarOpenWidth = 340;
   const sidebarClosedWidth = 104;
+
+  /* -------------------- MOBILE DETECTION -------------------- */
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  /* -------------------- LOAD DATA -------------------- */
 
   function refreshManga() {
     getManga().then((d) => setMangaList(d || []));
@@ -50,6 +54,8 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     refreshManga();
   }, []);
 
+  /* -------------------- GLOBAL EVENTS -------------------- */
+
   useEffect(() => {
     const handler = (e) => setSelectedManga(e.detail);
 
@@ -57,15 +63,10 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
       const page = e.detail?.page;
       if (!page) return;
 
-      if (page === "records") {
-        setShowRecords(true);
-      } else if (page === "favorites") {
-        setShowFavorites(true);
-      } else if (page === "history") {
-        setShowHistory(true);
-      } else if (page === "wishlist") {
-        setShowWishlist(true);
-      }
+      if (page === "records") setShowRecords(true);
+      else if (page === "favorites") setShowFavorites(true);
+      else if (page === "history") setShowHistory(true);
+      else if (page === "wishlist") setShowWishlist(true);
     };
 
     const toggleHandler = () => setOpenSidebar((s) => !s);
@@ -97,7 +98,9 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
 
       window.removeEventListener("favoritesUpdated", refreshHandler);
     };
-  }, [setAdminMode, setRecordsMode]);
+  }, []);
+
+  /* -------------------- SEARCH (FUSE) -------------------- */
 
   const filteredSearch = useMemo(() => {
     if (!search) return mangaList;
@@ -119,6 +122,21 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
     { key: "short", label: "Serie brevi" },
     { key: "oneshot", label: "One-shot" },
   ];
+
+  /* ==================== MOBILE ==================== */
+
+  if (isMobile) {
+    return (
+      <MobileHomeView
+        manga={mangaList}
+        filteredManga={filteredSearch}
+        filter={activeFilter}
+        setFilter={setActiveFilter}
+      />
+    );
+  }
+
+  /* ==================== DESKTOP ==================== */
 
   return (
     <div
@@ -163,45 +181,19 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cerca titolo, autore..."
-              className="
-                px-5 py-2.5 w-56 rounded-full
-                bg-[rgba(24,30,56,0.42)]
-                border border-white/10
-                text-sm placeholder:text-zinc-500
-                outline-none
-                focus:w-64 focus:border-yellow-400
-                transition-all duration-300
-                hover:border-white/20
-              "
+              className="px-5 py-2.5 w-56 rounded-full bg-[rgba(24,30,56,0.42)] border border-white/10 text-sm placeholder:text-zinc-500 outline-none focus:w-64 focus:border-yellow-400 transition-all duration-300 hover:border-white/20"
             />
 
             <div className="relative">
               <button
                 onClick={() => setOpenMenu((p) => !p)}
-                className="
-                  w-10 h-10 rounded-xl
-                  bg-[rgba(24,30,56,0.42)]
-                  border border-white/10
-                  hover:border-yellow-400
-                  transition
-                "
+                className="w-10 h-10 rounded-xl bg-[rgba(24,30,56,0.42)] border border-white/10 hover:border-yellow-400 transition"
               >
                 ☰
               </button>
 
               {openMenu && (
-                <div
-                  className="
-                    absolute right-0 mt-2 w-44
-                    rounded-xl border border-white/10 shadow-xl z-50
-                  "
-                  style={{
-                    background:
-                      "linear-gradient(180deg, rgba(20,26,52,0.92), rgba(12,16,32,0.92))",
-                    backdropFilter: "blur(12px)",
-                    WebkitBackdropFilter: "blur(12px)",
-                  }}
-                >
+                <div className="absolute right-0 mt-2 w-44 rounded-xl border border-white/10 shadow-xl z-50 bg-[rgba(20,26,52,0.92)] backdrop-blur-xl">
                   <button
                     onClick={() => {
                       setAdminMode(true);
@@ -223,19 +215,14 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
           {filterButtons.map((f) => {
             const active = activeFilter === f.key;
 
-            const baseClasses =
-              "px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200";
-            const activeClasses =
-              "bg-yellow-400 text-black border-yellow-400 shadow-[0_0_18px_rgba(234,179,8,0.28)]";
-            const inactiveClasses =
-              "bg-[rgba(24,30,56,0.42)] text-zinc-300 border-white/10 hover:bg-[rgba(32,40,72,0.52)] hover:text-white hover:border-yellow-400/30";
-
             return (
               <button
                 key={f.key}
                 onClick={() => setActiveFilter(f.key)}
-                className={`${baseClasses} ${
-                  active ? activeClasses : inactiveClasses
+                className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 ${
+                  active
+                    ? "bg-yellow-400 text-black border-yellow-400"
+                    : "bg-[rgba(24,30,56,0.42)] text-zinc-300 border-white/10 hover:bg-[rgba(32,40,72,0.52)] hover:text-white"
                 }`}
               >
                 {f.label}
@@ -251,6 +238,7 @@ export default function HomePage({ setAdminMode, setRecordsMode }) {
         />
       </div>
 
+      {/* MODALS */}
       {selectedManga && (
         <MangaDetail
           manga={selectedManga}
