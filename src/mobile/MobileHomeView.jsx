@@ -115,7 +115,9 @@ export default function MobileHomeView({
           <MobileMangaGrid
             searchResults={filteredManga}
             filter={filter}
-            onPreview={setPreviewManga}
+            <MobileMangaGrid
+  searchResults={filteredManga}
+  filter={filter}
           />
         </div>
 
