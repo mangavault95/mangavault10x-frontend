@@ -7,22 +7,83 @@ export default function MobileWishlistPanel({ onClose }) {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  function extractArray(data) {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.wishlist)) return data.wishlist;
+    if (Array.isArray(data?.items)) return data.items;
+    if (Array.isArray(data?.data)) return data.data;
+    return [];
+  }
+
+  function normalizeWishlistItem(item) {
+    return {
+      ID: item.ID || item.id || item.manga_id || item.mangaId,
+      Titolo: item.Titolo || item.titolo || item.title || "Senza titolo",
+      Autore:
+        item.Autore ||
+        item.autori ||
+        item.autore ||
+        item.author ||
+        "Autore sconosciuto",
+      CoverURL:
+        item.CoverURL ||
+        item.coverurl ||
+        item.cover_url ||
+        item.cover ||
+        "",
+      Trama: item.Trama || item.trama || "",
+      Genere: item.Genere || item.generi || item.genere || "",
+      VolumiTotali:
+        item.VolumiTotali ??
+        item.volumitotali ??
+        item.volumi_totali ??
+        item.totalVolumes ??
+        null,
+      DoveComprare:
+        item.DoveComprare ||
+        item.dovecomprare ||
+        item.dove_comprare ||
+        "",
+      CreatedAt: item.created_at || item.CreatedAt || null
+    };
+  }
+
   useEffect(() => {
     async function load() {
+      setLoading(true);
+
+      const endpoints = [
+        `${API}/api/wishlist`,
+        `${API}/api/wishlist_custom`,
+        `${API}/api/wishlist-custom`
+      ];
+
       try {
-        const res = await fetch(`${API}/api/wishlist_custom`);
-        const data = await res.json();
+        let finalList = [];
 
-        console.log("wishlist RAW:", data); // 👈 debug
+        for (const endpoint of endpoints) {
+          try {
+            const res = await fetch(endpoint);
 
-        if (Array.isArray(data)) {
-          setList(data);
-        } else {
-          setList([]);
+            if (!res.ok) {
+              continue;
+            }
+
+            const data = await res.json();
+            const arr = extractArray(data);
+
+            if (arr.length > 0) {
+              finalList = arr.map(normalizeWishlistItem);
+              break;
+            }
+          } catch {
+            // prova endpoint successivo
+          }
         }
 
+        setList(finalList);
       } catch (err) {
-        console.error("Errore wishlist:", err);
+        console.error("Errore caricamento wishlist mobile:", err);
         setList([]);
       } finally {
         setLoading(false);
@@ -30,76 +91,83 @@ export default function MobileWishlistPanel({ onClose }) {
     }
 
     load();
-  }, []);
+  }, [API]);
 
-  function open(m) {
-    // ✅ adattiamo formato al detail
-    const mapped = {
-      ID: m.id,
-      Titolo: m.titolo,
-      Autore: m.autori,
-      CoverURL: m.coverurl,
-      Genere: m.generi,
-      Trama: m.trama,
-      VolumiTotali: m.volumitotali
-    };
-
+  function openDetail(manga) {
     window.dispatchEvent(
       new CustomEvent("openMangaDetail", {
-        detail: mapped
+        detail: manga
       })
     );
   }
 
   return (
     <MobilePanel title="Wishlist" onClose={onClose}>
-
-      {/* LOADING */}
       {loading && (
-        <div className="text-center text-zinc-400">
-          Caricamento...
+        <div className="text-center text-zinc-400 py-10">
+          Caricamento wishlist...
         </div>
       )}
 
-      {/* EMPTY */}
       {!loading && list.length === 0 && (
-        <div className="text-center text-zinc-400">
+        <div className="text-center text-zinc-400 py-10">
           Nessun manga in wishlist
         </div>
       )}
 
-      {/* LIST */}
       {!loading && list.length > 0 && (
         <div className="space-y-3">
-
-          {list.map((m) => (
+          {list.map((manga, index) => (
             <button
-              key={m.id}
-              onClick={() => open(m)}
-              className="flex gap-3 w-full bg-white/5 p-3 rounded-xl text-left active:scale-95 transition"
+              key={`${manga.ID || manga.Titolo}-${index}`}
+              type="button"
+              onClick={() => openDetail(manga)}
+              className="
+                w-full flex gap-3 text-left
+                bg-white/[0.05]
+                border border-white/10
+                rounded-2xl p-3
+                active:scale-[0.98]
+                transition-all duration-200
+              "
             >
-              {/* ✅ COVER */}
-              <img
-                src={m.coverurl}
-                className="w-12 h-16 object-cover rounded-md"
-              />
+              <div className="w-14 h-20 shrink-0 rounded-xl overflow-hidden bg-black/25 border border-white/10">
+                {manga.CoverURL ? (
+                  <img
+                    src={manga.CoverURL}
+                    alt={manga.Titolo || "Cover manga"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-500">
+                    No img
+                  </div>
+                )}
+              </div>
 
-              {/* INFO */}
-              <div>
-                <div className="text-sm font-semibold">
-                  {m.titolo}
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold text-white line-clamp-2">
+                  {manga.Titolo}
                 </div>
 
-                <div className="text-xs text-zinc-400">
-                  {m.autori}
+                <div className="text-xs text-zinc-400 truncate mt-1">
+                  {manga.Autore}
+                </div>
+
+                {manga.Genere && (
+                  <div className="text-[10px] text-zinc-500 truncate mt-1">
+                    {manga.Genere}
+                  </div>
+                )}
+
+                <div className="mt-2 text-[10px] text-zinc-500">
+                  Volumi: {manga.VolumiTotali || "?"}
                 </div>
               </div>
             </button>
           ))}
-
         </div>
       )}
-
     </MobilePanel>
   );
 }
