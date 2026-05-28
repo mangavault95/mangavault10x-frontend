@@ -33,6 +33,25 @@ export default function MobileHomeView({
   const [detailIndex, setDetailIndex] = useState(null);
 
   const touchStartX = useRef(0);
+useEffect(() => {
+  function handler(e) {
+    const manga = e.detail;
+
+    const index = filteredManga.findIndex(
+      (m) => m.ID === manga.ID
+    );
+
+    if (index !== -1) {
+      setDetailIndex(index);
+    }
+  }
+
+  window.addEventListener("openMangaDetail", handler);
+
+  return () => {
+    window.removeEventListener("openMangaDetail", handler);
+  };
+}, [filteredManga]);
 
   /* ✅ SWIPE DRAWER */
   useEffect(() => {
