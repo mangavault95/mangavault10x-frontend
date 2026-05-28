@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import ReadingSessionAddModal from "../components/ReadingSessionAddModal";
+import MobileReadingSessionAddModal from "./MobileReadingSessionAddModal";
 
 /* -------------------- ICONS -------------------- */
 
@@ -84,19 +84,38 @@ function ChevronRightIcon() {
   );
 }
 
-function CloseIcon() {
+function ChevronDownIcon({ className = "w-4 h-4" }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="w-4 h-4"
+      className={className}
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="2.2"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function TrashIcon({ className = "w-4 h-4" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 7h16" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M6 7l1 14h10l1-14" />
+      <path d="M9 7V4h6v3" />
     </svg>
   );
 }
@@ -341,8 +360,6 @@ export default function MobileReadingPlayer() {
 
   const hasMultiple = sessions.length > 1;
 
-  /* -------------------- EMPTY COLLAPSED -------------------- */
-
   if (!activeSession) {
     return (
       <>
@@ -355,16 +372,14 @@ export default function MobileReadingPlayer() {
               w-full
               rounded-[20px]
               border border-white/[0.08]
-              bg-black/88
               px-3 py-2.5
               shadow-[0_14px_35px_rgba(0,0,0,0.42)]
-              backdrop-blur-xl
               active:scale-[0.99]
               transition
             "
             style={{
               background:
-                "linear-gradient(180deg, rgba(12,12,16,0.94), rgba(6,7,12,0.96))",
+                "linear-gradient(180deg, rgba(12,12,16,0.96), rgba(5,5,8,0.98))",
               WebkitBackdropFilter: "blur(16px)",
               backdropFilter: "blur(16px)"
             }}
@@ -393,7 +408,7 @@ export default function MobileReadingPlayer() {
         </div>
 
         {openAddSession && (
-          <ReadingSessionAddModal
+          <MobileReadingSessionAddModal
             onClose={() => setOpenAddSession(false)}
             onSaved={() => {
               loadSessions();
@@ -405,11 +420,9 @@ export default function MobileReadingPlayer() {
     );
   }
 
-  /* -------------------- MAIN -------------------- */
-
   return (
     <>
-      {/* MINI DOCK SEMPRE VISIBILE */}
+      {/* MINI DOCK */}
       <div className="fixed left-0 right-0 bottom-0 z-[950] px-3 pb-3 pointer-events-none">
         <button
           type="button"
@@ -428,7 +441,7 @@ export default function MobileReadingPlayer() {
           "
           style={{
             background:
-              "linear-gradient(180deg, rgba(12,12,16,0.94), rgba(6,7,12,0.96))",
+              "linear-gradient(180deg, rgba(12,12,16,0.96), rgba(5,5,8,0.98))",
             WebkitBackdropFilter: "blur(16px)",
             backdropFilter: "blur(16px)"
           }}
@@ -502,7 +515,7 @@ export default function MobileReadingPlayer() {
               "
               style={{
                 background:
-                  "linear-gradient(180deg, rgba(14,14,18,0.97), rgba(6,7,12,0.98))",
+                  "linear-gradient(180deg, rgba(14,14,18,0.98), rgba(5,5,8,0.99))",
                 WebkitBackdropFilter: "blur(18px)",
                 backdropFilter: "blur(18px)"
               }}
@@ -513,15 +526,26 @@ export default function MobileReadingPlayer() {
               </div>
 
               <div className="relative z-10">
-                {/* HANDLE */}
                 <button
                   type="button"
                   onClick={() => setExpanded(false)}
-                  className="mx-auto mb-3 block w-12 h-1.5 rounded-full bg-white/20 active:scale-95 transition"
+                  className="
+                    mx-auto mb-3
+                    flex items-center justify-center gap-1
+                    px-3 py-1.5
+                    rounded-full
+                    bg-white/[0.06]
+                    border border-white/10
+                    text-[10px] text-zinc-400
+                    active:scale-95
+                    transition
+                  "
                   aria-label="Chiudi player"
-                />
+                >
+                  <ChevronDownIcon className="w-3.5 h-3.5" />
+                  Chiudi player
+                </button>
 
-                {/* TOP */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-8 h-8 rounded-xl bg-yellow-400/15 border border-yellow-400/20 text-yellow-300 flex items-center justify-center">
@@ -558,23 +582,22 @@ export default function MobileReadingPlayer() {
                       onClick={removeActiveSession}
                       className="
                         w-8 h-8 rounded-xl
-                        bg-white/[0.06]
-                        border border-white/10
-                        text-zinc-400
+                        bg-red-400/10
+                        border border-red-400/20
+                        text-red-300
                         flex items-center justify-center
                         active:scale-95
                         transition
                       "
-                      title="Rimuovi dal player"
+                      title="Rimuovi manga da Stai leggendo"
+                      aria-label="Rimuovi manga da Stai leggendo"
                     >
-                      <CloseIcon />
+                      <TrashIcon />
                     </button>
                   </div>
                 </div>
 
-                {/* MAIN */}
                 <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2">
-                  {/* PREV */}
                   <div className="flex flex-col items-center gap-1">
                     {hasMultiple ? (
                       <>
@@ -606,7 +629,6 @@ export default function MobileReadingPlayer() {
                     )}
                   </div>
 
-                  {/* CENTER */}
                   <div className="min-w-0">
                     <div className="flex items-center gap-3">
                       <button
@@ -669,7 +691,6 @@ export default function MobileReadingPlayer() {
                       </div>
                     </div>
 
-                    {/* CONTROLS */}
                     <div className="mt-4 flex items-center justify-center gap-5">
                       <button
                         type="button"
@@ -721,7 +742,6 @@ export default function MobileReadingPlayer() {
                     </div>
                   </div>
 
-                  {/* NEXT */}
                   <div className="flex flex-col items-center gap-1">
                     {hasMultiple ? (
                       <>
@@ -760,7 +780,7 @@ export default function MobileReadingPlayer() {
       )}
 
       {openAddSession && (
-        <ReadingSessionAddModal
+        <MobileReadingSessionAddModal
           onClose={() => setOpenAddSession(false)}
           onSaved={() => {
             loadSessions();
