@@ -8,29 +8,42 @@ export default function MobileRecordsPanel({ onClose }) {
   useEffect(() => {
     fetch(`${API}/api/records`)
       .then(r => r.json())
-      .then(setData);
+      .then(setData)
+      .catch(() => setData({})); // ✅ evita schermata bloccata
   }, []);
-
-  if (!data) return null;
 
   return (
     <MobilePanel title="Records" onClose={onClose}>
-      <div className="grid grid-cols-2 gap-3 text-center">
-        <div className="bg-white/5 p-4 rounded-xl">
-          <div className="text-xl font-bold">{data.total}</div>
-          <div className="text-xs text-zinc-400">Totale</div>
-        </div>
 
-        <div className="bg-white/5 p-4 rounded-xl">
-          <div className="text-xl font-bold">{data.completed}</div>
-          <div className="text-xs text-zinc-400">Completati</div>
+      {!data && (
+        <div className="text-center text-zinc-400">
+          Caricamento...
         </div>
+      )}
 
-        <div className="bg-white/5 p-4 rounded-xl col-span-2">
-          <div className="text-xl font-bold">€ {data.total_cost}</div>
-          <div className="text-xs text-zinc-400">Spesa</div>
+      {data && (
+        <div className="grid grid-cols-2 gap-3 text-center">
+
+          <div className="bg-white/5 p-4 rounded-xl">
+            <div className="text-xl font-bold">{data.total || 0}</div>
+            <div className="text-xs text-zinc-400">Totale manga</div>
+          </div>
+
+          <div className="bg-white/5 p-4 rounded-xl">
+            <div className="text-xl font-bold">{data.completed || 0}</div>
+            <div className="text-xs text-zinc-400">Completati</div>
+          </div>
+
+          <div className="bg-white/5 p-4 rounded-xl col-span-2">
+            <div className="text-xl font-bold">
+              € {data.total_cost || 0}
+            </div>
+            <div className="text-xs text-zinc-400">Spesa totale</div>
+          </div>
+
         </div>
-      </div>
+      )}
+
     </MobilePanel>
   );
 }
