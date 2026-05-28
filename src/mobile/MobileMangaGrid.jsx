@@ -1,8 +1,6 @@
 export default function MobileMangaGrid({
   searchResults = [],
-  filter,
-  sortKey,
-  sortDir
+  filter
 }) {
   function getOwned(m) {
     return Number(m?.VolumiPosseduti) || 0;
@@ -41,41 +39,14 @@ export default function MobileMangaGrid({
     }
   }
 
-  function sortList(list) {
-    const sorted = [...list];
-
-    sorted.sort((a, b) => {
-      let valA, valB;
-
-      if (sortKey === "title") {
-        valA = a.Titolo || "";
-        valB = b.Titolo || "";
-        return valA.localeCompare(valB);
-      }
-
-      if (sortKey === "author") {
-        valA = a.Autore || "";
-        valB = b.Autore || "";
-        return valA.localeCompare(valB);
-      }
-
-      if (sortKey === "volumes") {
-        valA = getTotal(a) || 0;
-        valB = getTotal(b) || 0;
-        return valA - valB;
-      }
-    });
-
-    if (sortDir === "desc") sorted.reverse();
-
-    return sorted;
-  }
-
-  const list = sortList(searchResults.filter(matchFilter));
+  const list = [...searchResults]
+    .filter(matchFilter)
+    .sort((a, b) =>
+      (a.Titolo || "").localeCompare(b.Titolo || "")
+    );
 
   return (
     <div className="grid grid-cols-2 gap-3 pb-[100px]">
-
       {list.map((m) => {
         const owned = getOwned(m);
         const total = getTotal(m);
@@ -101,7 +72,7 @@ export default function MobileMangaGrid({
           >
             <img
               src={m.CoverURL}
-              className="w-full h-[160px] object-contain"
+              className="w-full h-[150px] object-contain"
             />
 
             <div className="text-xs font-semibold mt-1 line-clamp-2">
@@ -113,7 +84,10 @@ export default function MobileMangaGrid({
             </div>
 
             <div className="h-[4px] bg-white/10 mt-1 rounded-full">
-              <div className={color} style={{ width: `${percent}%`, height: "100%" }} />
+              <div
+                className={color}
+                style={{ width: `${percent}%`, height: "100%" }}
+              />
             </div>
           </button>
         );
