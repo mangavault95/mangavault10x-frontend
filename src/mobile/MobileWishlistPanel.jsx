@@ -10,14 +10,32 @@ export default function MobileWishlistPanel({ onClose }) {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`${API}/api/wishlist_custom`);
-        const data = await res.json();
+        // ✅ 1. wishlist ids
+        const wRes = await fetch(`${API}/api/wishlist_custom`);
+        const wishlist = await wRes.json();
 
-        if (Array.isArray(data)) {
-          setList(data);
-        } else {
+        // ✅ 2. tutti i manga
+        const mRes = await fetch(`${API}/api/manga`);
+        const manga = await mRes.json();
+
+        if (!Array.isArray(wishlist) || !Array.isArray(manga)) {
           setList([]);
+          return;
         }
+
+        // ✅ 3. merge (COME DESKTOP)
+        const merged = wishlist
+          .map((w) => {
+            const found = manga.find(
+              (m) => m.ID === w.manga_id
+            );
+
+            return found || null;
+          })
+          .filter(Boolean);
+
+        setList(merged);
+
       } catch (err) {
         console.error("Errore wishlist:", err);
         setList([]);
@@ -57,32 +75,24 @@ export default function MobileWishlistPanel({ onClose }) {
       {/* LIST */}
       {!loading && list.length > 0 && (
         <div className="space-y-3">
-          {list.map((m, i) => (
+          {list.map((m) => (
             <button
-              key={`${m.ID || m.id || i}`}
+              key={m.ID}
               onClick={() => open(m)}
               className="flex gap-3 w-full bg-white/5 p-3 rounded-xl text-left active:scale-95 transition"
             >
-              {/* ✅ COVER FIXATA */}
-              {m.CoverURL ? (
-                <img
-                  src={m.CoverURL}
-                  className="w-12 h-16 object-cover rounded-md"
-                />
-              ) : (
-                <div className="w-12 h-16 bg-black/30 rounded-md flex items-center justify-center text-[10px] text-zinc-500">
-                  No img
-                </div>
-              )}
+              <img
+                src={m.CoverURL}
+                className="w-12 h-16 object-cover rounded-md"
+              />
 
-              {/* INFO */}
               <div>
                 <div className="text-sm font-semibold">
-                  {m.Titolo || "Senza titolo"}
+                  {m.Titolo}
                 </div>
 
                 <div className="text-xs text-zinc-400">
-                  {m.Autore || "Autore sconosciuto"}
+                  {m.Autore}
                 </div>
               </div>
             </button>
