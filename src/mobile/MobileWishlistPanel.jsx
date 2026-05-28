@@ -1,10 +1,39 @@
+import { useEffect, useState } from "react";
 import MobilePanel from "./MobilePanel";
 
-export default function MobileWishlistPanel({
-  list = [],
-  onClose
-}) {
-  const wishlist = list.filter((m) => m?.InWishlist);
+export default function MobileWishlistPanel({ onClose }) {
+  const API = import.meta.env.VITE_API_URL;
+  const [list, setList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch(`${API}/api/wishlist`);
+        const data = await res.json();
+
+        // ✅ STRUTTURA COME DESKTOP
+        const safe = (data || []).map((m) => ({
+          ID: m.id,
+          Titolo: m.titolo || m.Titolo || "",
+          Autore: m.autori || m.Autore || "",
+          CoverURL: m.coverurl || m.CoverURL || "",
+          VolumiTotali: m.volumitotali || m.VolumiTotali,
+          Trama: m.trama || "",
+          Genere: m.generi || ""
+        }));
+
+        setList(safe);
+      } catch (err) {
+        console.error("Errore wishlist:", err);
+        setList([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, []);
 
   function open(m) {
     window.dispatchEvent(
@@ -15,30 +44,41 @@ export default function MobileWishlistPanel({
   return (
     <MobilePanel title="Wishlist" onClose={onClose}>
 
-      {wishlist.length === 0 && (
+      {loading && (
+        <div className="text-center text-zinc-400">
+          Caricamento...
+        </div>
+      )}
+
+      {!loading && list.length === 0 && (
         <div className="text-center text-zinc-400">
           Nessun manga in wishlist
         </div>
       )}
 
-      {wishlist.map((m) => (
+      {list.map((m) => (
         <button
           key={m.ID}
           onClick={() => open(m)}
-          className="flex gap-3 w-full bg-white/5 p-3 rounded-xl text-left"
+          className="flex gap-3 w-full bg-white/5 p-3 rounded-xl text-left active:scale-95 transition"
         >
-          <img src={m.CoverURL} className="w-12 h-16 object-cover" />
+          <img
+            src={m.CoverURL}
+            className="w-12 h-16 object-cover rounded-md"
+          />
 
           <div>
             <div className="text-sm font-semibold">
               {m.Titolo}
             </div>
+
             <div className="text-xs text-zinc-400">
               {m.Autore}
             </div>
           </div>
         </button>
       ))}
+
     </MobilePanel>
   );
 }
