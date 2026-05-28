@@ -13,7 +13,6 @@ export default function MobileWishlistPanel({ onClose }) {
         const res = await fetch(`${API}/api/wishlist_custom`);
         const data = await res.json();
 
-        // ✅ stessi controlli del desktop
         if (Array.isArray(data)) {
           setList(data);
         } else {
@@ -56,31 +55,40 @@ export default function MobileWishlistPanel({ onClose }) {
       )}
 
       {/* LIST */}
-      <div className="space-y-3">
-        {list.map((m, i) => (
-          <button
-            key={`${m.ID || m.id || i}`}
-            onClick={() => open(m)}
-            className="flex gap-3 w-full bg-white/5 p-3 rounded-xl text-left active:scale-95 transition"
-          >
-            {/* ✅ COVER */}
-            {m.CoverURL && (
-              {m.CoverURL}
-            )}
+      {!loading && list.length > 0 && (
+        <div className="space-y-3">
+          {list.map((m, i) => (
+            <button
+              key={`${m.ID || m.id || i}`}
+              onClick={() => open(m)}
+              className="flex gap-3 w-full bg-white/5 p-3 rounded-xl text-left active:scale-95 transition"
+            >
+              {/* ✅ COVER FIXATA */}
+              {m.CoverURL ? (
+                <img
+                  src={m.CoverURL}
+                  className="w-12 h-16 object-cover rounded-md"
+                />
+              ) : (
+                <div className="w-12 h-16 bg-black/30 rounded-md flex items-center justify-center text-[10px] text-zinc-500">
+                  No img
+                </div>
+              )}
 
-            {/* INFO */}
-            <div>
-              <div className="text-sm font-semibold">
-                {m.Titolo || "Senza titolo"}
-              </div>
+              {/* INFO */}
+              <div>
+                <div className="text-sm font-semibold">
+                  {m.Titolo || "Senza titolo"}
+                </div>
 
-              <div className="text-xs text-zinc-400">
-                {m.Autore || "Autore sconosciuto"}
+                <div className="text-xs text-zinc-400">
+                  {m.Autore || "Autore sconosciuto"}
+                </div>
               </div>
-            </div>
-          </button>
-        ))}
-      </div>
+            </button>
+          ))}
+        </div>
+      )}
 
     </MobilePanel>
   );
