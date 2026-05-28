@@ -618,3 +618,38 @@
 .animate-slide-in {
   animation: slide-in 0.25s ease;
 }
+.mobile-app {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pan-y;
+}
+
+.mobile-no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes mobile-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0.98;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-mobile-slide-in {
+  animation: mobile-slide-in 0.24s ease-out;
+}
