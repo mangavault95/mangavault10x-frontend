@@ -4,7 +4,7 @@ import MobileDrawer from "./MobileDrawer";
 import MobileReadingPlayer from "./MobileReadingPlayer";
 import MobileMangaGrid from "./MobileMangaGrid";
 import MobileDetailOverlay from "./MobileDetailOverlay";
-
+import MobileFavoritesPanel from "./MobileFavoritesPanel";
 import MobileNavStack from "./MobileNavStack";
 import MobileHistoryPanel from "./MobileHistoryPanel";
 import MobileWishlistPanel from "./MobileWishlistPanel";
@@ -202,13 +202,19 @@ export default function MobileHomeView({
       )}
 
       {/* ✅ NAV STACK */}
-      <MobileNavStack
-        screens={{
-          history: MobileHistoryPanel,
-          wishlist: MobileWishlistPanel,
-          records: MobileRecordsPanel
-        }}
+    <MobileNavStack
+  screens={{
+    history: MobileHistoryPanel,
+    wishlist: MobileWishlistPanel,
+    records: MobileRecordsPanel,
+    favorites: (props) => (
+      <MobileFavoritesPanel
+        {...props}
+        list={filteredManga}
       />
+    )
+  }}
+/>
     </>
   );
 }
