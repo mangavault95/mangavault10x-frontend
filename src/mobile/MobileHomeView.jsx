@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import MobileDrawer from "./MobileDrawer";
 import MobileReadingPlayer from "./MobileReadingPlayer";
 import MobileMangaGrid from "./MobileMangaGrid";
+import MobileDetailOverlay from "./MobileDetailOverlay";
 
 /* ICON */
 function SearchIcon() {
@@ -23,33 +24,29 @@ export default function MobileHomeView({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
-  const [activeIndex, setActiveIndex] = useState(null);
+  const [detailIndex, setDetailIndex] = useState(null);
 
   const touchStartX = useRef(0);
 
-  /* ✅ SWIPE DRAWER */
+  /* SWIPE DRAWER */
   useEffect(() => {
     function start(e) {
       touchStartX.current = e.touches[0].clientX;
     }
-
     function move(e) {
-      const x = e.touches[0].clientX;
-      if (touchStartX.current < 30 && x > 80) {
+      if (touchStartX.current < 30 && e.touches[0].clientX > 80) {
         setDrawerOpen(true);
       }
     }
-
     window.addEventListener("touchstart", start);
     window.addEventListener("touchmove", move);
-
     return () => {
       window.removeEventListener("touchstart", start);
       window.removeEventListener("touchmove", move);
     };
   }, []);
 
-  /* ✅ SEARCH */
+  /* SEARCH */
   const searchResults = useMemo(() => {
     const q = searchValue.toLowerCase();
     return filteredManga.filter((m) => {
@@ -61,28 +58,12 @@ export default function MobileHomeView({
     });
   }, [searchValue, filteredManga]);
 
-  /* ✅ OPEN DETAIL */
   function openDetail(manga) {
     const index = filteredManga.findIndex(
       (x) => x.ID === manga.ID
     );
-    setActiveIndex(index);
+    setDetailIndex(index);
   }
-
-  /* ✅ SWIPE TRA MANGA */
-  function handleSwipe(e) {
-    const delta = e.changedTouches[0].clientX - touchStartX.current;
-
-    if (delta > 80 && activeIndex > 0) {
-      setActiveIndex((i) => i - 1);
-    }
-
-    if (delta < -80 && activeIndex < filteredManga.length - 1) {
-      setActiveIndex((i) => i + 1);
-    }
-  }
-
-  const current = activeIndex !== null ? filteredManga[activeIndex] : null;
 
   const filters = [
     { key: "all", label: "Tutti" },
@@ -98,10 +79,10 @@ export default function MobileHomeView({
       <div className="min-h-screen pb-[100px]">
 
         {/* HEADER */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#0b0b0f]">
+        <div className="flex justify-between px-4 py-3 border-b border-white/10 bg-[#0b0b0f]">
           <button onClick={() => setDrawerOpen(true)}>☰</button>
 
-          <div className="text-xl font-black">
+          <div className="text-lg font-black">
             MangaVault <span className="text-yellow-400">10X</span>
           </div>
 
@@ -111,19 +92,16 @@ export default function MobileHomeView({
         </div>
 
         {/* FILTERS */}
-        <div className="px-4 pt-4 flex gap-2 overflow-x-auto">
+        <div className="px-4 pt-3 flex gap-2 overflow-x-auto">
           {filters.map((f) => (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`
-                px-3 py-1 rounded-lg text-xs
-                ${
-                  filter === f.key
-                    ? "bg-yellow-400 text-black"
-                    : "bg-white/5 text-zinc-300"
-                }
-              `}
+              className={
+                filter === f.key
+                  ? "px-3 py-1.5 bg-yellow-400 text-black rounded-lg text-xs"
+                  : "px-3 py-1.5 bg-white/10 rounded-lg text-xs"
+              }
             >
               {f.label}
             </button>
@@ -140,11 +118,10 @@ export default function MobileHomeView({
         </div>
 
         {drawerOpen && <MobileDrawer onClose={() => setDrawerOpen(false)} />}
-
         <MobileReadingPlayer />
       </div>
 
-      {/* ✅ SEARCH */}
+      {/* SEARCH */}
       {searchOpen && (
         <div className="fixed inset-0 bg-black z-[2000]">
           <input
@@ -156,43 +133,13 @@ export default function MobileHomeView({
         </div>
       )}
 
-      {/* ✅ MOBILE DETAIL VIEWER */}
-      {current && (
-        <div
-          className="fixed inset-0 bg-black z-[3000] flex flex-col"
-          onTouchStart={(e) =>
-            (touchStartX.current = e.touches[0].clientX)
-          }
-          onTouchEnd={handleSwipe}
-        >
-          {/* close */}
-          <button
-            onClick={() => setActiveIndex(null)}
-            className="p-4 text-left"
-          >
-            ←
-          </button>
-
-          {/* content */}
-          <div className="flex-1 flex flex-col items-center justify-center px-4 text-center">
-
-            {current.CoverURL}
-
-            <h2 className="mt-4 text-lg font-bold">
-              {current.Titolo}
-            </h2>
-
-            <p className="text-sm text-zinc-400">
-              {current.Autore}
-            </p>
-
-            <p className="text-sm mt-2">
-              {current.VolumiPosseduti}/
-              {current.VolumiTotali || "?"} volumi
-            </p>
-
-          </div>
-        </div>
+      {/* ✅ VIEWER */}
+      {detailIndex !== null && (
+        <MobileDetailOverlay
+          list={filteredManga}
+          startIndex={detailIndex}
+          onClose={() => setDetailIndex(null)}
+        />
       )}
     </>
   );
