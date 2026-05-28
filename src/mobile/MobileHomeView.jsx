@@ -1,12 +1,11 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+
 import MobileDrawer from "./MobileDrawer";
 import MobileReadingPlayer from "./MobileReadingPlayer";
 import MobileMangaGrid from "./MobileMangaGrid";
 import MobileDetailOverlay from "./MobileDetailOverlay";
+
 import MobileNavStack from "./MobileNavStack";
-import MobileHistoryPanel from "./MobileHistoryPanel";
-import MobileWishlistPanel from "./MobileWishlistPanel";
-import MobileRecordsPanel from "./MobileRecordsPanel";
 import MobileHistoryPanel from "./MobileHistoryPanel";
 import MobileWishlistPanel from "./MobileWishlistPanel";
 import MobileRecordsPanel from "./MobileRecordsPanel";
@@ -32,7 +31,6 @@ export default function MobileHomeView({
   const [searchValue, setSearchValue] = useState("");
 
   const [detailIndex, setDetailIndex] = useState(null);
-  const [panel, setPanel] = useState(null);
 
   const touchStartX = useRef(0);
 
@@ -57,16 +55,6 @@ export default function MobileHomeView({
     };
   }, []);
 
-  /* ✅ NAVIGAZIONE PANNELLI (fix hamburger) */
-  useEffect(() => {
-    function nav(e) {
-      setPanel(e.detail?.page);
-    }
-
-    window.addEventListener("navigate", nav);
-    return () => window.removeEventListener("navigate", nav);
-  }, []);
-
   /* ✅ SEARCH */
   const searchResults = useMemo(() => {
     const q = searchValue.toLowerCase();
@@ -81,7 +69,7 @@ export default function MobileHomeView({
     });
   }, [searchValue, filteredManga]);
 
-  /* ✅ OPEN DETAIL */
+  /* ✅ DETAIL */
   function openDetail(mangaItem) {
     const index = filteredManga.findIndex(
       (x) => x.ID === mangaItem.ID
@@ -114,9 +102,8 @@ export default function MobileHomeView({
             ☰
           </button>
 
-          <div className="text-[20px] font-black tracking-tight">
-            <span className="text-white">MangaVault</span>{" "}
-            <span className="text-yellow-400">10X</span>
+          <div className="text-[20px] font-black">
+            MangaVault <span className="text-yellow-400">10X</span>
           </div>
 
           <button
@@ -133,14 +120,11 @@ export default function MobileHomeView({
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`
-                px-4 py-2 rounded-xl text-[12px] border whitespace-nowrap
-                ${
-                  filter === f.key
-                    ? "bg-yellow-400 text-black border-yellow-400"
-                    : "bg-white/5 border-white/10 text-zinc-300"
-                }
-              `}
+              className={`px-4 py-2 rounded-xl text-[12px] border whitespace-nowrap ${
+                filter === f.key
+                  ? "bg-yellow-400 text-black border-yellow-400"
+                  : "bg-white/5 border-white/10 text-zinc-300"
+              }`}
             >
               {f.label}
             </button>
@@ -161,21 +145,16 @@ export default function MobileHomeView({
           <MobileDrawer onClose={() => setDrawerOpen(false)} />
         )}
 
-        {/* PLAYER */}
         <MobileReadingPlayer />
       </div>
 
-      {/* ✅ SEARCH OVERLAY */}
+      {/* SEARCH */}
       <div
-        className={`
-          fixed inset-0 z-[2000] bg-[#0b0b0f]
-          transition-all duration-300
-          ${
-            searchOpen
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-full pointer-events-none"
-          }
-        `}
+        className={`fixed inset-0 z-[2000] bg-[#0b0b0f] transition-all duration-300 ${
+          searchOpen
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-full pointer-events-none"
+        }`}
       >
         <div className="p-4 border-b border-white/10 flex gap-3">
 
@@ -198,12 +177,13 @@ export default function MobileHomeView({
                 openDetail(m);
                 setSearchOpen(false);
               }}
-              className="bg-white/5 rounded-xl p-2 border border-white/10 active:scale-95 transition"
+              className="bg-white/5 rounded-xl p-2 border border-white/10"
             >
               <img
                 src={m.CoverURL}
                 className="w-full h-[120px] object-contain"
               />
+
               <div className="text-xs mt-1 line-clamp-2">
                 {m.Titolo}
               </div>
@@ -212,7 +192,7 @@ export default function MobileHomeView({
         </div>
       </div>
 
-      {/* ✅ DETAIL VIEWER */}
+      {/* DETAIL */}
       {detailIndex !== null && (
         <MobileDetailOverlay
           list={filteredManga}
@@ -221,26 +201,14 @@ export default function MobileHomeView({
         />
       )}
 
-      {/* ✅ PANNELLI MOBILE */}
-      {panel === "history" && (
-        <MobileHistoryPanel onClose={() => setPanel(null)} />
-      )}
-
-      {panel === "wishlist" && (
-        <MobileWishlistPanel onClose={() => setPanel(null)} />
-      )}
-
-      {panel === "records" && (
-        <MobileRecordsPanel onClose={() => setPanel(null)} />
-      )}
+      {/* ✅ NAV STACK */}
+      <MobileNavStack
+        screens={{
+          history: MobileHistoryPanel,
+          wishlist: MobileWishlistPanel,
+          records: MobileRecordsPanel
+        }}
+      />
     </>
-    <MobileNavStack
-  screens={{
-    history: MobileHistoryPanel,
-    wishlist: MobileWishlistPanel,
-    records: MobileRecordsPanel
-  }}
-/>
-
   );
 }
