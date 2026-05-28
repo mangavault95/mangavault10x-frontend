@@ -4,6 +4,10 @@ import MobileReadingPlayer from "./MobileReadingPlayer";
 import MobileMangaGrid from "./MobileMangaGrid";
 import MobileDetailOverlay from "./MobileDetailOverlay";
 
+import MobileHistoryPanel from "./MobileHistoryPanel";
+import MobileWishlistPanel from "./MobileWishlistPanel";
+import MobileRecordsPanel from "./MobileRecordsPanel";
+
 /* ICON */
 function SearchIcon() {
   return (
@@ -25,32 +29,48 @@ export default function MobileHomeView({
   const [searchValue, setSearchValue] = useState("");
 
   const [detailIndex, setDetailIndex] = useState(null);
+  const [panel, setPanel] = useState(null);
 
   const touchStartX = useRef(0);
 
-  /* SWIPE DRAWER */
+  /* ✅ SWIPE DRAWER */
   useEffect(() => {
     function start(e) {
       touchStartX.current = e.touches[0].clientX;
     }
+
     function move(e) {
       if (touchStartX.current < 30 && e.touches[0].clientX > 80) {
         setDrawerOpen(true);
       }
     }
+
     window.addEventListener("touchstart", start);
     window.addEventListener("touchmove", move);
+
     return () => {
       window.removeEventListener("touchstart", start);
       window.removeEventListener("touchmove", move);
     };
   }, []);
 
-  /* SEARCH */
+  /* ✅ NAVIGAZIONE PANNELLI (fix hamburger) */
+  useEffect(() => {
+    function nav(e) {
+      setPanel(e.detail?.page);
+    }
+
+    window.addEventListener("navigate", nav);
+    return () => window.removeEventListener("navigate", nav);
+  }, []);
+
+  /* ✅ SEARCH */
   const searchResults = useMemo(() => {
     const q = searchValue.toLowerCase();
+
     return filteredManga.filter((m) => {
       if (!q) return true;
+
       return (
         m.Titolo?.toLowerCase().includes(q) ||
         m.Autore?.toLowerCase().includes(q)
@@ -58,13 +78,16 @@ export default function MobileHomeView({
     });
   }, [searchValue, filteredManga]);
 
-  function openDetail(manga) {
+  /* ✅ OPEN DETAIL */
+  function openDetail(mangaItem) {
     const index = filteredManga.findIndex(
-      (x) => x.ID === manga.ID
+      (x) => x.ID === mangaItem.ID
     );
+
     setDetailIndex(index);
   }
 
+  /* FILTERS */
   const filters = [
     { key: "all", label: "Tutti" },
     { key: "ongoing", label: "In corso" },
@@ -79,29 +102,42 @@ export default function MobileHomeView({
       <div className="min-h-screen pb-[100px]">
 
         {/* HEADER */}
-        <div className="flex justify-between px-4 py-3 border-b border-white/10 bg-[#0b0b0f]">
-          <button onClick={() => setDrawerOpen(true)}>☰</button>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#0b0b0f]">
 
-          <div className="text-lg font-black">
-            MangaVault <span className="text-yellow-400">10X</span>
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center"
+          >
+            ☰
+          </button>
+
+          <div className="text-[20px] font-black tracking-tight">
+            <span className="text-white">MangaVault</span>{" "}
+            <span className="text-yellow-400">10X</span>
           </div>
 
-          <button onClick={() => setSearchOpen(true)}>
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center"
+          >
             <SearchIcon />
           </button>
         </div>
 
         {/* FILTERS */}
-        <div className="px-4 pt-3 flex gap-2 overflow-x-auto">
+        <div className="px-4 pt-4 flex gap-2 overflow-x-auto pb-2">
           {filters.map((f) => (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={
-                filter === f.key
-                  ? "px-3 py-1.5 bg-yellow-400 text-black rounded-lg text-xs"
-                  : "px-3 py-1.5 bg-white/10 rounded-lg text-xs"
-              }
+              className={`
+                px-4 py-2 rounded-xl text-[12px] border whitespace-nowrap
+                ${
+                  filter === f.key
+                    ? "bg-yellow-400 text-black border-yellow-400"
+                    : "bg-white/5 border-white/10 text-zinc-300"
+                }
+              `}
             >
               {f.label}
             </button>
@@ -109,7 +145,7 @@ export default function MobileHomeView({
         </div>
 
         {/* GRID */}
-        <div className="px-3 mt-4">
+        <div className="px-3 mt-3">
           <MobileMangaGrid
             searchResults={filteredManga}
             filter={filter}
@@ -117,29 +153,82 @@ export default function MobileHomeView({
           />
         </div>
 
-        {drawerOpen && <MobileDrawer onClose={() => setDrawerOpen(false)} />}
+        {/* DRAWER */}
+        {drawerOpen && (
+          <MobileDrawer onClose={() => setDrawerOpen(false)} />
+        )}
+
+        {/* PLAYER */}
         <MobileReadingPlayer />
       </div>
 
-      {/* SEARCH */}
-      {searchOpen && (
-        <div className="fixed inset-0 bg-black z-[2000]">
+      {/* ✅ SEARCH OVERLAY */}
+      <div
+        className={`
+          fixed inset-0 z-[2000] bg-[#0b0b0f]
+          transition-all duration-300
+          ${
+            searchOpen
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-full pointer-events-none"
+          }
+        `}
+      >
+        <div className="p-4 border-b border-white/10 flex gap-3">
+
+          <button onClick={() => setSearchOpen(false)}>←</button>
+
           <input
             autoFocus
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
-            className="w-full p-4"
+            placeholder="Cerca manga..."
+            className="flex-1 bg-white/5 px-3 py-2 rounded-lg text-sm text-white outline-none"
           />
         </div>
-      )}
 
-      {/* ✅ VIEWER */}
+        <div className="p-3 grid grid-cols-2 gap-3 overflow-y-auto">
+          {searchResults.map((m) => (
+            <button
+              key={m.ID}
+              onClick={() => {
+                openDetail(m);
+                setSearchOpen(false);
+              }}
+              className="bg-white/5 rounded-xl p-2 border border-white/10 active:scale-95 transition"
+            >
+              <img
+                src={m.CoverURL}
+                className="w-full h-[120px] object-contain"
+              />
+              <div className="text-xs mt-1 line-clamp-2">
+                {m.Titolo}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ✅ DETAIL VIEWER */}
       {detailIndex !== null && (
         <MobileDetailOverlay
           list={filteredManga}
           startIndex={detailIndex}
           onClose={() => setDetailIndex(null)}
         />
+      )}
+
+      {/* ✅ PANNELLI MOBILE */}
+      {panel === "history" && (
+        <MobileHistoryPanel onClose={() => setPanel(null)} />
+      )}
+
+      {panel === "wishlist" && (
+        <MobileWishlistPanel onClose={() => setPanel(null)} />
+      )}
+
+      {panel === "records" && (
+        <MobileRecordsPanel onClose={() => setPanel(null)} />
       )}
     </>
   );
