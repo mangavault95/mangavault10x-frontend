@@ -3,26 +3,24 @@ export default function MobileDrawer({ onClose }) {
     window.dispatchEvent(
       new CustomEvent("navigate", { detail: { page } })
     );
-
     onClose();
   }
 
   return (
     <div className="fixed inset-0 z-[3000] flex">
 
-      {/* OVERLAY */}
       <div
-        className="absolute inset-0 bg-black/60"
+        className="absolute bg-black/60 inset-0"
         onClick={onClose}
       />
 
-      {/* PANEL */}
-      <div className="relative w-[260px] bg-[#0b0b0f] p-4 flex flex-col gap-3">
+      <div className="relative w-[260px] bg-[#0b0b0f] p-4 flex flex-col gap-3 animate-slide-in">
 
-        <div className="text-lg font-bold mb-2">Menu</div>
+        <div className="text-lg font-bold mb-3">
+          Menu
+        </div>
 
         {[
-          { key: "favorites", label: "Preferiti" },
           { key: "history", label: "Ultime letture" },
           { key: "wishlist", label: "Wishlist" },
           { key: "records", label: "Records" }
