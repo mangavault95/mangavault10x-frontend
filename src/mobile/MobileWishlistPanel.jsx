@@ -10,31 +10,16 @@ export default function MobileWishlistPanel({ onClose }) {
   useEffect(() => {
     async function load() {
       try {
-        // ✅ 1. wishlist ids
-        const wRes = await fetch(`${API}/api/wishlist_custom`);
-        const wishlist = await wRes.json();
+        const res = await fetch(`${API}/api/wishlist_custom`);
+        const data = await res.json();
 
-        // ✅ 2. tutti i manga
-        const mRes = await fetch(`${API}/api/manga`);
-        const manga = await mRes.json();
+        console.log("wishlist RAW:", data); // 👈 debug
 
-        if (!Array.isArray(wishlist) || !Array.isArray(manga)) {
+        if (Array.isArray(data)) {
+          setList(data);
+        } else {
           setList([]);
-          return;
         }
-
-        // ✅ 3. merge (COME DESKTOP)
-        const merged = wishlist
-          .map((w) => {
-            const found = manga.find(
-              (m) => m.ID === w.manga_id
-            );
-
-            return found || null;
-          })
-          .filter(Boolean);
-
-        setList(merged);
 
       } catch (err) {
         console.error("Errore wishlist:", err);
@@ -48,9 +33,20 @@ export default function MobileWishlistPanel({ onClose }) {
   }, []);
 
   function open(m) {
+    // ✅ adattiamo formato al detail
+    const mapped = {
+      ID: m.id,
+      Titolo: m.titolo,
+      Autore: m.autori,
+      CoverURL: m.coverurl,
+      Genere: m.generi,
+      Trama: m.trama,
+      VolumiTotali: m.volumitotali
+    };
+
     window.dispatchEvent(
       new CustomEvent("openMangaDetail", {
-        detail: m
+        detail: mapped
       })
     );
   }
@@ -75,28 +71,32 @@ export default function MobileWishlistPanel({ onClose }) {
       {/* LIST */}
       {!loading && list.length > 0 && (
         <div className="space-y-3">
+
           {list.map((m) => (
             <button
-              key={m.ID}
+              key={m.id}
               onClick={() => open(m)}
               className="flex gap-3 w-full bg-white/5 p-3 rounded-xl text-left active:scale-95 transition"
             >
+              {/* ✅ COVER */}
               <img
-                src={m.CoverURL}
+                src={m.coverurl}
                 className="w-12 h-16 object-cover rounded-md"
               />
 
+              {/* INFO */}
               <div>
                 <div className="text-sm font-semibold">
-                  {m.Titolo}
+                  {m.titolo}
                 </div>
 
                 <div className="text-xs text-zinc-400">
-                  {m.Autore}
+                  {m.autori}
                 </div>
               </div>
             </button>
           ))}
+
         </div>
       )}
 
