@@ -33,7 +33,6 @@ export default function MobileHomeView({
 
     function onTouchMove(e) {
       const x = e.touches[0].clientX;
-
       if (touchStartX.current < 30 && x > 80) {
         setDrawerOpen(true);
       }
@@ -62,7 +61,6 @@ export default function MobileHomeView({
     });
   }, [searchValue, filteredManga]);
 
-  /* ✅ FILTRI */
   const filters = [
     { key: "all", label: "Tutti" },
     { key: "ongoing", label: "In corso" },
@@ -86,6 +84,7 @@ export default function MobileHomeView({
             ☰
           </button>
 
+          {/* LOGO */}
           <div className="text-[22px] font-black tracking-tight">
             <span className="text-white">MangaVault</span>{" "}
             <span className="text-yellow-400 text-[28px] drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">
@@ -101,7 +100,7 @@ export default function MobileHomeView({
           </button>
         </div>
 
-        {/* FILTRI */}
+        {/* FILTERS */}
         <div className="px-4 pt-4 flex gap-2 overflow-x-auto pb-2">
           {filters.map((f) => (
             <button
@@ -137,26 +136,22 @@ export default function MobileHomeView({
           />
         )}
 
-        {/* PLAYER */}
         <MobileReadingPlayer />
       </div>
 
-      {/* ✅ SEARCH OVERLAY */}
+      {/* SEARCH OVERLAY */}
       <div
         className={`
           fixed inset-0 z-[2000] bg-[#0b0b0f]
           transition-all duration-300
           ${searchOpen
             ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-full pointer-events-none"
-          }
+            : "opacity-0 translate-y-full pointer-events-none"}
         `}
       >
         <div className="p-4 border-b border-white/10 flex gap-3">
 
-          <button onClick={() => setSearchOpen(false)}>
-            ←
-          </button>
+          <button onClick={() => setSearchOpen(false)}>←</button>
 
           <input
             autoFocus
@@ -177,7 +172,7 @@ export default function MobileHomeView({
                 );
                 setSearchOpen(false);
               }}
-              className="bg-white/5 rounded-xl p-2 border border-white/10"
+              className="bg-white/5 rounded-xl p-2 border border-white/10 active:scale-95 transition"
             >
               <img
                 src={m.CoverURL}
