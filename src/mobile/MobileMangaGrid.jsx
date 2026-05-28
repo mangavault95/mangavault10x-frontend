@@ -1,6 +1,7 @@
 export default function MobileMangaGrid({
   searchResults = [],
-  filter
+  filter,
+  onOpenDetail
 }) {
   function getOwned(m) {
     return Number(m?.VolumiPosseduti) || 0;
@@ -26,7 +27,6 @@ export default function MobileMangaGrid({
 
     switch (filter) {
       case "ongoing":
-        // ✅ FIX DEFINITIVO
         return total === null && owned > 0;
 
       case "to_complete":
@@ -52,14 +52,6 @@ export default function MobileMangaGrid({
       (a.Titolo || "").localeCompare(b.Titolo || "")
     );
 
-  function openDetail(manga) {
-    window.dispatchEvent(
-      new CustomEvent("openMangaDetail", {
-        detail: manga
-      })
-    );
-  }
-
   return (
     <div className="grid grid-cols-2 gap-3 pb-[100px]">
       {list.map((m) => {
@@ -71,63 +63,44 @@ export default function MobileMangaGrid({
             ? owned > 0 ? 50 : 0
             : Math.min(100, (owned / total) * 100);
 
-        // ✅ colori corretti
-        let color = "bg-yellow-400"; // ongoing
+        let color = "bg-yellow-400";
         if (total !== null && owned >= total) color = "bg-green-500";
         if (total !== null && owned < total) color = "bg-red-500";
 
         return (
           <button
             key={m.ID}
-            onClick={() => openDetail(m)}
-            className="
-              rounded-xl overflow-hidden
-              border border-white/10
-              bg-white/[0.04]
-              text-left
-            "
+            onClick={(e) => {
+              const rect = e.currentTarget
+                .querySelector("img")
+                ?.getBoundingClientRect();
+
+              onOpenDetail(m, rect);
+            }}
+            className="bg-white/5 rounded-xl p-2 border border-white/10 active:scale-95 transition"
           >
-            {/* COVER */}
-            <div className="h-[160px] flex items-center justify-center bg-black/20">
-              {m.CoverURL ? (
-                <img
-                  src={m.CoverURL}
-                  className="w-full h-full object-contain"
-                />
-              ) : (
-                <div className="text-xs text-zinc-500">
-                  Nessuna cover
-                </div>
-              )}
+            <img
+              src={m.CoverURL}
+              className="w-full h-[150px] object-contain"
+            />
+
+            <div className="text-xs font-semibold mt-1 line-clamp-2">
+              {m.Titolo}
             </div>
 
-            {/* INFO */}
-            <div className="p-2 space-y-1">
+            <div className="text-[10px] text-zinc-400">
+              {m.Autore}
+            </div>
 
-              {/* titolo */}
-              <div className="text-[12px] font-semibold line-clamp-2">
-                {m.Titolo || "Titolo sconosciuto"}
-              </div>
+            <div className="h-[4px] bg-white/10 mt-1 rounded-full overflow-hidden">
+              <div
+                className={color}
+                style={{ width: `${percent}%`, height: "100%" }}
+              />
+            </div>
 
-              {/* autore ✅ aggiunto */}
-              <div className="text-[10px] text-zinc-400 truncate">
-                {m.Autore || "Autore sconosciuto"}
-              </div>
-
-              {/* progress ✅ */}
-              <div className="mt-1">
-                <div className="h-[4px] bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className={`${color} h-full`}
-                    style={{ width: `${percent}%` }}
-                  />
-                </div>
-
-                <div className="text-[10px] text-zinc-400 mt-[2px] text-right">
-                  {owned}/{total !== null ? total : "?"}
-                </div>
-              </div>
-
+            <div className="text-[10px] text-zinc-400 text-right mt-[2px]">
+              {owned}/{total ?? "?"}
             </div>
           </button>
         );
