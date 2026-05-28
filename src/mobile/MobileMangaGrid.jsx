@@ -2,33 +2,49 @@ export default function MobileMangaGrid({
   searchResults = [],
   filter
 }) {
-  function getOwned(manga) {
-    return Number(manga?.VolumiPosseduti) || 0;
+  function getOwned(m) {
+    return Number(m?.VolumiPosseduti) || 0;
   }
 
-  function getTotal(manga) {
-    const val = manga?.VolumiTotali;
-    if (!val) return null;
-    const n = Number(String(val).replace(/\D/g, ""));
+  function getTotal(m) {
+    const raw = m?.VolumiTotali;
+    if (!raw) return null;
+
+    const n = Number(String(raw).replace(/\D/g, ""));
     return Number.isNaN(n) ? null : n;
   }
 
   function getStatus(m) {
-    const total = getTotal(m);
     const owned = getOwned(m);
+    const total = getTotal(m);
 
     if (total === null) return "ongoing";
     if (owned >= total) return "completed";
     return "to_complete";
   }
 
-  function getPercent(m) {
-    const total = getTotal(m);
-    const owned = getOwned(m);
+  function matchFilter(m) {
+    if (!filter || filter === "all") return true;
 
-    if (!total) return owned > 0 ? 50 : 0;
-    return Math.min(100, (owned / total) * 100);
+    const owned = getOwned(m);
+    const total = getTotal(m);
+
+    switch (filter) {
+      case "ongoing":
+        return total === null && owned > 0;
+
+      case "to_complete":
+        return total !== null && owned < total;
+
+      case "completed":
+        return total !== null && owned >= total;
+
+      default:
+        return true;
+    }
   }
+
+  const list = searchResults.filter(matchFilter);
 
   function openDetail(manga) {
     window.dispatchEvent(
@@ -40,9 +56,14 @@ export default function MobileMangaGrid({
 
   return (
     <div className="grid grid-cols-2 gap-3 pb-[100px]">
-      {searchResults.map((manga) => {
-        const percent = getPercent(manga);
+      {list.map((manga) => {
+        const owned = getOwned(manga);
+        const total = getTotal(manga);
         const status = getStatus(manga);
+
+        const percent = total
+          ? Math.min(100, (owned / total) * 100)
+          : 0;
 
         let bar = "bg-yellow-400";
         if (status === "completed") bar = "bg-green-500";
@@ -54,16 +75,15 @@ export default function MobileMangaGrid({
             onClick={() => openDetail(manga)}
             className="rounded-xl overflow-hidden bg-white/[0.04] border border-white/10"
           >
-            <div className="h-[180px] bg-black/20 relative">
-              {manga.CoverURL && (
-                <img
-                  src={manga.CoverURL}
-                  className="w-full h-full object-contain"
-                />
-              )}
+            <div className="h-[180px]">
+              <img
+                src={manga.CoverURL}
+                className="w-full h-full object-contain"
+              />
             </div>
 
             <div className="p-2">
+
               <div className="text-xs font-semibold truncate">
                 {manga.Titolo}
               </div>
@@ -72,11 +92,15 @@ export default function MobileMangaGrid({
                 {manga.Autore}
               </div>
 
-              <div className="mt-1 h-[4px] bg-white/10 rounded-full overflow-hidden">
+              <div className="mt-1 h-[4px] bg-white/10 rounded-full">
                 <div
                   className={bar}
-                  style={{ width: `${percent}%` }}
+                  style={{ width: `${percent}%`, height: "100%" }}
                 />
+              </div>
+
+              <div className="text-[10px] text-zinc-400 mt-1">
+                {owned}/{total ?? "?"}
               </div>
             </div>
           </button>
@@ -85,4 +109,3 @@ export default function MobileMangaGrid({
     </div>
   );
 }
-
