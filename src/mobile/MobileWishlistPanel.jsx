@@ -247,6 +247,7 @@ export default function MobileWishlistPanel({ onClose }) {
     if (q.length < 2) {
       setAnilistResults([]);
       setAnilistError("");
+      setAnilistLoading(false);
       return;
     }
 
@@ -314,21 +315,25 @@ export default function MobileWishlistPanel({ onClose }) {
   }
 
   useEffect(() => {
+    if (!addOpen) return;
+
     const timer = setTimeout(() => {
       searchAniList(anilistQuery);
     }, 450);
 
     return () => clearTimeout(timer);
-  }, [anilistQuery]);
+  }, [anilistQuery, addOpen]);
 
   function selectAniList(media) {
+    const title = bestTitle(media);
+    const author = bestAuthor(media);
     const genres = Array.isArray(media?.genres)
       ? media.genres.join(", ")
       : "";
 
     setForm({
-      titolo: bestTitle(media),
-      autori: bestAuthor(media),
+      titolo: title,
+      autori: author,
       coverurl:
         media?.coverImage?.extraLarge ||
         media?.coverImage?.large ||
@@ -341,6 +346,12 @@ export default function MobileWishlistPanel({ onClose }) {
           : "",
       dovecomprare: ""
     });
+
+    // ✅ Dopo il click sull'anteprima, la lista risultati sparisce.
+    setAnilistQuery(title);
+    setAnilistResults([]);
+    setAnilistError("");
+    setAnilistLoading(false);
   }
 
   async function saveNewWishlistItem() {
@@ -381,6 +392,8 @@ export default function MobileWishlistPanel({ onClose }) {
 
       setAnilistQuery("");
       setAnilistResults([]);
+      setAnilistError("");
+      setAnilistLoading(false);
       setAddOpen(false);
 
       await loadWishlist();
@@ -549,16 +562,16 @@ export default function MobileWishlistPanel({ onClose }) {
         >
           <div
             className="
-              w-full max-h-[92vh]
-              rounded-t-[28px]
+              w-full h-[100dvh]
               bg-[#0b0b0f]
               border-t border-white/10
               overflow-hidden
+              flex flex-col
             "
             onClick={(e) => e.stopPropagation()}
           >
             {/* SHEET HEADER */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#0b0b0f]">
               <div>
                 <div className="text-base font-bold text-white">
                   Aggiungi alla wishlist
@@ -583,7 +596,7 @@ export default function MobileWishlistPanel({ onClose }) {
               </button>
             </div>
 
-            <div className="max-h-[calc(92vh-64px)] overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
               {/* SEARCH */}
               <div>
                 <label className="block text-xs text-zinc-400 mb-2">
@@ -597,7 +610,10 @@ export default function MobileWishlistPanel({ onClose }) {
                     value={anilistQuery}
                     onChange={(e) => setAnilistQuery(e.target.value)}
                     placeholder="Es. Cross Game, Happy, Katsu..."
-                    className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-zinc-500"
+                    className="
+                      flex-1 bg-transparent outline-none
+                      text-[16px] text-white placeholder:text-zinc-500
+                    "
                   />
                 </div>
               </div>
@@ -681,7 +697,7 @@ export default function MobileWishlistPanel({ onClose }) {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, titolo: e.target.value }))
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 outline-none text-sm text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 outline-none text-[16px] text-white"
                   />
                 </div>
 
@@ -694,7 +710,7 @@ export default function MobileWishlistPanel({ onClose }) {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, autori: e.target.value }))
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 outline-none text-sm text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 outline-none text-[16px] text-white"
                   />
                 </div>
 
@@ -707,7 +723,7 @@ export default function MobileWishlistPanel({ onClose }) {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, coverurl: e.target.value }))
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 outline-none text-sm text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 outline-none text-[16px] text-white"
                   />
                 </div>
 
@@ -725,7 +741,7 @@ export default function MobileWishlistPanel({ onClose }) {
                           volumitotali: e.target.value
                         }))
                       }
-                      className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 outline-none text-sm text-white"
+                      className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 outline-none text-[16px] text-white"
                     />
                   </div>
 
@@ -741,7 +757,7 @@ export default function MobileWishlistPanel({ onClose }) {
                           dovecomprare: e.target.value
                         }))
                       }
-                      className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 outline-none text-sm text-white"
+                      className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 outline-none text-[16px] text-white"
                     />
                   </div>
                 </div>
@@ -755,7 +771,7 @@ export default function MobileWishlistPanel({ onClose }) {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, generi: e.target.value }))
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 outline-none text-sm text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 outline-none text-[16px] text-white"
                   />
                 </div>
 
@@ -769,7 +785,7 @@ export default function MobileWishlistPanel({ onClose }) {
                       setForm((f) => ({ ...f, trama: e.target.value }))
                     }
                     rows={5}
-                    className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 outline-none text-sm text-white resize-none"
+                    className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 outline-none text-[16px] text-white resize-none"
                   />
                 </div>
 
