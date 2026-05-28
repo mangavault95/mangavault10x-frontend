@@ -1,9 +1,6 @@
-import { useEffect, useState } from "react";
-import MobileReadingSessionAddModal from "./MobileReadingSessionAddModal";
+import { useEffect, useMemo, useState } from "react";
 
-/* -------------------- ICONS -------------------- */
-
-function MinusIcon({ className = "w-4 h-4" }) {
+function CloseIcon({ className = "w-4 h-4" }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -13,12 +10,13 @@ function MinusIcon({ className = "w-4 h-4" }) {
       strokeWidth="2"
       strokeLinecap="round"
     >
-      <path d="M6 12h12" />
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
     </svg>
   );
 }
 
-function PlusIcon({ className = "w-4 h-4" }) {
+function SearchIcon({ className = "w-4 h-4" }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -27,767 +25,356 @@ function PlusIcon({ className = "w-4 h-4" }) {
       stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
-    >
-      <path d="M12 5v14" />
-      <path d="M5 12h14" />
-    </svg>
-  );
-}
-
-function SaveIcon({ className = "w-5 h-5" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <path d="M5 4h11l3 3v13H5V4Z" />
-      <path d="M8 4v6h8" />
-      <path d="M8 17h8" />
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
     </svg>
   );
 }
 
-function ChevronLeftIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="w-4 h-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M15 18 9 12l6-6" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="w-4 h-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon({ className = "w-4 h-4" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m6 9 6 6 6-6" />
-    </svg>
-  );
-}
-
-function TrashIcon({ className = "w-4 h-4" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M4 7h16" />
-      <path d="M10 11v6" />
-      <path d="M14 11v6" />
-      <path d="M6 7l1 14h10l1-14" />
-      <path d="M9 7V4h6v3" />
-    </svg>
-  );
-}
-
-function BookIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="w-4 h-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5v-12Z" />
-      <path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20" />
-    </svg>
-  );
-}
-
-function ExpandIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="w-4 h-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M7 14l5-5 5 5" />
-    </svg>
-  );
-}
-
-/* -------------------- COMPONENT -------------------- */
-
-export default function MobileReadingPlayer() {
+export default function MobileReadingSessionAddModal({ onClose, onSaved }) {
   const API = import.meta.env.VITE_API_URL;
 
+  const [manga, setManga] = useState([]);
   const [sessions, setSessions] = useState([]);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [openAddSession, setOpenAddSession] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState(null);
+  const [volume, setVolume] = useState("");
+
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  async function loadSessions() {
-    try {
-      const res = await fetch(`${API}/api/reading-sessions`);
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : [];
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
 
-      setSessions(list);
+      try {
+        const [mangaRes, sessionsRes] = await Promise.all([
+          fetch(`${API}/api/manga`),
+          fetch(`${API}/api/reading-sessions`)
+        ]);
 
-      const storedActiveId = localStorage.getItem("mv_active_session_manga_id");
+        const mangaData = await mangaRes.json().catch(() => []);
+        const sessionsData = await sessionsRes.json().catch(() => []);
 
-      if (storedActiveId && list.length > 0) {
-        const idx = list.findIndex(
-          (s) => String(s.manga_id) === String(storedActiveId)
-        );
-        setActiveIndex(idx >= 0 ? idx : 0);
-      } else {
-        setActiveIndex(0);
+        setManga(Array.isArray(mangaData) ? mangaData : []);
+        setSessions(Array.isArray(sessionsData) ? sessionsData : []);
+      } catch (err) {
+        console.error("Errore caricamento dati player mobile:", err);
+        setManga([]);
+        setSessions([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Errore caricamento reading sessions mobile:", err);
-      setSessions([]);
-      setActiveIndex(0);
     }
+
+    load();
+  }, [API]);
+
+  const existingIds = useMemo(() => {
+    return new Set(sessions.map((s) => String(s.manga_id)));
+  }, [sessions]);
+
+  const availableManga = useMemo(() => {
+    return manga.filter((m) => !existingIds.has(String(m.ID)));
+  }, [manga, existingIds]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+
+    if (!q) return availableManga.slice(0, 18);
+
+    return availableManga
+      .filter((m) => {
+        const title = String(m?.Titolo || "").toLowerCase();
+        const author = String(m?.Autore || "").toLowerCase();
+        const genre = String(m?.Genere || "").toLowerCase();
+
+        return (
+          title.includes(q) ||
+          author.includes(q) ||
+          genre.includes(q)
+        );
+      })
+      .slice(0, 18);
+  }, [availableManga, query]);
+
+  function parseTotal(value) {
+    if (value === null || value === undefined || value === "") return null;
+
+    const cleaned = String(value).replace(/[^0-9]/g, "");
+    if (!cleaned) return null;
+
+    const n = Number(cleaned);
+    return Number.isNaN(n) ? null : n;
   }
 
-  useEffect(() => {
-    loadSessions();
-  }, []);
+  async function handleSave() {
+    if (!selected || saving) return;
 
-  useEffect(() => {
-    const refresh = () => loadSessions();
-
-    window.addEventListener("currentReadingUpdated", refresh);
-
-    return () => {
-      window.removeEventListener("currentReadingUpdated", refresh);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (activeIndex >= sessions.length && sessions.length > 0) {
-      setActiveIndex(0);
-    }
-  }, [sessions, activeIndex]);
-
-  const activeSession = sessions[activeIndex] || null;
-
-  const prevIndex =
-    sessions.length > 1
-      ? (activeIndex - 1 + sessions.length) % sessions.length
-      : null;
-
-  const nextIndex =
-    sessions.length > 1
-      ? (activeIndex + 1) % sessions.length
-      : null;
-
-  const prevSession = prevIndex !== null ? sessions[prevIndex] : null;
-  const nextSession = nextIndex !== null ? sessions[nextIndex] : null;
-
-  useEffect(() => {
-    if (activeSession?.manga_id) {
-      localStorage.setItem(
-        "mv_active_session_manga_id",
-        String(activeSession.manga_id)
-      );
-    }
-  }, [activeSession]);
-
-  function softVibrate() {
-    try {
-      if (navigator.vibrate) navigator.vibrate(8);
-    } catch {
-      // ignore
-    }
-  }
-
-  function switchTo(index) {
-    if (index === null || index === undefined) return;
-
-    softVibrate();
-    setActiveIndex(index);
-  }
-
-  async function updateCurrentVolume(delta) {
-    if (!activeSession) return;
-
-    softVibrate();
-
-    const current = Number(activeSession.volume) || 0;
-    const total = Number(activeSession.volumitotali) || 0;
-
-    let next = current + delta;
-
-    if (next < 0) next = 0;
-    if (total && next > total) next = total;
-
-    try {
-      await fetch(`${API}/api/reading-sessions/${activeSession.manga_id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          volume: next
-        })
-      });
-
-      await loadSessions();
-      window.dispatchEvent(new Event("currentReadingUpdated"));
-    } catch (err) {
-      console.error("Errore update reading session mobile:", err);
-    }
-  }
-
-  async function saveCurrentReading() {
-    if (!activeSession) return;
-
-    softVibrate();
     setSaving(true);
 
     try {
-      await fetch(`${API}/api/reading-history`, {
+      await fetch(`${API}/api/reading-sessions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          manga_id: activeSession.manga_id,
-          titolo: activeSession.titolo,
-          autore: activeSession.autore || "",
-          coverurl: activeSession.coverurl || "",
-          volume: Number(activeSession.volume) || 0
+          manga_id: selected.ID,
+          titolo: selected.Titolo,
+          autore: selected.Autore || "",
+          coverurl: selected.CoverURL || "",
+          volume: Number(volume) || 0,
+          volumitotali: parseTotal(selected.VolumiTotali)
         })
       });
 
       window.dispatchEvent(new Event("currentReadingUpdated"));
-    } catch (err) {
-      console.error("Errore salvataggio reading history mobile:", err);
-    } finally {
-      setTimeout(() => setSaving(false), 260);
-    }
-  }
 
-  async function removeActiveSession() {
-    if (!activeSession) return;
-
-    softVibrate();
-
-    try {
-      await fetch(`${API}/api/reading-sessions/${activeSession.manga_id}`, {
-        method: "DELETE"
-      });
-
-      await loadSessions();
-
-      if (activeIndex > 0) {
-        setActiveIndex((prev) => prev - 1);
+      if (typeof onSaved === "function") {
+        onSaved();
       }
+
+      onClose();
     } catch (err) {
-      console.error("Errore rimozione reading session mobile:", err);
+      console.error("Errore aggiunta sessione mobile:", err);
+    } finally {
+      setSaving(false);
     }
-  }
-
-  function openDetail() {
-    if (!activeSession) return;
-
-    window.dispatchEvent(
-      new CustomEvent("openMangaDetail", {
-        detail: {
-          ID: activeSession.manga_id,
-          Titolo: activeSession.titolo,
-          Autore: activeSession.autore,
-          CoverURL: activeSession.coverurl,
-          VolumiTotali: activeSession.volumitotali,
-          VolumiPosseduti: activeSession.volume
-        }
-      })
-    );
-  }
-
-  const readingOwned = Number(activeSession?.volume) || 0;
-  const readingTotal = Number(activeSession?.volumitotali) || 0;
-
-  const readingPercent = readingTotal
-    ? Math.min(100, Math.round((readingOwned / readingTotal) * 100))
-    : readingOwned > 0
-    ? 50
-    : 0;
-
-  const progressLabel = readingTotal
-    ? `${readingOwned}/${readingTotal}`
-    : `${readingOwned}/?`;
-
-  const hasMultiple = sessions.length > 1;
-
-  if (!activeSession) {
-    return (
-      <>
-        <div className="fixed left-0 right-0 bottom-0 z-[950] px-3 pb-3 pointer-events-none">
-          <button
-            type="button"
-            onClick={() => setOpenAddSession(true)}
-            className="
-              pointer-events-auto
-              w-full
-              rounded-[20px]
-              border border-white/[0.08]
-              px-3 py-2.5
-              shadow-[0_14px_35px_rgba(0,0,0,0.42)]
-              active:scale-[0.99]
-              transition
-            "
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(12,12,16,0.96), rgba(5,5,8,0.98))",
-              WebkitBackdropFilter: "blur(16px)",
-              backdropFilter: "blur(16px)"
-            }}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-2xl bg-yellow-400/15 border border-yellow-400/20 text-yellow-300 flex items-center justify-center">
-                  <BookIcon />
-                </div>
-
-                <div className="min-w-0 text-left">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
-                    Stai leggendo
-                  </div>
-                  <div className="text-sm font-semibold text-white truncate">
-                    Aggiungi una lettura
-                  </div>
-                </div>
-              </div>
-
-              <div className="w-9 h-9 rounded-2xl bg-yellow-400 text-black flex items-center justify-center">
-                <PlusIcon />
-              </div>
-            </div>
-          </button>
-        </div>
-
-        {openAddSession && (
-          <MobileReadingSessionAddModal
-            onClose={() => setOpenAddSession(false)}
-            onSaved={() => {
-              loadSessions();
-              setOpenAddSession(false);
-            }}
-          />
-        )}
-      </>
-    );
   }
 
   return (
-    <>
-      {/* MINI DOCK */}
-      <div className="fixed left-0 right-0 bottom-0 z-[950] px-3 pb-3 pointer-events-none">
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          className="
-            pointer-events-auto
-            w-full
-            rounded-[20px]
-            border border-white/[0.08]
-            px-3 py-2
-            shadow-[0_14px_35px_rgba(0,0,0,0.42)]
-            active:scale-[0.99]
-            transition
-            overflow-hidden
-            relative
-          "
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(12,12,16,0.96), rgba(5,5,8,0.98))",
-            WebkitBackdropFilter: "blur(16px)",
-            backdropFilter: "blur(16px)"
-          }}
-        >
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-8 left-12 w-28 h-28 rounded-full bg-yellow-400/8 blur-3xl" />
-          </div>
-
-          <div className="relative flex items-center gap-3">
-            <div className="w-10 h-14 shrink-0 rounded-xl overflow-hidden bg-black/25 border border-white/10">
-              {activeSession.coverurl ? (
-                <img
-                  src={activeSession.coverurl}
-                  alt={activeSession.titolo || "Cover manga"}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-[9px] text-zinc-500">
-                  No
-                </div>
-              )}
+    <div
+      className="fixed inset-0 z-[7000] bg-black/70 backdrop-blur-sm flex items-end mobile-app"
+      onClick={onClose}
+    >
+      <div
+        className="
+          w-full h-[100dvh]
+          bg-[#0b0b0f]
+          border-t border-white/10
+          flex flex-col
+          overflow-hidden
+        "
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* HEADER */}
+        <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#0b0b0f]/95 backdrop-blur-xl">
+          <div>
+            <div className="text-base font-bold text-white">
+              Aggiungi a Stai leggendo
             </div>
 
-            <div className="flex-1 min-w-0 text-left">
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
-                  Stai leggendo
-                </div>
-
-                <div className="text-[10px] text-zinc-500">
-                  {readingPercent}%
-                </div>
-              </div>
-
-              <div className="text-sm font-bold text-white truncate mt-0.5">
-                {activeSession.titolo}
-              </div>
-
-              <div className="mt-1.5 h-1 rounded-full bg-white/10 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-yellow-300 to-yellow-500"
-                  style={{ width: `${readingPercent}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="w-9 h-9 rounded-2xl bg-white/[0.06] border border-white/10 text-zinc-300 flex items-center justify-center">
-              <ExpandIcon />
+            <div className="text-xs text-zinc-500 mt-0.5">
+              Cerca un manga della collezione e avvia la lettura.
             </div>
           </div>
-        </button>
-      </div>
 
-      {/* PLAYER ESPANSO */}
-      {expanded && (
-        <div className="fixed inset-0 z-[1600] pointer-events-auto">
-          <div
-            className="absolute inset-0 bg-black/55 backdrop-blur-sm"
-            onClick={() => setExpanded(false)}
-          />
+          <button
+            type="button"
+            onClick={onClose}
+            className="
+              w-10 h-10 rounded-xl
+              bg-white/[0.06]
+              border border-white/10
+              text-zinc-300
+              flex items-center justify-center
+              active:scale-95
+              transition
+            "
+            aria-label="Chiudi"
+          >
+            <CloseIcon />
+          </button>
+        </div>
 
-          <div className="absolute left-0 right-0 bottom-0 px-3 pb-3">
-            <section
-              className="
-                relative
-                rounded-[30px]
-                border border-white/[0.08]
-                p-3
-                overflow-hidden
-                shadow-[0_24px_70px_rgba(0,0,0,0.55)]
-              "
-              style={{
-                background:
-                  "linear-gradient(180deg, rgba(14,14,18,0.98), rgba(5,5,8,0.99))",
-                WebkitBackdropFilter: "blur(18px)",
-                backdropFilter: "blur(18px)"
-              }}
-            >
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute -top-12 left-10 w-40 h-40 rounded-full bg-yellow-400/10 blur-3xl" />
-                <div className="absolute -bottom-14 right-8 w-36 h-36 rounded-full bg-white/5 blur-3xl" />
-              </div>
+        {/* CONTENT */}
+        <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4">
+          {/* SEARCH */}
+          <div>
+            <label className="block text-xs text-zinc-400 mb-2">
+              Cerca manga
+            </label>
 
-              <div className="relative z-10">
-                <button
-                  type="button"
-                  onClick={() => setExpanded(false)}
-                  className="
-                    mx-auto mb-3
-                    flex items-center justify-center gap-1
-                    px-3 py-1.5
-                    rounded-full
-                    bg-white/[0.06]
-                    border border-white/10
-                    text-[10px] text-zinc-400
-                    active:scale-95
-                    transition
-                  "
-                  aria-label="Chiudi player"
-                >
-                  <ChevronDownIcon className="w-3.5 h-3.5" />
-                  Chiudi player
-                </button>
+            <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] px-3 py-2">
+              <SearchIcon className="w-4 h-4 text-zinc-400" />
 
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-yellow-400/15 border border-yellow-400/20 text-yellow-300 flex items-center justify-center">
-                      <BookIcon />
-                    </div>
+              <input
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setSelected(null);
+                }}
+                placeholder="Titolo, autore, genere..."
+                className="
+                  flex-1 bg-transparent outline-none
+                  text-[16px] text-white placeholder:text-zinc-500
+                "
+              />
+            </div>
+          </div>
 
-                    <div className="min-w-0">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
-                        Stai leggendo
-                      </div>
-                    </div>
+          {loading && (
+            <div className="text-center text-zinc-500 py-10">
+              Caricamento manga...
+            </div>
+          )}
+
+          {!loading && availableManga.length === 0 && (
+            <div className="text-center text-zinc-500 py-10">
+              Tutti i manga sono già nel player.
+            </div>
+          )}
+
+          {!loading && availableManga.length > 0 && (
+            <>
+              {/* RESULTS */}
+              <div className="space-y-2">
+                {filtered.length === 0 ? (
+                  <div className="text-center text-zinc-500 py-8">
+                    Nessun risultato
                   </div>
+                ) : (
+                  filtered.map((m) => {
+                    const active = String(selected?.ID) === String(m.ID);
 
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setOpenAddSession(true)}
-                      className="
-                        w-8 h-8 rounded-xl
-                        bg-white/[0.06]
-                        border border-white/10
-                        text-zinc-300
-                        flex items-center justify-center
-                        active:scale-95
-                        transition
-                      "
-                      title="Aggiungi manga"
-                    >
-                      <PlusIcon />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={removeActiveSession}
-                      className="
-                        w-8 h-8 rounded-xl
-                        bg-red-400/10
-                        border border-red-400/20
-                        text-red-300
-                        flex items-center justify-center
-                        active:scale-95
-                        transition
-                      "
-                      title="Rimuovi manga da Stai leggendo"
-                      aria-label="Rimuovi manga da Stai leggendo"
-                    >
-                      <TrashIcon />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2">
-                  <div className="flex flex-col items-center gap-1">
-                    {hasMultiple ? (
-                      <>
-                        <div
-                          className="w-[44px] text-[9px] text-zinc-500 text-center truncate"
-                          title={prevSession?.titolo || ""}
-                        >
-                          {prevSession?.titolo || ""}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => switchTo(prevIndex)}
-                          className="
-                            w-8 h-8 rounded-full
-                            bg-white/[0.055]
-                            border border-white/10
-                            text-zinc-300
-                            flex items-center justify-center
-                            active:scale-95
-                            transition
-                          "
-                        >
-                          <ChevronLeftIcon />
-                        </button>
-                      </>
-                    ) : (
-                      <div className="h-[44px]" />
-                    )}
-                  </div>
-
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-3">
+                    return (
                       <button
+                        key={m.ID}
                         type="button"
-                        onClick={openDetail}
-                        className="
-                          relative
-                          w-[64px] h-[90px]
-                          shrink-0
-                          rounded-2xl
-                          overflow-hidden
-                          bg-black/25
-                          border border-white/10
-                          shadow-[0_12px_26px_rgba(0,0,0,0.32)]
-                          active:scale-95
-                          transition
-                        "
-                      >
-                        {activeSession.coverurl ? (
-                          <img
-                            src={activeSession.coverurl}
-                            alt={activeSession.titolo || "Cover manga"}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-500">
-                            No cover
-                          </div>
-                        )}
-                      </button>
-
-                      <div className="min-w-0 flex-1">
-                        <button
-                          type="button"
-                          onClick={openDetail}
-                          className="text-left w-full"
-                        >
-                          <div className="text-sm font-bold text-white truncate">
-                            {activeSession.titolo}
-                          </div>
-
-                          <div className="text-[11px] text-zinc-400 truncate mt-0.5">
-                            {activeSession.autore || "Autore sconosciuto"}
-                          </div>
-                        </button>
-
-                        <div className="mt-2">
-                          <div className="flex items-center justify-between text-[10px] text-zinc-400 mb-1.5">
-                            <span>Vol {readingOwned}</span>
-                            <span>{progressLabel}</span>
-                          </div>
-
-                          <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-yellow-300 to-yellow-500 shadow-[0_0_14px_rgba(250,204,21,0.35)] transition-all duration-300"
-                              style={{ width: `${readingPercent}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-center gap-5">
-                      <button
-                        type="button"
-                        onClick={() => updateCurrentVolume(-1)}
-                        className="
-                          w-9 h-9 rounded-2xl
-                          bg-white/[0.055]
-                          border border-white/10
-                          text-zinc-300
-                          flex items-center justify-center
-                          active:scale-95
-                          transition
-                        "
-                      >
-                        <MinusIcon />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={saveCurrentReading}
+                        onClick={() => {
+                          setSelected(m);
+                          setQuery(m.Titolo || "");
+                          setVolume(
+                            m.VolumiPosseduti !== null &&
+                              m.VolumiPosseduti !== undefined
+                              ? String(m.VolumiPosseduti)
+                              : ""
+                          );
+                        }}
                         className={`
-                          w-14 h-14 rounded-full
-                          bg-yellow-400 text-black
-                          flex items-center justify-center
-                          shadow-[0_0_32px_rgba(250,204,21,0.42)]
-                          active:scale-95
-                          transition-all duration-200
-                          ${saving ? "scale-95 brightness-110" : ""}
+                          w-full flex gap-3 text-left
+                          rounded-2xl p-3
+                          border
+                          active:scale-[0.99]
+                          transition
+                          ${
+                            active
+                              ? "bg-yellow-400/10 border-yellow-400/35"
+                              : "bg-white/[0.045] border-white/10"
+                          }
                         `}
                       >
-                        <SaveIcon />
-                      </button>
+                        <div className="w-12 h-16 shrink-0 rounded-xl overflow-hidden bg-black/25 border border-white/10">
+                          {m.CoverURL ? (
+                            <img
+                              src={m.CoverURL}
+                              alt={m.Titolo || "Cover manga"}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-500">
+                              No img
+                            </div>
+                          )}
+                        </div>
 
-                      <button
-                        type="button"
-                        onClick={() => updateCurrentVolume(1)}
-                        className="
-                          w-9 h-9 rounded-2xl
-                          bg-white/[0.055]
-                          border border-white/10
-                          text-zinc-300
-                          flex items-center justify-center
-                          active:scale-95
-                          transition
-                        "
-                      >
-                        <PlusIcon />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-semibold text-white line-clamp-2">
+                            {m.Titolo || "Titolo sconosciuto"}
+                          </div>
+
+                          <div className="text-xs text-zinc-400 truncate mt-1">
+                            {m.Autore || "Autore sconosciuto"}
+                          </div>
+
+                          <div className="text-[10px] text-zinc-500 truncate mt-1">
+                            {m.Genere || "Nessun genere"}
+                          </div>
+                        </div>
                       </button>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* SELECTED */}
+              {selected && (
+                <div className="rounded-[24px] border border-white/10 bg-white/[0.045] p-4 space-y-4">
+                  <div className="flex gap-3">
+                    <div className="w-20 h-28 shrink-0 rounded-2xl overflow-hidden bg-black/25 border border-white/10">
+                      {selected.CoverURL ? (
+                        <img
+                          src={selected.CoverURL}
+                          alt={selected.Titolo || "Cover manga"}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-500">
+                          No img
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-bold text-white line-clamp-2">
+                        {selected.Titolo}
+                      </div>
+
+                      <div className="text-xs text-zinc-400 truncate mt-1">
+                        {selected.Autore || "Autore sconosciuto"}
+                      </div>
+
+                      <div className="text-[10px] text-zinc-500 mt-2">
+                        Totale volumi: {selected.VolumiTotali || "?"}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-center gap-1">
-                    {hasMultiple ? (
-                      <>
-                        <div
-                          className="w-[44px] text-[9px] text-zinc-500 text-center truncate"
-                          title={nextSession?.titolo || ""}
-                        >
-                          {nextSession?.titolo || ""}
-                        </div>
+                  <div>
+                    <label className="block text-xs text-zinc-400 mb-1">
+                      Volume corrente
+                    </label>
 
-                        <button
-                          type="button"
-                          onClick={() => switchTo(nextIndex)}
-                          className="
-                            w-8 h-8 rounded-full
-                            bg-white/[0.055]
-                            border border-white/10
-                            text-zinc-300
-                            flex items-center justify-center
-                            active:scale-95
-                            transition
-                          "
-                        >
-                          <ChevronRightIcon />
-                        </button>
-                      </>
-                    ) : (
-                      <div className="h-[44px]" />
-                    )}
+                    <input
+                      type="number"
+                      value={volume}
+                      onChange={(e) => setVolume(e.target.value)}
+                      placeholder="Es. 1"
+                      className="
+                        w-full px-3 py-2 rounded-xl
+                        bg-white/[0.05]
+                        border border-white/10
+                        outline-none
+                        text-[16px] text-white
+                      "
+                    />
                   </div>
-                </div>
-              </div>
-            </section>
-          </div>
-        </div>
-      )}
 
-      {openAddSession && (
-        <MobileReadingSessionAddModal
-          onClose={() => setOpenAddSession(false)}
-          onSaved={() => {
-            loadSessions();
-            setOpenAddSession(false);
-          }}
-        />
-      )}
-    </>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={!selected || saving}
+                    className="
+                      w-full py-3 rounded-2xl
+                      bg-yellow-400 text-black
+                      text-sm font-semibold
+                      disabled:opacity-50
+                      active:scale-[0.98]
+                      transition
+                    "
+                  >
+                    {saving ? "Aggiunta..." : "Aggiungi al player"}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
