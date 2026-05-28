@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import MobilePanel from "./MobilePanel";
 
 export default function MobileRecordsPanel({ onClose }) {
@@ -15,12 +15,10 @@ export default function MobileRecordsPanel({ onClose }) {
 
   return (
     <MobilePanel title="Records" onClose={onClose}>
-
       <div className="grid grid-cols-2 gap-3 text-center">
-
         <div className="bg-white/5 p-4 rounded-xl">
           <div className="text-xl font-bold">{data.total}</div>
-          <div className="text-xs text-zinc-400">Totale manga</div>
+          <div className="text-xs text-zinc-400">Totale</div>
         </div>
 
         <div className="bg-white/5 p-4 rounded-xl">
@@ -29,14 +27,10 @@ export default function MobileRecordsPanel({ onClose }) {
         </div>
 
         <div className="bg-white/5 p-4 rounded-xl col-span-2">
-          <div className="text-xl font-bold">
-            € {data.total_cost}
-          </div>
-          <div className="text-xs text-zinc-400">Spesa totale</div>
+          <div className="text-xl font-bold">€ {data.total_cost}</div>
+          <div className="text-xs text-zinc-400">Spesa</div>
         </div>
-
       </div>
-
     </MobilePanel>
   );
 }
