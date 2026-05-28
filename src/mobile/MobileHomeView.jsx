@@ -221,19 +221,21 @@ useEffect(() => {
       )}
 
       {/* ✅ NAV STACK */}
-    <MobileNavStack
+<MobileNavStack
   screens={{
     history: MobileHistoryPanel,
-    wishlist: MobileWishlistPanel,
-    records: MobileRecordsPanel,
+    wishlist: (props) => (
+      <MobileWishlistPanel {...props} list={filteredManga} />
+    ),
+    records: (props) => (
+      <MobileRecordsPanel {...props} list={filteredManga} />
+    ),
     favorites: (props) => (
-      <MobileFavoritesPanel
-        {...props}
-        list={filteredManga}
-      />
+      <MobileFavoritesPanel {...props} list={filteredManga} />
     )
   }}
 />
+
     </>
   );
 }
