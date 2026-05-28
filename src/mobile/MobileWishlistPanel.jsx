@@ -3,27 +3,22 @@ import MobilePanel from "./MobilePanel";
 
 export default function MobileWishlistPanel({ onClose }) {
   const API = import.meta.env.VITE_API_URL;
+
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`${API}/api/wishlist`);
+        const res = await fetch(`${API}/api/wishlist_custom`);
         const data = await res.json();
 
-        // ✅ STRUTTURA COME DESKTOP
-        const safe = (data || []).map((m) => ({
-          ID: m.id,
-          Titolo: m.titolo || m.Titolo || "",
-          Autore: m.autori || m.Autore || "",
-          CoverURL: m.coverurl || m.CoverURL || "",
-          VolumiTotali: m.volumitotali || m.VolumiTotali,
-          Trama: m.trama || "",
-          Genere: m.generi || ""
-        }));
-
-        setList(safe);
+        // ✅ stessi controlli del desktop
+        if (Array.isArray(data)) {
+          setList(data);
+        } else {
+          setList([]);
+        }
       } catch (err) {
         console.error("Errore wishlist:", err);
         setList([]);
@@ -37,47 +32,55 @@ export default function MobileWishlistPanel({ onClose }) {
 
   function open(m) {
     window.dispatchEvent(
-      new CustomEvent("openMangaDetail", { detail: m })
+      new CustomEvent("openMangaDetail", {
+        detail: m
+      })
     );
   }
 
   return (
     <MobilePanel title="Wishlist" onClose={onClose}>
 
+      {/* LOADING */}
       {loading && (
         <div className="text-center text-zinc-400">
           Caricamento...
         </div>
       )}
 
+      {/* EMPTY */}
       {!loading && list.length === 0 && (
         <div className="text-center text-zinc-400">
           Nessun manga in wishlist
         </div>
       )}
 
-      {list.map((m) => (
-        <button
-          key={m.ID}
-          onClick={() => open(m)}
-          className="flex gap-3 w-full bg-white/5 p-3 rounded-xl text-left active:scale-95 transition"
-        >
-          <img
-            src={m.CoverURL}
-            className="w-12 h-16 object-cover rounded-md"
-          />
+      {/* LIST */}
+      <div className="space-y-3">
+        {list.map((m, i) => (
+          <button
+            key={`${m.ID || m.id || i}`}
+            onClick={() => open(m)}
+            className="flex gap-3 w-full bg-white/5 p-3 rounded-xl text-left active:scale-95 transition"
+          >
+            {/* ✅ COVER */}
+            {m.CoverURL && (
+              {m.CoverURL}
+            )}
 
-          <div>
-            <div className="text-sm font-semibold">
-              {m.Titolo}
-            </div>
+            {/* INFO */}
+            <div>
+              <div className="text-sm font-semibold">
+                {m.Titolo || "Senza titolo"}
+              </div>
 
-            <div className="text-xs text-zinc-400">
-              {m.Autore}
+              <div className="text-xs text-zinc-400">
+                {m.Autore || "Autore sconosciuto"}
+              </div>
             </div>
-          </div>
-        </button>
-      ))}
+          </button>
+        ))}
+      </div>
 
     </MobilePanel>
   );
