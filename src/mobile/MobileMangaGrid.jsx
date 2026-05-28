@@ -1,46 +1,25 @@
 export default function MobileMangaGrid({
   searchResults = [],
-  filter
+  filter,
+  sort
 }) {
   function getOwned(m) {
     return Number(m?.VolumiPosseduti) || 0;
   }
 
   function getTotal(m) {
-    const raw = m?.VolumiTotali;
+    if (!m?.VolumiTotali) return null;
 
-    if (raw === null || raw === undefined || raw === "") return null;
-
-    const cleaned = String(raw).replace(/[^0-9]/g, "");
-    if (!cleaned) return null;
-
-    const n = Number(cleaned);
+    const n = Number(String(m.VolumiTotali).replace(/\D/g, ""));
     return Number.isNaN(n) ? null : n;
   }
 
-  function getStatus(m) {
-    const owned = getOwned(m);
-    const total = getTotal(m);
-
-    // ✅ ongoing: se non conosciamo il totale
-    if (total === null) {
-      return owned > 0 ? "ongoing" : "ongoing";
-    }
-
-    if (owned >= total) return "completed";
-
-    return "to_complete";
-  }
-
   function matchFilter(m) {
-    if (!filter || filter === "all") return true;
-
     const owned = getOwned(m);
     const total = getTotal(m);
 
     switch (filter) {
       case "ongoing":
-        // ✅ FIX: total deve essere NULL, NON 0
         return total === null && owned > 0;
 
       case "to_complete":
@@ -60,79 +39,71 @@ export default function MobileMangaGrid({
     }
   }
 
-  const list = searchResults.filter(matchFilter);
+  function sortList(list) {
+    switch (sort) {
+      case "title":
+        return list.sort((a, b) =>
+          a.Titolo.localeCompare(b.Titolo)
+        );
 
-  function openDetail(manga) {
-    window.dispatchEvent(
-      new CustomEvent("openMangaDetail", {
-        detail: manga
-      })
-    );
+      case "author":
+        return list.sort((a, b) =>
+          (a.Autore || "").localeCompare(b.Autore || "")
+        );
+
+      case "volumes":
+        return list.sort(
+          (a, b) => (getTotal(b) || 0) - (getTotal(a) || 0)
+        );
+
+      default:
+        return list;
+    }
   }
+
+  const list = sortList(searchResults.filter(matchFilter));
 
   return (
     <div className="grid grid-cols-2 gap-3 pb-[100px]">
-      {list.map((manga) => {
-        const owned = getOwned(manga);
-        const total = getTotal(manga);
-        const status = getStatus(manga);
+      {list.map((m) => {
+        const owned = getOwned(m);
+        const total = getTotal(m);
 
         const percent =
-          total === null
-            ? owned > 0
-              ? 50
-              : 0
-            : total > 0
-            ? Math.min(100, (owned / total) * 100)
-            : 0;
+          total === null ? 50 : Math.min(100, (owned / total) * 100);
 
-        // ✅ colori coerenti
-        let bar = "bg-yellow-400"; // ongoing
-        if (status === "completed") bar = "bg-green-500";
-        if (status === "to_complete") bar = "bg-red-500";
+        let color = "bg-yellow-400";
+        if (total !== null && owned >= total) color = "bg-green-500";
+        if (total !== null && owned < total) color = "bg-red-500";
 
         return (
           <button
-            key={manga.ID}
-            onClick={() => openDetail(manga)}
-            className="rounded-xl overflow-hidden bg-white/[0.04] border border-white/10"
+            key={m.ID}
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent("openMangaDetail", {
+                  detail: m
+                })
+              )
+            }
+            className="bg-white/5 rounded-xl p-2"
           >
-            {/* COVER */}
-            <div className="h-[180px] flex items-center justify-center bg-black/20">
-              {manga.CoverURL ? (
-                <img
-                  src={manga.CoverURL}
-                  className="w-full h-full object-contain"
-                />
-              ) : (
-                <div className="text-xs text-zinc-500">
-                  Nessuna cover
-                </div>
-              )}
+            <img
+              src={m.CoverURL}
+              className="w-full h-[160px] object-contain"
+            />
+
+            <div className="text-xs font-bold mt-1">{m.Titolo}</div>
+
+            <div className="text-[10px] text-zinc-400">
+              {m.Autore}
             </div>
 
-            {/* INFO */}
-            <div className="p-2">
-
-              <div className="text-xs font-semibold truncate">
-                {manga.Titolo || "Titolo sconosciuto"}
-              </div>
-
-              <div className="text-[10px] text-zinc-400 truncate">
-                {manga.Autore || "Autore sconosciuto"}
-              </div>
-
-              {/* PROGRESS */}
-              <div className="mt-1 h-[4px] bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className={bar}
-                  style={{ width: `${percent}%`, height: "100%" }}
-                />
-              </div>
-
-              <div className="text-[10px] text-zinc-400 mt-1">
-                {owned}/{total !== null ? total : "?"}
-              </div>
+            <div className="h-[4px] bg-white/10 mt-1">
+              <div
+                className={color}
+                style={{ width: `${percent}%`, height: "100%" }}
+              />
             </div>
           </button>
         );
