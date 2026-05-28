@@ -123,7 +123,7 @@ export default function MobileDrawer({ onClose }) {
   return (
     <div className="fixed inset-0 z-[3000] flex mobile-app">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/65 backdrop-blur-sm"
         onClick={onClose}
       />
 
@@ -140,8 +140,8 @@ export default function MobileDrawer({ onClose }) {
         "
         style={{
           background:
-            "linear-gradient(180deg, rgba(18,22,42,0.97), rgba(8,10,20,0.98))",
-          boxShadow: "20px 0 55px rgba(0,0,0,0.42)",
+            "linear-gradient(180deg, rgba(12,12,16,0.98), rgba(5,5,8,0.99))",
+          boxShadow: "20px 0 55px rgba(0,0,0,0.46)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)"
         }}
