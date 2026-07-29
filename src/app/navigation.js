@@ -1,0 +1,98 @@
+/**
+ * La mappa della navigazione, in un posto solo.
+ *
+ * Averla come dato invece che sparsa nel markup permette di generare
+ * barra laterale, barra inferiore mobile e scorciatoie da tastiera
+ * dalla stessa fonte — così non possono andare fuori sincrono.
+ */
+
+export const SEZIONI = [
+  {
+    id: "home",
+    percorso: "/",
+    etichetta: "Scaffale",
+    descrizione: "La vista d'insieme della collezione",
+    icona: "shelf",
+    tasto: "1"
+  },
+  {
+    id: "collezione",
+    percorso: "/collezione",
+    etichetta: "Collezione",
+    descrizione: "Tutte le serie, con filtri e ordinamenti",
+    icona: "grid",
+    tasto: "2"
+  },
+  {
+    id: "biblioteca",
+    percorso: "/biblioteca",
+    etichetta: "Biblioteca",
+    descrizione: "La collezione come stanza, in tre dimensioni",
+    icona: "porta",
+    tasto: "6"
+  },
+  {
+    id: "lettura",
+    percorso: "/lettura",
+    etichetta: "In lettura",
+    descrizione: "Cosa stai leggendo adesso e cosa hai finito",
+    icona: "bookmark",
+    tasto: "3"
+  },
+  {
+    id: "wishlist",
+    percorso: "/wishlist",
+    etichetta: "Desideri",
+    descrizione: "Le serie che vuoi comprare",
+    icona: "star",
+    tasto: "4"
+  },
+  {
+    id: "statistiche",
+    percorso: "/statistiche",
+    etichetta: "Numeri",
+    descrizione: "Valore, spesa e primati della collezione",
+    icona: "chart",
+    tasto: "5"
+  }
+];
+
+// Separata dalle altre: è amministrazione, non navigazione quotidiana.
+export const SEZIONE_ADMIN = {
+  id: "admin",
+  percorso: "/admin",
+  etichetta: "Gestione",
+  descrizione: "Modifica le schede della collezione",
+  icona: "settings"
+};
+
+/**
+ * Il titolo che compare nella scheda del browser.
+ * Un indirizzo condiviso deve dire cosa contiene.
+ */
+export function titoloPer(percorso) {
+  if (percorso.startsWith("/serie/")) return "Scheda serie · MangaVault";
+  if (percorso === "/biblioteca") return "La biblioteca · MangaVault";
+
+  const sezione = [...SEZIONI, SEZIONE_ADMIN].find((s) => s.percorso === percorso);
+
+  return sezione ? `${sezione.etichetta} · MangaVault` : "MangaVault";
+}
+
+/**
+ * Indica se una voce di menu è quella attiva.
+ * La home combacia solo esattamente, le altre anche sulle
+ * sotto-pagine, così "Collezione" resta acceso dentro una scheda serie.
+ */
+export function eAttiva(percorsoVoce, percorsoCorrente) {
+  if (percorsoVoce === "/") return percorsoCorrente === "/";
+
+  if (percorsoVoce === "/collezione") {
+    return (
+      percorsoCorrente.startsWith("/collezione") ||
+      percorsoCorrente.startsWith("/serie/")
+    );
+  }
+
+  return percorsoCorrente.startsWith(percorsoVoce);
+}

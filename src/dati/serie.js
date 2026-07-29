@@ -1,0 +1,260 @@
+/**
+ * Il vocabolario della collezione.
+ *
+ * Il database parla PascalCase virgolettato (`"VolumiPosseduti"`),
+ * eredità del vecchio import. Invece di trascinare quei nomi in ogni
+ * componente, li traduco una volta sola qui: le pagine lavorano su
+ * oggetti puliti e il giorno che una colonna cambia nome si tocca
+ * questo file e basta.
+ *
+ * Qui vivono anche i conti che si ripetono ovunque — completamento,
+ * volumi mancanti, valore — così due pagine non possono mostrare due
+ * numeri diversi per la stessa cosa.
+ */
+
+/* ==================================================
+   NORMALIZZAZIONE
+   ================================================== */
+
+// I generi arrivano come stringa separata da virgole, a volte con
+// spazi doppi o virgole finali. Una lista pulita è più facile da
+// filtrare e da mostrare come etichette.
+function separaGeneri(grezzo) {
+  if (!grezzo) return [];
+
+  return String(grezzo)
+    .split(/[,;/]/)
+    .map((g) => g.trim())
+    .filter(Boolean);
+}
+
+// Le colonne numeriche ora sono numeri veri lato database, ma la
+// wishlist e le sessioni di lettura passano ancora stringhe: questa
+// conversione difensiva evita "10" < "9".
+function numero(valore) {
+  if (valore === null || valore === undefined || valore === "") return null;
+
+  const n = Number(valore);
+
+  return Number.isFinite(n) ? n : null;
+}
+
+export function normalizzaSerie(riga) {
+  if (!riga) return null;
+
+  const posseduti = numero(riga.VolumiPosseduti) ?? 0;
+  const totali = numero(riga.VolumiTotali);
+
+  return {
+    id: riga.ID,
+    titolo: riga.Titolo || "Senza titolo",
+    autore: riga.Autore || null,
+    disegnatore: riga.Disegnatore || null,
+    editore: riga.Editore || null,
+    generi: separaGeneri(riga.Genere),
+    copertina: riga.CoverURL || null,
+    trama: riga.Trama || null,
+
+    posseduti,
+    totali,
+
+    valutazione: numero(riga.Valutazione),
+    costo: numero(riga.Costo),
+    prezzoStimato: numero(riga.PrezzoStimato),
+    valoreMercato: numero(riga.MarketValue),
+
+    // `StatoSerie` è la colonna nuova; `Concluso` il vecchio flag 0/1.
+    // Finché non tutte le schede sono state riviste servono entrambi.
+    stato:
+      riga.StatoSerie ||
+      (riga.Concluso === true ? "conclusa" : riga.Concluso === false ? "in_corso" : null),
+
+    preferito: Boolean(riga.Preferito),
+    dataAggiunta: riga.DataAggiunta || null,
+
+    // La riga originale resta a disposizione per la pagina Gestione,
+    // che deve poter salvare i campi con i nomi che il server si aspetta.
+    grezzo: riga
+  };
+}
+
+export const normalizzaElenco = (righe) =>
+  (Array.isArray(righe) ? righe : []).map(normalizzaSerie).filter(Boolean);
+
+/* ==================================================
+   CONTI DERIVATI
+   ================================================== */
+
+/** Percentuale 0-100, oppure null se non sappiamo quanti volumi siano. */
+export function completamento(serie) {
+  if (!serie?.totali || serie.totali <= 0) return null;
+
+  return Math.min(100, Math.round((serie.posseduti / serie.totali) * 100));
+}
+
+export function volumiMancanti(serie) {
+  if (!serie?.totali) return null;
+
+  return Math.max(0, serie.totali - serie.posseduti);
+}
+
+/** Quanto vale lo scaffale: prezzo di copertina per volumi in casa. */
+export function valoreSerie(serie) {
+  if (!serie?.costo) return 0;
+
+  return serie.costo * serie.posseduti;
+}
+
+export const eCompleta = (serie) => completamento(serie) === 100;
+
+/* ==================================================
+   FORMATTAZIONE
+   ================================================== */
+
+const EURO = new Intl.NumberFormat("it-IT", {
+  style: "currency",
+  currency: "EUR",
+  maximumFractionDigits: 2
+});
+
+export const euro = (valore) => EURO.format(Number(valore) || 0);
+
+export const numeroIt = (valore) =>
+  new Intl.NumberFormat("it-IT").format(Number(valore) || 0);
+
+export function dataIt(valore) {
+  if (!valore) return null;
+
+  const d = new Date(valore);
+
+  if (Number.isNaN(d.getTime())) return null;
+
+  return d.toLocaleDateString("it-IT", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+}
+
+/** "3 volumi" / "1 volume": il plurale sbagliato si nota subito. */
+export const plurale = (n, singolare, plurale_) =>
+  `${numeroIt(n)} ${n === 1 ? singolare : plurale_}`;
+
+export const ETICHETTE_STATO = {
+  conclusa: "Conclusa",
+  in_corso: "In corso",
+  sospesa: "Sospesa",
+  annullata: "Annullata"
+};
+
+/* ==================================================
+   FILTRI
+   ================================================== */
+
+/**
+ * I filtri sono dati, non `if` sparsi: la stessa lista genera i
+ * bottoni, il valore nell'indirizzo e la selezione. Aggiungerne uno
+ * significa aggiungere una riga qui.
+ */
+export const FILTRI = [
+  {
+    id: "tutte",
+    etichetta: "Tutte",
+    test: () => true
+  },
+  {
+    id: "in-corso",
+    etichetta: "In corso",
+    descrizione: "Serie non ancora concluse dall'editore",
+    test: (s) => s.stato === "in_corso"
+  },
+  {
+    id: "da-completare",
+    etichetta: "Da completare",
+    descrizione: "Ti mancano dei volumi",
+    test: (s) => volumiMancanti(s) > 0
+  },
+  {
+    id: "complete",
+    etichetta: "Complete",
+    descrizione: "Le hai tutte",
+    test: (s) => eCompleta(s)
+  },
+  {
+    id: "brevi",
+    etichetta: "Serie brevi",
+    descrizione: "Da 2 a 5 volumi",
+    test: (s) => s.totali >= 2 && s.totali <= 5
+  },
+  {
+    id: "autoconclusive",
+    etichetta: "Autoconclusive",
+    descrizione: "Un volume unico",
+    test: (s) => s.totali === 1
+  },
+  {
+    id: "preferiti",
+    etichetta: "Preferiti",
+    test: (s) => s.preferito
+  }
+];
+
+export const filtroPerId = (id) =>
+  FILTRI.find((f) => f.id === id) || FILTRI[0];
+
+/* ==================================================
+   ORDINAMENTI
+   ================================================== */
+
+// `localeCompare` con locale italiano: senza, "Ávila" finisce in fondo
+// all'alfabeto e i titoli accentati si ordinano male.
+const perTitolo = (a, b) => a.titolo.localeCompare(b.titolo, "it");
+
+// I campi vuoti vanno sempre in fondo, in qualsiasi ordinamento:
+// una scheda senza voto non è una scheda con voto zero.
+function decrescenteConVuotiInFondo(estrai) {
+  return (a, b) => {
+    const va = estrai(a);
+    const vb = estrai(b);
+
+    if (va === null && vb === null) return perTitolo(a, b);
+    if (va === null) return 1;
+    if (vb === null) return -1;
+
+    return vb - va || perTitolo(a, b);
+  };
+}
+
+export const ORDINAMENTI = [
+  { id: "titolo", etichetta: "Titolo", confronta: perTitolo },
+  {
+    id: "recenti",
+    etichetta: "Aggiunte di recente",
+    confronta: decrescenteConVuotiInFondo((s) =>
+      s.dataAggiunta ? new Date(s.dataAggiunta).getTime() : null
+    )
+  },
+  {
+    id: "voto",
+    etichetta: "Voto",
+    confronta: decrescenteConVuotiInFondo((s) => s.valutazione)
+  },
+  {
+    id: "volumi",
+    etichetta: "Volumi posseduti",
+    confronta: decrescenteConVuotiInFondo((s) => s.posseduti)
+  },
+  {
+    id: "valore",
+    etichetta: "Valore",
+    confronta: decrescenteConVuotiInFondo((s) => valoreSerie(s) || null)
+  },
+  {
+    id: "completamento",
+    etichetta: "Completamento",
+    confronta: decrescenteConVuotiInFondo(completamento)
+  }
+];
+
+export const ordinamentoPerId = (id) =>
+  ORDINAMENTI.find((o) => o.id === id) || ORDINAMENTI[0];

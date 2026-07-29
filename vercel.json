@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/copertine/anilist/:percorso*", "destination": "https://s4.anilist.co/:percorso*" },
+    { "source": "/copertine/mal/:percorso*", "destination": "https://myanimelist.net/:percorso*" },
+    { "source": "/copertine/mal-cdn/:percorso*", "destination": "https://cdn.myanimelist.net/:percorso*" },
+    { "source": "/copertine/animeclick/:percorso*", "destination": "https://www.animeclick.it/:percorso*" },
+    { "source": "/:qualsiasi*", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/copertine/:percorso*",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800, immutable" }]
+    }
+  ]
+}

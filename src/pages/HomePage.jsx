@@ -1,266 +1,326 @@
-import { useState, useEffect, useMemo } from "react";
-import Sidebar from "../components/Sidebar";
-import MangaGrid from "../components/MangaGrid";
-import TopHero from "../components/TopHero";
-import MangaDetail from "../components/MangaDetail";
-import FavoritesModal from "../components/FavoritesModal";
-import HistoryModal from "../components/HistoryModal";
-import WishlistList from "../components/WishlistList";
-import RecordsModal from "../components/RecordsModal";
-import { getManga } from "../services/api";
-import Fuse from "fuse.js";
-import MobileHomeView from "../mobile/MobileHomeView";
+import { useMemo } from "react";
+import { Link } from "react-router-dom";
+import Pagina, { Sezione } from "../ui/Pagina";
+import Copertina from "../ui/Copertina";
+import Progresso from "../ui/Progresso";
+import CartaSerie from "../ui/CartaSerie";
+import { CaricamentoGriglia, Errore, Vuoto } from "../ui/Stati";
+import { Bottone } from "../ui/Controlli";
+import { useCollezione } from "../dati/collezione";
+import useRisorsa from "../dati/useRisorsa";
+import { getReadingSessions } from "../services/api";
+import {
+  completamento,
+  euro,
+  numeroIt,
+  valoreSerie,
+  volumiMancanti
+} from "../dati/serie";
 
-export default function HomePage({ setAdminMode, setRecordsMode }) {
-  const [search, setSearch] = useState("");
-  const [selectedManga, setSelectedManga] = useState(null);
-  const [mangaList, setMangaList] = useState([]);
-  const [openMenu, setOpenMenu] = useState(false);
+/**
+ * Lo Scaffale: la prima cosa che si vede entrando.
+ *
+ * Non è "tutta la collezione" — quella è la pagina Collezione. Qui
+ * stanno solo le tre domande che ci si fa davvero aprendo il sito:
+ * cosa stavo leggendo, cosa mi manca, cos'ho aggiunto per ultimo.
+ * Tutto il resto è a un click di distanza.
+ *
+ * È anche la pagina destinata a diventare l'ingresso della biblioteca
+ * in tre dimensioni: la struttura a fasce orizzontali è già quella
+ * che serve, lo scaffale prenderà il posto della fascia in alto.
+ */
+export default function HomePage() {
+  const { serie, inCorso, errore, ricarica } = useCollezione();
 
-  const [openSidebar, setOpenSidebar] = useState(true);
+  const { dati: sessioni } = useRisorsa(getReadingSessions);
 
-  const [showFavorites, setShowFavorites] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [showWishlist, setShowWishlist] = useState(false);
-  const [showRecords, setShowRecords] = useState(false);
+  /* -------------------- I numeri della testata -------------------- */
 
-  const [activeFilter, setActiveFilter] = useState("all");
+  const riepilogo = useMemo(() => {
+    const volumi = serie.reduce((t, s) => t + s.posseduti, 0);
+    const valore = serie.reduce((t, s) => t + valoreSerie(s), 0);
+    const complete = serie.filter((s) => completamento(s) === 100).length;
 
-  const [isMobile, setIsMobile] = useState(false);
+    return { serie: serie.length, volumi, valore, complete };
+  }, [serie]);
 
-  const sidebarOpenWidth = 340;
-  const sidebarClosedWidth = 104;
+  /* -------------------- Riprendi la lettura -------------------- */
 
-  /* -------------------- MOBILE DETECTION -------------------- */
+  // Le sessioni salvate hanno il manga_id: lo riaggancio alla serie
+  // vera così la carta mostra copertina e progresso aggiornati anche
+  // se la sessione è stata salvata mesi fa.
+  const inLettura = useMemo(() => {
+    if (!sessioni?.length || !serie.length) return [];
 
-  useEffect(() => {
-    function handleResize() {
-      setIsMobile(window.innerWidth < 768);
-    }
+    return sessioni
+      .map((s) => {
+        const collegata = serie.find((m) => String(m.id) === String(s.manga_id));
 
-    handleResize();
-    window.addEventListener("resize", handleResize);
+        return collegata ? { ...collegata, volumeCorrente: Number(s.volume) || 1 } : null;
+      })
+      .filter(Boolean)
+      .slice(0, 4);
+  }, [sessioni, serie]);
 
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  /* -------------------- Da completare -------------------- */
 
-  /* -------------------- LOAD DATA -------------------- */
+  // Le più vicine al traguardo per prime: sono quelle che conviene
+  // finire, ed è la lista che serve davvero in fumetteria.
+  const daCompletare = useMemo(
+    () =>
+      serie
+        .filter((s) => volumiMancanti(s) > 0 && s.posseduti > 0)
+        .sort((a, b) => volumiMancanti(a) - volumiMancanti(b))
+        .slice(0, 12),
+    [serie]
+  );
 
-  function refreshManga() {
-    getManga().then((d) => setMangaList(d || []));
-  }
+  const aggiunteDiRecente = useMemo(
+    () =>
+      [...serie]
+        .filter((s) => s.dataAggiunta)
+        .sort((a, b) => new Date(b.dataAggiunta) - new Date(a.dataAggiunta))
+        .slice(0, 12),
+    [serie]
+  );
 
-  useEffect(() => {
-    refreshManga();
-  }, []);
-
-  /* -------------------- GLOBAL EVENTS -------------------- */
-
-  useEffect(() => {
-    const handler = (e) => setSelectedManga(e.detail);
-
-    const navHandler = (e) => {
-      const page = e.detail?.page;
-      if (!page) return;
-
-      if (page === "records") setShowRecords(true);
-      else if (page === "favorites") setShowFavorites(true);
-      else if (page === "history") setShowHistory(true);
-      else if (page === "wishlist") setShowWishlist(true);
-    };
-
-    const toggleHandler = () => setOpenSidebar((s) => !s);
-
-    const favOpen = () => setShowFavorites(true);
-    const histOpen = () => setShowHistory(true);
-    const wishOpen = () => setShowWishlist(true);
-
-    const refreshHandler = () => refreshManga();
-
-    window.addEventListener("openMangaDetail", handler);
-    window.addEventListener("navigate", navHandler);
-    window.addEventListener("toggleSidebar", toggleHandler);
-
-    window.addEventListener("openFavoritesModal", favOpen);
-    window.addEventListener("openHistoryModal", histOpen);
-    window.addEventListener("openWishlistModal", wishOpen);
-
-    window.addEventListener("favoritesUpdated", refreshHandler);
-
-    return () => {
-      window.removeEventListener("openMangaDetail", handler);
-      window.removeEventListener("navigate", navHandler);
-      window.removeEventListener("toggleSidebar", toggleHandler);
-
-      window.removeEventListener("openFavoritesModal", favOpen);
-      window.removeEventListener("openHistoryModal", histOpen);
-      window.removeEventListener("openWishlistModal", wishOpen);
-
-      window.removeEventListener("favoritesUpdated", refreshHandler);
-    };
-  }, []);
-
-  /* -------------------- SEARCH (FUSE) -------------------- */
-
-  const filteredSearch = useMemo(() => {
-    if (!search) return mangaList;
-
-    const fuse = new Fuse(mangaList, {
-      keys: ["Titolo", "Autore", "Genere"],
-      threshold: 0.3,
-      ignoreLocation: true,
-    });
-
-    return fuse.search(search).map((r) => r.item);
-  }, [search, mangaList]);
-
-  const filterButtons = [
-    { key: "all", label: "Tutti" },
-    { key: "ongoing", label: "In corso" },
-    { key: "to_complete", label: "Da completare" },
-    { key: "completed", label: "Completati" },
-    { key: "short", label: "Serie brevi" },
-    { key: "oneshot", label: "One-shot" },
-  ];
-
-  /* ==================== MOBILE ==================== */
-
-  if (isMobile) {
+  if (errore) {
     return (
-      <MobileHomeView
-        manga={mangaList}
-        filteredManga={filteredSearch}
-        filter={activeFilter}
-        setFilter={setActiveFilter}
-      />
+      <Pagina titolo="Lo scaffale">
+        <Errore errore={errore} riprova={ricarica} />
+      </Pagina>
     );
   }
 
-  /* ==================== DESKTOP ==================== */
+  if (inCorso && !serie.length) {
+    return (
+      <Pagina titolo="Lo scaffale" occhiello="MangaVault">
+        <CaricamentoGriglia quante={12} />
+      </Pagina>
+    );
+  }
 
   return (
-    <div
-      className="min-h-screen text-white relative overflow-hidden"
-      style={{
-        background:
-          "linear-gradient(180deg, rgb(8, 11, 22), rgb(10, 12, 24) 30%, rgb(8, 10, 18) 100%)",
-      }}
+    <Pagina
+      occhiello="MangaVault"
+      titolo="Lo scaffale"
+      sommario="Quello che stai leggendo, quello che ti manca, quello che è arrivato per ultimo."
+      azioni={
+        <Link to="/collezione">
+          <Bottone variante="secondario">Sfoglia tutto</Bottone>
+        </Link>
+      }
     >
-      {/* AMBIENT LIGHTS */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-[-80px] left-[180px] w-[420px] h-[420px] rounded-full bg-blue-500/15 blur-[130px]" />
-        <div className="absolute top-[180px] right-[120px] w-[420px] h-[420px] rounded-full bg-violet-500/12 blur-[140px]" />
-        <div className="absolute bottom-[-120px] left-[35%] w-[420px] h-[420px] rounded-full bg-indigo-500/10 blur-[130px]" />
-      </div>
+      <div className="space-y-14">
+        {/* ---------- I quattro numeri ---------- */}
+        <dl className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <Numero etichetta="Serie" valore={numeroIt(riepilogo.serie)} />
+          <Numero etichetta="Volumi in casa" valore={numeroIt(riepilogo.volumi)} />
+          <Numero etichetta="Valore" valore={euro(riepilogo.valore)} />
+          <Numero
+            etichetta="Serie complete"
+            valore={numeroIt(riepilogo.complete)}
+            nota={`su ${numeroIt(riepilogo.serie)}`}
+          />
+        </dl>
 
-      {/* SIDEBAR */}
-      <div
-        className="fixed left-0 top-0 h-screen transition-all duration-300 z-20"
-        style={{
-          width: openSidebar ? sidebarOpenWidth : sidebarClosedWidth,
-        }}
-      >
-        <Sidebar open={openSidebar} />
-      </div>
+        {/* ---------- L'ingresso ---------- */}
+        <IngressoBiblioteca serie={riepilogo.serie} volumi={riepilogo.volumi} />
 
-      {/* MAIN */}
-      <div
-        style={{
-          marginLeft: openSidebar ? sidebarOpenWidth : sidebarClosedWidth,
-        }}
-        className="relative z-10 px-10 py-6 space-y-8 transition-all duration-300"
-      >
-        <TopHero manga={mangaList} onSelect={setSelectedManga} />
-
-        {/* HEADER */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">La Mia Collezione</h2>
-
-          <div className="flex items-center gap-4">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cerca titolo, autore..."
-              className="px-5 py-2.5 w-56 rounded-full bg-[rgba(24,30,56,0.42)] border border-white/10 text-sm placeholder:text-zinc-500 outline-none focus:w-64 focus:border-yellow-400 transition-all duration-300 hover:border-white/20"
-            />
-
-            <div className="relative">
-              <button
-                onClick={() => setOpenMenu((p) => !p)}
-                className="w-10 h-10 rounded-xl bg-[rgba(24,30,56,0.42)] border border-white/10 hover:border-yellow-400 transition"
+        {/* ---------- Riprendi ---------- */}
+        {inLettura.length > 0 && (
+          <Sezione
+            titolo="Riprendi da qui"
+            extra={
+              <Link
+                to="/lettura"
+                className="text-sm font-medium text-brass-400 transition-opacity hover:opacity-80"
               >
-                ☰
-              </button>
-
-              {openMenu && (
-                <div className="absolute right-0 mt-2 w-44 rounded-xl border border-white/10 shadow-xl z-50 bg-[rgba(20,26,52,0.92)] backdrop-blur-xl">
-                  <button
-                    onClick={() => {
-                      setAdminMode(true);
-                      setRecordsMode(false);
-                      setOpenMenu(false);
-                    }}
-                    className="w-full px-4 py-3 text-left hover:bg-white/10"
-                  >
-                    Admin
-                  </button>
-                </div>
-              )}
+                Tutte le letture →
+              </Link>
+            }
+          >
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {inLettura.map((s) => (
+                <CartaLettura key={s.id} serie={s} />
+              ))}
             </div>
-          </div>
+          </Sezione>
+        )}
+
+        {/* ---------- Da completare ---------- */}
+        <Sezione
+          titolo="A un passo dalla fine"
+          extra={
+            <Link
+              to="/collezione?filtro=da-completare"
+              className="text-sm font-medium text-brass-400 transition-opacity hover:opacity-80"
+            >
+              Vedi tutte →
+            </Link>
+          }
+        >
+          {daCompletare.length ? (
+            <FasciaCopertine serie={daCompletare} />
+          ) : (
+            <Vuoto
+              titolo="Nessun buco nello scaffale"
+              testo="Tutte le serie che hai iniziato sono complete. Complimenti, è più raro di quanto sembri."
+            />
+          )}
+        </Sezione>
+
+        {/* ---------- Ultimi arrivi ---------- */}
+        {aggiunteDiRecente.length > 0 && (
+          <Sezione titolo="Ultimi arrivi">
+            <FasciaCopertine serie={aggiunteDiRecente} />
+          </Sezione>
+        )}
+      </div>
+    </Pagina>
+  );
+}
+
+/* ==================================================
+   PEZZI DELLA PAGINA
+   ================================================== */
+
+/**
+ * La porta della biblioteca.
+ *
+ * Non un bottone in mezzo agli altri: una fascia larga che si comporta
+ * come una soglia. Al passaggio del mouse la luce dietro si allarga e
+ * i battenti si socchiudono — l'invito a entrare deve arrivare prima
+ * di aver letto la scritta.
+ */
+function IngressoBiblioteca({ serie, volumi }) {
+  return (
+    <Link
+      to="/biblioteca"
+      className="group relative block overflow-hidden rounded-panel border border-hairline bg-glass-1 px-6 py-8 backdrop-blur-xl
+                 transition-all duration-slow ease-settle hover:border-brass-400/30
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-4 focus-visible:ring-offset-shelf
+                 sm:px-10 sm:py-10"
+    >
+      {/* La luce che filtra dalla soglia */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brass-400/[0.07] blur-[90px]
+                   transition-all duration-slow ease-settle group-hover:h-[28rem] group-hover:w-[28rem] group-hover:bg-brass-400/[0.13]"
+      />
+
+      {/* I due battenti: si scostano di poco, quanto basta a leggerlo
+          come un'apertura invece che come un'animazione */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 left-0 w-1/2 border-r border-hairline bg-gradient-to-r from-void/50 to-transparent
+                   transition-transform duration-slow ease-settle group-hover:-translate-x-3"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 right-0 w-1/2 border-l border-hairline bg-gradient-to-l from-void/50 to-transparent
+                   transition-transform duration-slow ease-settle group-hover:translate-x-3"
+      />
+
+      <div className="relative flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-brass-500/80">
+            Novità
+          </p>
+
+          <h2 className="mt-2 font-display text-2xl font-semibold text-ink-bright sm:text-3xl">
+            Entra nella biblioteca
+          </h2>
+
+          <p className="mt-2 max-w-md text-sm text-ink-muted">
+            {numeroIt(serie)} serie e {numeroIt(volumi)} volumi disposti su
+            scaffali veri, dove lo spessore di ogni libro è quanto ne possiedi.
+          </p>
         </div>
 
-        {/* FILTRI */}
-        <div className="flex flex-wrap items-center gap-2">
-          {filterButtons.map((f) => {
-            const active = activeFilter === f.key;
+        <span className="inline-flex items-center gap-2 rounded-card border border-soft bg-glass-2 px-5 py-2.5 text-sm font-semibold text-ink-bright transition-all duration-base group-hover:border-brass-400/40 group-hover:bg-brass-400/10 group-hover:text-brass-300">
+          Apri la porta
+          <span className="transition-transform duration-base ease-spring group-hover:translate-x-1">
+            →
+          </span>
+        </span>
+      </div>
+    </Link>
+  );
+}
 
-            return (
-              <button
-                key={f.key}
-                onClick={() => setActiveFilter(f.key)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 ${
-                  active
-                    ? "bg-yellow-400 text-black border-yellow-400"
-                    : "bg-[rgba(24,30,56,0.42)] text-zinc-300 border-white/10 hover:bg-[rgba(32,40,72,0.52)] hover:text-white"
-                }`}
-              >
-                {f.label}
-              </button>
-            );
-          })}
-        </div>
+function Numero({ etichetta, valore, nota }) {
+  return (
+    <div className="rounded-panel border border-hairline bg-glass-1 px-5 py-4 backdrop-blur-xl transition-colors duration-base hover:border-soft">
+      <dt className="text-xs font-medium uppercase tracking-wider text-ink-muted">
+        {etichetta}
+      </dt>
 
-        {/* GRID */}
-        <MangaGrid
-          searchResults={filteredSearch}
-          filter={activeFilter === "all" ? undefined : activeFilter}
-        />
+      <dd className="mt-1.5 font-numeric text-2xl font-semibold text-ink-bright sm:text-3xl">
+        {valore}
+        {nota && <span className="ml-2 text-sm font-normal text-ink-faint">{nota}</span>}
+      </dd>
+    </div>
+  );
+}
+
+/**
+ * La carta di una lettura in corso: sviluppata in orizzontale perché
+ * qui conta il volume a cui sei arrivato, non la copertina.
+ */
+function CartaLettura({ serie }) {
+  const pct = completamento(serie);
+
+  return (
+    <Link
+      to={`/serie/${serie.id}`}
+      className="group flex gap-4 rounded-panel border border-hairline bg-glass-1 p-3 backdrop-blur-xl
+                 transition-all duration-base ease-settle hover:-translate-y-0.5 hover:border-soft hover:bg-glass-2
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+    >
+      <div className="w-20 shrink-0">
+        <Copertina src={serie.copertina} alt={serie.titolo} />
       </div>
 
-      {/* MODALS */}
-      {selectedManga && (
-        <MangaDetail
-          manga={selectedManga}
-          onClose={() => setSelectedManga(null)}
-        />
-      )}
+      <div className="flex min-w-0 flex-col justify-center gap-2">
+        <h3 className="line-clamp-2 text-sm font-medium leading-snug text-ink-bright transition-colors group-hover:text-brass-300">
+          {serie.titolo}
+        </h3>
 
-      {showFavorites && (
-        <FavoritesModal onClose={() => setShowFavorites(false)} />
-      )}
+        <p className="font-numeric text-xs text-ink-muted">
+          Volume {serie.volumeCorrente}
+          {serie.totali ? ` di ${serie.totali}` : ""}
+        </p>
 
-      {showHistory && (
-        <HistoryModal onClose={() => setShowHistory(false)} />
-      )}
+        <Progresso valore={pct} sottile />
+      </div>
+    </Link>
+  );
+}
 
-      {showWishlist && (
-        <WishlistList onClose={() => setShowWishlist(false)} />
-      )}
+/**
+ * Fascia orizzontale di copertine.
+ *
+ * Scorre lateralmente invece di andare a capo: una fascia deve
+ * restare alta una riga, altrimenti la pagina diventa un elenco
+ * infinito e si perde il colpo d'occhio. Il bordo sfumato a destra
+ * suggerisce che c'è dell'altro oltre il bordo dello schermo.
+ */
+function FasciaCopertine({ serie }) {
+  return (
+    <div className="relative -mx-5 sm:-mx-8 lg:-mx-12">
+      <div className="no-scrollbar flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-2 sm:px-8 lg:px-12">
+        {serie.map((s) => (
+          <div key={s.id} className="w-36 shrink-0 snap-start sm:w-40">
+            <CartaSerie serie={s} />
+          </div>
+        ))}
+      </div>
 
-      {showRecords && (
-        <RecordsModal onClose={() => setShowRecords(false)} />
-      )}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 right-0 hidden w-16 bg-gradient-to-l from-shelf to-transparent lg:block"
+      />
     </div>
   );
 }

@@ -1,261 +1,507 @@
-import { useEffect, useState } from "react";
-import { getManga } from "../services/api";
+import { useMemo, useState } from "react";
+import Pagina from "../ui/Pagina";
+import Copertina from "../ui/Copertina";
+import { Bottone, CampoRicerca } from "../ui/Controlli";
+import { Errore } from "../ui/Stati";
+import { useCollezione } from "../dati/collezione";
+import {
+  clearToken,
+  enrichManga,
+  getToken,
+  login as accedi,
+  updateManga
+} from "../services/api";
+import { ETICHETTE_STATO } from "../dati/serie";
 
+/**
+ * Gestione: dove si correggono le schede.
+ *
+ * Rispetto a prima cambiano tre cose che contavano davvero.
+ * Il modulo di accesso è un `form` vero, quindi Invio funziona e il
+ * gestore delle password riconosce i campi. Le chiamate passano dal
+ * layer API, che allega il token e ripulisce da solo quando scade —
+ * prima l'indirizzo del server era scritto a mano in tre punti. E gli
+ * esiti compaiono nella pagina invece che in una finestra `alert`,
+ * che blocca tutto e sparisce senza lasciare traccia.
+ */
 export default function AdminPage() {
+  const [autenticato, setAutenticato] = useState(() => Boolean(getToken()));
 
-  const [mangaList, setMangaList] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem("token"));
-  const [loading, setLoading] = useState(false);
-
-  async function loadManga() {
-    const data = await getManga();
-    setMangaList(
-  (data || []).sort((a, b) =>
-    (a.Titolo || "").localeCompare(b.Titolo || "")
-  )
-);
-    return data;
+  if (!autenticato) {
+    return <Accesso onEntrato={() => setAutenticato(true)} />;
   }
 
-  useEffect(() => {
-    loadManga();
-  }, []);
+  return <Redazione onEsci={() => setAutenticato(false)} />;
+}
 
-  function logout() {
-    localStorage.removeItem("token");
-    window.location.href = "/";
-  }
+/* ==================================================
+   ACCESSO
+   ================================================== */
 
-  async function login(user, pass) {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/manga/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: user, password: pass })
-    });
+function Accesso({ onEntrato }) {
+  const [utente, setUtente] = useState("");
+  const [password, setPassword] = useState("");
+  const [errore, setErrore] = useState(null);
+  const [inCorso, setInCorso] = useState(false);
 
-    const data = await res.json();
+  async function invia(e) {
+    e.preventDefault();
 
-    if (data.token) {
-      localStorage.setItem("token", data.token);
-      setToken(data.token);
-    } else {
-      alert("Login fallito");
+    setInCorso(true);
+    setErrore(null);
+
+    try {
+      const esito = await accedi(utente, password);
+
+      if (esito?.token) {
+        onEntrato();
+      } else {
+        setErrore("Credenziali non valide.");
+      }
+    } catch (e2) {
+      setErrore(
+        e2?.status === 401 ? "Credenziali non valide." : "Il server non risponde."
+      );
+    } finally {
+      setInCorso(false);
     }
   }
 
-  async function enrichManga() {
-    if (!selected) return;
-
-    setLoading(true);
-
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/manga/enrich`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          titolo: selected.Titolo,
-          autore: selected.Autore
-        })
-      }
-    );
-
-    const data = await res.json();
-
-    setSelected(prev => ({
-      ...prev,
-      Trama: data.trama || prev.Trama,
-      CoverURL: data.coverurl || prev.CoverURL,
-      VolumiTotali: data.volumitotali || prev.VolumiTotali
-    }));
-
-    setLoading(false);
-  }
-
-  async function saveChanges() {
-    if (!selected || !token) return alert("Rifai login");
-
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/manga/${selected.ID}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          coverurl: selected.CoverURL,
-          trama: selected.Trama,
-          volumiposseduti: selected.VolumiPosseduti || 0,
-          volumitotali: selected.VolumiTotali || 0
-        })
-      }
-    );
-
-    if (!res.ok) return alert("Errore salvataggio");
-
-    alert("Salvato ✅");
-
-    const updatedList = await loadManga();
-    const updated = updatedList.find(m => m.ID === selected.ID);
-    if (updated) setSelected(updated);
-  }
-
-  // ✅ LOGIN UI
-  if (!token) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-black text-white">
-        <div className="bg-zinc-900 p-8 rounded-xl space-y-4 w-80 text-center">
-
-          <h2 className="text-xl font-bold">Login Admin</h2>
-
-          <input id="u" placeholder="Username" className="w-full p-2 bg-zinc-800 rounded" />
-          <input id="p" type="password" placeholder="Password" className="w-full p-2 bg-zinc-800 rounded" />
-
-          <button
-            onClick={() => login(u.value, p.value)}
-            className="w-full bg-yellow-500 text-black py-2 rounded-lg"
-          >
-            Login
-          </button>
-
-        </div>
-      </div>
-    );
-  }
-
-  // ✅ ADMIN UI
   return (
-    <div className="flex h-screen bg-[#0b0b0f] text-white">
-
-      {/* SIDEBAR */}
-      <div className="w-72 bg-black/60 border-r border-zinc-800 overflow-y-auto">
-
-        <div className="p-4 flex justify-between">
-          <span className="font-bold">Admin</span>
-          <button onClick={logout} className="text-red-400 text-sm">
-            Logout
-          </button>
+    <div className="grid min-h-dvh place-items-center px-5">
+      <form
+        onSubmit={invia}
+        className="w-full max-w-sm space-y-5 rounded-panel border border-hairline bg-glass-2 p-8 backdrop-blur-xl animate-rise-in"
+      >
+        <div>
+          <h1 className="font-display text-2xl font-semibold text-ink-bright">Gestione</h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            Serve l'accesso per modificare le schede.
+          </p>
         </div>
 
-        {mangaList.map(m => (
-          <div
-            key={m.ID}
-            onClick={() => setSelected(m)}
-            className={`
-              p-3 border-b border-zinc-800 cursor-pointer
-              hover:bg-zinc-900
-              ${selected?.ID === m.ID ? "bg-zinc-800" : ""}
-            `}
-          >
-            {m.Titolo}
-          </div>
-        ))}
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted">
+            Utente
+          </span>
 
-      </div>
+          <input
+            value={utente}
+            onChange={(e) => setUtente(e.target.value)}
+            autoComplete="username"
+            required
+            autoFocus
+            className="w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
+          />
+        </label>
 
-      {/* CONTENT */}
-      <div className="flex-1 p-8">
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted">
+            Password
+          </span>
 
-        {!selected ? (
-          <div className="text-zinc-400">Seleziona un manga</div>
-        ) : (
-          <>
-            <div className="flex gap-8">
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            required
+            className="w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
+          />
+        </label>
 
-              {/* COVER */}
-              {selected.CoverURL && (
-                <img
-                  src={selected.CoverURL}
-                  className="w-64 h-[380px] object-cover rounded-xl"
-                />
-              )}
-
-              {/* FORM */}
-              <div className="flex-1 space-y-4">
-
-                <input
-                  value={selected.Titolo || ""}
-                  disabled
-                  className="w-full p-3 bg-zinc-800 rounded-xl text-zinc-400"
-                />
-
-                <input
-  value={selected.Autore || ""}
-  onChange={e =>
-    setSelected({ ...selected, Autore: e.target.value })
-  }
-  className="w-full p-3 bg-zinc-900 rounded-xl"
-/>
-
-<input
-  value={selected.CoverURL || ""}
-  onChange={e =>
-    setSelected({ ...selected, CoverURL: e.target.value })
-  }
-  placeholder="URL Cover"
-  className="w-full p-3 bg-zinc-900 rounded-xl"
-/>
-
-
-                <textarea
-                  value={selected.Trama || ""}
-                  onChange={e =>
-                    setSelected({ ...selected, Trama: e.target.value })
-                  }
-                  className="w-full p-3 bg-zinc-900 rounded-xl h-40"
-                />
-
-                {/* ✅ CURRENT READING */}
-                <div className="bg-zinc-900 p-4 rounded-xl">
-                  <p className="text-xs text-zinc-400 mb-2">
-                    Imposta lettura corrente
-                  </p>
-
-                  <input
-                    type="number"
-                    placeholder="Volume corrente"
-                    className="w-full p-2 bg-black rounded-lg"
-                    onChange={(e) => {
-                      localStorage.setItem(
-                        "mv_selected_manga",
-                        JSON.stringify(selected)
-                      );
-                      localStorage.setItem(
-                        "mv_current_vol",
-                        e.target.value
-                      );
-                    }}
-                  />
-                </div>
-
-              </div>
-            </div>
-
-            {/* BUTTONS */}
-            <div className="flex gap-4 mt-6">
-
-              <button
-                onClick={saveChanges}
-                className="bg-green-600 px-6 py-3 rounded-xl"
-              >
-                Salva
-              </button>
-
-              <button
-                onClick={enrichManga}
-                className="bg-blue-600 px-6 py-3 rounded-xl"
-              >
-                {loading ? "..." : "Auto Enrich"}
-              </button>
-
-            </div>
-          </>
+        {errore && (
+          <p role="alert" className="text-sm text-ember">
+            {errore}
+          </p>
         )}
 
+        <Bottone type="submit" disabled={inCorso} className="w-full">
+          {inCorso ? "Verifico…" : "Entra"}
+        </Bottone>
+      </form>
+    </div>
+  );
+}
+
+/* ==================================================
+   REDAZIONE
+   ================================================== */
+
+function Redazione({ onEsci }) {
+  const { serie, inCorso, errore, ricarica, aggiornaLocale } = useCollezione();
+
+  const [selezionataId, setSelezionataId] = useState(null);
+  const [ricercaTesto, setRicerca] = useState("");
+
+  const ordinate = useMemo(
+    () => [...serie].sort((a, b) => a.titolo.localeCompare(b.titolo, "it")),
+    [serie]
+  );
+
+  const visibili = useMemo(() => {
+    const testo = ricercaTesto.trim().toLowerCase();
+
+    if (!testo) return ordinate;
+
+    return ordinate.filter((s) =>
+      `${s.titolo} ${s.autore || ""}`.toLowerCase().includes(testo)
+    );
+  }, [ordinate, ricercaTesto]);
+
+  const selezionata = serie.find((s) => s.id === selezionataId) || null;
+
+  function esci() {
+    clearToken();
+    onEsci();
+  }
+
+  if (errore) {
+    return (
+      <Pagina titolo="Gestione">
+        <Errore errore={errore} riprova={ricarica} />
+      </Pagina>
+    );
+  }
+
+  return (
+    <Pagina
+      occhiello="Amministrazione"
+      titolo="Gestione"
+      sommario="Correggi le schede della collezione."
+      azioni={
+        <Bottone variante="fantasma" onClick={esci}>
+          Esci
+        </Bottone>
+      }
+    >
+      <div className="grid gap-8 lg:grid-cols-[22rem_1fr]">
+        {/* ---------- Elenco ---------- */}
+        <div className="space-y-4">
+          <CampoRicerca
+            valore={ricercaTesto}
+            onCambia={setRicerca}
+            segnaposto="Filtra le schede…"
+            risultati={visibili.length}
+          />
+
+          <div className="panel-scrollbar max-h-[32rem] overflow-y-auto rounded-panel border border-hairline bg-glass-1 backdrop-blur-xl lg:max-h-[calc(100dvh-16rem)]">
+            {inCorso && !serie.length ? (
+              <p className="px-4 py-6 text-sm text-ink-muted">Carico le schede…</p>
+            ) : (
+              <ul>
+                {visibili.map((s) => (
+                  <li key={s.id}>
+                    <button
+                      onClick={() => setSelezionataId(s.id)}
+                      aria-current={s.id === selezionataId ? "true" : undefined}
+                      className={`flex w-full items-center gap-3 border-b border-hairline px-4 py-3 text-left transition-colors duration-quick last:border-b-0 ${
+                        s.id === selezionataId
+                          ? "bg-brass-400/10 text-brass-300"
+                          : "text-ink hover:bg-glass-2 hover:text-ink-bright"
+                      }`}
+                    >
+                      <span className="min-w-0 flex-1 truncate text-sm">{s.titolo}</span>
+
+                      {/* Il pallino segnala le schede da finire: così
+                          si vede da qui dove c'è lavoro da fare. */}
+                      {(!s.trama || !s.editore || !s.totali) && (
+                        <span
+                          title="Scheda incompleta"
+                          className="h-1.5 w-1.5 shrink-0 rounded-full bg-brass-500"
+                        />
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* ---------- Scheda ---------- */}
+        {selezionata ? (
+          <Scheda
+            key={selezionata.id}
+            serie={selezionata}
+            onSalvata={(modifiche) => {
+              aggiornaLocale(selezionata.id, modifiche);
+              ricarica();
+            }}
+          />
+        ) : (
+          <div className="grid place-items-center rounded-panel border border-dashed border-soft bg-glass-1 p-12 text-center">
+            <p className="text-sm text-ink-muted">
+              Scegli una scheda dall'elenco per modificarla.
+            </p>
+          </div>
+        )}
+      </div>
+    </Pagina>
+  );
+}
+
+/* ==================================================
+   MODULO DI UNA SCHEDA
+   ================================================== */
+
+// I nomi che il server si aspetta nel corpo della richiesta. Non
+// coincidono né con le colonne del database né con i nomi puliti che
+// usa il resto del sito, quindi la traduzione sta qui, in un punto solo.
+function corpoDaCampi(campi) {
+  return {
+    titolo: campi.titolo,
+    autore: campi.autore,
+    disegnatore: campi.disegnatore,
+    editore: campi.editore,
+    genere: campi.genere,
+    coverurl: campi.coverurl,
+    trama: campi.trama,
+    costo: campi.costo === "" ? null : Number(campi.costo),
+    volumiposseduti: campi.volumiposseduti === "" ? null : Number(campi.volumiposseduti),
+    volumitotali: campi.volumitotali === "" ? null : Number(campi.volumitotali),
+    valutazione: campi.valutazione === "" ? null : Number(campi.valutazione),
+    statoSerie: campi.statoSerie || null,
+    preferito: campi.preferito
+  };
+}
+
+function Scheda({ serie, onSalvata }) {
+  const [campi, setCampi] = useState(() => ({
+    titolo: serie.titolo || "",
+    autore: serie.autore || "",
+    disegnatore: serie.disegnatore || "",
+    editore: serie.editore || "",
+    genere: serie.generi.join(", "),
+    coverurl: serie.copertina || "",
+    trama: serie.trama || "",
+    costo: serie.costo ?? "",
+    volumiposseduti: serie.posseduti ?? "",
+    volumitotali: serie.totali ?? "",
+    valutazione: serie.valutazione ?? "",
+    statoSerie: serie.stato || "",
+    preferito: serie.preferito
+  }));
+
+  const [stato, setStato] = useState(null); // { tipo, testo }
+  const [salvando, setSalvando] = useState(false);
+  const [compilando, setCompilando] = useState(false);
+
+  const cambia = (chiave) => (e) =>
+    setCampi((precedenti) => ({
+      ...precedenti,
+      [chiave]: e.target.type === "checkbox" ? e.target.checked : e.target.value
+    }));
+
+  async function salva(e) {
+    e.preventDefault();
+
+    setSalvando(true);
+    setStato(null);
+
+    try {
+      await updateManga(serie.id, corpoDaCampi(campi));
+
+      setStato({ tipo: "ok", testo: "Salvato." });
+
+      onSalvata({
+        titolo: campi.titolo,
+        autore: campi.autore || null,
+        copertina: campi.coverurl || null,
+        trama: campi.trama || null
+      });
+    } catch (e2) {
+      setStato({
+        tipo: "errore",
+        testo:
+          e2?.status === 401 || e2?.status === 403
+            ? "Sessione scaduta: rientra dalla pagina Gestione."
+            : e2?.message || "Salvataggio non riuscito."
+      });
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  /** Ricompila i campi vuoti dalle fonti esterne, senza toccare gli altri. */
+  async function compila() {
+    setCompilando(true);
+    setStato(null);
+
+    try {
+      const dati = await enrichManga(campi.titolo, campi.autore);
+
+      if (dati?.error) {
+        setStato({ tipo: "errore", testo: "Nessun risultato dalle fonti esterne." });
+      } else {
+        setCampi((p) => ({
+          ...p,
+          autore: p.autore || dati.autore || "",
+          disegnatore: p.disegnatore || dati.disegnatore || "",
+          editore: p.editore || dati.editore || "",
+          genere: p.genere || dati.genere || "",
+          coverurl: p.coverurl || dati.coverurl || "",
+          trama: p.trama || dati.trama || "",
+          volumitotali: p.volumitotali || dati.volumitotali || "",
+          statoSerie: p.statoSerie || dati.statoSerie || ""
+        }));
+
+        setStato({
+          tipo: "ok",
+          testo: "Campi vuoti compilati. Controlla e salva."
+        });
+      }
+    } catch {
+      setStato({ tipo: "errore", testo: "Il servizio di ricerca non ha risposto." });
+    } finally {
+      setCompilando(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={salva}
+      className="space-y-6 rounded-panel border border-hairline bg-glass-1 p-6 backdrop-blur-xl"
+    >
+      <div className="flex flex-wrap gap-6">
+        <div className="w-32 shrink-0">
+          <Copertina src={campi.coverurl} alt={campi.titolo} inclina={false} />
+        </div>
+
+        <div className="grid min-w-0 flex-1 gap-4 sm:grid-cols-2">
+          <CampoTesto etichetta="Titolo" valore={campi.titolo} onChange={cambia("titolo")} required />
+          <CampoTesto etichetta="Autore" valore={campi.autore} onChange={cambia("autore")} />
+          <CampoTesto etichetta="Disegnatore" valore={campi.disegnatore} onChange={cambia("disegnatore")} />
+          <CampoTesto etichetta="Editore" valore={campi.editore} onChange={cambia("editore")} />
+          <CampoTesto
+            etichetta="Generi"
+            valore={campi.genere}
+            onChange={cambia("genere")}
+            className="sm:col-span-2"
+          />
+          <CampoTesto
+            etichetta="URL copertina"
+            valore={campi.coverurl}
+            onChange={cambia("coverurl")}
+            className="sm:col-span-2"
+          />
+        </div>
       </div>
 
-    </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <CampoTesto
+          etichetta="Volumi posseduti"
+          tipo="number"
+          min="0"
+          valore={campi.volumiposseduti}
+          onChange={cambia("volumiposseduti")}
+        />
+        <CampoTesto
+          etichetta="Volumi totali"
+          tipo="number"
+          min="0"
+          valore={campi.volumitotali}
+          onChange={cambia("volumitotali")}
+        />
+        <CampoTesto
+          etichetta="Prezzo al volume"
+          tipo="number"
+          step="0.01"
+          min="0"
+          valore={campi.costo}
+          onChange={cambia("costo")}
+        />
+        <CampoTesto
+          etichetta="Voto"
+          tipo="number"
+          step="0.1"
+          min="0"
+          max="10"
+          valore={campi.valutazione}
+          onChange={cambia("valutazione")}
+        />
+      </div>
+
+      <div className="flex flex-wrap items-end gap-6">
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted">
+            Stato serie
+          </span>
+
+          <select
+            value={campi.statoSerie}
+            onChange={cambia("statoSerie")}
+            className="rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
+          >
+            <option value="" className="bg-alcove">Non impostato</option>
+            {Object.entries(ETICHETTE_STATO).map(([valore, etichetta]) => (
+              <option key={valore} value={valore} className="bg-alcove">
+                {etichetta}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="flex cursor-pointer items-center gap-2.5 pb-2.5 text-sm text-ink">
+          <input
+            type="checkbox"
+            checked={campi.preferito}
+            onChange={cambia("preferito")}
+            className="h-4 w-4 accent-brass-400"
+          />
+          Preferito
+        </label>
+      </div>
+
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted">
+          Trama
+        </span>
+
+        <textarea
+          value={campi.trama}
+          onChange={cambia("trama")}
+          rows={7}
+          className="w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm leading-relaxed text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
+        />
+      </label>
+
+      {stato && (
+        <p
+          role="status"
+          className={`text-sm ${stato.tipo === "ok" ? "text-jade" : "text-ember"}`}
+        >
+          {stato.testo}
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Bottone type="submit" disabled={salvando}>
+          {salvando ? "Salvo…" : "Salva"}
+        </Bottone>
+
+        <Bottone type="button" variante="secondario" onClick={compila} disabled={compilando}>
+          {compilando ? "Cerco…" : "Compila i campi vuoti"}
+        </Bottone>
+      </div>
+    </form>
+  );
+}
+
+function CampoTesto({ etichetta, tipo = "text", valore, onChange, className = "", ...resto }) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted">
+        {etichetta}
+      </span>
+
+      <input
+        type={tipo}
+        value={valore ?? ""}
+        onChange={onChange}
+        className="w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
+        {...resto}
+      />
+    </label>
   );
 }
