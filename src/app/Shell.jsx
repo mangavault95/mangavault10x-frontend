@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { SEZIONI, SEZIONE_ADMIN, eAttiva, titoloPer } from "./navigation";
 import Icon from "./Icon";
+import Bibliotecario from "../bibliotecario/Bibliotecario";
 
 /**
  * La cornice fissa attorno a ogni pagina.
@@ -104,6 +105,10 @@ export default function Shell({ children }) {
       >
         {children}
       </main>
+
+      {/* Il banco sta fuori dal contenuto: si raggiunge da ogni pagina,
+          e restando qui non si smonta a ogni cambio di rotta. */}
+      <Bibliotecario />
 
       {/* ---------- Barra inferiore (solo mobile) ---------- */}
       <nav
