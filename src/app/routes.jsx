@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Shell from "./Shell";
 import RouteFallback from "./RouteFallback";
 import { CollezioneProvider } from "../dati/CollezioneContext";
+import { AccessoProvider } from "../dati/AccessoProvider";
 
 // Ogni pagina è un chunk separato: la prima apertura scarica solo
 // quello che serve invece dell'intera applicazione.
@@ -35,31 +36,36 @@ export default function AppRoutes() {
     // le 188 schede si scaricano una volta per visita invece che a
     // ogni passaggio fra Scaffale, Collezione e Numeri.
     <CollezioneProvider>
-      <Shell>
-        <Suspense fallback={<RouteFallback />}>
-          {/* La location come key fa ripartire l'animazione di entrata
-              a ogni cambio pagina, dando continuità spaziale. */}
-          <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<Home />} />
-            <Route path="/collezione" element={<Collezione />} />
-            <Route path="/biblioteca" element={<BibliotecaTre />} />
-            <Route path="/serie/:id" element={<Serie />} />
-            <Route path="/wishlist" element={<Wishlist />} />
-            <Route path="/lettura" element={<Lettura />} />
-            <Route path="/statistiche" element={<Statistiche />} />
-            <Route path="/admin" element={<Admin />} />
+      {/* L'accesso protetto sta sopra le rotte quanto la collezione:
+          un preferito segnato dallo Scaffale e uno dalla Collezione
+          devono aprire lo stesso modulo, non uno per pagina. */}
+      <AccessoProvider>
+        <Shell>
+          <Suspense fallback={<RouteFallback />}>
+            {/* La location come key fa ripartire l'animazione di entrata
+                a ogni cambio pagina, dando continuità spaziale. */}
+            <Routes location={location} key={location.pathname}>
+              <Route path="/" element={<Home />} />
+              <Route path="/collezione" element={<Collezione />} />
+              <Route path="/biblioteca" element={<BibliotecaTre />} />
+              <Route path="/serie/:id" element={<Serie />} />
+              <Route path="/wishlist" element={<Wishlist />} />
+              <Route path="/lettura" element={<Lettura />} />
+              <Route path="/statistiche" element={<Statistiche />} />
+              <Route path="/admin" element={<Admin />} />
 
-            {/* Vecchi indirizzi mantenuti funzionanti */}
-            <Route path="/records" element={<Navigate to="/statistiche" replace />} />
-            <Route
-              path="/preferiti"
-              element={<Navigate to="/collezione?filtro=preferiti" replace />}
-            />
+              {/* Vecchi indirizzi mantenuti funzionanti */}
+              <Route path="/records" element={<Navigate to="/statistiche" replace />} />
+              <Route
+                path="/preferiti"
+                element={<Navigate to="/collezione?filtro=preferiti" replace />}
+              />
 
-            <Route path="*" element={<NonTrovata />} />
-          </Routes>
-        </Suspense>
-      </Shell>
+              <Route path="*" element={<NonTrovata />} />
+            </Routes>
+          </Suspense>
+        </Shell>
+      </AccessoProvider>
     </CollezioneProvider>
   );
 }

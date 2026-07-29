@@ -24,7 +24,7 @@ const TRACCIATI = {
   porta: "M4 20h6V4l10 2v13l-10 2V4M13 12h.01"
 };
 
-export default function Icon({ nome, dimensione = 20, className = "", ...resto }) {
+export default function Icon({ nome, dimensione = 20, className = "", piena = false, ...resto }) {
   const d = TRACCIATI[nome];
 
   if (!d) return null;
@@ -34,7 +34,10 @@ export default function Icon({ nome, dimensione = 20, className = "", ...resto }
       width={dimensione}
       height={dimensione}
       viewBox="0 0 24 24"
-      fill="none"
+      // Piena serve per gli stati attivi (preferito segnato, stella
+      // votata): un contorno che si limita a cambiare colore si nota
+      // meno del passaggio da vuoto a pieno.
+      fill={piena ? "currentColor" : "none"}
       stroke="currentColor"
       strokeWidth="1.6"
       strokeLinecap="round"

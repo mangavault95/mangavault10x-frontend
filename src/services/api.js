@@ -106,6 +106,11 @@ export const getStatistiche = () => request("/api/manga/statistiche");
 export const updateManga = (id, data) =>
   request(`/api/manga/${id}`, { method: "PUT", body: data, auth: true });
 
+// Una serie nuova, direttamente in collezione — non nella wishlist.
+// Serve solo il titolo; il resto è come per updateManga.
+export const creaManga = (data) =>
+  request("/api/manga", { method: "POST", body: data, auth: true });
+
 export const updateRating = (id, rating) =>
   request("/api/manga/updateRating", {
     method: "POST",
@@ -172,7 +177,8 @@ export const deleteReadingSession = (mangaId) =>
    MERCATO
    ================================================== */
 
-export const getMarketPrice = (query, months = 3) =>
-  request(
-    `/api/marketplace/avg-price?query=${encodeURIComponent(query)}&months=${months}`
-  );
+// Niente parametro "months": la Browse API di eBay vede solo gli
+// annunci attivi, non le vendite passate, quindi non esiste una
+// finestra temporale da chiedere.
+export const getMarketPrice = (query) =>
+  request(`/api/marketplace/avg-price?query=${encodeURIComponent(query)}`);

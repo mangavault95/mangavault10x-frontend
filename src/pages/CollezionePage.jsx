@@ -1,11 +1,13 @@
-import { useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Fuse from "fuse.js";
 import Pagina from "../ui/Pagina";
 import { GrigliaSerie } from "../ui/CartaSerie";
 import { CaricamentoGriglia, Errore, Vuoto } from "../ui/Stati";
 import { CampoRicerca, Pastiglie, Tendina, Bottone } from "../ui/Controlli";
 import { useCollezione } from "../dati/collezione";
+import { useAccessoProtetto } from "../dati/accesso";
+import { creaManga, enrichManga } from "../services/api";
 import {
   FILTRI,
   ORDINAMENTI,
@@ -27,6 +29,7 @@ import {
 export default function CollezionePage() {
   const { serie, inCorso, errore, ricarica } = useCollezione();
   const [parametri, setParametri] = useSearchParams();
+  const [modaleAperto, setModaleAperto] = useState(false);
 
   const ricercaTesto = parametri.get("q") || "";
   const filtroAttivo = filtroPerId(parametri.get("filtro")).id;
@@ -120,14 +123,22 @@ export default function CollezionePage() {
             )} volumi.`
       }
       azioni={
-        <CampoRicerca
-          valore={ricercaTesto}
-          onCambia={(v) => aggiornaParametro("q", v)}
-          segnaposto="Titolo, autore, editore…"
-          risultati={risultati.length}
-        />
+        <div className="flex flex-wrap items-center gap-3">
+          <CampoRicerca
+            valore={ricercaTesto}
+            onCambia={(v) => aggiornaParametro("q", v)}
+            segnaposto="Titolo, autore, editore…"
+            risultati={risultati.length}
+          />
+
+          <Bottone onClick={() => setModaleAperto(true)}>Nuova serie</Bottone>
+        </div>
       }
     >
+      {modaleAperto && (
+        <ModuloNuovaSerie onChiuso={() => setModaleAperto(false)} onCreata={ricarica} />
+      )}
+
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <Pastiglie
           opzioni={FILTRI}
@@ -172,5 +183,246 @@ export default function CollezionePage() {
         />
       )}
     </Pagina>
+  );
+}
+
+/* ==================================================
+   NUOVA SERIE
+   ================================================== */
+
+const CAMPI_VUOTI = {
+  titolo: "",
+  autore: "",
+  disegnatore: "",
+  editore: "",
+  genere: "",
+  coverurl: "",
+  trama: "",
+  costo: "",
+  volumiposseduti: "0",
+  volumitotali: ""
+};
+
+/**
+ * Aggiungere una serie che non è mai passata dalla wishlist.
+ *
+ * Prima l'unico modo era aprire Gestione — pensata per correggere
+ * schede che esistono già, non per crearne di nuove da zero. Qui basta
+ * il titolo: lo stesso servizio che arricchisce le schede in Gestione
+ * compila il resto.
+ */
+function ModuloNuovaSerie({ onChiuso, onCreata }) {
+  const eseguiProtetto = useAccessoProtetto();
+  const navigate = useNavigate();
+
+  const [campi, setCampi] = useState(CAMPI_VUOTI);
+  const [compilando, setCompilando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [errore, setErrore] = useState(null);
+
+  const cambia = (chiave) => (e) =>
+    setCampi((p) => ({ ...p, [chiave]: e.target.value }));
+
+  async function compila() {
+    if (!campi.titolo.trim()) return;
+
+    setCompilando(true);
+    setErrore(null);
+
+    try {
+      const dati = await enrichManga(campi.titolo, campi.autore);
+
+      if (dati?.error) {
+        setErrore("Non ho trovato niente per questo titolo. Compila a mano.");
+      } else {
+        setCampi((p) => ({
+          ...p,
+          autore: p.autore || dati.autore || "",
+          disegnatore: p.disegnatore || dati.disegnatore || "",
+          editore: p.editore || dati.editore || "",
+          genere: p.genere || dati.genere || "",
+          coverurl: p.coverurl || dati.coverurl || "",
+          trama: p.trama || dati.trama || "",
+          volumitotali: p.volumitotali || dati.volumitotali || ""
+        }));
+      }
+    } catch {
+      setErrore("Il servizio non ha risposto. Riprova fra poco.");
+    } finally {
+      setCompilando(false);
+    }
+  }
+
+  async function salva(e) {
+    e.preventDefault();
+
+    if (!campi.titolo.trim()) return;
+
+    setSalvando(true);
+    setErrore(null);
+
+    const corpo = {
+      titolo: campi.titolo.trim(),
+      autore: campi.autore || null,
+      disegnatore: campi.disegnatore || null,
+      editore: campi.editore || null,
+      genere: campi.genere || null,
+      coverurl: campi.coverurl || null,
+      trama: campi.trama || null,
+      costo: campi.costo === "" ? null : Number(campi.costo),
+      volumiposseduti: campi.volumiposseduti === "" ? 0 : Number(campi.volumiposseduti),
+      volumitotali: campi.volumitotali === "" ? null : Number(campi.volumitotali)
+    };
+
+    try {
+      const risposta = await eseguiProtetto(() => creaManga(corpo));
+
+      onCreata();
+      onChiuso();
+
+      // Dritti sulla scheda appena creata: è quello che serve dopo
+      // aver aggiunto una serie, non tornare a una griglia di 189.
+      if (risposta?.creato?.ID) navigate(`/serie/${risposta.creato.ID}`);
+    } catch (e2) {
+      if (!e2?.annullato) {
+        setErrore(e2?.message || "Il salvataggio non è andato a buon fine.");
+      }
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-modal grid place-items-center overflow-y-auto bg-void/70 p-5 py-10 backdrop-blur-sm animate-rise-in"
+      onClick={(e) => e.target === e.currentTarget && onChiuso()}
+    >
+      <form
+        onSubmit={salva}
+        className="w-full max-w-lg space-y-5 rounded-panel border border-hairline bg-glass-3 p-6 shadow-float backdrop-blur-2xl"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-display text-xl font-semibold text-ink-bright">
+              Nuova serie
+            </h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Basta il titolo: il resto puoi compilarlo da solo.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onChiuso}
+            aria-label="Chiudi"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <CampoModulo
+            etichetta="Titolo"
+            valore={campi.titolo}
+            onChange={cambia("titolo")}
+            required
+            autoFocus
+          />
+          <CampoModulo etichetta="Autore" valore={campi.autore} onChange={cambia("autore")} />
+          <CampoModulo
+            etichetta="Disegnatore"
+            valore={campi.disegnatore}
+            onChange={cambia("disegnatore")}
+          />
+          <CampoModulo etichetta="Editore" valore={campi.editore} onChange={cambia("editore")} />
+          <CampoModulo
+            etichetta="Volumi posseduti"
+            tipo="number"
+            min="0"
+            valore={campi.volumiposseduti}
+            onChange={cambia("volumiposseduti")}
+          />
+          <CampoModulo
+            etichetta="Volumi totali"
+            tipo="number"
+            min="0"
+            valore={campi.volumitotali}
+            onChange={cambia("volumitotali")}
+          />
+          <CampoModulo
+            etichetta="Prezzo al volume"
+            tipo="number"
+            step="0.01"
+            min="0"
+            valore={campi.costo}
+            onChange={cambia("costo")}
+          />
+          <CampoModulo etichetta="Generi" valore={campi.genere} onChange={cambia("genere")} />
+          <CampoModulo
+            etichetta="URL copertina"
+            valore={campi.coverurl}
+            onChange={cambia("coverurl")}
+            className="sm:col-span-2"
+          />
+        </div>
+
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted">
+            Trama
+          </span>
+
+          <textarea
+            value={campi.trama}
+            onChange={cambia("trama")}
+            rows={4}
+            className="w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
+          />
+        </label>
+
+        {errore && (
+          <p role="alert" className="text-sm text-ember">
+            {errore}
+          </p>
+        )}
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Bottone type="submit" disabled={salvando || !campi.titolo.trim()}>
+            {salvando ? "Salvo…" : "Aggiungi alla collezione"}
+          </Bottone>
+
+          <Bottone
+            type="button"
+            variante="secondario"
+            onClick={compila}
+            disabled={compilando || !campi.titolo.trim()}
+          >
+            {compilando ? "Cerco…" : "Compila dal titolo"}
+          </Bottone>
+
+          <Bottone type="button" variante="fantasma" onClick={onChiuso}>
+            Annulla
+          </Bottone>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function CampoModulo({ etichetta, tipo = "text", valore, onChange, className = "", ...resto }) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted">
+        {etichetta}
+      </span>
+
+      <input
+        type={tipo}
+        value={valore ?? ""}
+        onChange={onChange}
+        className="w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
+        {...resto}
+      />
+    </label>
   );
 }

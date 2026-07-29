@@ -168,8 +168,8 @@ export const ARGOMENTI = [
 export const RIEMPITIVI = new Set(
   `quanti quante quanto quanta quali quale qual che cosa cos come dove quando perche
    chi cui l c ce n
-   mi ti ci vi ne lo la le li gli il un uno una dei delle degli di da del della
-   a al alla ai alle in nel nella su sul sulla per con tra fra e o ma se
+   mi ti ci vi ne lo la le li gli il un uno una dei delle degli di da del della dello dell
+   a al alla ai alle allo agli in nel nella nello negli su sul sulla sullo sugli per con tra fra e o ma se
    ho hai ha abbiamo avete hanno sono sei siamo siete essere stato stata
    volume volumi serie manga fumetto fumetti tomo tomi uscita uscite opera
    mancano manca mancante mancanti resta restano rimane rimangono
@@ -180,6 +180,7 @@ export const RIEMPITIVI = new Set(
    qualcosa qualche roba niente nulla altro altra altri altre nuovo nuova
    sto stai sta stiamo state stanno adesso ora oggi
    mio mia miei mie questo questa quello quella
+   stesso stessa stessi stesse identico identica uguale altrettanto
    trama storia riassunto sinossi argomento tratta parla
    costa costo prezzo speso spesa euro vale valore
    autore autrice mangaka disegnatore disegnatrice editore edizione
@@ -188,6 +189,7 @@ export const RIEMPITIVI = new Set(
    simile simili somiglia assomiglia stile genere
    finita finito conclusa concluso corso
    voto valutazione dato dai messo assegnato giudicato trovata trovato
+   invece piuttosto quindi dunque allora comunque magari
    per favore grazie ciao ehi senti scusa allora ok`
     .split(/\s+/)
     .filter(Boolean)

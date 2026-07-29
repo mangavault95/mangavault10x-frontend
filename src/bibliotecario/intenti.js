@@ -58,7 +58,13 @@ function ripulisciPerTitolo(piatto, argomento) {
   if (argomento) {
     const voce = ARGOMENTI.find((a) => a.id === argomento);
 
-    for (const parola of voce?.parole || []) {
+    // Le più lunghe per prime. "disegna" è una parola della lista, ma
+    // è anche l'inizio di "disegnatore": toglierla per prima lascia
+    // "tore" appeso, che poi sembra il pezzo di un titolo. Rimuovendo
+    // prima "disegnatore" per intero non resta nulla da smontare.
+    const parole = [...(voce?.parole || [])].sort((a, b) => b.length - a.length);
+
+    for (const parola of parole) {
       testo = testo.split(parola).join(" ");
     }
   }

@@ -6,6 +6,7 @@ import CartaSerie from "../ui/CartaSerie";
 import { Bottone } from "../ui/Controlli";
 import { Errore, Vuoto } from "../ui/Stati";
 import { Sezione } from "../ui/Pagina";
+import { BottonePreferito, ContaVolumi, VotoStelle } from "../ui/AzioniSerie";
 import Icon from "../app/Icon";
 import { useCollezione, useSerie } from "../dati/collezione";
 import { getMarketPrice } from "../services/api";
@@ -31,7 +32,7 @@ export default function SeriePage() {
   const navigate = useNavigate();
 
   const { serie, inCorso, errore } = useSerie(id);
-  const { serie: tutte, ricarica } = useCollezione();
+  const { serie: tutte, ricarica, aggiornaLocale } = useCollezione();
 
   if (errore) {
     return (
@@ -99,15 +100,32 @@ export default function SeriePage() {
 
             <div className="min-w-0 space-y-6">
               <div className="space-y-3">
-                <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink-bright sm:text-4xl lg:text-5xl">
-                  {serie.titolo}
-                </h1>
+                <div className="flex items-start justify-between gap-4">
+                  <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink-bright sm:text-4xl lg:text-5xl">
+                    {serie.titolo}
+                  </h1>
+
+                  {/* Preferito e voto qui: è il posto dove prima
+                      servivano il pannello Gestione, adesso bastano
+                      un click e — se serve — un accesso al volo. */}
+                  <BottonePreferito
+                    serie={serie}
+                    dimensione={26}
+                    className="mt-1 shrink-0"
+                    onCambiato={(nuovo) => aggiornaLocale(serie.id, { preferito: nuovo })}
+                  />
+                </div>
 
                 <p className="text-ink-muted">
                   {[serie.autore, serie.disegnatore !== serie.autore && serie.disegnatore]
                     .filter(Boolean)
                     .join(" · ") || "Autore non registrato"}
                 </p>
+
+                <VotoStelle
+                  serie={serie}
+                  onCambiato={(nuovo) => aggiornaLocale(serie.id, { valutazione: nuovo })}
+                />
 
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   {serie.stato && (
@@ -124,8 +142,6 @@ export default function SeriePage() {
                     </Etichetta>
                   )}
 
-                  {serie.preferito && <Etichetta tono="brass">Preferito</Etichetta>}
-
                   {serie.generi.map((g) => (
                     <Link
                       key={g}
@@ -140,13 +156,17 @@ export default function SeriePage() {
 
               {/* ---------- Progresso ---------- */}
               <div className="max-w-md space-y-2">
-                <div className="flex items-baseline justify-between">
-                  <span className="font-numeric text-2xl font-semibold text-ink-bright">
-                    {serie.posseduti}
-                    {serie.totali ? (
-                      <span className="text-ink-faint"> / {serie.totali}</span>
-                    ) : null}
-                  </span>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <ContaVolumi
+                      serie={serie}
+                      onCambiato={(nuovo) => aggiornaLocale(serie.id, { posseduti: nuovo })}
+                    />
+
+                    <span className="font-numeric text-sm text-ink-faint">
+                      {serie.totali ? `su ${serie.totali}` : "volumi"}
+                    </span>
+                  </div>
 
                   {pct !== null && (
                     <span className="font-numeric text-sm text-ink-muted">{pct}%</span>
@@ -277,7 +297,13 @@ function Volumi({ serie }) {
 }
 
 /**
- * Quanto vale sul mercato dell'usato.
+ * Quanto chiedono su eBay per questa serie, adesso.
+ *
+ * Non è "quanto si è venduta": l'API gratuita di eBay vede solo gli
+ * annunci attivi, non le vendite concluse — quella vera richiede
+ * un'approvazione speciale che eBay non concede ai piccoli sviluppatori.
+ * Dire "prezzo medio degli annunci attivi" è meno impressionante di
+ * "media delle vendite", ma è quello che il dato è davvero.
  *
  * Il caricamento parte solo al click: interrogare eBay per ogni
  * scheda aperta sarebbe lento e inutile nella maggior parte dei casi.
@@ -290,49 +316,57 @@ function QuotazioneMercato({ serie }) {
     setStato("caricamento");
 
     try {
-      setDati(await getMarketPrice(serie.titolo));
+      const risposta = await getMarketPrice(serie.titolo);
+
+      setDati(risposta);
       setStato("fatto");
-    } catch {
-      setStato("errore");
+    } catch (e) {
+      setStato(e?.status === 501 ? "non_configurato" : "errore");
     }
   }
 
+  const nonConfigurato = stato === "non_configurato";
+
   return (
-    <Sezione titolo="Quotazione usato">
+    <Sezione titolo="Prezzo su eBay">
       <div className="flex flex-wrap items-center gap-4 rounded-panel border border-hairline bg-glass-1 p-5 backdrop-blur-xl">
         {stato === "fatto" && dati ? (
           <div className="space-y-1">
-            {/* La mediana, non la media: due inserzioni fuori mercato
-                (un lotto completo, un volume da collezione) sposterebbero
-                la media di decine di euro e falserebbero la stima. */}
+            {/* La mediana, non la media: un lotto completo o un
+                esemplare da collezione messo in vendita insieme ai
+                singoli volumi sposterebbe la media di decine di euro. */}
             <p className="font-numeric text-2xl font-semibold text-ink-bright">
-              {dati.median ? euro(dati.median) : "Nessun dato"}
+              {dati.mediana ? euro(dati.mediana) : "Nessun dato"}
             </p>
 
             <p className="text-xs text-ink-muted">
-              {dati.median
-                ? `Mediana di ${dati.samples} vendite eBay concluse negli ultimi 3 mesi${
-                    dati.mean ? ` — media ${euro(dati.mean)}` : ""
+              {dati.mediana
+                ? `Mediana di ${dati.campione} annunci attivi su eBay Italia${
+                    dati.media ? ` — media ${euro(dati.media)}` : ""
                   }.`
-                : "Nessuna vendita recente trovata per questo titolo."}
+                : "Nessun annuncio attivo trovato per questo titolo."}
             </p>
           </div>
         ) : (
           <p className="text-sm text-ink-muted">
             {stato === "errore"
               ? "La ricerca su eBay non ha risposto. Riprova fra poco."
-              : "Cerca su eBay quanto viene venduta questa serie nell'usato."}
+              : nonConfigurato
+                ? "Questa funzione non è ancora attivata: servono le credenziali eBay sul server."
+                : "Cerca su eBay quanto chiedono adesso per questa serie."}
           </p>
         )}
 
-        <Bottone
-          variante="secondario"
-          onClick={chiedi}
-          disabled={stato === "caricamento"}
-          className="ml-auto"
-        >
-          {stato === "caricamento" ? "Cerco…" : stato === "fatto" ? "Aggiorna" : "Cerca"}
-        </Bottone>
+        {!nonConfigurato && (
+          <Bottone
+            variante="secondario"
+            onClick={chiedi}
+            disabled={stato === "caricamento"}
+            className="ml-auto"
+          >
+            {stato === "caricamento" ? "Cerco…" : stato === "fatto" ? "Aggiorna" : "Cerca"}
+          </Bottone>
+        )}
       </div>
     </Sezione>
   );

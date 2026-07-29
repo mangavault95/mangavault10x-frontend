@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import Copertina from "./Copertina";
 import Progresso from "./Progresso";
+import { BottonePreferito } from "./AzioniSerie";
+import { useCollezione } from "../dati/collezione";
 import { completamento, volumiMancanti } from "../dati/serie";
 
 /**
@@ -15,6 +17,8 @@ import { completamento, volumiMancanti } from "../dati/serie";
  * insieme alla copertina: l'oggetto si muove tutto insieme, non a pezzi.
  */
 export default function CartaSerie({ serie, priorita = false }) {
+  const { aggiornaLocale } = useCollezione();
+
   const pct = completamento(serie);
   const mancanti = volumiMancanti(serie);
 
@@ -28,17 +32,15 @@ export default function CartaSerie({ serie, priorita = false }) {
       <div className="relative">
         <Copertina src={serie.copertina} alt={serie.titolo} priorita={priorita} />
 
-        {serie.preferito && (
-          <span
-            className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-void/70 text-brass-400 backdrop-blur-sm"
-            title="Preferito"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M12 3.5l2.6 5.6 6 .8-4.4 4.2 1.1 6-5.3-3-5.3 3 1.1-6L3.4 9.9l6-.8z" />
-            </svg>
-            <span className="sr-only">Preferito</span>
-          </span>
-        )}
+        {/* Sempre presente, non solo quando è già preferito: altrimenti
+            non ci sarebbe modo di scoprire che si può segnare da qui.
+            Sfumata finché non la guardi o non l'hai già segnata. */}
+        <BottonePreferito
+          serie={serie}
+          onCambiato={(nuovo) => aggiornaLocale(serie.id, { preferito: nuovo })}
+          className={`absolute right-2 top-2 h-7 w-7 bg-void/70 backdrop-blur-sm transition-opacity duration-quick
+                      ${serie.preferito ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+        />
 
         {/* Il voto sta sulla copertina, non sotto: è l'informazione
             che si cerca scorrendo, e lì non ruba una riga di testo.
