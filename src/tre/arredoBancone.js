@@ -1,39 +1,83 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 /**
  * Tutto quello che sta intorno al banco vero e proprio (il piano, il
  * fronte e la lampada restano in `scena.js`, condividono il legno con
- * lo scaffale): la parete di fondo, la cassa, i fumetti sparsi e la
- * lista dei desideri appesa. Un modulo a sé per lo stesso motivo di
+ * lo scaffale): la targa col logo, la parete di fondo, la cassa e la
+ * lista dei desideri appesa sono costruite sul posto qui dentro;
+ * `caricaFumetti`, esportata a parte, carica invece un modello vero
+ * (asincrono, quindi non può stare nella costruzione sincrona del
+ * resto). Un modulo a sé per lo stesso motivo di
  * `copertine.js`/`libroVetrina.js` — tiene `scena.js` leggibile invece
  * di fargli costruire ogni singola vite del bancone.
+ *
+ * Le altezze non sono numeri a caso: arrivano da `pavimentoY` (il
+ * pavimento), `pianoY` (la superficie del banco) e `testaY` (la testa
+ * del bibliotecario), passati da chi chiama. Scriverle relative a
+ * questi punti invece che assolute è l'unico modo perché il bancone
+ * resti proporzionato se un giorno cambia altezza il personaggio
+ * dietro — la prima versione aveva i numeri fissi ed è per questo che
+ * il banco finiva per coprirgli la testa invece del petto.
  *
  * Non conosce il raycaster né `oggettiStanza`: restituisce mesh e le
  * loro azioni, è `scena.js` a registrarle e a mettere i segni a terra
  * (li possiede lui, non questo modulo).
  */
 
-const COLORE_MURO = 0x33262a; // intonaco caldo: distingue la nicchia del banco dal legno dello scaffale
+const COLORE_MURO = 0xf1e6d3; // intonaco chiaro: bianco/beige, non più antracite — è la nicchia di una libreria luminosa, non una caverna
 const COLORE_OTTONE = 0xc9a24b;
+const COLORE_TARGA = 0x1c1712;
 
-const PALETTE_FUMETTI = [0x8a3b3b, 0x3b5c8a, 0x3b8a5c, 0x8a7a3b];
+// Retini e forme da "roba nerd" per i poster senza copertina vera:
+// generici, non citano nessuna testata precisa.
+const PALETTE_FUMETTO_POSTER = [
+  { fondo: 0xd9483d, forma: 0xfef3c7 },
+  { fondo: 0x2f5f8a, forma: 0xffe27a }
+];
 
-export function costruisciArredoBancone({ materialeCarta, geometriaLibro, x, z }) {
+export function costruisciArredoBancone({ x, z, pavimentoY, pianoY, testaY }) {
   const gruppo = new THREE.Group();
   const bersagli = [];
 
-  /* ---------- Parete di fondo ----------
+  const altezzaFronte = pianoY - pavimentoY;
+  const centroMuroY = pavimentoY + (pianoY - pavimentoY) * 1.9; // il muro sale ben oltre la testa del bibliotecario
+  const altezzaMuro = (centroMuroY - pavimentoY) * 2;
+
+  /* ---------- Parete di fondo e targa col logo ----------
      Oggi assente: senza di lei poster e lista desideri non avrebbero
-     a cosa appendersi, e la nicchia del banco si perde nel buio dietro
-     come tutto il resto della stanza. */
+     a cosa appendersi, e la nicchia del banco si perde nel buio come
+     tutto il resto della stanza. */
   const muro = new THREE.Mesh(
-    new THREE.PlaneGeometry(4.4, 4.4),
+    new THREE.PlaneGeometry(4.6, altezzaMuro),
     new THREE.MeshStandardMaterial({ color: COLORE_MURO, roughness: 0.92 })
   );
 
-  muro.position.set(x, -0.4, z - 1.6);
+  muro.position.set(x, centroMuroY, z - 1.65);
   muro.receiveShadow = true;
   gruppo.add(muro);
+
+  // La targa: montata sul fronte del banco (fra pavimento e piano),
+  // non appesa sopra il piano — altrimenti fluttuerebbe accanto al
+  // bibliotecario invece di leggersi come l'insegna di un vero banco.
+  const targaLarghezza = 1.7;
+  const targaAltezza = 0.62;
+  const targaY = pavimentoY + altezzaFronte / 2;
+  const targaZ = z - 0.45 - 0.052;
+
+  const corniceTarga = new THREE.Mesh(
+    new THREE.PlaneGeometry(targaLarghezza + 0.08, targaAltezza + 0.08),
+    new THREE.MeshStandardMaterial({ color: COLORE_OTTONE, roughness: 0.35, metalness: 0.6 })
+  );
+  corniceTarga.position.set(x, targaY, targaZ - 0.002);
+  gruppo.add(corniceTarga);
+
+  const targa = new THREE.Mesh(
+    new THREE.PlaneGeometry(targaLarghezza, targaAltezza),
+    new THREE.MeshBasicMaterial({ map: creaTexturaLogo(targaLarghezza, targaAltezza) })
+  );
+  targa.position.set(x, targaY, targaZ);
+  gruppo.add(targa);
 
   /* ---------- Cassa ----------
      Distinta dal piano del banco, non un semplice bersaglio invisibile
@@ -45,14 +89,17 @@ export function costruisciArredoBancone({ materialeCarta, geometriaLibro, x, z }
     metalness: 0.4
   });
 
-  const corpoCassa = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.32, 0.34), materialeCassa);
-  corpoCassa.position.set(x - 0.78, 1.12, z);
+  const cassaX = x - 0.95;
+  const cassaBaseY = pianoY + 0.03;
+
+  const corpoCassa = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.26, 0.3), materialeCassa);
+  corpoCassa.position.set(cassaX, cassaBaseY + 0.13, z);
   corpoCassa.castShadow = true;
   corpoCassa.receiveShadow = true;
   gruppo.add(corpoCassa);
 
   const schermoCassa = new THREE.Mesh(
-    new THREE.BoxGeometry(0.28, 0.18, 0.02),
+    new THREE.BoxGeometry(0.24, 0.15, 0.02),
     new THREE.MeshStandardMaterial({
       color: 0x1a2e22,
       emissive: 0x2f6b46,
@@ -61,123 +108,103 @@ export function costruisciArredoBancone({ materialeCarta, geometriaLibro, x, z }
     })
   );
 
-  schermoCassa.position.set(x - 0.78, 1.32, z + 0.15);
+  schermoCassa.position.set(cassaX, cassaBaseY + 0.3, z + 0.13);
   schermoCassa.rotation.x = -0.4;
   gruppo.add(schermoCassa);
 
-  for (const dx of [-0.08, 0, 0.08]) {
-    const tasto = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.025, 0.025, 0.02, 8),
-      materialeCassa
-    );
-    tasto.position.set(x - 0.78 + dx, 1.29, z - 0.05);
+  for (const dx of [-0.06, 0, 0.06]) {
+    const tasto = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.015, 8), materialeCassa);
+    tasto.position.set(cassaX + dx, cassaBaseY + 0.27, z - 0.04);
     gruppo.add(tasto);
   }
 
   const bersaglioCassa = new THREE.Mesh(
-    new THREE.BoxGeometry(0.7, 0.75, 0.6),
+    new THREE.BoxGeometry(0.6, 0.65, 0.55),
     new THREE.MeshBasicMaterial({ visible: false })
   );
 
-  bersaglioCassa.position.set(x - 0.78, 0.97, z);
+  bersaglioCassa.position.set(cassaX, cassaBaseY + 0.2, z);
   bersaglioCassa.userData = { azione: { tipo: "naviga", percorso: "/statistiche" } };
   gruppo.add(bersaglioCassa);
 
-  bersagli.push({ mesh: bersaglioCassa, segno: { x: x - 0.78, z: z + 0.55 } });
+  bersagli.push({ mesh: bersaglioCassa, segno: { x: cassaX, z: z + 0.55 } });
 
-  /* ---------- Fumetti sparsi ----------
-     Stessa geometria e materiale carta dello scaffale: sono la stessa
-     "cosa", solo appoggiata invece che in piedi — non un asset nuovo. */
-  const fumetti = new THREE.Group();
-
-  const disposizione = [
-    { x: -0.16, y: 0, z: -0.04, ry: 0.5 },
-    { x: 0.06, y: 0.09, z: 0.05, ry: -0.3 },
-    { x: 0.22, y: 0.18, z: -0.02, ry: 0.15 },
-    { x: 0.02, y: 0.27, z: 0.09, ry: -0.75, rz: 0.22 }
-  ];
-
-  disposizione.forEach(({ x: dx, y: dy, z: dz, ry, rz = 0 }, i) => {
-    const copertina = new THREE.MeshStandardMaterial({
-      color: PALETTE_FUMETTI[i % PALETTE_FUMETTI.length],
-      roughness: 0.6
-    });
-
-    const materiali = [materialeCarta, materialeCarta, materialeCarta, materialeCarta, copertina, materialeCarta];
-    const libro = new THREE.Mesh(geometriaLibro, materiali);
-
-    // In piano sul banco, non in piedi come sullo scaffale: ruotato a
-    // terra sull'asse X, con lo spessore che diventa l'altezza della pila.
-    libro.scale.set(0.6, 0.9, 0.42);
-    libro.position.set(x + 0.85 + dx, 0.97 + dy, z + dz);
-    libro.rotation.set(-Math.PI / 2, ry, rz);
-    libro.castShadow = true;
-    libro.receiveShadow = true;
-    fumetti.add(libro);
-  });
-
-  gruppo.add(fumetti);
-
-  const bersaglioFumetti = new THREE.Mesh(
-    new THREE.BoxGeometry(0.85, 0.65, 0.7),
-    new THREE.MeshBasicMaterial({ visible: false })
-  );
-
-  bersaglioFumetti.position.set(x + 0.95, 1.08, z);
-  bersaglioFumetti.userData = { azione: { tipo: "naviga", percorso: "/lettura" } };
-  gruppo.add(bersaglioFumetti);
-
-  bersagli.push({ mesh: bersaglioFumetti, segno: { x: x + 0.95, z: z + 0.55 } });
+  // I fumetti sparsi sul banco vivono a parte (`caricaFumetti`, più
+  // sotto): sono un modello scaricato, non geometria fatta qui — e un
+  // modello si carica in rete, mentre questa funzione deve restare
+  // sincrona per tutto il resto della stanza.
 
   /* ---------- Poster ----------
-     Le cornici sono ottone finto (stesso accento del sito); il
-     contenuto lo riempie `scena.js` più tardi con copertine vere già
-     scaricate — qui restano di un colore neutro di ripiego. */
-  const poster = [-1.55, 1.55].map((offsetX) => {
+     Quattro invece di due: due prendono le copertine vere già
+     scaricate (le riempie `scena.js` più tardi), gli altri due restano
+     grafica generata — un retino a puntini e una forma, "roba nerd"
+     senza citare nessuna testata precisa. In altezza stanno sopra il
+     banco, non sopra il piano dove sta il bibliotecario: un margine
+     fisso sopra `pianoY`, non una frazione di `altezzaFronte` (che è
+     piccola e li avrebbe lasciati bassi, quasi dentro il banco). */
+  const posterY = pianoY + 0.55;
+  const posterOffsets = [-1.85, -0.95, 0.95, 1.85];
+  const posterLarghezza = 0.46;
+  const posterAltezza = 0.64;
+
+  const poster = posterOffsets.map((offsetX, indice) => {
     const cornice = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.86, 1.16),
+      new THREE.PlaneGeometry(posterLarghezza + 0.08, posterAltezza + 0.08),
       new THREE.MeshStandardMaterial({ color: COLORE_OTTONE, roughness: 0.4, metalness: 0.6 })
     );
-    cornice.position.set(x + offsetX, -0.05, z - 1.58);
+    cornice.position.set(x + offsetX, posterY, z - 1.63);
     gruppo.add(cornice);
 
-    const quadro = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.7, 1.0),
-      new THREE.MeshStandardMaterial({ color: 0x1c1712, roughness: 0.8 })
-    );
-    quadro.position.set(x + offsetX, -0.05, z - 1.57);
+    // I due esterni sono decorativi e non aspettano nessuna copertina:
+    // hanno già la loro grafica, generata qui. I due centrali restano
+    // di un colore neutro di ripiego finché `scena.js` non ci mette
+    // sopra una copertina vera.
+    const decorativo = indice === 0 || indice === posterOffsets.length - 1;
+
+    const materialePoster = decorativo
+      ? new THREE.MeshBasicMaterial({ map: creaTexturaPosterFumetto(PALETTE_FUMETTO_POSTER[indice === 0 ? 0 : 1]) })
+      : new THREE.MeshBasicMaterial({ color: 0x1c1712 });
+
+    const quadro = new THREE.Mesh(new THREE.PlaneGeometry(posterLarghezza, posterAltezza), materialePoster);
+    quadro.position.set(x + offsetX, posterY, z - 1.62);
     gruppo.add(quadro);
 
-    return quadro;
+    return decorativo ? null : quadro;
   });
 
-  /* ---------- Lista desideri appesa ---------- */
+  /* ---------- Lista desideri appesa ----------
+     Sopra la testa del bibliotecario, non sopra il banco: ancorata a
+     `testaY` (non a una frazione di `pianoY`) così resta sopra la
+     testa qualunque sia l'altezza del personaggio, invece di doverla
+     ritoccare a mano ogni volta che cambia. */
+  const listaY = testaY + 0.3;
+
   const laccio = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.012, 0.012, 0.24, 6),
+    new THREE.CylinderGeometry(0.01, 0.01, 0.18, 6),
     new THREE.MeshStandardMaterial({ color: COLORE_OTTONE, roughness: 0.5, metalness: 0.5 })
   );
-  laccio.position.set(x, 1.75, z - 1.57);
+  laccio.position.set(x, listaY + 0.32, z - 1.62);
   gruppo.add(laccio);
 
   const listaMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.62, 0.82),
+    new THREE.PlaneGeometry(0.5, 0.66),
     new THREE.MeshStandardMaterial({
       map: creaTexturaPergamena(),
       roughness: 0.88,
       side: THREE.DoubleSide
     })
   );
-  listaMesh.position.set(x, 1.24, z - 1.56);
+  listaMesh.position.set(x, listaY, z - 1.6);
   listaMesh.rotation.z = 0.03;
   listaMesh.castShadow = true;
   gruppo.add(listaMesh);
 
   const bersaglioLista = new THREE.Mesh(
-    new THREE.BoxGeometry(0.75, 0.95, 0.4),
+    new THREE.BoxGeometry(0.62, 0.78, 0.35),
     new THREE.MeshBasicMaterial({ visible: false })
   );
 
-  bersaglioLista.position.set(x, 1.24, z - 1.35);
+  bersaglioLista.position.set(x, listaY, z - 1.4);
   bersaglioLista.userData = { azione: { tipo: "naviga", percorso: "/wishlist" } };
   gruppo.add(bersaglioLista);
 
@@ -186,7 +213,168 @@ export function costruisciArredoBancone({ materialeCarta, geometriaLibro, x, z }
   // passaggio del mouse basta.
   bersagli.push({ mesh: bersaglioLista, segno: null });
 
-  return { gruppo, bersagli, poster };
+  return { gruppo, bersagli, poster: poster.filter(Boolean) };
+}
+
+/**
+ * I fumetti sparsi sul banco, veri: un libro chiuso e uno aperto (gli
+ * stessi accessori del pacchetto del bibliotecario — "KayKit :
+ * Adventurers" di Kay Lousberg, CC0), non più scatole colorate. Un
+ * modello si carica in rete: la funzione è asincrona, e chi la chiama
+ * (`scena.js`) decide cosa fare se la scena è già stata smontata nel
+ * frattempo.
+ */
+export async function caricaFumetti({ x, z, pianoY, urlChiuso, urlAperto }) {
+  const loader = new GLTFLoader();
+
+  const [chiuso, aperto] = await Promise.all([
+    loader.loadAsync(urlChiuso),
+    loader.loadAsync(urlAperto)
+  ]);
+
+  const gruppo = new THREE.Group();
+
+  // Il pacchetto misura i suoi modelli in unità coerenti col
+  // personaggio: una scala fissa, tarata a occhio su una pila che
+  // stia comoda sul banco, è più semplice (e più prevedibile) che
+  // ricavarla da un bounding box per un prop così piccolo.
+  const disposizione = [
+    { sorgente: chiuso, x: -0.14, y: 0, z: -0.04, ry: 0.4, scala: 0.62 },
+    { sorgente: aperto, x: 0.12, y: 0.05, z: 0.06, ry: -0.5, scala: 0.6 },
+    { sorgente: chiuso, x: 0.02, y: 0.1, z: -0.08, ry: 1.3, scala: 0.62, rx: -0.2 }
+  ];
+
+  disposizione.forEach(({ sorgente, x: dx, y: dy, z: dz, ry, rx = 0, scala }) => {
+    const copia = sorgente.scene.clone(true);
+
+    copia.traverse((oggetto) => {
+      if (!oggetto.isMesh) return;
+      oggetto.castShadow = true;
+      oggetto.receiveShadow = true;
+    });
+
+    copia.scale.setScalar(scala);
+    copia.position.set(x + dx, pianoY + dy, z + dz);
+    copia.rotation.set(rx, ry, 0);
+    gruppo.add(copia);
+  });
+
+  const bersaglio = new THREE.Mesh(
+    new THREE.BoxGeometry(0.75, 0.55, 0.6),
+    new THREE.MeshBasicMaterial({ visible: false })
+  );
+
+  bersaglio.position.set(x, pianoY + 0.15, z);
+  bersaglio.userData = { azione: { tipo: "naviga", percorso: "/lettura" } };
+  gruppo.add(bersaglio);
+
+  return { gruppo, bersaglio, segno: { x, z: z + 0.55 } };
+}
+
+/**
+ * La targa col logo: non testo nudo sul legno, una vera insegna con
+ * fondo e uno sgorbio dorato, nello stesso spirito di "MangaVault" +
+ * "10X" della barra laterale del sito.
+ */
+function creaTexturaLogo(larghezzaMondo, altezzaMondo) {
+  const scala = 300;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(larghezzaMondo * scala);
+  canvas.height = Math.round(altezzaMondo * scala);
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = `#${COLORE_TARGA.toString(16).padStart(6, "0")}`;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  ctx.font = `700 ${canvas.height * 0.42}px Georgia, serif`;
+  ctx.fillStyle = "#f5f1e6";
+  ctx.fillText("MangaVault", cx, cy - canvas.height * 0.14);
+
+  ctx.font = `800 ${canvas.height * 0.5}px Georgia, serif`;
+  ctx.fillStyle = "#facc15";
+  ctx.shadowColor = "rgba(250,204,21,0.55)";
+  ctx.shadowBlur = canvas.height * 0.08;
+  ctx.fillText("10X", cx, cy + canvas.height * 0.24);
+  ctx.shadowBlur = 0;
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/**
+ * Un poster "da fumetteria" senza citare nessuna testata: un retino a
+ * puntini (mezzatinta, il linguaggio visivo del fumetto stampato) più
+ * una forma a stella dietro un fumetto vuoto.
+ */
+function creaTexturaPosterFumetto({ fondo, forma }) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 356;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = `#${fondo.toString(16).padStart(6, "0")}`;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Il retino a puntini: il tratto distintivo della stampa a fumetti.
+  ctx.fillStyle = "rgba(0,0,0,0.18)";
+  for (let y = 6; y < canvas.height; y += 14) {
+    for (let x = 6; x < canvas.width; x += 14) {
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Una stella esplosiva dietro, come sfondo di un'azione fumettistica.
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height * 0.42);
+  ctx.fillStyle = `#${forma.toString(16).padStart(6, "0")}`;
+  ctx.beginPath();
+  const punte = 8;
+  for (let i = 0; i < punte * 2; i++) {
+    const raggio = i % 2 === 0 ? 118 : 58;
+    const angolo = (Math.PI / punte) * i - Math.PI / 2;
+    const px = Math.cos(angolo) * raggio;
+    const py = Math.sin(angolo) * raggio;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Un fumetto vuoto in basso: suggerisce "fumetto" senza scrivere
+  // parole che finirebbero per sembrare un logo inventato.
+  ctx.fillStyle = "#fdf6e3";
+  roundRect(ctx, 34, canvas.height - 120, canvas.width - 68, 74, 16);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(70, canvas.height - 48);
+  ctx.lineTo(96, canvas.height - 48);
+  ctx.lineTo(74, canvas.height - 22);
+  ctx.closePath();
+  ctx.fill();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
 }
 
 /**

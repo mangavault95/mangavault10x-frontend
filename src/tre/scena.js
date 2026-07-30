@@ -1,12 +1,26 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { copertinaLocale } from "./copertine";
 import { caricaBibliotecario, ALTEZZA_BIBLIOTECARIO } from "./libraio";
-import { costruisciArredoBancone } from "./arredoBancone";
+import { costruisciArredoBancone, caricaFumetti } from "./arredoBancone";
 
 const legnoDiffuseUrl = new URL("./assets/legno/legno_diffuse.jpg", import.meta.url).href;
 const legnoRuviditaUrl = new URL("./assets/legno/legno_ruvidita.jpg", import.meta.url).href;
 const legnoNormaliUrl = new URL("./assets/legno/legno_normali.jpg", import.meta.url).href;
 const bibliotecarioGlbUrl = new URL("./assets/bibliotecario.glb", import.meta.url).href;
+
+// Questi due non sono un .glb solo (binario, autosufficiente) ma una
+// terna .gltf+.bin+texture con riferimenti relativi fra loro: Vite li
+// scoprirebbe solo in sviluppo, non in build (non segue gli URI dentro
+// un JSON), quindi vivono in `public/` — copiati così come sono,
+// percorsi relativi intatti — invece che fra gli asset importati.
+const spellbookChiusoUrl = "/modelli3d/spellbook_closed.gltf";
+const spellbookApertoUrl = "/modelli3d/spellbook_open.gltf";
+
+const bookcaseUrl = new URL("./assets/arredo/bookcaseOpen.glb", import.meta.url).href;
+const pottedPlantUrl = new URL("./assets/arredo/pottedPlant.glb", import.meta.url).href;
+const rugRoundUrl = new URL("./assets/arredo/rugRound.glb", import.meta.url).href;
+const loungeChairUrl = new URL("./assets/arredo/loungeChair.glb", import.meta.url).href;
 
 /**
  * La biblioteca in tre dimensioni.
@@ -80,10 +94,15 @@ const SPORGENZA = 0.32;
 // lo spessore sparirebbe. Un filo di rotazione lo rimette in mostra.
 const ROTAZIONE_RIPOSO = -0.16;
 
-const COLORE_LEGNO = 0x2b1f16; // più chiaro di prima: sul nero quasi puro il legno spariva nel fondo
-const COLORE_FONDO_ALTO = 0x1b2138; // l'orlo superiore del gradiente: un blu crepuscolo, non nero
-const COLORE_FONDO_BASSO = 0x0c0d16; // l'orlo inferiore: resta scuro, ma non piatto
-const COLORE_FOG = 0x141726; // il tono medio del gradiente: la nebbia si confonde con lo sfondo invece di tagliarlo
+// Palette rifatta da capo: bianco, legno, beige, dorato — una
+// libreria luminosa, non più una stanza al crepuscolo. Il legno resta
+// legno (lo veste comunque la texture vera in `#vestiMaterialeLegno`),
+// ma il colore di ripiego prima del suo arrivo non deve più leggersi
+// come "quasi nero".
+const COLORE_LEGNO = 0x5a4130;
+const COLORE_FONDO_ALTO = 0xfdfbf4; // l'orlo superiore del gradiente: bianco caldo, come un lucernario
+const COLORE_FONDO_BASSO = 0xe9dbc0; // l'orlo inferiore: beige, non più buio
+const COLORE_FOG = 0xf1e6cf; // il tono medio del gradiente: la nebbia si confonde con lo sfondo invece di tagliarlo
 
 /* ==================================================
    LA STANZA D'INGRESSO
@@ -94,26 +113,36 @@ const COLORE_FOG = 0x141726; // il tono medio del gradiente: la nebbia si confon
    a differenza dello scaffale la stanza si costruisce una volta sola
    nel costruttore, prima che la collezione sia arrivata.
    ================================================== */
-const SOGLIA_X = 1.4; // dove guarda la telecamera alla soglia
-const SOGLIA_SEMI_LARGHEZZA = 8.2;
+const SOGLIA_X = 0.6; // dove guarda la telecamera alla soglia
+const SOGLIA_SEMI_LARGHEZZA = 6.6;
 const SOGLIA_SEMI_ALTEZZA = 3;
 const PAVIMENTO_Y = -2.6;
 
-const BANCONE_X = 6.4;
+// Vetrina e bancone più vicini fra loro che nella prima versione: un
+// corridoio troppo largo fra i due si legge come stanza vuota, non
+// come profondità. Quel che resta in mezzo lo riempie
+// `#creaAngoloLettura`, non il vuoto.
+const BANCONE_X = 4.6;
 const BANCONE_Z = 0.8;
 
 /**
- * La vetrina d'ingresso: un mobile fisso e piccolo, non lo scaffale
- * vero — quello ha le sue sezioni e vive in `gruppoLibri`/
- * `gruppoScaffale`, nascosto finché non si entra (vedi `vaiA`). Qui
- * niente copertine da caricare: solo dorsi colorati, sempre uguali,
- * che dicono "qui c'è una libreria" senza pretendere di essere quella
- * vera.
+ * La vetrina d'ingresso: un mobile fisso, non lo scaffale vero — quello
+ * ha le sue sezioni e vive in `gruppoLibri`/`gruppoScaffale`, nascosto
+ * finché non si entra (vedi `vaiA`). Righe e colonne più fitte di un
+ * vero scaffale (passo più stretto): deve leggersi come un muro pieno
+ * di copertine, non come quattro libri isolati.
  */
-const VETRINA_COLONNE = 4;
-const VETRINA_RIGHE = 3;
-const VETRINA_X = -4.4;
+const VETRINA_COLONNE = 6;
+const VETRINA_RIGHE = 4;
+const VETRINA_PASSO_X = 0.62;
+const VETRINA_PASSO_Y = 1.2;
+const VETRINA_X = -3.6;
 const VETRINA_Z = 0.6;
+
+// Libri più piccoli di quelli dello scaffale vero: con un passo così
+// stretto, le dimensioni normali si accavallerebbero fra loro.
+const VETRINA_LIBRO_LARGHEZZA = 0.52;
+const VETRINA_LIBRO_ALTEZZA = 0.73;
 
 // Quante volte si ripete la texture del legno lungo un ripiano: senza
 // ripetizione l'immagine si stirerebbe su tutta la larghezza di un
@@ -287,11 +316,10 @@ export default class Biblioteca {
        quello che dà alla luce un verso, non solo un'intensità. */
 
     // Un ambiente uniforme è la ragione per cui la stanza sembrava una
-    // caverna: una HemisphereLight sfuma invece fra un cielo freddo (da
-    // sopra) e un rimbalzo caldo da terra, com'è la luce vera in una
-    // stanza con un pavimento chiaro sotto e il buio in alto fra gli
-    // scaffali.
-    this.scena.add(new THREE.HemisphereLight(0x4a5578, 0x2b1f16, 1.05));
+    // caverna: una HemisphereLight sfuma invece fra un cielo chiaro (da
+    // sopra, come un lucernario) e un rimbalzo caldo da terra — bianco
+    // e beige, non più il grigio-blu della versione a lume di candela.
+    this.scena.add(new THREE.HemisphereLight(0xfff8ea, 0xd9c7a0, 1.5));
 
     // Luce frontale morbida: non crea atmosfera, ma garantisce che
     // ogni copertina sia leggibile ovunque si trovi lungo lo scaffale.
@@ -444,6 +472,7 @@ export default class Biblioteca {
     serie.forEach((s, indice) => this.#creaLibro(s, indice));
 
     this.#creaScaffale();
+    this.#vestiVetrina();
     this.#vestiPosterBancone();
 
     this.distanza = this.#distanzaPerInquadrare();
@@ -637,6 +666,106 @@ export default class Biblioteca {
 
     this.#creaVetrinaIngresso();
     this.#creaBancone();
+    this.#creaAngoloLettura();
+    this.#creaCorridoiScaffali();
+  }
+
+  /**
+   * Altre librerie dietro la vetrina, sfalsate come se si intravedesse
+   * l'imbocco di più corridoi: bastano due modelli veri (Kenney
+   * "Furniture Kit", CC0) clonati, non serve costruire ogni volta
+   * ripiani e montanti come per lo scaffale vero. Sono decorazione allo
+   * stato puro — più lontane sono, più la nebbia le vela, ed è proprio
+   * quell'effetto a suggerire la profondità.
+   */
+  #creaCorridoiScaffali() {
+    const ALTEZZA_BERSAGLIO = 5.2;
+
+    this.#caricaModello(bookcaseUrl)
+      .then((originale) => {
+        if (!this.vivo) return;
+
+        const altezzaNativa =
+          new THREE.Box3().setFromObject(originale).getSize(new THREE.Vector3()).y || 1;
+        const scala = ALTEZZA_BERSAGLIO / altezzaNativa;
+
+        const posizioni = [
+          { x: VETRINA_X - 1.3, z: VETRINA_Z - 1.5, ry: 0.12 },
+          { x: VETRINA_X + 0.9, z: VETRINA_Z - 2.3, ry: -0.15 }
+        ];
+
+        for (const { x, z, ry } of posizioni) {
+          const copia = originale.clone(true);
+          copia.scale.setScalar(scala);
+
+          const minY = new THREE.Box3().setFromObject(copia).min.y;
+          copia.position.set(x, PAVIMENTO_Y - minY, z);
+          copia.rotation.y = ry;
+
+          this.gruppoStanza.add(copia);
+        }
+      })
+      .catch((errore) => console.error("I corridoi di scaffali non sono arrivati:", errore));
+  }
+
+  /**
+   * Il tratto di pavimento fra la vetrina e il bancone non è un
+   * corridoio da attraversare, è una stanza: senza niente in mezzo si
+   * legge come vuoto invece che come profondità. Un tappeto, una
+   * poltroncina e una pianta bastano a dirlo — modelli veri (Kenney
+   * "Furniture Kit", CC0), non più forme disegnate a mano. Nessuno dei
+   * tre è cliccabile, sono arredo e basta.
+   */
+  #creaAngoloLettura() {
+    const cx = 0.4;
+    const cz = 1.7;
+
+    this.#caricaModello(rugRoundUrl)
+      .then((tappeto) => {
+        if (!this.vivo) return;
+        tappeto.scale.setScalar(1.3);
+        tappeto.position.set(cx, PAVIMENTO_Y + 0.01, cz);
+        this.gruppoStanza.add(tappeto);
+      })
+      .catch((errore) => console.error("Il tappeto non è arrivato:", errore));
+
+    this.#caricaModello(loungeChairUrl)
+      .then((poltrona) => {
+        if (!this.vivo) return;
+        poltrona.scale.setScalar(1.05);
+        poltrona.position.set(cx - 0.3, PAVIMENTO_Y, cz + 0.25);
+        poltrona.rotation.y = -0.5;
+        this.gruppoStanza.add(poltrona);
+      })
+      .catch((errore) => console.error("La poltroncina non è arrivata:", errore));
+
+    this.#caricaModello(pottedPlantUrl)
+      .then((pianta) => {
+        if (!this.vivo) return;
+        pianta.scale.setScalar(0.85);
+        pianta.position.set(cx + 0.85, PAVIMENTO_Y, cz - 0.3);
+        this.gruppoStanza.add(pianta);
+      })
+      .catch((errore) => console.error("La pianta non è arrivata:", errore));
+  }
+
+  /**
+   * Un caricatore minimo per l'arredo puramente decorativo (tappeto,
+   * poltroncina, pianta, corridoi di scaffali): restituisce solo la
+   * scena già pronta per `castShadow`/`receiveShadow` — chi chiama
+   * pensa a scala, posizione e al controllo `this.vivo`.
+   */
+  async #caricaModello(url) {
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync(url);
+
+    gltf.scene.traverse((oggetto) => {
+      if (!oggetto.isMesh) return;
+      oggetto.castShadow = true;
+      oggetto.receiveShadow = true;
+    });
+
+    return gltf.scene;
   }
 
   /**
@@ -668,9 +797,10 @@ export default class Biblioteca {
   }
 
   /**
-   * La vetrina d'ingresso: un mobile a sé, piccolo e fisso (mai una
-   * sezione dello scaffale vero), con dorsi colorati e nessuna
-   * copertina da caricare. Vive nel proprio gruppo perché — come lo
+   * La vetrina d'ingresso: un mobile a sé, fisso (mai una sezione
+   * dello scaffale vero), che parte con dorsi a tinta piatta e prende
+   * un campione di copertine vere appena arrivano le serie (vedi
+   * `#vestiVetrina`). Vive nel proprio gruppo perché — come lo
    * scaffale vero, ma al contrario — deve sparire non appena si entra
    * nel flythrough: i due non condividono mai lo spazio davanti alla
    * telecamera, altrimenti si sovrapporrebbero.
@@ -679,16 +809,27 @@ export default class Biblioteca {
     this.gruppoVetrina = new THREE.Group();
     this.gruppoStanza.add(this.gruppoVetrina);
 
+    // Le copertine vere di un campione della collezione arrivano dopo
+    // (`#vestiVetrina`, chiamato da `impostaSerie`): qui si tiene solo
+    // il materiale a cui applicarle, un elenco piatto in ordine di
+    // costruzione.
+    this.vetrinaCoperture = [];
+
     const legno = this.materialeLegno;
-    const larghezza = VETRINA_COLONNE * PASSO_X;
-    const larghezzaMobile = larghezza + LIBRO_LARGHEZZA * 0.6;
-    const altezzaMobile = PASSO_Y * VETRINA_RIGHE + 0.5;
+    const larghezza = VETRINA_COLONNE * VETRINA_PASSO_X;
+    const larghezzaMobile = larghezza + VETRINA_LIBRO_LARGHEZZA * 0.6;
+    const altezzaMobile = VETRINA_PASSO_Y * VETRINA_RIGHE + 0.5;
+
+    // Il mobile poggia sul pavimento vero, non su un centro a
+    // indovinare: con righe più fitte del solito la vecchia costante
+    // fissa avrebbe affondato la vetrina sotto il pavimento.
+    const centroY = PAVIMENTO_Y + altezzaMobile / 2;
 
     for (let riga = 0; riga < VETRINA_RIGHE; riga++) {
-      const y = ((VETRINA_RIGHE - 1) / 2 - riga) * PASSO_Y;
+      const y = centroY + ((VETRINA_RIGHE - 1) / 2 - riga) * VETRINA_PASSO_Y;
 
-      const piano = new THREE.Mesh(new THREE.BoxGeometry(larghezzaMobile, 0.08, 1.1), legno);
-      piano.position.set(VETRINA_X, y - LIBRO_ALTEZZA / 2 - 0.04, VETRINA_Z - 0.1);
+      const piano = new THREE.Mesh(new THREE.BoxGeometry(larghezzaMobile, 0.06, 1.1), legno);
+      piano.position.set(VETRINA_X, y - VETRINA_LIBRO_ALTEZZA / 2 - 0.03, VETRINA_Z - 0.1);
       piano.castShadow = true;
       piano.receiveShadow = true;
       this.gruppoVetrina.add(piano);
@@ -699,7 +840,7 @@ export default class Biblioteca {
         // Uno spessore diverso libro per libro, solo per non sembrare
         // una fila di scatole identiche: non rappresenta nessun dato.
         const passo = ((indice * 37) % 100) / 100;
-        const spessore = SPESSORE_MIN + passo * (SPESSORE_MAX - SPESSORE_MIN);
+        const spessore = (SPESSORE_MIN + passo * (SPESSORE_MAX - SPESSORE_MIN)) * 0.85;
 
         const copertina = new THREE.MeshStandardMaterial({
           color: tintaDaTitolo(`vetrina-${indice}`),
@@ -716,28 +857,29 @@ export default class Biblioteca {
         ];
 
         const libro = new THREE.Mesh(this.geometriaLibro, materiali);
-        libro.scale.set(LIBRO_LARGHEZZA, LIBRO_ALTEZZA, spessore);
+        libro.scale.set(VETRINA_LIBRO_LARGHEZZA, VETRINA_LIBRO_ALTEZZA, spessore);
 
-        const x = VETRINA_X + colonna * PASSO_X - (larghezza - PASSO_X) / 2;
+        const x = VETRINA_X + colonna * VETRINA_PASSO_X - (larghezza - VETRINA_PASSO_X) / 2;
         libro.position.set(x, y, VETRINA_Z);
         libro.rotation.y = ROTAZIONE_RIPOSO;
         libro.castShadow = true;
         libro.receiveShadow = true;
 
         this.gruppoVetrina.add(libro);
+        this.vetrinaCoperture.push(copertina);
       }
     }
 
     for (const lato of [-1, 1]) {
-      const montante = new THREE.Mesh(new THREE.BoxGeometry(0.12, altezzaMobile, 1.1), legno);
-      montante.position.set(VETRINA_X + (lato * larghezzaMobile) / 2, -0.06, VETRINA_Z - 0.1);
+      const montante = new THREE.Mesh(new THREE.BoxGeometry(0.1, altezzaMobile, 1.1), legno);
+      montante.position.set(VETRINA_X + (lato * larghezzaMobile) / 2, centroY, VETRINA_Z - 0.1);
       montante.castShadow = true;
       montante.receiveShadow = true;
       this.gruppoVetrina.add(montante);
     }
 
     const fondo = new THREE.Mesh(new THREE.BoxGeometry(larghezzaMobile, altezzaMobile, 0.08), legno);
-    fondo.position.set(VETRINA_X, -0.06, VETRINA_Z - 0.62);
+    fondo.position.set(VETRINA_X, centroY, VETRINA_Z - 0.62);
     fondo.receiveShadow = true;
     this.gruppoVetrina.add(fondo);
 
@@ -751,42 +893,87 @@ export default class Biblioteca {
       new THREE.MeshBasicMaterial({ visible: false })
     );
 
-    ingresso.position.set(VETRINA_X, -0.06, VETRINA_Z + 0.3);
+    ingresso.position.set(VETRINA_X, centroY, VETRINA_Z + 0.3);
     ingresso.userData = { azione: { tipo: "scaffale" } };
     this.gruppoVetrina.add(ingresso);
     this.oggettiStanza.push(ingresso);
   }
 
   /**
+   * Le copertine vere sulla vetrina: un campione della collezione (fino
+   * a un dorso per slot), caricato una volta sola quando arrivano le
+   * prime serie. Non è lo stesso meccanismo a sezioni di
+   * `#caricaCoperturePerSezione` — qui i libri non cambiano mai, quindi
+   * non serve nemmeno liberare la memoria più tardi.
+   */
+  #vestiVetrina() {
+    if (this.vetrinaVestita || !this.vetrinaCoperture?.length) return;
+    this.vetrinaVestita = true;
+
+    const scelte = this.serie.filter((s) => copertinaLocale(s.copertina)).slice(0, this.vetrinaCoperture.length);
+
+    const caricatore = new THREE.TextureLoader();
+
+    scelte.forEach(async (s, indice) => {
+      const copertina = this.vetrinaCoperture[indice];
+
+      try {
+        const testura = await caricatore.loadAsync(copertinaLocale(s.copertina));
+
+        if (!this.vivo) {
+          testura.dispose();
+          return;
+        }
+
+        testura.colorSpace = THREE.SRGBColorSpace;
+        copertina.map = testura;
+        copertina.color.set(0xffffff);
+        copertina.needsUpdate = true;
+      } catch {
+        // Resta il dorso a tinta piatta: meglio di una richiesta a un
+        // indirizzo che potrebbe non rispondere mai.
+      }
+    });
+  }
+
+  /**
    * Il banco: un piano, un fronte, una lampada calda — più tutto
-   * quello che ci sta intorno (parete, cassa, fumetti sparsi, poster,
-   * lista dei desideri appesa) costruito da `arredoBancone.js`, e il
-   * bibliotecario vero, caricato da `libraio.js`. È lui il bersaglio
-   * di "parla col bibliotecario", non più il banco stesso: prima il
-   * volume cliccabile copriva tutto il piano, il che funzionava ma
-   * non spiegava perché proprio lì.
+   * quello che ci sta intorno (parete, targa col logo, cassa, lista
+   * dei desideri appesa) costruito da `arredoBancone.js`, il
+   * bibliotecario caricato da `libraio.js` e i fumetti sparsi
+   * caricati anche loro da `arredoBancone.js`. È lui (il bibliotecario)
+   * il bersaglio di "parla col bibliotecario", non più il banco stesso.
+   *
+   * L'altezza del piano non è un numero a caso: è una frazione
+   * dell'altezza del bibliotecario, così il banco gli arriva alla vita
+   * (basso apposta, perché resti "più in vista" invece di sparire
+   * dietro un bancone alto) invece di coprirgli la testa.
    */
   #creaBancone() {
     const legno = this.materialeLegno;
 
-    const piano = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.12, 1), legno);
-    piano.position.set(BANCONE_X, 0.9, BANCONE_Z);
+    const pianoY = PAVIMENTO_Y + ALTEZZA_BIBLIOTECARIO * 0.4;
+    const testaY = PAVIMENTO_Y + ALTEZZA_BIBLIOTECARIO;
+    const altezzaFronte = pianoY - PAVIMENTO_Y;
+
+    const piano = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 1), legno);
+    piano.position.set(BANCONE_X, pianoY, BANCONE_Z);
     piano.castShadow = true;
     piano.receiveShadow = true;
     this.gruppoStanza.add(piano);
 
-    const fronte = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 0.1), legno);
-    fronte.position.set(BANCONE_X, 0.45, BANCONE_Z - 0.45);
+    const fronte = new THREE.Mesh(new THREE.BoxGeometry(2.2, altezzaFronte, 0.1), legno);
+    fronte.position.set(BANCONE_X, PAVIMENTO_Y + altezzaFronte / 2, BANCONE_Z - 0.45);
     fronte.castShadow = true;
     fronte.receiveShadow = true;
     this.gruppoStanza.add(fronte);
 
     const lampada = new THREE.PointLight(0xffb454, 6, 6, 2);
-    lampada.position.set(BANCONE_X, 1.6, BANCONE_Z);
+    lampada.position.set(BANCONE_X, pianoY + 0.55, BANCONE_Z);
     this.gruppoStanza.add(lampada);
 
     const paralume = new THREE.Mesh(
-      new THREE.ConeGeometry(0.22, 0.3, 12, 1, true),
+      new THREE.ConeGeometry(0.18, 0.24, 12, 1, true),
       new THREE.MeshStandardMaterial({
         color: 0xf5c778,
         roughness: 0.5,
@@ -795,14 +982,15 @@ export default class Biblioteca {
       })
     );
 
-    paralume.position.set(BANCONE_X, 1.6, BANCONE_Z);
+    paralume.position.set(BANCONE_X, pianoY + 0.55, BANCONE_Z);
     this.gruppoStanza.add(paralume);
 
     const arredo = costruisciArredoBancone({
-      materialeCarta: this.materialeCarta,
-      geometriaLibro: this.geometriaLibro,
       x: BANCONE_X,
-      z: BANCONE_Z
+      z: BANCONE_Z,
+      pavimentoY: PAVIMENTO_Y,
+      pianoY,
+      testaY
     });
 
     this.gruppoStanza.add(arredo.gruppo);
@@ -815,50 +1003,49 @@ export default class Biblioteca {
       if (segno) this.#creaSegno(segno.x, segno.z);
     }
 
-    this.#caricaLibraio();
-  }
+    /* ---------- Il bibliotecario e i fumetti sparsi ----------
+       Modelli veri, quindi in rete: entrambi asincroni, entrambi
+       guardati da `this.vivo` per il caso in cui la scena sia già
+       stata smontata (React in modalità rigorosa monta e smonta ogni
+       effetto) mentre erano ancora in viaggio. */
+    const zLibraio = BANCONE_Z - 0.75;
 
-  /**
-   * Il bibliotecario vive fuori dal costruttore sincrono: un modello
-   * si carica in rete, non si costruisce sul posto come il resto della
-   * stanza. Finché non arriva, il banco resta comunque un posto
-   * plausibile — non c'è un segnaposto goffo al suo posto.
-   */
-  #caricaLibraio() {
-    const z = BANCONE_Z - 0.9;
-
-    caricaBibliotecario({
-      url: bibliotecarioGlbUrl,
-      posizione: { x: BANCONE_X, y: PAVIMENTO_Y, z, rotazioneY: 0 }
-    })
+    caricaBibliotecario({ url: bibliotecarioGlbUrl, x: BANCONE_X, y: PAVIMENTO_Y, z: zLibraio })
       .then((bibliotecario) => {
-        // Il costruttore potrebbe aver già smontato la scena mentre il
-        // modello era ancora in viaggio (React in modalità rigorosa
-        // monta e smonta ogni effetto): in tal caso si libera subito la
-        // memoria invece di aggiungerlo a una scena che non esiste più.
-        if (!this.vivo) {
-          bibliotecario.smonta();
-          return;
-        }
+        if (!this.vivo) return;
 
         this.bibliotecario = bibliotecario;
         this.gruppoStanza.add(bibliotecario.gruppo);
 
-        const bersaglio = new THREE.Mesh(
-          new THREE.BoxGeometry(1.3, ALTEZZA_BIBLIOTECARIO + 0.3, 1.1),
+        const bersaglioLibraio = new THREE.Mesh(
+          new THREE.BoxGeometry(1.2, ALTEZZA_BIBLIOTECARIO + 0.2, 1),
           new THREE.MeshBasicMaterial({ visible: false })
         );
 
-        bersaglio.position.set(BANCONE_X, PAVIMENTO_Y + (ALTEZZA_BIBLIOTECARIO + 0.3) / 2, z);
-        bersaglio.userData = { azione: { tipo: "bibliotecario" } };
-        this.gruppoStanza.add(bersaglio);
-        this.oggettiStanza.push(bersaglio);
+        bersaglioLibraio.position.set(BANCONE_X, PAVIMENTO_Y + (ALTEZZA_BIBLIOTECARIO + 0.2) / 2, zLibraio);
+        bersaglioLibraio.userData = { azione: { tipo: "bibliotecario" } };
+        this.gruppoStanza.add(bersaglioLibraio);
+        this.oggettiStanza.push(bersaglioLibraio);
 
         this.#creaSegno(BANCONE_X, BANCONE_Z + 0.15);
       })
-      .catch((errore) => {
-        console.error("Il bibliotecario non è arrivato:", errore);
-      });
+      .catch((errore) => console.error("Il bibliotecario non è arrivato:", errore));
+
+    caricaFumetti({
+      x: BANCONE_X + 0.95,
+      z: BANCONE_Z,
+      pianoY,
+      urlChiuso: spellbookChiusoUrl,
+      urlAperto: spellbookApertoUrl
+    })
+      .then(({ gruppo, bersaglio, segno }) => {
+        if (!this.vivo) return;
+
+        this.gruppoStanza.add(gruppo);
+        this.oggettiStanza.push(bersaglio);
+        this.#creaSegno(segno.x, segno.z);
+      })
+      .catch((errore) => console.error("I fumetti sul banco non sono arrivati:", errore));
   }
 
   /**
@@ -1337,9 +1524,17 @@ export default class Biblioteca {
           continue;
         }
 
+        // I modelli scaricati (bibliotecario, arredo) portano più
+        // mappe di quante ne usasse la sola scena disegnata a mano:
+        // meglio elencarle tutte qui una volta che riscoprirle una
+        // per una a ogni nuovo asset.
         materiale.map?.dispose();
         materiale.roughnessMap?.dispose();
         materiale.normalMap?.dispose();
+        materiale.metalnessMap?.dispose();
+        materiale.emissiveMap?.dispose();
+        materiale.aoMap?.dispose();
+        materiale.gradientMap?.dispose();
         materiale.dispose();
       }
     });
