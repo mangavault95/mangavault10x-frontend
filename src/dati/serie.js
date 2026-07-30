@@ -169,6 +169,24 @@ export const FILTRI = [
     test: (s) => s.stato === "in_corso"
   },
   {
+    id: "concluse",
+    etichetta: "Concluse",
+    descrizione: "L'editore ha finito di pubblicarle",
+    test: (s) => s.stato === "conclusa"
+  },
+  {
+    id: "sospese",
+    etichetta: "Sospese",
+    descrizione: "In pausa dal lato dell'editore",
+    test: (s) => s.stato === "sospesa"
+  },
+  {
+    id: "annullate",
+    etichetta: "Annullate",
+    descrizione: "Interrotte prima della fine",
+    test: (s) => s.stato === "annullata"
+  },
+  {
     id: "da-completare",
     etichetta: "Da completare",
     descrizione: "Ti mancano dei volumi",

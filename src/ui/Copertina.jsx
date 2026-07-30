@@ -34,7 +34,8 @@ export default function Copertina({
   alt,
   className = "",
   inclina = true,
-  priorita = false
+  priorita = false,
+  riempi = false
 }) {
   const contenitore = useRef(null);
   const fotogramma = useRef(0);
@@ -121,15 +122,20 @@ export default function Copertina({
           <>
             {/* Il fondo sfocato riempie i bordi quando la copertina non
                 ha esattamente il rapporto 2:3 — senza, restano due bande
-                nere ai lati che fanno sembrare l'immagine sbagliata. */}
-            <img
-              src={indirizzo}
-              alt=""
-              aria-hidden="true"
-              className={`absolute inset-0 h-full w-full scale-110 object-cover blur-xl transition-opacity duration-slow ${
-                caricata ? "opacity-40" : "opacity-0"
-              }`}
-            />
+                nere ai lati che fanno sembrare l'immagine sbagliata.
+                Con `riempi` l'immagine sopra copre già tutto il riquadro,
+                quindi il fondo non servirebbe a niente: costerebbe una
+                seconda richiesta di rete per uno strato che nessuno vede. */}
+            {!riempi && (
+              <img
+                src={indirizzo}
+                alt=""
+                aria-hidden="true"
+                className={`absolute inset-0 h-full w-full scale-110 object-cover blur-xl transition-opacity duration-slow ${
+                  caricata ? "opacity-40" : "opacity-0"
+                }`}
+              />
+            )}
 
             <img
               src={indirizzo}
@@ -141,7 +147,13 @@ export default function Copertina({
               fetchpriority={priorita ? "high" : "auto"}
               onLoad={() => setCaricata(true)}
               onError={() => setRotta(true)}
-              className={`relative h-full w-full object-contain transition-[opacity,transform] duration-slow ease-settle
+              // `riempi` ritaglia invece di contenere: in una griglia
+              // fitta ogni copertina deve occupare esattamente lo stesso
+              // rettangolo, a costo di perdere un margine di immagine.
+              // Fuori dalla griglia (la scheda di una serie, i primati)
+              // l'immagine intera conta più dell'uniformità.
+              className={`relative h-full w-full transition-[opacity,transform] duration-slow ease-settle
+                ${riempi ? "object-cover" : "object-contain"}
                 ${caricata ? "opacity-100" : "opacity-0 scale-[0.97]"}`}
             />
           </>

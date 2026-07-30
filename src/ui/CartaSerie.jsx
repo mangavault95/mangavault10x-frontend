@@ -4,6 +4,7 @@ import Progresso from "./Progresso";
 import { BottonePreferito } from "./AzioniSerie";
 import { useCollezione } from "../dati/collezione";
 import { completamento, volumiMancanti } from "../dati/serie";
+import { generiDiSerie } from "../dati/generi";
 
 /**
  * Una serie dentro una griglia.
@@ -16,11 +17,12 @@ import { completamento, volumiMancanti } from "../dati/serie";
  * Il titolo e i metadati salgono di un capello al passaggio del mouse
  * insieme alla copertina: l'oggetto si muove tutto insieme, non a pezzi.
  */
-export default function CartaSerie({ serie, priorita = false }) {
+export default function CartaSerie({ serie, priorita = false, riempi = false }) {
   const { aggiornaLocale } = useCollezione();
 
   const pct = completamento(serie);
   const mancanti = volumiMancanti(serie);
+  const generi = generiDiSerie(serie).slice(0, 3);
 
   return (
     <Link
@@ -30,7 +32,7 @@ export default function CartaSerie({ serie, priorita = false }) {
                  focus-visible:ring-offset-4 focus-visible:ring-offset-shelf active:translate-y-0 active:scale-[0.99]"
     >
       <div className="relative">
-        <Copertina src={serie.copertina} alt={serie.titolo} priorita={priorita} />
+        <Copertina src={serie.copertina} alt={serie.titolo} priorita={priorita} riempi={riempi} />
 
         {/* Sempre presente, non solo quando è già preferito: altrimenti
             non ci sarebbe modo di scoprire che si può segnare da qui.
@@ -51,6 +53,39 @@ export default function CartaSerie({ serie, priorita = false }) {
             {serie.valutazione.toFixed(1)}
           </span>
         )}
+
+        {/* Il pallino di stato: giada se l'editore l'ha già conclusa,
+            ottone se è ancora in uscita. Sta in basso per non litigare
+            con voto e preferito, già in alto. */}
+        {serie.stato && (serie.stato === "conclusa" || serie.stato === "in_corso") && (
+          <span
+            aria-hidden="true"
+            title={serie.stato === "conclusa" ? "Conclusa" : "In corso"}
+            className={`absolute bottom-2 left-2 h-2 w-2 rounded-full ring-2 ring-void/70 ${
+              serie.stato === "conclusa" ? "bg-jade" : "bg-lapis"
+            }`}
+          />
+        )}
+
+        {/* I generi, leggibili solo al passaggio del mouse: in 189
+            schede tutte insieme sarebbero solo rumore, ma sono il modo
+            più veloce di riconoscere una serie mentre scorri la griglia
+            cercando "qualcosa di simile a...". */}
+        {generi.length > 0 && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap gap-1 rounded-b-card bg-gradient-to-t from-void/90 via-void/50 to-transparent p-2 pt-6 opacity-0 transition-opacity duration-quick group-hover:opacity-100"
+          >
+            {generi.map((g) => (
+              <span
+                key={g}
+                className="rounded-full bg-void/70 px-1.5 py-0.5 text-[0.62rem] text-ink-muted backdrop-blur-sm"
+              >
+                {g}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mt-3 space-y-1.5 px-0.5">
@@ -66,7 +101,15 @@ export default function CartaSerie({ serie, priorita = false }) {
           )}
         </p>
 
-        <Progresso valore={pct} etichetta={`${serie.titolo}: ${pct}% completa`} sottile />
+        <Progresso
+          valore={pct}
+          etichetta={
+            pct !== null
+              ? `${serie.titolo}: ${pct}% completa`
+              : `${serie.titolo}: in corso, volumi totali non ancora noti`
+          }
+          sottile
+        />
       </div>
     </Link>
   );
@@ -79,12 +122,12 @@ export default function CartaSerie({ serie, priorita = false }) {
  * copertina leggibile: la stessa griglia va da due colonne sul
  * telefono a sette su un monitor largo senza breakpoint scritti a mano.
  */
-export function GrigliaSerie({ serie, children }) {
+export function GrigliaSerie({ serie, riempi = false, children }) {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-x-5 gap-y-8">
       {serie
         ? serie.map((s, i) => (
-            <CartaSerie key={s.id} serie={s} priorita={i < 12} />
+            <CartaSerie key={s.id} serie={s} priorita={i < 12} riempi={riempi} />
           ))
         : children}
     </div>

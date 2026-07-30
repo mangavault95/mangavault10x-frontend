@@ -4,10 +4,16 @@ import Fuse from "fuse.js";
 import Pagina from "../ui/Pagina";
 import { GrigliaSerie } from "../ui/CartaSerie";
 import { CaricamentoGriglia, Errore, Vuoto } from "../ui/Stati";
-import { CampoRicerca, Pastiglie, Tendina, Bottone } from "../ui/Controlli";
+import { CampoRicerca, Tendina, Bottone } from "../ui/Controlli";
+import FiltriCollezione from "../ui/FiltriCollezione";
+import AnalisiCollezione from "../ui/AnalisiCollezione";
+import ConsigliRail from "../ui/ConsigliRail";
+import LibroVetrina from "../ui/LibroVetrina";
+import Icon from "../app/Icon";
 import { useCollezione } from "../dati/collezione";
 import { useAccessoProtetto } from "../dati/accesso";
 import { creaManga, enrichManga } from "../services/api";
+import { idDa, generiDiSerie, editoreCanonico } from "../dati/generi";
 import {
   FILTRI,
   ORDINAMENTI,
@@ -18,22 +24,31 @@ import {
 } from "../dati/serie";
 
 /**
- * La collezione intera, con i mezzi per trovarci dentro qualcosa.
+ * La collezione intera, con i mezzi per studiarla per davvero.
  *
- * Ricerca, filtro e ordinamento vivono nell'indirizzo, non nello
- * stato del componente. È una scelta che si paga da sola: una vista
- * si può salvare nei preferiti o mandare a qualcuno, il tasto
- * Indietro annulla un filtro invece di buttarti fuori dalla pagina,
- * e ricaricando resti dov'eri.
+ * La Biblioteca è il posto per camminarci dentro e guardare; questa è
+ * il posto per capire cosa c'è — cercare, restringere per genere o
+ * editore, vedere quanto vale quello che hai appena filtrato, scoprire
+ * cosa prendere dopo. Ricerca, filtri e ordinamento vivono nell'indirizzo,
+ * non nello stato del componente: una vista si può salvare nei
+ * preferiti o mandare a qualcuno, il tasto Indietro annulla un filtro
+ * invece di buttarti fuori dalla pagina, e ricaricando resti dov'eri.
  */
 export default function CollezionePage() {
   const { serie, inCorso, errore, ricarica } = useCollezione();
   const [parametri, setParametri] = useSearchParams();
   const [modaleAperto, setModaleAperto] = useState(false);
+  const [filtriMobileAperti, setFiltriMobileAperti] = useState(false);
 
   const ricercaTesto = parametri.get("q") || "";
   const filtroAttivo = filtroPerId(parametri.get("filtro")).id;
   const ordineAttivo = ordinamentoPerId(parametri.get("ordine")).id;
+  const editoreAttivo = parametri.get("editore") || null;
+
+  const generiSelezionati = useMemo(
+    () => (parametri.get("generi") || "").split(",").filter(Boolean),
+    [parametri]
+  );
 
   // I parametri vuoti spariscono dall'indirizzo: `?filtro=tutte&q=`
   // non dice niente in più di `/collezione` ed è più brutto da leggere.
@@ -49,6 +64,22 @@ export default function CollezionePage() {
         }
 
         return nuovi;
+      },
+      { replace: true }
+    );
+  }
+
+  // I generi sono una lista, non un valore solo: l'indirizzo li porta
+  // come `?generi=adventure,drama` invece di un parametro per genere.
+  function aggiornaGeneri(nuovi) {
+    setParametri(
+      (precedenti) => {
+        const p = new URLSearchParams(precedenti);
+
+        if (!nuovi.length) p.delete("generi");
+        else p.set("generi", nuovi.join(","));
+
+        return p;
       },
       { replace: true }
     );
@@ -80,14 +111,27 @@ export default function CollezionePage() {
 
     const base = testo ? indice.search(testo).map((r) => r.item) : serie;
 
-    const filtrate = base.filter(filtroPerId(filtroAttivo).test);
+    let filtrate = base.filter(filtroPerId(filtroAttivo).test);
+
+    // Più generi selezionati si sommano in OR: cercare "Adventure" o
+    // "Horror" deve allargare i risultati, non restringerli a chi ha
+    // entrambi — è così che si esplora, non che si incastra.
+    if (generiSelezionati.length) {
+      filtrate = filtrate.filter((s) =>
+        generiDiSerie(s).some((g) => generiSelezionati.includes(idDa(g)))
+      );
+    }
+
+    if (editoreAttivo) {
+      filtrate = filtrate.filter((s) => idDa(editoreCanonico(s.editore) || "") === editoreAttivo);
+    }
 
     // Con una ricerca attiva l'ordine di rilevanza di Fuse è più utile
     // dell'ordinamento scelto: il risultato migliore deve stare in cima.
     if (testo && ordineAttivo === "titolo") return filtrate;
 
     return [...filtrate].sort(ordinamentoPerId(ordineAttivo).confronta);
-  }, [ricercaTesto, indice, serie, filtroAttivo, ordineAttivo]);
+  }, [ricercaTesto, indice, serie, filtroAttivo, ordineAttivo, generiSelezionati, editoreAttivo]);
 
   // Il numero accanto a ogni filtro si calcola sulla collezione intera,
   // non sui risultati: deve dire quante serie troverei premendolo.
@@ -101,7 +145,12 @@ export default function CollezionePage() {
     return mappa;
   }, [serie]);
 
-  const filtroPulito = !ricercaTesto && filtroAttivo === "tutte";
+  const filtroPulito =
+    !ricercaTesto && filtroAttivo === "tutte" && !generiSelezionati.length && !editoreAttivo;
+
+  const filtriAttivi = [filtroAttivo !== "tutte", generiSelezionati.length > 0, Boolean(editoreAttivo)].filter(
+    Boolean
+  ).length;
 
   if (errore) {
     return (
@@ -111,9 +160,20 @@ export default function CollezionePage() {
     );
   }
 
+  const propsFiltri = {
+    serie,
+    filtroAttivo,
+    onCambiaFiltro: (v) => aggiornaParametro("filtro", v),
+    conteggiFiltro: conteggi,
+    generiSelezionati,
+    onCambiaGeneri: aggiornaGeneri,
+    editoreAttivo,
+    onCambiaEditore: (v) => aggiornaParametro("editore", v)
+  };
+
   return (
     <Pagina
-      occhiello="Tutte le serie"
+      occhiello="Studia la tua collezione"
       titolo="Collezione"
       sommario={
         inCorso && !serie.length
@@ -131,6 +191,19 @@ export default function CollezionePage() {
             risultati={risultati.length}
           />
 
+          <button
+            onClick={() => setFiltriMobileAperti(true)}
+            className="inline-flex items-center gap-2 rounded-card border border-hairline bg-glass-1 px-4 py-2.5 text-sm font-semibold text-ink-bright backdrop-blur-xl transition-colors duration-quick hover:border-soft lg:hidden"
+          >
+            <Icon nome="settings" dimensione={16} />
+            Filtri
+            {filtriAttivi > 0 && (
+              <span className="rounded-full bg-brass-400 px-1.5 py-0.5 font-numeric text-[0.65rem] text-void">
+                {filtriAttivi}
+              </span>
+            )}
+          </button>
+
           <Bottone onClick={() => setModaleAperto(true)}>Nuova serie</Bottone>
         </div>
       }
@@ -139,49 +212,60 @@ export default function CollezionePage() {
         <ModuloNuovaSerie onChiuso={() => setModaleAperto(false)} onCreata={ricarica} />
       )}
 
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <Pastiglie
-          opzioni={FILTRI}
-          attiva={filtroAttivo}
-          onCambia={(v) => aggiornaParametro("filtro", v)}
-          conteggi={conteggi}
-        />
-
-        <Tendina
-          etichetta="Ordina"
-          valore={ordineAttivo}
-          opzioni={ORDINAMENTI}
-          onCambia={(v) => aggiornaParametro("ordine", v)}
-        />
-      </div>
-
-      {inCorso && !serie.length ? (
-        <CaricamentoGriglia />
-      ) : risultati.length ? (
-        <>
-          {!filtroPulito && (
-            <p className="mb-5 text-sm text-ink-muted" aria-live="polite">
-              {plurale(risultati.length, "serie trovata", "serie trovate")}
-            </p>
-          )}
-
-          <GrigliaSerie serie={risultati} />
-        </>
-      ) : (
-        <Vuoto
-          titolo="Nessuna serie corrisponde"
-          testo={
-            ricercaTesto
-              ? `Non trovo niente per «${ricercaTesto}». Prova con meno parole, o con il nome dell'autore.`
-              : "Questo filtro non seleziona nessuna serie della collezione."
-          }
-          azione={
-            <Bottone variante="secondario" onClick={() => setParametri({}, { replace: true })}>
-              Azzera ricerca e filtri
-            </Bottone>
-          }
-        />
+      {filtriMobileAperti && (
+        <FiltriCollezione {...propsFiltri} variante="sheet" onChiudere={() => setFiltriMobileAperti(false)} />
       )}
+
+      {!inCorso && serie.length > 0 && (
+        <div className="mb-8 space-y-6">
+          <LibroVetrina serie={serie} />
+          <AnalisiCollezione serie={risultati} />
+          <ConsigliRail serie={serie} />
+        </div>
+      )}
+
+      <div className="flex items-start gap-8">
+        <FiltriCollezione {...propsFiltri} variante="sidebar" />
+
+        <div className="min-w-0 flex-1">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            {!filtroPulito ? (
+              <p className="text-sm text-ink-muted" aria-live="polite">
+                {plurale(risultati.length, "serie trovata", "serie trovate")}
+              </p>
+            ) : (
+              <span />
+            )}
+
+            <Tendina
+              etichetta="Ordina"
+              valore={ordineAttivo}
+              opzioni={ORDINAMENTI}
+              onCambia={(v) => aggiornaParametro("ordine", v)}
+            />
+          </div>
+
+          {inCorso && !serie.length ? (
+            <CaricamentoGriglia />
+          ) : risultati.length ? (
+            <GrigliaSerie serie={risultati} riempi />
+          ) : (
+            <Vuoto
+              titolo="Nessuna serie corrisponde"
+              testo={
+                ricercaTesto
+                  ? `Non trovo niente per «${ricercaTesto}». Prova con meno parole, o con il nome dell'autore.`
+                  : "Questo filtro non seleziona nessuna serie della collezione."
+              }
+              azione={
+                <Bottone variante="secondario" onClick={() => setParametri({}, { replace: true })}>
+                  Azzera ricerca e filtri
+                </Bottone>
+              }
+            />
+          )}
+        </div>
+      </div>
     </Pagina>
   );
 }

@@ -10,6 +10,7 @@ import { BottonePreferito, ContaVolumi, VotoStelle } from "../ui/AzioniSerie";
 import Icon from "../app/Icon";
 import { useCollezione, useSerie } from "../dati/collezione";
 import { getMarketPrice, getStoricoPerSerie, urlCopertina } from "../services/api";
+import { generiDiSerie, idDa } from "../dati/generi";
 import useRisorsa from "../dati/useRisorsa";
 import {
   ETICHETTE_STATO,
@@ -156,10 +157,10 @@ export default function SeriePage() {
                     </Etichetta>
                   )}
 
-                  {serie.generi.map((g) => (
+                  {generiDiSerie(serie).map((g) => (
                     <Link
                       key={g}
-                      to={`/collezione?q=${encodeURIComponent(g)}`}
+                      to={`/collezione?generi=${idDa(g)}`}
                       className="rounded-full border border-hairline bg-glass-1 px-3 py-1 text-xs text-ink-muted transition-colors duration-quick hover:border-soft hover:text-ink-bright"
                     >
                       {g}
@@ -187,7 +188,14 @@ export default function SeriePage() {
                   )}
                 </div>
 
-                <Progresso valore={pct} etichetta={`${serie.titolo} completa al ${pct}%`} />
+                <Progresso
+                  valore={pct}
+                  etichetta={
+                    pct !== null
+                      ? `${serie.titolo} completa al ${pct}%`
+                      : `${serie.titolo}: in corso, volumi totali non ancora noti`
+                  }
+                />
 
                 {serie.totali === null && (
                   <p className="text-xs text-ink-faint">
@@ -417,10 +425,14 @@ function QuotazioneMercato({ serie }) {
 /** Altre serie che condividono un genere: il modo naturale di girare. */
 function Simili({ serie, tutte }) {
   const simili = useMemo(() => {
-    if (!serie.generi.length) return [];
+    // Canonicalizzati da entrambi i lati: senza, una serie taggata
+    // "Avventura" e una "Adventure" non si sarebbero mai riconosciute
+    // vicine, pur essendo lo stesso genere scritto in due lingue.
+    const miei = generiDiSerie(serie);
+    if (!miei.length) return [];
 
     return tutte
-      .filter((s) => s.id !== serie.id && s.generi.some((g) => serie.generi.includes(g)))
+      .filter((s) => s.id !== serie.id && generiDiSerie(s).some((g) => miei.includes(g)))
       .sort((a, b) => (b.valutazione ?? 0) - (a.valutazione ?? 0))
       .slice(0, 6);
   }, [serie, tutte]);
