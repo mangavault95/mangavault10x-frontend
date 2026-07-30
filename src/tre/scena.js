@@ -366,7 +366,6 @@ export default class Biblioteca {
     // Ricavo gli estremi reali dalla stessa formula che posiziona i
     // libri, così i due non possono più divergere.
     const passoSezione = this.larghezzaSezione + PASSO_X;
-    const mezzaFila = ((this.colonne ?? 1) - 1) * PASSO_X / 2;
 
     // Una libreria per sezione, non un ripiano unico che scorre.
     //
@@ -414,7 +413,11 @@ export default class Biblioteca {
     }
 
     // Il fondo dello scaffale: una parete scura dietro i libri, che
-    // impedisce di vedere "attraverso" la libreria.
+    // impedisce di vedere "attraverso" la libreria. Copre l'intera fila
+    // di sezioni, dalla prima all'ultima libreria.
+    const centroX = ((this.sezioni - 1) * passoSezione) / 2;
+    const larghezzaTotale = (this.sezioni - 1) * passoSezione + larghezzaMobile;
+
     const fondo = new THREE.Mesh(
       new THREE.BoxGeometry(larghezzaTotale, PASSO_Y * this.righe + 0.6, 0.08),
       legno
