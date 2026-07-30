@@ -4,15 +4,14 @@ import Shell from "./Shell";
 import RouteFallback from "./RouteFallback";
 import { CollezioneProvider } from "../dati/CollezioneContext";
 import { AccessoProvider } from "../dati/AccessoProvider";
+import { BibliotecarioProvider } from "../bibliotecario/BibliotecarioProvider";
 
 // Ogni pagina è un chunk separato: la prima apertura scarica solo
-// quello che serve invece dell'intera applicazione.
+// quello che serve invece dell'intera applicazione. Three.js pesa più
+// di tutto il resto del sito messo insieme, e la home lo scarica
+// sempre: è la stanza d'ingresso, non un'ala facoltativa.
 const Home = lazy(() => import("../pages/HomePage"));
 const Collezione = lazy(() => import("../pages/CollezionePage"));
-// Three.js pesa più di tutto il resto del sito messo insieme: tenerlo
-// in un chunk a parte significa che chi non entra in biblioteca non lo
-// scarica nemmeno.
-const BibliotecaTre = lazy(() => import("../pages/BibliotecaPage"));
 const Serie = lazy(() => import("../pages/SeriePage"));
 const Wishlist = lazy(() => import("../pages/WishlistPage"));
 const Desiderio = lazy(() => import("../pages/DesiderioPage"));
@@ -41,32 +40,40 @@ export default function AppRoutes() {
           un preferito segnato dallo Scaffale e uno dalla Collezione
           devono aprire lo stesso modulo, non uno per pagina. */}
       <AccessoProvider>
-        <Shell>
-          <Suspense fallback={<RouteFallback />}>
-            {/* La location come key fa ripartire l'animazione di entrata
-                a ogni cambio pagina, dando continuità spaziale. */}
-            <Routes location={location} key={location.pathname}>
-              <Route path="/" element={<Home />} />
-              <Route path="/collezione" element={<Collezione />} />
-              <Route path="/biblioteca" element={<BibliotecaTre />} />
-              <Route path="/serie/:id" element={<Serie />} />
-              <Route path="/wishlist" element={<Wishlist />} />
-              <Route path="/desiderio/:id" element={<Desiderio />} />
-              <Route path="/lettura" element={<Lettura />} />
-              <Route path="/statistiche" element={<Statistiche />} />
-              <Route path="/admin" element={<Admin />} />
+        {/* Stesso discorso per il banco: il bottone fluttuante di ogni
+            pagina e il bancone dentro la stanza 3D devono aprire lo
+            stesso pannello. */}
+        <BibliotecarioProvider>
+          <Shell>
+            <Suspense fallback={<RouteFallback />}>
+              {/* La location come key fa ripartire l'animazione di entrata
+                  a ogni cambio pagina, dando continuità spaziale. */}
+              <Routes location={location} key={location.pathname}>
+                <Route path="/" element={<Home />} />
+                <Route path="/collezione" element={<Collezione />} />
+                {/* La biblioteca non è più una pagina a sé: è lo scaffale
+                    della stanza d'ingresso. Il vecchio indirizzo resta
+                    valido, ma porta alla home. */}
+                <Route path="/biblioteca" element={<Navigate to="/" replace />} />
+                <Route path="/serie/:id" element={<Serie />} />
+                <Route path="/wishlist" element={<Wishlist />} />
+                <Route path="/desiderio/:id" element={<Desiderio />} />
+                <Route path="/lettura" element={<Lettura />} />
+                <Route path="/statistiche" element={<Statistiche />} />
+                <Route path="/admin" element={<Admin />} />
 
-              {/* Vecchi indirizzi mantenuti funzionanti */}
-              <Route path="/records" element={<Navigate to="/statistiche" replace />} />
-              <Route
-                path="/preferiti"
-                element={<Navigate to="/collezione?filtro=preferiti" replace />}
-              />
+                {/* Vecchi indirizzi mantenuti funzionanti */}
+                <Route path="/records" element={<Navigate to="/statistiche" replace />} />
+                <Route
+                  path="/preferiti"
+                  element={<Navigate to="/collezione?filtro=preferiti" replace />}
+                />
 
-              <Route path="*" element={<NonTrovata />} />
-            </Routes>
-          </Suspense>
-        </Shell>
+                <Route path="*" element={<NonTrovata />} />
+              </Routes>
+            </Suspense>
+          </Shell>
+        </BibliotecarioProvider>
       </AccessoProvider>
     </CollezioneProvider>
   );

@@ -24,14 +24,6 @@ export const SEZIONI = [
     tasto: "2"
   },
   {
-    id: "biblioteca",
-    percorso: "/biblioteca",
-    etichetta: "Biblioteca",
-    descrizione: "La collezione come stanza, in tre dimensioni",
-    icona: "porta",
-    tasto: "6"
-  },
-  {
     id: "lettura",
     percorso: "/lettura",
     etichetta: "In lettura",
@@ -72,7 +64,6 @@ export const SEZIONE_ADMIN = {
  */
 export function titoloPer(percorso) {
   if (percorso.startsWith("/serie/")) return "Scheda serie · MangaVault";
-  if (percorso === "/biblioteca") return "La biblioteca · MangaVault";
 
   const sezione = [...SEZIONI, SEZIONE_ADMIN].find((s) => s.percorso === percorso);
 

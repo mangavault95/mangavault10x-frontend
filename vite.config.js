@@ -40,5 +40,8 @@ const inoltri = Object.fromEntries(
 
 export default defineConfig({
   plugins: [react()],
-  server: { proxy: inoltri }
+  server: {
+    port: Number(process.env.PORT) || 5173,
+    proxy: inoltri
+  }
 });

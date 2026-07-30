@@ -1,326 +1,468 @@
-import { useMemo } from "react";
-import { Link } from "react-router-dom";
-import Pagina, { Sezione } from "../ui/Pagina";
-import Copertina from "../ui/Copertina";
-import Progresso from "../ui/Progresso";
-import CartaSerie from "../ui/CartaSerie";
-import { CaricamentoGriglia, Errore, Vuoto } from "../ui/Stati";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import Biblioteca from "../tre/scena";
 import { Bottone } from "../ui/Controlli";
+import { Errore, Vuoto } from "../ui/Stati";
+import Icon from "../app/Icon";
 import { useCollezione } from "../dati/collezione";
-import useRisorsa from "../dati/useRisorsa";
-import { getReadingSessions } from "../services/api";
-import {
-  completamento,
-  euro,
-  numeroIt,
-  valoreSerie,
-  volumiMancanti
-} from "../dati/serie";
+import { useBibliotecario } from "../bibliotecario/contesto";
+import { completamento, euro, valoreSerie } from "../dati/serie";
 
 /**
- * Lo Scaffale: la prima cosa che si vede entrando.
+ * La home: una stanza, non un cruscotto.
  *
- * Non è "tutta la collezione" — quella è la pagina Collezione. Qui
- * stanno solo le tre domande che ci si fa davvero aprendo il sito:
- * cosa stavo leggendo, cosa mi manca, cos'ho aggiunto per ultimo.
- * Tutto il resto è a un click di distanza.
+ * Prima questa pagina era uno Scaffale con numeri e liste che
+ * duplicavano quello che Numeri e In lettura dicono già meglio. Ora è
+ * la soglia vera del sito: una porta che si apre su una stanza dove lo
+ * scaffale (a sinistra) è la biblioteca in tre dimensioni — non un
+ * rimando a lei, la vecchia rotta `/biblioteca` è sparita — il bancone
+ * (a destra) apre lo stesso banco del bottone fluttuante, e quattro
+ * postazioni portano alle altre sezioni.
  *
- * È anche la pagina destinata a diventare l'ingresso della biblioteca
- * in tre dimensioni: la struttura a fasce orizzontali è già quella
- * che serve, lo scaffale prenderà il posto della fascia in alto.
+ * React qui non disegna la stanza: la costruisce e la smonta `Biblioteca`
+ * (in `tre/scena.js`), che vive nel suo canvas e nel suo ciclo di
+ * animazione. React riceve indietro solo cosa sta guardando il mouse e
+ * cosa è stato cliccato.
  */
 export default function HomePage() {
   const { serie, inCorso, errore, ricarica } = useCollezione();
+  const { apri: apriBibliotecario } = useBibliotecario();
+  const navigate = useNavigate();
 
-  const { dati: sessioni } = useRisorsa(getReadingSessions);
+  const stanza = useRef(null);
+  const scena = useRef(null);
 
-  /* -------------------- I numeri della testata -------------------- */
+  const [mirata, setMirata] = useState(null);
+  const [mirataOggetto, setMirataOggetto] = useState(null);
+  const [posizione, setPosizione] = useState({ sezione: -1, totali: 1 });
+  const [introFinita, setIntroFinita] = useState(false);
+  const [guasto, setGuasto] = useState(null);
 
-  const riepilogo = useMemo(() => {
-    const volumi = serie.reduce((t, s) => t + s.posseduti, 0);
-    const valore = serie.reduce((t, s) => t + valoreSerie(s), 0);
-    const complete = serie.filter((s) => completamento(s) === 100).length;
+  // Letto una volta sola: non cambia mentre la pagina è aperta, e
+  // governa sia l'apertura della porta (sotto) sia i movimenti di
+  // camera dentro la scena 3D.
+  const [menoMovimento] = useState(
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 
-    return { serie: serie.length, volumi, valore, complete };
+  const apri = useCallback((s) => navigate(`/serie/${s.id}`), [navigate]);
+
+  const alAzione = useCallback(
+    (azione) => {
+      if (azione.tipo === "naviga") navigate(azione.percorso);
+      else if (azione.tipo === "bibliotecario") apriBibliotecario();
+      else if (azione.tipo === "scaffale") scena.current?.entraNelloScaffale();
+    },
+    [navigate, apriBibliotecario]
+  );
+
+  /* -------------------- Vita della scena -------------------- */
+
+  useEffect(() => {
+    if (!stanza.current) return undefined;
+
+    let istanza;
+
+    try {
+      istanza = new Biblioteca(stanza.current, {
+        alMirare: setMirata,
+        alScegliere: apri,
+        alCambiareSezione: (sezione, totali) => setPosizione({ sezione, totali }),
+        alAzione,
+        alMirareOggetto: setMirataOggetto,
+        menoMovimento
+      });
+    } catch (e) {
+      // Il caso previsto è WebGL assente — schede video vecchie,
+      // macchine virtuali, accelerazione disattivata. Ma qualunque
+      // altro errore finirebbe qui dentro, e dare la colpa a WebGL
+      // quando il problema è un altro manda a caccia nel posto
+      // sbagliato: distinguo i due casi e lascio l'errore vero in
+      // console.
+      const supportato = Boolean(
+        document.createElement("canvas").getContext("webgl2") ||
+          document.createElement("canvas").getContext("webgl")
+      );
+
+      console.error("La stanza d'ingresso non è partita:", e);
+
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setGuasto(supportato ? "imprevisto" : "webgl");
+
+      return undefined;
+    }
+
+    scena.current = istanza;
+
+    // Solo in sviluppo: una maniglia per ispezionare la scena dalla
+    // console del browser (`__biblioteca.renderer.info`, `vaiA(3)`).
+    // Vite toglie del tutto questo blocco dalla build di produzione.
+    if (import.meta.env.DEV) window.__biblioteca = istanza;
+
+    return () => {
+      istanza.distruggi();
+      scena.current = null;
+
+      if (import.meta.env.DEV) delete window.__biblioteca;
+    };
+  }, [apri, alAzione, menoMovimento]);
+
+  // Le serie arrivano dopo la scena: appena ci sono, si costruisce lo
+  // scaffale. Ricostruirlo a ogni render sarebbe uno spreco enorme,
+  // quindi dipende solo dall'elenco.
+  //
+  // Il primo caricamento non passa `mantieni`: deve atterrare alla
+  // soglia. Un aggiornamento successivo (es. una modifica da Gestione,
+  // che tocca la stessa collezione già in memoria) lo passa invece —
+  // altrimenti riporterebbe la telecamera alla soglia o alla sezione 0
+  // anche a metà di una visita.
+  useEffect(() => {
+    if (!scena.current || !serie.length) return;
+
+    const giaCostruita = scena.current.serie !== undefined;
+
+    scena.current.impostaSerie(
+      serie,
+      giaCostruita
+        ? { mantieni: scena.current.sezioneCorrente * scena.current.perSezione }
+        : undefined
+    );
   }, [serie]);
 
-  /* -------------------- Riprendi la lettura -------------------- */
+  /* -------------------- Tastiera -------------------- */
 
-  // Le sessioni salvate hanno il manga_id: lo riaggancio alla serie
-  // vera così la carta mostra copertina e progresso aggiornati anche
-  // se la sessione è stata salvata mesi fa.
-  const inLettura = useMemo(() => {
-    if (!sessioni?.length || !serie.length) return [];
+  useEffect(() => {
+    function alTasto(e) {
+      if (!scena.current) return;
 
-    return sessioni
-      .map((s) => {
-        const collegata = serie.find((m) => String(m.id) === String(s.manga_id));
+      const dentroCampo = /^(input|textarea|select)$/i.test(e.target.tagName);
+      if (dentroCampo) return;
 
-        return collegata ? { ...collegata, volumeCorrente: Number(s.volume) || 1 } : null;
-      })
-      .filter(Boolean)
-      .slice(0, 4);
-  }, [sessioni, serie]);
+      if (posizione.sezione === -1) return; // niente frecce alla soglia
 
-  /* -------------------- Da completare -------------------- */
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        scena.current.avanti();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        scena.current.indietro();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        scena.current.tornaAllaSoglia();
+      }
+    }
 
-  // Le più vicine al traguardo per prime: sono quelle che conviene
-  // finire, ed è la lista che serve davvero in fumetteria.
-  const daCompletare = useMemo(
-    () =>
-      serie
-        .filter((s) => volumiMancanti(s) > 0 && s.posseduti > 0)
-        .sort((a, b) => volumiMancanti(a) - volumiMancanti(b))
-        .slice(0, 12),
-    [serie]
-  );
+    window.addEventListener("keydown", alTasto);
 
-  const aggiunteDiRecente = useMemo(
-    () =>
-      [...serie]
-        .filter((s) => s.dataAggiunta)
-        .sort((a, b) => new Date(b.dataAggiunta) - new Date(a.dataAggiunta))
-        .slice(0, 12),
-    [serie]
-  );
+    return () => window.removeEventListener("keydown", alTasto);
+  }, [posizione.sezione]);
+
+  /* -------------------- Ripieghi -------------------- */
 
   if (errore) {
     return (
-      <Pagina titolo="Lo scaffale">
+      <div className="mx-auto max-w-3xl px-5 py-16">
         <Errore errore={errore} riprova={ricarica} />
-      </Pagina>
+      </div>
     );
   }
 
-  if (inCorso && !serie.length) {
+  if (guasto) {
     return (
-      <Pagina titolo="Lo scaffale" occhiello="MangaVault">
-        <CaricamentoGriglia quante={12} />
-      </Pagina>
+      <div className="mx-auto max-w-3xl px-5 py-16">
+        <Vuoto
+          titolo={
+            guasto === "webgl"
+              ? "Questo browser non può disegnare la stanza"
+              : "La stanza non è riuscita ad aprire"
+          }
+          testo={
+            guasto === "webgl"
+              ? "Serve WebGL, che qui non è disponibile o è disattivato. Il sito resta comunque tutto raggiungibile da qui sotto."
+              : "Qualcosa si è rotto durante la costruzione della scena; il dettaglio è nella console del browser. Il sito resta comunque raggiungibile da qui sotto."
+          }
+          azione={
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link to="/collezione">
+                <Bottone>Collezione</Bottone>
+              </Link>
+              <Link to="/wishlist">
+                <Bottone variante="secondario">Desideri</Bottone>
+              </Link>
+              <Link to="/lettura">
+                <Bottone variante="secondario">In lettura</Bottone>
+              </Link>
+              <Link to="/statistiche">
+                <Bottone variante="secondario">Numeri</Bottone>
+              </Link>
+              <Bottone variante="secondario" onClick={apriBibliotecario}>
+                Chiedi al bibliotecario
+              </Bottone>
+            </div>
+          }
+        />
+      </div>
     );
   }
+
+  const inStanza = posizione.sezione === -1;
 
   return (
-    <Pagina
-      occhiello="MangaVault"
-      titolo="Lo scaffale"
-      sommario="Quello che stai leggendo, quello che ti manca, quello che è arrivato per ultimo."
-      azioni={
-        <Link to="/collezione">
-          <Bottone variante="secondario">Sfoglia tutto</Bottone>
-        </Link>
-      }
-    >
-      <div className="space-y-14">
-        {/* ---------- I quattro numeri ---------- */}
-        <dl className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <Numero etichetta="Serie" valore={numeroIt(riepilogo.serie)} />
-          <Numero etichetta="Volumi in casa" valore={numeroIt(riepilogo.volumi)} />
-          <Numero etichetta="Valore" valore={euro(riepilogo.valore)} />
-          <Numero
-            etichetta="Serie complete"
-            valore={numeroIt(riepilogo.complete)}
-            nota={`su ${numeroIt(riepilogo.serie)}`}
-          />
-        </dl>
+    <div className="relative h-[calc(100dvh-6rem)] w-full overflow-hidden md:h-dvh">
+      {/* Il canvas dentro non lo mette React: lo crea e lo toglie la
+          scena, che deve poterne avere uno nuovo a ogni montaggio. */}
+      <div ref={stanza} className="h-full w-full" />
 
-        {/* ---------- L'ingresso ---------- */}
-        <IngressoBiblioteca serie={riepilogo.serie} volumi={riepilogo.volumi} />
+      {/* ---------- Sopra il vetro ---------- */}
 
-        {/* ---------- Riprendi ---------- */}
-        {inLettura.length > 0 && (
-          <Sezione
-            titolo="Riprendi da qui"
-            extra={
-              <Link
-                to="/lettura"
-                className="text-sm font-medium text-brass-400 transition-opacity hover:opacity-80"
-              >
-                Tutte le letture →
-              </Link>
-            }
-          >
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {inLettura.map((s) => (
-                <CartaLettura key={s.id} serie={s} />
-              ))}
-            </div>
-          </Sezione>
-        )}
+      <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-5 sm:p-8">
+        {/* Testata */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-brass-500/80">
+              MangaVault
+            </p>
 
-        {/* ---------- Da completare ---------- */}
-        <Sezione
-          titolo="A un passo dalla fine"
-          extra={
-            <Link
-              to="/collezione?filtro=da-completare"
-              className="text-sm font-medium text-brass-400 transition-opacity hover:opacity-80"
-            >
-              Vedi tutte →
-            </Link>
-          }
-        >
-          {daCompletare.length ? (
-            <FasciaCopertine serie={daCompletare} />
+            <h1 className="font-display text-2xl font-semibold text-ink-bright sm:text-3xl">
+              {inStanza ? "La soglia" : "Lo scaffale"}
+            </h1>
+
+            <p className="mt-1 max-w-sm text-sm text-ink-muted">
+              {inCorso && !serie.length
+                ? "Sto tirando su la stanza…"
+                : inStanza
+                  ? "La libreria è a sinistra, il bibliotecario a destra. Cammina cliccando."
+                  : "Lo spessore di ogni volume è quanto ne possiedi. Passa sopra un libro, o clicca per aprirlo."}
+            </p>
+          </div>
+        </div>
+
+        {/* Cartellino del libro guardato, o etichetta dell'oggetto
+            della stanza — mai insieme, dipende da dove ci si trova. */}
+        <div className="flex items-end justify-between gap-4 md:pr-52">
+          {inStanza ? (
+            <EtichettaOggetto azione={mirataOggetto} />
           ) : (
-            <Vuoto
-              titolo="Nessun buco nello scaffale"
-              testo="Tutte le serie che hai iniziato sono complete. Complimenti, è più raro di quanto sembri."
+            <Cartellino serie={mirata} />
+          )}
+
+          {!inStanza && (
+            <Comandi
+              posizione={posizione}
+              onIndietro={() => scena.current?.indietro()}
+              onAvanti={() => scena.current?.avanti()}
             />
           )}
-        </Sezione>
-
-        {/* ---------- Ultimi arrivi ---------- */}
-        {aggiunteDiRecente.length > 0 && (
-          <Sezione titolo="Ultimi arrivi">
-            <FasciaCopertine serie={aggiunteDiRecente} />
-          </Sezione>
-        )}
+        </div>
       </div>
-    </Pagina>
+
+      {/* La porta è un velo sopra tutto il resto, canvas compreso: il
+          sito si deve aprire su un'anta chiusa, non su una stanza già
+          visibile con una porta in mezzo. Sparisce del tutto (non solo
+          scorre fuori vista) appena finita, così non resta a
+          intercettare i click. */}
+      {!introFinita && (
+        <Porta menoMovimento={menoMovimento} onFinita={() => setIntroFinita(true)} />
+      )}
+    </div>
   );
 }
 
 /* ==================================================
-   PEZZI DELLA PAGINA
+   SOPRA IL VETRO
    ================================================== */
 
+// Un po' più della durata della transizione CSS sotto: il timer che
+// avvisa React deve scattare dopo che le ante hanno davvero finito di
+// scorrere, mai prima.
+const PORTA_DURATA_MS = 1100;
+
 /**
- * La porta della biblioteca.
+ * L'apertura della porta, in CSS e non in WebGL.
  *
- * Non un bottone in mezzo agli altri: una fascia larga che si comporta
- * come una soglia. Al passaggio del mouse la luce dietro si allarga e
- * i battenti si socchiudono — l'invito a entrare deve arrivare prima
- * di aver letto la scritta.
+ * Una porta a cardine vista da una telecamera quasi frontale non si
+ * "apre" mai per davvero: resta un pannello ruotato in mezzo
+ * all'inquadratura, qualunque angolo si scelga. Due ante che scorrono
+ * fuori dallo schermo, sopra il canvas, si aprono per davvero e non
+ * lasciano macerie da smaltire nella scena 3D.
  */
-function IngressoBiblioteca({ serie, volumi }) {
+function Porta({ menoMovimento, onFinita }) {
+  const [aperta, setAperta] = useState(menoMovimento);
+
+  useEffect(() => {
+    if (menoMovimento) {
+      onFinita();
+      return undefined;
+    }
+
+    // Un fotogramma di ritardo: si parte chiusa, poi si passa ad
+    // aperta. Impostarla già aperta al primo render salterebbe la
+    // transizione invece di farla partire.
+    const apri = requestAnimationFrame(() => setAperta(true));
+
+    return () => cancelAnimationFrame(apri);
+  }, [menoMovimento, onFinita]);
+
+  useEffect(() => {
+    if (!aperta || menoMovimento) return undefined;
+
+    const timer = setTimeout(onFinita, PORTA_DURATA_MS);
+
+    return () => clearTimeout(timer);
+  }, [aperta, menoMovimento, onFinita]);
+
   return (
-    <Link
-      to="/biblioteca"
-      className="group relative block overflow-hidden rounded-panel border border-hairline bg-glass-1 px-6 py-8 backdrop-blur-xl
-                 transition-all duration-slow ease-settle hover:border-brass-400/30
-                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-4 focus-visible:ring-offset-shelf
-                 sm:px-10 sm:py-10"
+    <div className="absolute inset-0 z-raised flex" aria-hidden="true">
+      <Battente lato="sinistra" aperta={aperta} />
+      <Battente lato="destra" aperta={aperta} />
+
+      <button
+        onClick={onFinita}
+        className="pointer-events-auto absolute bottom-8 left-1/2 -translate-x-1/2 rounded-full border border-hairline bg-glass-3 px-4 py-2 text-sm font-medium text-ink-bright backdrop-blur-xl transition-colors duration-quick hover:border-brass-400/40"
+      >
+        Salta
+      </button>
+    </div>
+  );
+}
+
+/** Un'anta: un pannello di legno con una maniglia, imperniato sul bordo esterno. */
+function Battente({ lato, aperta }) {
+  const sinistra = lato === "sinistra";
+
+  return (
+    <div
+      className={`relative h-full w-1/2 bg-gradient-to-b from-legno to-void transition-transform ease-[cubic-bezier(0.7,0,0.3,1)]
+                  ${sinistra ? "border-r" : "border-l"} border-brass-400/25
+                  ${aperta ? (sinistra ? "-translate-x-full" : "translate-x-full") : "translate-x-0"}`}
+      style={{ transitionDuration: `${PORTA_DURATA_MS}ms` }}
     >
-      {/* La luce che filtra dalla soglia */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brass-400/[0.07] blur-[90px]
-                   transition-all duration-slow ease-settle group-hover:h-[28rem] group-hover:w-[28rem] group-hover:bg-brass-400/[0.13]"
+      {/* La maniglia, verso il centro della porta */}
+      <span
+        className={`absolute top-1/2 h-10 w-10 -translate-y-1/2 rounded-full border-2 border-brass-400/70 ${
+          sinistra ? "right-6" : "left-6"
+        }`}
       />
+    </div>
+  );
+}
 
-      {/* I due battenti: si scostano di poco, quanto basta a leggerlo
-          come un'apertura invece che come un'animazione */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 left-0 w-1/2 border-r border-hairline bg-gradient-to-r from-void/50 to-transparent
-                   transition-transform duration-slow ease-settle group-hover:-translate-x-3"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 right-0 w-1/2 border-l border-hairline bg-gradient-to-l from-void/50 to-transparent
-                   transition-transform duration-slow ease-settle group-hover:translate-x-3"
-      />
+function etichettaAzione(azione) {
+  if (!azione) return null;
+  if (azione.tipo === "bibliotecario") return "Parla col bibliotecario";
+  if (azione.tipo === "scaffale") return "Entra nello scaffale";
 
-      <div className="relative flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-brass-500/80">
-            Novità
+  const nomi = {
+    "/wishlist": "Desideri",
+    "/lettura": "In lettura",
+    "/statistiche": "Numeri",
+    "/admin": "Gestione"
+  };
+
+  return nomi[azione.percorso] ?? null;
+}
+
+/** L'etichetta di quello che si sta guardando nella stanza. */
+function EtichettaOggetto({ azione }) {
+  const nome = etichettaAzione(azione);
+
+  return (
+    <div
+      aria-live="polite"
+      className={`max-w-sm rounded-panel border border-hairline bg-glass-3 px-5 py-4 backdrop-blur-xl
+                  transition-all duration-base ease-settle
+                  ${nome ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+    >
+      <p className="font-display text-lg font-semibold leading-tight text-ink-bright">
+        {nome || " "}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Il cartellino non scompare quando togli il mouse: si svuota
+ * restando al suo posto. Un riquadro che appare e sparisce a ogni
+ * passaggio del puntatore fa saltare la pagina sotto gli occhi.
+ */
+function Cartellino({ serie }) {
+  const pct = serie ? completamento(serie) : null;
+
+  return (
+    <div
+      aria-live="polite"
+      className={`max-w-sm rounded-panel border border-hairline bg-glass-3 px-5 py-4 backdrop-blur-xl
+                  transition-all duration-base ease-settle
+                  ${serie ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+    >
+      {serie ? (
+        <>
+          <p className="font-display text-lg font-semibold leading-tight text-ink-bright">
+            {serie.titolo}
           </p>
 
-          <h2 className="mt-2 font-display text-2xl font-semibold text-ink-bright sm:text-3xl">
-            Entra nella biblioteca
-          </h2>
+          {serie.autore && (
+            <p className="mt-0.5 text-sm text-ink-muted">{serie.autore}</p>
+          )}
 
-          <p className="mt-2 max-w-md text-sm text-ink-muted">
-            {numeroIt(serie)} serie e {numeroIt(volumi)} volumi disposti su
-            scaffali veri, dove lo spessore di ogni libro è quanto ne possiedi.
+          <p className="mt-2 font-numeric text-xs text-ink-muted">
+            {serie.posseduti}
+            {serie.totali ? ` / ${serie.totali}` : ""} volumi
+            {pct !== null && ` · ${pct}%`}
+            {serie.costo ? ` · ${euro(valoreSerie(serie))}` : ""}
           </p>
-        </div>
+        </>
+      ) : (
+        // Lo spazio resta occupato anche da vuoto, così i comandi
+        // accanto non si spostano quando il cartellino compare.
+        <p className="invisible font-display text-lg leading-tight">segnaposto</p>
+      )}
+    </div>
+  );
+}
 
-        <span className="inline-flex items-center gap-2 rounded-card border border-soft bg-glass-2 px-5 py-2.5 text-sm font-semibold text-ink-bright transition-all duration-base group-hover:border-brass-400/40 group-hover:bg-brass-400/10 group-hover:text-brass-300">
-          Apri la porta
-          <span className="transition-transform duration-base ease-spring group-hover:translate-x-1">
-            →
-          </span>
+function Comandi({ posizione, onIndietro, onAvanti }) {
+  const { sezione, totali } = posizione;
+
+  return (
+    <div className="pointer-events-auto flex items-center gap-2 rounded-card border border-hairline bg-glass-3 p-1.5 backdrop-blur-xl">
+      <BottoneScorrimento
+        etichetta="Sezione precedente"
+        onClick={onIndietro}
+        disabled={sezione <= 0}
+      >
+        <Icon nome="back" dimensione={18} />
+      </BottoneScorrimento>
+
+      <span className="min-w-[4.5rem] text-center font-numeric text-sm text-ink-muted">
+        {sezione + 1} / {totali}
+      </span>
+
+      <BottoneScorrimento
+        etichetta="Sezione successiva"
+        onClick={onAvanti}
+        disabled={sezione >= totali - 1}
+      >
+        <span className="rotate-180">
+          <Icon nome="back" dimensione={18} />
         </span>
-      </div>
-    </Link>
-  );
-}
-
-function Numero({ etichetta, valore, nota }) {
-  return (
-    <div className="rounded-panel border border-hairline bg-glass-1 px-5 py-4 backdrop-blur-xl transition-colors duration-base hover:border-soft">
-      <dt className="text-xs font-medium uppercase tracking-wider text-ink-muted">
-        {etichetta}
-      </dt>
-
-      <dd className="mt-1.5 font-numeric text-2xl font-semibold text-ink-bright sm:text-3xl">
-        {valore}
-        {nota && <span className="ml-2 text-sm font-normal text-ink-faint">{nota}</span>}
-      </dd>
+      </BottoneScorrimento>
     </div>
   );
 }
 
-/**
- * La carta di una lettura in corso: sviluppata in orizzontale perché
- * qui conta il volume a cui sei arrivato, non la copertina.
- */
-function CartaLettura({ serie }) {
-  const pct = completamento(serie);
-
+function BottoneScorrimento({ etichetta, children, ...resto }) {
   return (
-    <Link
-      to={`/serie/${serie.id}`}
-      className="group flex gap-4 rounded-panel border border-hairline bg-glass-1 p-3 backdrop-blur-xl
-                 transition-all duration-base ease-settle hover:-translate-y-0.5 hover:border-soft hover:bg-glass-2
+    <button
+      aria-label={etichetta}
+      title={`${etichetta} (frecce ← →)`}
+      className="grid h-10 w-10 place-items-center rounded-lg text-ink-muted transition-all duration-quick
+                 hover:bg-glass-1 hover:text-ink-bright active:scale-90
+                 disabled:pointer-events-none disabled:opacity-25
                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+      {...resto}
     >
-      <div className="w-20 shrink-0">
-        <Copertina src={serie.copertina} alt={serie.titolo} />
-      </div>
-
-      <div className="flex min-w-0 flex-col justify-center gap-2">
-        <h3 className="line-clamp-2 text-sm font-medium leading-snug text-ink-bright transition-colors group-hover:text-brass-300">
-          {serie.titolo}
-        </h3>
-
-        <p className="font-numeric text-xs text-ink-muted">
-          Volume {serie.volumeCorrente}
-          {serie.totali ? ` di ${serie.totali}` : ""}
-        </p>
-
-        <Progresso valore={pct} sottile />
-      </div>
-    </Link>
-  );
-}
-
-/**
- * Fascia orizzontale di copertine.
- *
- * Scorre lateralmente invece di andare a capo: una fascia deve
- * restare alta una riga, altrimenti la pagina diventa un elenco
- * infinito e si perde il colpo d'occhio. Il bordo sfumato a destra
- * suggerisce che c'è dell'altro oltre il bordo dello schermo.
- */
-function FasciaCopertine({ serie }) {
-  return (
-    <div className="relative -mx-5 sm:-mx-8 lg:-mx-12">
-      <div className="no-scrollbar flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-2 sm:px-8 lg:px-12">
-        {serie.map((s) => (
-          <div key={s.id} className="w-36 shrink-0 snap-start sm:w-40">
-            <CartaSerie serie={s} />
-          </div>
-        ))}
-      </div>
-
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 right-0 hidden w-16 bg-gradient-to-l from-shelf to-transparent lg:block"
-      />
-    </div>
+      {children}
+    </button>
   );
 }

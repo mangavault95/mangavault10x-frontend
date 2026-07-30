@@ -20,6 +20,7 @@ export default {
         void: "#06070b", // il buio dietro tutto
         shelf: "#0b0d14", // il legno dello scaffale
         alcove: "#111524", // la nicchia illuminata
+        legno: "#1a1410", // lo stesso legno della stanza 3D (`COLORE_LEGNO` in tre/scena.js)
 
         // ---- Ottone: l'accento. 400 è il tuo yellow-400 di sempre ----
         brass: {

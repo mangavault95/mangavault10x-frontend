@@ -1,5 +1,6 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import Icon from "../app/Icon";
+import { useBibliotecario } from "./contesto";
 
 /**
  * Il banco del bibliotecario.
@@ -15,11 +16,14 @@ import Icon from "../app/Icon";
  *
  * Qui c'è solo il bottone. Il pannello, con l'interprete e Fuse dentro,
  * si scarica al primo click: chi non chiede mai niente non lo paga.
+ *
+ * Lo stato di apertura vive in `BibliotecarioProvider`, non qui: anche
+ * il bancone dentro la stanza 3D deve poter aprire lo stesso pannello.
  */
 const Pannello = lazy(() => import("./Banco"));
 
 export default function Bibliotecario() {
-  const [aperto, setAperto] = useState(false);
+  const { aperto, apri, chiudi, alterna } = useBibliotecario();
 
   // Scorciatoia: "b" da qualunque punto del sito. Non ruba il tasto a
   // chi sta scrivendo in un campo.
@@ -32,22 +36,22 @@ export default function Bibliotecario() {
 
       if (e.key === "b" || e.key === "B") {
         e.preventDefault();
-        setAperto((a) => !a);
+        alterna();
       }
     }
 
     window.addEventListener("keydown", alTasto);
 
     return () => window.removeEventListener("keydown", alTasto);
-  }, []);
+  }, [alterna]);
 
   return (
     <>
-      {!aperto && <BottoneBanco onApri={() => setAperto(true)} />}
+      {!aperto && <BottoneBanco onApri={apri} />}
 
       {aperto && (
         <Suspense fallback={null}>
-          <Pannello onChiudi={() => setAperto(false)} />
+          <Pannello onChiudi={chiudi} />
         </Suspense>
       )}
     </>

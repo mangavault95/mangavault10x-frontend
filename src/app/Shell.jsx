@@ -115,7 +115,12 @@ export default function Shell({ children }) {
         aria-label="Navigazione principale"
         className="fixed inset-x-0 bottom-0 z-sticky flex border-t border-hairline bg-glass-3 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl md:hidden"
       >
-        {SEZIONI.map((sezione) => {
+        {/* Gestione non è fra le sezioni quotidiane, ma qui è l'unica
+            barra che un telefono ha sempre sotto mano: senza di lei
+            /admin da mobile sarebbe raggiungibile solo scrivendo
+            l'indirizzo a mano (la vecchia postazione 3D che lo apriva
+            non esiste più, sostituita dalla scena del bancone). */}
+        {[...SEZIONI, SEZIONE_ADMIN].map((sezione) => {
           const attiva = eAttiva(sezione.percorso, location.pathname);
 
           return (

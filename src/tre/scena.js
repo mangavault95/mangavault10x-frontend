@@ -1,5 +1,12 @@
 import * as THREE from "three";
 import { copertinaLocale } from "./copertine";
+import { caricaBibliotecario, ALTEZZA_BIBLIOTECARIO } from "./libraio";
+import { costruisciArredoBancone } from "./arredoBancone";
+
+const legnoDiffuseUrl = new URL("./assets/legno/legno_diffuse.jpg", import.meta.url).href;
+const legnoRuviditaUrl = new URL("./assets/legno/legno_ruvidita.jpg", import.meta.url).href;
+const legnoNormaliUrl = new URL("./assets/legno/legno_normali.jpg", import.meta.url).href;
+const bibliotecarioGlbUrl = new URL("./assets/bibliotecario.glb", import.meta.url).href;
 
 /**
  * La biblioteca in tre dimensioni.
@@ -73,8 +80,57 @@ const SPORGENZA = 0.32;
 // lo spessore sparirebbe. Un filo di rotazione lo rimette in mostra.
 const ROTAZIONE_RIPOSO = -0.16;
 
-const COLORE_LEGNO = 0x1a1410;
-const COLORE_FONDO = 0x0b0d14;
+const COLORE_LEGNO = 0x2b1f16; // più chiaro di prima: sul nero quasi puro il legno spariva nel fondo
+const COLORE_FONDO_ALTO = 0x1b2138; // l'orlo superiore del gradiente: un blu crepuscolo, non nero
+const COLORE_FONDO_BASSO = 0x0c0d16; // l'orlo inferiore: resta scuro, ma non piatto
+const COLORE_FOG = 0x141726; // il tono medio del gradiente: la nebbia si confonde con lo sfondo invece di tagliarlo
+
+/* ==================================================
+   LA STANZA D'INGRESSO
+   Una sola postazione fissa, la "soglia" (sezione -1 nello stesso
+   sistema che già muove la telecamera fra le sezioni dello scaffale),
+   inquadra l'imboccatura dello scaffale a sinistra e il bancone a
+   destra. Le misure sono costanti, non derivate da `larghezzaSezione`:
+   a differenza dello scaffale la stanza si costruisce una volta sola
+   nel costruttore, prima che la collezione sia arrivata.
+   ================================================== */
+const SOGLIA_X = 1.4; // dove guarda la telecamera alla soglia
+const SOGLIA_SEMI_LARGHEZZA = 8.2;
+const SOGLIA_SEMI_ALTEZZA = 3;
+const PAVIMENTO_Y = -2.6;
+
+const BANCONE_X = 6.4;
+const BANCONE_Z = 0.8;
+
+/**
+ * La vetrina d'ingresso: un mobile fisso e piccolo, non lo scaffale
+ * vero — quello ha le sue sezioni e vive in `gruppoLibri`/
+ * `gruppoScaffale`, nascosto finché non si entra (vedi `vaiA`). Qui
+ * niente copertine da caricare: solo dorsi colorati, sempre uguali,
+ * che dicono "qui c'è una libreria" senza pretendere di essere quella
+ * vera.
+ */
+const VETRINA_COLONNE = 4;
+const VETRINA_RIGHE = 3;
+const VETRINA_X = -4.4;
+const VETRINA_Z = 0.6;
+
+// Quante volte si ripete la texture del legno lungo un ripiano: senza
+// ripetizione l'immagine si stirerebbe su tutta la larghezza di un
+// mobile e la venatura sparirebbe.
+const LEGNO_RIPETI_X = 3;
+const LEGNO_RIPETI_Y = 1.5;
+
+// L'apertura della porta è un velo sopra il canvas (`HomePage.jsx`),
+// non geometria 3D: una porta a cardine vista da una telecamera quasi
+// frontale non si "apre" mai davvero, resta un pannello ruotato in
+// mezzo all'inquadratura. Un velo 2D si toglie di torno per intero.
+
+// Ogni punto cliccabile ha un disco luminoso sul pavimento, sempre
+// visibile e non solo al passaggio del mouse: senza, un piedistallo
+// color legno su un fondo scuro è invisibile quanto un libro qualsiasi.
+const SEGNO_RAGGIO = 0.55;
+const SEGNO_COLORE = 0xfacc15; // brass-400, lo stesso accento del resto del sito
 
 /* ==================================================
    UTILITÀ
@@ -126,7 +182,10 @@ export default class Biblioteca {
    *   tolto il contesto WebGL non ne ottiene mai un altro. Con un
    *   canvas nuovo a ogni montaggio il problema non esiste.
    */
-  constructor(contenitore, { alMirare, alScegliere, alCambiareSezione, menoMovimento = false }) {
+  constructor(
+    contenitore,
+    { alMirare, alScegliere, alCambiareSezione, alAzione, alMirareOggetto, menoMovimento = false }
+  ) {
     this.contenitore = contenitore;
 
     this.canvas = document.createElement("canvas");
@@ -136,15 +195,23 @@ export default class Biblioteca {
     this.alMirare = alMirare;
     this.alScegliere = alScegliere;
     this.alCambiareSezione = alCambiareSezione;
+    // La stanza d'ingresso ha i suoi callback: un bancone o una
+    // postazione non sono una serie, e mescolarli nella stessa forma
+    // costringerebbe chi ascolta a indovinare cosa gli è arrivato.
+    this.alAzione = alAzione;
+    this.alMirareOggetto = alMirareOggetto;
     this.menoMovimento = menoMovimento;
 
     this.libri = [];
     this.sezioni = 0;
-    this.sezioneCorrente = 0;
+    // -1 è la soglia: si parte sempre da lì, mai dentro lo scaffale.
+    this.sezioneCorrente = -1;
 
     this.mirato = null;
     this.puntatore = new THREE.Vector2(-10, -10);
     this.raggio = new THREE.Raycaster();
+
+    this.oggettiStanza = []; // vetrina, bancone e tutto il suo arredo, cliccabili dalla soglia
 
     this.viaggio = null; // { da, a, guardaDa, guardaA, inizio, durata }
     this.orologio = new THREE.Clock();
@@ -156,6 +223,7 @@ export default class Biblioteca {
 
     this.#creaRenderer();
     this.#creaScena();
+    this.#creaStanza();
     this.#collegaEventi();
 
     this.#disegna();
@@ -177,36 +245,53 @@ export default class Biblioteca {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
+
+    // Ombre morbide: senza, legno e libri galleggiano nella luce piatta
+    // invece di posarsi sul pavimento — è una delle cose che più fa
+    // sembrare la stanza "vera" invece che un rendering di prova.
+    this.renderer.shadowMap.enabled = true;
+    // `PCFSoftShadowMap` è deprecato in tre 0.185: `PCFShadowMap` è
+    // già morbido di suo, non serve più scegliere la variante soft.
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
   }
 
   #creaScena() {
     this.scena = new THREE.Scene();
-    this.scena.background = new THREE.Color(COLORE_FONDO);
 
-    // La nebbia fa sparire le sezioni lontane invece di mostrarle
-    // minuscole e affollate: dà profondità e alleggerisce il disegno.
-    this.scena.fog = new THREE.Fog(COLORE_FONDO, 9, 30);
+    // Uno sfondo piatto quasi nero è quello che rendeva la stanza "una
+    // caverna": un gradiente verticale, anche tenue, dà l'idea di una
+    // finestra o di una luce che arriva da qualche parte invece di un
+    // vuoto uniforme. La nebbia usa il tono medio dello stesso
+    // gradiente, così la dissolvenza in lontananza non sembra un muro
+    // di un colore diverso dal cielo dietro di lei.
+    this.scena.background = this.#creaSfondoGradiente();
+    this.scena.fog = new THREE.Fog(COLORE_FOG, 10, 32);
 
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
 
     // Un valore di partenza: se il contenitore non ha ancora una
     // misura (capita al primo montaggio) `ridimensiona` rinuncia, e
-    // senza questo la telecamera finirebbe a coordinata NaN.
+    // senza questo la telecamera finirebbe a coordinata NaN. Si parte
+    // già inquadrando la soglia, non lo scaffale: è il primo posto in
+    // cui ci si trova.
     this.distanza = 9;
-    this.camera.position.set(0, 0, this.distanza);
+    this.distanzaSoglia = 11;
+    this.camera.position.set(SOGLIA_X, 0.6, this.distanzaSoglia);
 
-    this.bersaglioSguardo = new THREE.Vector3(0, 0, 0);
+    this.bersaglioSguardo = new THREE.Vector3(SOGLIA_X, 0.3, 0);
 
     /* ---- Luci ----
-       Una calda dall'alto (la lampada della stanza), una fredda
-       radente da destra che stacca i bordi dei libri dal fondo, e un
-       ambiente fioco perché nulla resti completamente nero. */
+       Una calda dall'alto (la lampada della stanza, con ombra vera),
+       una fredda radente da destra che stacca i bordi dei libri dal
+       fondo, e un cielo/pavimento invece di un ambiente piatto — è
+       quello che dà alla luce un verso, non solo un'intensità. */
 
-    // Le copertine sono il contenuto: devono leggersi, non essere
-    // suggerite. L'ambiente sale da 0.55 a 1.15 perché un punto luce
-    // singolo illumina bene solo dove punta, e una libreria larga
-    // finisce metà al buio — che è esattamente quello che succedeva.
-    this.scena.add(new THREE.AmbientLight(0xffffff, 1.15));
+    // Un ambiente uniforme è la ragione per cui la stanza sembrava una
+    // caverna: una HemisphereLight sfuma invece fra un cielo freddo (da
+    // sopra) e un rimbalzo caldo da terra, com'è la luce vera in una
+    // stanza con un pavimento chiaro sotto e il buio in alto fra gli
+    // scaffali.
+    this.scena.add(new THREE.HemisphereLight(0x4a5578, 0x2b1f16, 1.05));
 
     // Luce frontale morbida: non crea atmosfera, ma garantisce che
     // ogni copertina sia leggibile ovunque si trovi lungo lo scaffale.
@@ -214,11 +299,24 @@ export default class Biblioteca {
     frontale.position.set(0, 2, 10);
     this.scena.add(frontale);
 
+    // La luce principale della stanza: è lei a proiettare le ombre, le
+    // altre restano solo di riempimento (due luci con ombra vera
+    // costerebbero il doppio per un guadagno che non si vede).
     const lampada = new THREE.DirectionalLight(0xffd9a0, 1.7);
     lampada.position.set(-3, 6, 6);
+    lampada.castShadow = true;
+    lampada.shadow.mapSize.set(1024, 1024);
+    lampada.shadow.camera.left = -14;
+    lampada.shadow.camera.right = 14;
+    lampada.shadow.camera.top = 10;
+    lampada.shadow.camera.bottom = -10;
+    lampada.shadow.camera.near = 1;
+    lampada.shadow.camera.far = 24;
+    lampada.shadow.bias = -0.0015;
     this.scena.add(lampada);
+    this.scena.add(lampada.target);
 
-    const radente = new THREE.DirectionalLight(0x8fa6ff, 0.65);
+    const radente = new THREE.DirectionalLight(0x8fa6ff, 0.75);
     radente.position.set(7, 1, 2);
     this.scena.add(radente);
 
@@ -231,9 +329,14 @@ export default class Biblioteca {
     this.scena.add(this.alone);
 
     this.gruppoLibri = new THREE.Group();
+    // Lo scaffale vero si vede solo entrando (`vaiA`): alla soglia
+    // c'è la vetrina, più piccola e senza sezioni da sbagliare a
+    // mostrare.
+    this.gruppoLibri.visible = false;
     this.scena.add(this.gruppoLibri);
 
     this.gruppoScaffale = new THREE.Group();
+    this.gruppoScaffale.visible = false;
     this.scena.add(this.gruppoScaffale);
 
     // Geometria condivisa da tutti i libri: una sola volta in memoria,
@@ -246,6 +349,76 @@ export default class Biblioteca {
       roughness: 0.92,
       metalness: 0
     });
+
+    // Un materiale solo per tutto il legno della stanza: scaffale,
+    // porta, bancone e vetrina. Creato qui (e non dentro
+    // `#creaScaffale`, come prima) perché la stanza d'ingresso nasce
+    // nel costruttore, prima che la collezione — e quindi lo scaffale
+    // — esista.
+    this.materialeLegno = new THREE.MeshStandardMaterial({
+      color: COLORE_LEGNO,
+      roughness: 0.85,
+      metalness: 0.06
+    });
+
+    this.#vestiMaterialeLegno();
+  }
+
+  /**
+   * Il colore piatto di `materialeLegno` è un punto di partenza, non
+   * il risultato finale: appena arrivano le texture (venatura, ruvidità,
+   * normali — CC0 di Poly Haven) si applicano sopra. Il legno resta
+   * comunque legno anche prima che arrivino, quindi non c'è bisogno di
+   * aspettarle per costruire il resto della stanza.
+   */
+  #vestiMaterialeLegno() {
+    const caricatore = new THREE.TextureLoader();
+
+    const applica = (url, chiave, { srgb = false } = {}) => {
+      caricatore.load(url, (texture) => {
+        if (!this.vivo) {
+          texture.dispose();
+          return;
+        }
+
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(LEGNO_RIPETI_X, LEGNO_RIPETI_Y);
+        if (srgb) texture.colorSpace = THREE.SRGBColorSpace;
+
+        this.materialeLegno[chiave] = texture;
+        this.materialeLegno.needsUpdate = true;
+      });
+    };
+
+    applica(legnoDiffuseUrl, "map", { srgb: true });
+    applica(legnoRuviditaUrl, "roughnessMap");
+    applica(legnoNormaliUrl, "normalMap");
+  }
+
+  /**
+   * Lo sfondo: un gradiente verticale disegnato su un canvas 1×256,
+   * non un colore piatto. È l'intera differenza fra "una stanza al
+   * crepuscolo" e "una caverna" — e costa una sola texture minuscola,
+   * non luci in più.
+   */
+  #creaSfondoGradiente() {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 256;
+
+    const ctx = canvas.getContext("2d");
+    const gradiente = ctx.createLinearGradient(0, 0, 0, canvas.height);
+
+    gradiente.addColorStop(0, `#${COLORE_FONDO_ALTO.toString(16).padStart(6, "0")}`);
+    gradiente.addColorStop(1, `#${COLORE_FONDO_BASSO.toString(16).padStart(6, "0")}`);
+
+    ctx.fillStyle = gradiente;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+
+    return texture;
   }
 
   /* -------------------- Le serie -------------------- */
@@ -271,15 +444,19 @@ export default class Biblioteca {
     serie.forEach((s, indice) => this.#creaLibro(s, indice));
 
     this.#creaScaffale();
+    this.#vestiPosterBancone();
 
     this.distanza = this.#distanzaPerInquadrare();
 
     // Dopo una ricostruzione si torna davanti alla stessa serie, non
     // all'inizio: cambiare la finestra non deve farti perdere il posto.
+    // Il primo caricamento invece atterra alla soglia (-1), non nella
+    // prima sezione: è il posto in cui ci si trova entrando, non un
+    // punto di passaggio verso lo scaffale.
     const partenza =
       mantieni !== undefined
         ? Math.min(this.sezioni - 1, Math.floor(mantieni / this.perSezione))
-        : 0;
+        : -1;
 
     this.vaiA(partenza, { immediato: true });
   }
@@ -325,6 +502,8 @@ export default class Biblioteca {
 
     libro.position.set(x, y, 0);
     libro.rotation.y = ROTAZIONE_RIPOSO;
+    libro.castShadow = true;
+    libro.receiveShadow = true;
 
     libro.userData = {
       serie,
@@ -345,15 +524,8 @@ export default class Biblioteca {
    * galleggiare e tutta l'illusione dello scaffale sparisce.
    */
   #creaScaffale() {
-    // Un materiale solo per tutto il mobile: i ripiani e il fondo sono
-    // lo stesso legno, e tenerne una copia per pezzo occuperebbe
-    // memoria video per niente.
-    this.materialeLegno ??= new THREE.MeshStandardMaterial({
-      color: COLORE_LEGNO,
-      roughness: 0.85,
-      metalness: 0.06
-    });
-
+    // Il materiale del legno è condiviso con la stanza d'ingresso
+    // (porta, bancone), creato una volta sola in `#creaScena`.
     const legno = this.materialeLegno;
 
     // I ripiani devono coprire esattamente lo spazio dove stanno i
@@ -390,6 +562,8 @@ export default class Biblioteca {
 
         // Mezzo libro più in basso: il ripiano sta sotto i volumi.
         piano.position.set(centroSezione, y - LIBRO_ALTEZZA / 2 - 0.04, -0.1);
+        piano.castShadow = true;
+        piano.receiveShadow = true;
 
         this.gruppoScaffale.add(piano);
       }
@@ -407,6 +581,8 @@ export default class Biblioteca {
           -0.06,
           -0.1
         );
+        montante.castShadow = true;
+        montante.receiveShadow = true;
 
         this.gruppoScaffale.add(montante);
       }
@@ -424,8 +600,304 @@ export default class Biblioteca {
     );
 
     fondo.position.set(centroX, 0, -0.62);
+    fondo.receiveShadow = true;
 
     this.gruppoScaffale.add(fondo);
+  }
+
+  /* -------------------- La stanza d'ingresso -------------------- */
+
+  /**
+   * La vetrina d'ingresso, il bancone e tutto quello che c'è sopra e
+   * intorno: costruiti una volta sola qui nel costruttore, a
+   * differenza dello scaffale vero non dipendono dalla collezione e
+   * non hanno motivo di essere ricostruiti quando arriva o cambia.
+   *
+   * L'apertura della porta è un velo sopra il canvas, non geometria
+   * qui dentro — vedi `HomePage.jsx`.
+   */
+  #creaStanza() {
+    this.gruppoStanza = new THREE.Group();
+    this.scena.add(this.gruppoStanza);
+
+    // Un piano sotto ai piedi: senza, la stanza sembra sospesa nel
+    // buio. Non copre tutto lo scaffale (che si estende quanto serve,
+    // sezione dopo sezione) — oltre la soglia ci pensa la nebbia già
+    // usata per le sezioni lontane.
+    const pavimento = new THREE.Mesh(
+      new THREE.PlaneGeometry(SOGLIA_SEMI_LARGHEZZA * 2.2, 9),
+      this.materialeLegno
+    );
+
+    pavimento.rotation.x = -Math.PI / 2;
+    pavimento.position.set(SOGLIA_X, PAVIMENTO_Y, 2);
+    pavimento.receiveShadow = true;
+
+    this.gruppoStanza.add(pavimento);
+
+    this.#creaVetrinaIngresso();
+    this.#creaBancone();
+  }
+
+  /**
+   * Un disco luminoso sul pavimento, sempre acceso e non solo al
+   * passaggio del mouse.
+   *
+   * Un piedistallo color legno su un fondo scuro è pressoché invisibile
+   * — la stanza non ha abbastanza luce perché un oggetto normale dica
+   * da solo "sono cliccabile". Un materiale non illuminato (Basic, non
+   * Standard) fa sì che il segno si veda uguale ovunque nella stanza,
+   * indipendentemente da quanto arriva delle luci vere.
+   */
+  #creaSegno(x, z, raggio = SEGNO_RAGGIO) {
+    const segno = new THREE.Mesh(
+      new THREE.CircleGeometry(raggio, 28),
+      new THREE.MeshBasicMaterial({
+        color: SEGNO_COLORE,
+        transparent: true,
+        opacity: 0.55,
+        side: THREE.DoubleSide
+      })
+    );
+
+    segno.rotation.x = -Math.PI / 2;
+    segno.position.set(x, PAVIMENTO_Y + 0.02, z);
+    this.gruppoStanza.add(segno);
+
+    return segno;
+  }
+
+  /**
+   * La vetrina d'ingresso: un mobile a sé, piccolo e fisso (mai una
+   * sezione dello scaffale vero), con dorsi colorati e nessuna
+   * copertina da caricare. Vive nel proprio gruppo perché — come lo
+   * scaffale vero, ma al contrario — deve sparire non appena si entra
+   * nel flythrough: i due non condividono mai lo spazio davanti alla
+   * telecamera, altrimenti si sovrapporrebbero.
+   */
+  #creaVetrinaIngresso() {
+    this.gruppoVetrina = new THREE.Group();
+    this.gruppoStanza.add(this.gruppoVetrina);
+
+    const legno = this.materialeLegno;
+    const larghezza = VETRINA_COLONNE * PASSO_X;
+    const larghezzaMobile = larghezza + LIBRO_LARGHEZZA * 0.6;
+    const altezzaMobile = PASSO_Y * VETRINA_RIGHE + 0.5;
+
+    for (let riga = 0; riga < VETRINA_RIGHE; riga++) {
+      const y = ((VETRINA_RIGHE - 1) / 2 - riga) * PASSO_Y;
+
+      const piano = new THREE.Mesh(new THREE.BoxGeometry(larghezzaMobile, 0.08, 1.1), legno);
+      piano.position.set(VETRINA_X, y - LIBRO_ALTEZZA / 2 - 0.04, VETRINA_Z - 0.1);
+      piano.castShadow = true;
+      piano.receiveShadow = true;
+      this.gruppoVetrina.add(piano);
+
+      for (let colonna = 0; colonna < VETRINA_COLONNE; colonna++) {
+        const indice = riga * VETRINA_COLONNE + colonna;
+
+        // Uno spessore diverso libro per libro, solo per non sembrare
+        // una fila di scatole identiche: non rappresenta nessun dato.
+        const passo = ((indice * 37) % 100) / 100;
+        const spessore = SPESSORE_MIN + passo * (SPESSORE_MAX - SPESSORE_MIN);
+
+        const copertina = new THREE.MeshStandardMaterial({
+          color: tintaDaTitolo(`vetrina-${indice}`),
+          roughness: 0.62
+        });
+
+        const materiali = [
+          this.materialeCarta,
+          this.materialeCarta,
+          this.materialeCarta,
+          this.materialeCarta,
+          copertina,
+          this.materialeCarta
+        ];
+
+        const libro = new THREE.Mesh(this.geometriaLibro, materiali);
+        libro.scale.set(LIBRO_LARGHEZZA, LIBRO_ALTEZZA, spessore);
+
+        const x = VETRINA_X + colonna * PASSO_X - (larghezza - PASSO_X) / 2;
+        libro.position.set(x, y, VETRINA_Z);
+        libro.rotation.y = ROTAZIONE_RIPOSO;
+        libro.castShadow = true;
+        libro.receiveShadow = true;
+
+        this.gruppoVetrina.add(libro);
+      }
+    }
+
+    for (const lato of [-1, 1]) {
+      const montante = new THREE.Mesh(new THREE.BoxGeometry(0.12, altezzaMobile, 1.1), legno);
+      montante.position.set(VETRINA_X + (lato * larghezzaMobile) / 2, -0.06, VETRINA_Z - 0.1);
+      montante.castShadow = true;
+      montante.receiveShadow = true;
+      this.gruppoVetrina.add(montante);
+    }
+
+    const fondo = new THREE.Mesh(new THREE.BoxGeometry(larghezzaMobile, altezzaMobile, 0.08), legno);
+    fondo.position.set(VETRINA_X, -0.06, VETRINA_Z - 0.62);
+    fondo.receiveShadow = true;
+    this.gruppoVetrina.add(fondo);
+
+    // Il segno a terra e il bersaglio invisibile: cliccare la vetrina
+    // porta dentro il vero scaffale, con tutte le sue sezioni.
+    const segno = this.#creaSegno(VETRINA_X, VETRINA_Z + 1.3, 1.1);
+    this.gruppoVetrina.add(segno);
+
+    const ingresso = new THREE.Mesh(
+      new THREE.PlaneGeometry(larghezzaMobile + 0.6, altezzaMobile + 0.4),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+
+    ingresso.position.set(VETRINA_X, -0.06, VETRINA_Z + 0.3);
+    ingresso.userData = { azione: { tipo: "scaffale" } };
+    this.gruppoVetrina.add(ingresso);
+    this.oggettiStanza.push(ingresso);
+  }
+
+  /**
+   * Il banco: un piano, un fronte, una lampada calda — più tutto
+   * quello che ci sta intorno (parete, cassa, fumetti sparsi, poster,
+   * lista dei desideri appesa) costruito da `arredoBancone.js`, e il
+   * bibliotecario vero, caricato da `libraio.js`. È lui il bersaglio
+   * di "parla col bibliotecario", non più il banco stesso: prima il
+   * volume cliccabile copriva tutto il piano, il che funzionava ma
+   * non spiegava perché proprio lì.
+   */
+  #creaBancone() {
+    const legno = this.materialeLegno;
+
+    const piano = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.12, 1), legno);
+    piano.position.set(BANCONE_X, 0.9, BANCONE_Z);
+    piano.castShadow = true;
+    piano.receiveShadow = true;
+    this.gruppoStanza.add(piano);
+
+    const fronte = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 0.1), legno);
+    fronte.position.set(BANCONE_X, 0.45, BANCONE_Z - 0.45);
+    fronte.castShadow = true;
+    fronte.receiveShadow = true;
+    this.gruppoStanza.add(fronte);
+
+    const lampada = new THREE.PointLight(0xffb454, 6, 6, 2);
+    lampada.position.set(BANCONE_X, 1.6, BANCONE_Z);
+    this.gruppoStanza.add(lampada);
+
+    const paralume = new THREE.Mesh(
+      new THREE.ConeGeometry(0.22, 0.3, 12, 1, true),
+      new THREE.MeshStandardMaterial({
+        color: 0xf5c778,
+        roughness: 0.5,
+        emissive: 0x442200,
+        emissiveIntensity: 0.6
+      })
+    );
+
+    paralume.position.set(BANCONE_X, 1.6, BANCONE_Z);
+    this.gruppoStanza.add(paralume);
+
+    const arredo = costruisciArredoBancone({
+      materialeCarta: this.materialeCarta,
+      geometriaLibro: this.geometriaLibro,
+      x: BANCONE_X,
+      z: BANCONE_Z
+    });
+
+    this.gruppoStanza.add(arredo.gruppo);
+    // Vestiti con le copertine vere appena arrivano le serie — vedi
+    // `#vestiPosterBancone`, chiamato da `impostaSerie`.
+    this.posterBancone = arredo.poster;
+
+    for (const { mesh, segno } of arredo.bersagli) {
+      this.oggettiStanza.push(mesh);
+      if (segno) this.#creaSegno(segno.x, segno.z);
+    }
+
+    this.#caricaLibraio();
+  }
+
+  /**
+   * Il bibliotecario vive fuori dal costruttore sincrono: un modello
+   * si carica in rete, non si costruisce sul posto come il resto della
+   * stanza. Finché non arriva, il banco resta comunque un posto
+   * plausibile — non c'è un segnaposto goffo al suo posto.
+   */
+  #caricaLibraio() {
+    const z = BANCONE_Z - 0.9;
+
+    caricaBibliotecario({
+      url: bibliotecarioGlbUrl,
+      posizione: { x: BANCONE_X, y: PAVIMENTO_Y, z, rotazioneY: 0 }
+    })
+      .then((bibliotecario) => {
+        // Il costruttore potrebbe aver già smontato la scena mentre il
+        // modello era ancora in viaggio (React in modalità rigorosa
+        // monta e smonta ogni effetto): in tal caso si libera subito la
+        // memoria invece di aggiungerlo a una scena che non esiste più.
+        if (!this.vivo) {
+          bibliotecario.smonta();
+          return;
+        }
+
+        this.bibliotecario = bibliotecario;
+        this.gruppoStanza.add(bibliotecario.gruppo);
+
+        const bersaglio = new THREE.Mesh(
+          new THREE.BoxGeometry(1.3, ALTEZZA_BIBLIOTECARIO + 0.3, 1.1),
+          new THREE.MeshBasicMaterial({ visible: false })
+        );
+
+        bersaglio.position.set(BANCONE_X, PAVIMENTO_Y + (ALTEZZA_BIBLIOTECARIO + 0.3) / 2, z);
+        bersaglio.userData = { azione: { tipo: "bibliotecario" } };
+        this.gruppoStanza.add(bersaglio);
+        this.oggettiStanza.push(bersaglio);
+
+        this.#creaSegno(BANCONE_X, BANCONE_Z + 0.15);
+      })
+      .catch((errore) => {
+        console.error("Il bibliotecario non è arrivato:", errore);
+      });
+  }
+
+  /**
+   * Le copertine vere sui poster dietro al banco: non un asset in più,
+   * le stesse immagini che il sito ha già scaricato per la propria
+   * collezione. Una volta sola, alle prime serie disponibili — non
+   * cambiano più dopo, quindi non serve rifarlo a ogni aggiornamento.
+   */
+  #vestiPosterBancone() {
+    if (this.posterVestiti || !this.posterBancone?.length) return;
+    this.posterVestiti = true;
+
+    const scelte = this.serie
+      .filter((s) => copertinaLocale(s.copertina))
+      .slice(0, this.posterBancone.length);
+
+    const caricatore = new THREE.TextureLoader();
+
+    scelte.forEach(async (s, indice) => {
+      const mesh = this.posterBancone[indice];
+      if (!mesh) return;
+
+      try {
+        const testura = await caricatore.loadAsync(copertinaLocale(s.copertina));
+
+        if (!this.vivo) {
+          testura.dispose();
+          return;
+        }
+
+        testura.colorSpace = THREE.SRGBColorSpace;
+        mesh.material.map = testura;
+        mesh.material.color.set(0xffffff);
+        mesh.material.needsUpdate = true;
+      } catch {
+        // Resta il colore neutro di ripiego: meglio di una richiesta a
+        // un indirizzo che potrebbe non rispondere mai.
+      }
+    });
   }
 
   /* -------------------- Copertine -------------------- */
@@ -518,17 +990,52 @@ export default class Biblioteca {
   /* -------------------- Postazioni -------------------- */
 
   vaiA(sezione, { immediato = false } = {}) {
-    const nuova = Math.max(0, Math.min(this.sezioni - 1, sezione));
+    const nuova = Math.max(-1, Math.min(this.sezioni - 1, sezione));
+
+    // Si passa da un mondo cliccabile all'altro: i libri non sono
+    // bersagli alla soglia, il bancone non lo è dentro lo scaffale.
+    // Senza azzerare qui, l'etichetta dell'ultimo oggetto mirato
+    // resterebbe a schermo anche dopo il cambio.
+    const cambiaModo = (nuova === -1) !== (this.sezioneCorrente === -1);
 
     this.sezioneCorrente = nuova;
 
-    const x = nuova * (this.larghezzaSezione + PASSO_X);
-    const destinazione = new THREE.Vector3(x, 0.1, this.distanza);
-    const sguardo = new THREE.Vector3(x, 0, 0);
+    // Solo una libreria alla volta è visibile: la vetrina alla soglia,
+    // lo scaffale vero (con tutte le sue sezioni) una volta entrati.
+    // Farle convivere nello stesso spazio è esattamente il bug che le
+    // rendeva entrambe illeggibili — non è un dettaglio estetico, è
+    // l'unico modo per non farle mai sovrapporre.
+    const dentroScaffale = nuova !== -1;
+    this.gruppoLibri.visible = dentroScaffale;
+    this.gruppoScaffale.visible = dentroScaffale;
+    if (this.gruppoVetrina) this.gruppoVetrina.visible = !dentroScaffale;
+
+    if (cambiaModo && this.mirato) {
+      this.mirato = null;
+      this.canvas.style.cursor = "default";
+      this.alMirare?.(null);
+      this.alMirareOggetto?.(null);
+    }
+
+    let destinazione, sguardo, aloneX, aloneZ;
+
+    if (nuova === -1) {
+      destinazione = new THREE.Vector3(SOGLIA_X, 0.6, this.distanzaSoglia);
+      sguardo = new THREE.Vector3(SOGLIA_X, 0.3, 0);
+      aloneX = SOGLIA_X;
+      aloneZ = 1;
+    } else {
+      const x = nuova * (this.larghezzaSezione + PASSO_X);
+
+      destinazione = new THREE.Vector3(x, 0.1, this.distanza);
+      sguardo = new THREE.Vector3(x, 0, 0);
+      aloneX = x;
+      aloneZ = -2.4;
+    }
 
     // L'alone caldo accompagna lo sguardo: restando all'origine
     // illuminava solo la prima sezione e lasciava le altre spente.
-    this.alone?.position.set(x, 0.6, -2.4);
+    this.alone?.position.set(aloneX, 0.6, aloneZ);
 
     if (immediato || this.menoMovimento) {
       this.camera.position.copy(destinazione);
@@ -549,10 +1056,15 @@ export default class Biblioteca {
     this.alCambiareSezione?.(nuova, this.sezioni);
 
     // La sezione accanto si prepara mentre guardi questa: quando ci
-    // arrivi le copertine ci sono già.
-    this.#caricaCoperturePerSezione(nuova);
-    this.#caricaCoperturePerSezione(nuova + 1);
-    this.#caricaCoperturePerSezione(nuova - 1);
+    // arrivi le copertine ci sono già. Alla soglia (-1) non si carica
+    // niente: la vetrina non ha copertine vere, quindi non c'è motivo
+    // di anticipare il download della sezione 0 prima di essere
+    // davvero entrati.
+    if (dentroScaffale) {
+      this.#caricaCoperturePerSezione(nuova);
+      this.#caricaCoperturePerSezione(nuova + 1);
+      this.#caricaCoperturePerSezione(nuova - 1);
+    }
     this.#liberaSezioniLontane();
   }
 
@@ -560,8 +1072,12 @@ export default class Biblioteca {
     this.vaiA(this.sezioneCorrente + 1);
   }
 
+  // Il minimo è 0, non -1: la freccia sinistra alla prima sezione non
+  // deve far uscire dallo scaffale, quel gesto è riservato a Escape
+  // (`tornaAllaSoglia`). Cambiare questa semantica cambierebbe anche
+  // quella già in uso per chi naviga da tastiera fra le sezioni.
   indietro() {
-    this.vaiA(this.sezioneCorrente - 1);
+    this.vaiA(Math.max(0, this.sezioneCorrente - 1));
   }
 
   /** Porta la telecamera alla sezione che contiene una certa serie. */
@@ -569,6 +1085,16 @@ export default class Biblioteca {
     const indice = this.libri.findIndex((l) => String(l.userData.serie.id) === String(id));
 
     if (indice >= 0) this.vaiA(this.libri[indice].userData.sezione);
+  }
+
+  /** Entra nel flythrough dello scaffale, dalla prima sezione. */
+  entraNelloScaffale() {
+    this.vaiA(0);
+  }
+
+  /** Torna alla soglia: vetrina e bancone tornano cliccabili. */
+  tornaAllaSoglia() {
+    this.vaiA(-1);
   }
 
   /* -------------------- Eventi -------------------- */
@@ -586,7 +1112,15 @@ export default class Biblioteca {
     };
 
     this.alClick = () => {
-      if (this.mirato) this.alScegliere?.(this.mirato.userData.serie);
+      if (!this.mirato) return;
+
+      const d = this.mirato.userData;
+
+      // Un libro ha `serie`, un oggetto della stanza ha `azione`: le
+      // due forme non si mescolano, così chi ascolta sa sempre cosa
+      // gli è arrivato senza doverlo dedurre.
+      if (d.serie) this.alScegliere?.(d.serie);
+      else if (d.azione) this.alAzione?.(d.azione);
     };
 
     this.canvas.addEventListener("pointermove", this.alMuovere);
@@ -626,15 +1160,20 @@ export default class Biblioteca {
     }
 
     this.distanza = this.#distanzaPerInquadrare();
+    this.distanzaSoglia = this.#distanzaPerInquadrare(SOGLIA_SEMI_LARGHEZZA, SOGLIA_SEMI_ALTEZZA);
 
     // Il ridimensionamento può arrivare durante un viaggio: la meta va
     // corretta, altrimenti la telecamera arriva alla distanza vecchia.
-    if (this.viaggio) this.viaggio.a.z = this.distanza;
-    else this.camera.position.z = this.distanza;
+    // Quale distanza dipende da dove ci si trova: alla soglia o dentro
+    // lo scaffale.
+    const distanzaAttuale = this.sezioneCorrente === -1 ? this.distanzaSoglia : this.distanza;
+
+    if (this.viaggio) this.viaggio.a.z = distanzaAttuale;
+    else this.camera.position.z = distanzaAttuale;
   }
 
   /**
-   * A che distanza mettersi perché la sezione ci stia tutta.
+   * A che distanza mettersi perché l'inquadratura ci stia tutta.
    *
    * Prima questa distanza era un numero fisso con una correzione a
    * occhio per gli schermi stretti, e il risultato era che su un
@@ -642,18 +1181,18 @@ export default class Biblioteca {
    * dal bordo. Calcolarla toglie il problema a qualunque proporzione:
    * si prende la distanza che serve in larghezza, quella che serve in
    * altezza, e si sta alla più lontana delle due.
+   *
+   * Senza argomenti inquadra una sezione di scaffale; passando le
+   * semi-misure della soglia inquadra la stanza d'ingresso invece.
    */
-  #distanzaPerInquadrare() {
+  #distanzaPerInquadrare(
+    semiLarghezza = (this.larghezzaSezione ?? PASSO_X * 12) / 2 + LIBRO_LARGHEZZA / 2 + 0.45,
+    semiAltezza = ((this.righe ?? 3) * PASSO_Y) / 2 + 0.3
+  ) {
     const mezzoAngolo = (this.camera.fov * Math.PI) / 360;
 
-    // Metà sezione, più mezzo libro, più un margine di cortesia: un
-    // volume appiccicato al bordo dello schermo sembra tagliato anche
-    // quando è intero.
-    const mezzaLarghezza = (this.larghezzaSezione ?? PASSO_X * 12) / 2 + LIBRO_LARGHEZZA / 2 + 0.45;
-    const mezzaAltezza = ((this.righe ?? 3) * PASSO_Y) / 2 + 0.3;
-
-    const perLarghezza = mezzaLarghezza / (Math.tan(mezzoAngolo) * this.camera.aspect);
-    const perAltezza = mezzaAltezza / Math.tan(mezzoAngolo);
+    const perLarghezza = semiLarghezza / (Math.tan(mezzoAngolo) * this.camera.aspect);
+    const perAltezza = semiAltezza / Math.tan(mezzoAngolo);
 
     return Math.max(perLarghezza, perAltezza);
   }
@@ -670,6 +1209,7 @@ export default class Biblioteca {
     this.#aggiornaViaggio();
     this.#aggiornaMira();
     this.#aggiornaLibri(dt);
+    this.bibliotecario?.aggiorna(dt);
 
     this.renderer.render(this.scena, this.camera);
   };
@@ -691,11 +1231,15 @@ export default class Biblioteca {
   #aggiornaMira() {
     this.raggio.setFromCamera(this.puntatore, this.camera);
 
-    // Si testano solo i libri della sezione davanti: passare tutti i
-    // 188 al raycaster a ogni fotogramma sarebbe lavoro buttato.
-    const candidati = this.libri.filter(
-      (l) => Math.abs(l.userData.sezione - this.sezioneCorrente) <= 1
-    );
+    // Alla soglia si mira la vetrina e tutto il bancone; dentro lo
+    // scaffale, solo i libri della sezione davanti — passarli tutti e
+    // 188 al raycaster a ogni fotogramma sarebbe lavoro buttato, e i
+    // due mondi non si sovrappongono mai in vista.
+    const allaSoglia = this.sezioneCorrente === -1;
+
+    const candidati = allaSoglia
+      ? this.oggettiStanza
+      : this.libri.filter((l) => Math.abs(l.userData.sezione - this.sezioneCorrente) <= 1);
 
     const colpiti = this.raggio.intersectObjects(candidati, false);
     const nuovo = colpiti.length ? colpiti[0].object : null;
@@ -706,7 +1250,8 @@ export default class Biblioteca {
 
     this.canvas.style.cursor = nuovo ? "pointer" : "default";
 
-    this.alMirare?.(nuovo ? nuovo.userData.serie : null);
+    if (allaSoglia) this.alMirareOggetto?.(nuovo ? nuovo.userData.azione : null);
+    else this.alMirare?.(nuovo ? nuovo.userData.serie : null);
   }
 
   /**
@@ -773,9 +1318,39 @@ export default class Biblioteca {
 
     this.#svuotaLibri();
 
+    // `traverse` invece di un elenco piatto: il bancone, la cassa, i
+    // fumetti sparsi, i poster, la vetrina e il bibliotecario hanno
+    // ciascuno la propria geometria e (spesso) più di un materiale —
+    // alcuni sono array (gli stessi libri della vetrina/del banco usano
+    // le sei facce di `#creaLibro`), quindi non basta un `.dispose()`
+    // diretto sul singolo materiale. Il legno e la carta, condivisi, si
+    // smaltiscono una volta sola più sotto, non qui dentro.
+    this.gruppoStanza?.traverse((oggetto) => {
+      if (!oggetto.isMesh) return;
+
+      oggetto.geometry?.dispose();
+
+      const materiali = Array.isArray(oggetto.material) ? oggetto.material : [oggetto.material];
+
+      for (const materiale of materiali) {
+        if (!materiale || materiale === this.materialeLegno || materiale === this.materialeCarta) {
+          continue;
+        }
+
+        materiale.map?.dispose();
+        materiale.roughnessMap?.dispose();
+        materiale.normalMap?.dispose();
+        materiale.dispose();
+      }
+    });
+
     this.geometriaLibro.dispose();
     this.materialeCarta.dispose();
+    this.materialeLegno?.map?.dispose();
+    this.materialeLegno?.roughnessMap?.dispose();
+    this.materialeLegno?.normalMap?.dispose();
     this.materialeLegno?.dispose();
+    this.scena.background?.dispose?.();
 
     // Senza questo il contesto WebGL resta appeso: dopo qualche
     // apertura e chiusura il browser smette di concederne di nuovi.
