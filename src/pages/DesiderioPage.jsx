@@ -9,9 +9,9 @@ import Icon from "../app/Icon";
 import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
 import { getMarketPrice, getWishlist } from "../services/api";
-import { cercaFuori, scegliCorrispondenza } from "../bibliotecario/esterni";
+import { cercaFuori, scegliCorrispondenza, similiFuoriPerId } from "../bibliotecario/esterni";
 import { indiceAutori } from "../dati/corrispondenzaAutore";
-import { generiDiSerie } from "../dati/generi";
+import { costruisciCercaPosseduto } from "../dati/consigli";
 import { euro, separaGeneri } from "../dati/serie";
 
 /**
@@ -70,15 +70,60 @@ export default function DesiderioPage() {
   const generiElemento = useMemo(() => separaGeneri(elemento?.generi), [elemento]);
   const autoriElemento = elemento?.autori || "";
 
-  /** Altre serie in collezione che condividono un genere: il modo naturale di girare. */
-  const simili = useMemo(() => {
-    if (!generiElemento.length) return [];
+  /**
+   * Chi lo ha consigliato non è un genere in comune, è chi ha letto
+   * entrambe le opere: le raccomandazioni di AniList vengono da chi ha
+   * segnato "se ti è piaciuto questo, prova anche quest'altro" — lo
+   * stesso segnale già usato da `dati/consigli.js` per la Collezione.
+   * La sovrapposizione di generi da sola accostava cose senza relazione
+   * reale (es. Dentro Mari → L'attacco dei giganti, stesso genere
+   * "Psychological" e nient'altro in comune).
+   */
+  const [raccomandatiEsterni, setRaccomandatiEsterni] = useState([]);
 
-    return collezione
-      .filter((s) => generiDiSerie(s).some((g) => generiElemento.includes(g)))
-      .sort((a, b) => (b.valutazione ?? 0) - (a.valutazione ?? 0))
-      .slice(0, 6);
-  }, [collezione, generiElemento]);
+  useEffect(() => {
+    if (!aniList?.idEsterno) {
+      // Nessuna corrispondenza AniList: si svuota invece di lasciare le
+      // raccomandazioni del desiderio aperto in precedenza.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRaccomandatiEsterni([]);
+      return;
+    }
+
+    let annullato = false;
+
+    (async () => {
+      try {
+        const raccomandati = await similiFuoriPerId(aniList.idEsterno);
+        if (!annullato) setRaccomandatiEsterni(raccomandati);
+      } catch {
+        if (!annullato) setRaccomandatiEsterni([]);
+      }
+    })();
+
+    return () => {
+      annullato = true;
+    };
+  }, [aniList?.idEsterno]);
+
+  /** Fra le raccomandazioni vere, solo quelle che possiedi già. */
+  const simili = useMemo(() => {
+    if (!raccomandatiEsterni.length) return [];
+
+    const cercaPosseduto = costruisciCercaPosseduto(collezione);
+    const viste = new Set();
+    const trovate = [];
+
+    for (const r of raccomandatiEsterni) {
+      const posseduta = cercaPosseduto(r);
+      if (posseduta && !viste.has(posseduta.id)) {
+        viste.add(posseduta.id);
+        trovate.push(posseduta);
+      }
+    }
+
+    return trovate.slice(0, 6);
+  }, [raccomandatiEsterni, collezione]);
 
   /** Altro dello stesso autore che possiedi già, tollerando la romanizzazione. */
   const stessoAutore = useMemo(() => {

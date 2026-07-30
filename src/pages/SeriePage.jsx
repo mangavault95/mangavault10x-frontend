@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Copertina from "../ui/Copertina";
 import Progresso from "../ui/Progresso";
@@ -10,6 +10,8 @@ import { BottonePreferito, ContaVolumi, VotoStelle } from "../ui/AzioniSerie";
 import Icon from "../app/Icon";
 import { useCollezione, useSerie } from "../dati/collezione";
 import { getMarketPrice, getStoricoPerSerie, urlCopertina } from "../services/api";
+import { cercaFuori, scegliCorrispondenza, similiFuoriPerId } from "../bibliotecario/esterni";
+import { costruisciCercaPosseduto } from "../dati/consigli";
 import { generiDiSerie, idDa } from "../dati/generi";
 import useRisorsa from "../dati/useRisorsa";
 import {
@@ -422,20 +424,62 @@ function QuotazioneMercato({ serie }) {
   );
 }
 
-/** Altre serie che condividono un genere: il modo naturale di girare. */
+/**
+ * Le raccomandazioni vere di AniList (chi ha letto questa serie e ha
+ * segnalato "prova anche quest'altra"), filtrate su cosa possiedi già.
+ *
+ * Prima erano le altre serie con un genere in comune: sembrava un
+ * criterio ragionevole ma accostava titoli senza relazione reale (es.
+ * un thriller psicologico e uno shonen d'azione, uniti solo dal tag
+ * "Drama"). Stessa correzione già fatta per `DesiderioPage`.
+ */
 function Simili({ serie, tutte }) {
-  const simili = useMemo(() => {
-    // Canonicalizzati da entrambi i lati: senza, una serie taggata
-    // "Avventura" e una "Adventure" non si sarebbero mai riconosciute
-    // vicine, pur essendo lo stesso genere scritto in due lingue.
-    const miei = generiDiSerie(serie);
-    if (!miei.length) return [];
+  const { titolo, autore, id } = serie;
 
-    return tutte
-      .filter((s) => s.id !== serie.id && generiDiSerie(s).some((g) => miei.includes(g)))
-      .sort((a, b) => (b.valutazione ?? 0) - (a.valutazione ?? 0))
-      .slice(0, 6);
-  }, [serie, tutte]);
+  const [raccomandati, setRaccomandati] = useState([]);
+
+  useEffect(() => {
+    let annullato = false;
+
+    (async () => {
+      try {
+        const risultati = await cercaFuori(titolo, 3);
+        const corrispondenza = scegliCorrispondenza(risultati, { autore });
+
+        if (!corrispondenza) {
+          if (!annullato) setRaccomandati([]);
+          return;
+        }
+
+        const esterni = await similiFuoriPerId(corrispondenza.manga.idEsterno);
+        if (!annullato) setRaccomandati(esterni);
+      } catch {
+        if (!annullato) setRaccomandati([]);
+      }
+    })();
+
+    return () => {
+      annullato = true;
+    };
+  }, [titolo, autore]);
+
+  const simili = useMemo(() => {
+    if (!raccomandati.length) return [];
+
+    const cercaPosseduto = costruisciCercaPosseduto(tutte);
+    const viste = new Set([id]);
+    const trovate = [];
+
+    for (const r of raccomandati) {
+      const posseduta = cercaPosseduto(r);
+      if (posseduta && !viste.has(posseduta.id)) {
+        viste.add(posseduta.id);
+        trovate.push(posseduta);
+      }
+    }
+
+    return trovate.slice(0, 6);
+  }, [raccomandati, tutte, id]);
 
   if (!simili.length) return null;
 

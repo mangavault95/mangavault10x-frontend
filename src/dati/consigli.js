@@ -69,22 +69,43 @@ function scegliSemi(serie, quanti = 2) {
  * tollera le poche lettere di differenza che la romanizzazione porta
  * con sé, cosa che un confronto esatto perderebbe sempre.
  */
-function costruisciFiltroPosseduti(serie) {
-  const titoli = new Set();
+/**
+ * La stessa identificazione di sopra, ma che restituisce la serie
+ * posseduta invece di un booleano: serve a chi deve mostrare *quale*
+ * corrispondenza ha trovato (`DesiderioPage`), non solo escluderla dai
+ * consigli come fa `costruisciFiltroPosseduti` qui sotto.
+ */
+export function costruisciCercaPosseduto(serie) {
+  const perTitolo = new Map();
 
   for (const s of serie) {
     const t = normalizzaTitolo(s.titolo);
-    if (t) titoli.add(t);
+    if (t && !perTitolo.has(t)) perTitolo.set(t, s);
   }
 
   const autori = indiceAutori(serie);
 
   return (candidato) => {
-    if (titoli.has(normalizzaTitolo(candidato.titolo))) return true;
-    if (candidato.titoloInglese && titoli.has(normalizzaTitolo(candidato.titoloInglese))) return true;
+    const perTitoloOriginale = perTitolo.get(normalizzaTitolo(candidato.titolo));
+    if (perTitoloOriginale) return perTitoloOriginale;
 
-    return autori.corrisponde(candidato.autore) || autori.corrisponde(candidato.disegnatore);
+    if (candidato.titoloInglese) {
+      const perTitoloInglese = perTitolo.get(normalizzaTitolo(candidato.titoloInglese));
+      if (perTitoloInglese) return perTitoloInglese;
+    }
+
+    return (
+      autori.trovaSerie(candidato.autore)[0] ||
+      autori.trovaSerie(candidato.disegnatore)[0] ||
+      null
+    );
   };
+}
+
+function costruisciFiltroPosseduti(serie) {
+  const cercaPosseduto = costruisciCercaPosseduto(serie);
+
+  return (candidato) => Boolean(cercaPosseduto(candidato));
 }
 
 function motivoConsiglio(seme) {
