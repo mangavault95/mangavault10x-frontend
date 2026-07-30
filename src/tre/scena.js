@@ -202,21 +202,33 @@ export default class Biblioteca {
        radente da destra che stacca i bordi dei libri dal fondo, e un
        ambiente fioco perché nulla resti completamente nero. */
 
-    this.scena.add(new THREE.AmbientLight(0xffffff, 0.55));
+    // Le copertine sono il contenuto: devono leggersi, non essere
+    // suggerite. L'ambiente sale da 0.55 a 1.15 perché un punto luce
+    // singolo illumina bene solo dove punta, e una libreria larga
+    // finisce metà al buio — che è esattamente quello che succedeva.
+    this.scena.add(new THREE.AmbientLight(0xffffff, 1.15));
 
-    const lampada = new THREE.DirectionalLight(0xffd9a0, 1.5);
+    // Luce frontale morbida: non crea atmosfera, ma garantisce che
+    // ogni copertina sia leggibile ovunque si trovi lungo lo scaffale.
+    const frontale = new THREE.DirectionalLight(0xfff4e0, 1.1);
+    frontale.position.set(0, 2, 10);
+    this.scena.add(frontale);
+
+    const lampada = new THREE.DirectionalLight(0xffd9a0, 1.7);
     lampada.position.set(-3, 6, 6);
     this.scena.add(lampada);
 
-    const radente = new THREE.DirectionalLight(0x8fa6ff, 0.5);
+    const radente = new THREE.DirectionalLight(0x8fa6ff, 0.65);
     radente.position.set(7, 1, 2);
     this.scena.add(radente);
 
     // Un alone caldo dietro lo scaffale: è quello che fa sembrare la
-    // stanza illuminata invece che semplicemente grigia.
-    const alone = new THREE.PointLight(0xfacc15, 18, 22, 2);
-    alone.position.set(0, 0.6, -2.4);
-    this.scena.add(alone);
+    // stanza illuminata invece che semplicemente grigia. Segue la
+    // sezione inquadrata invece di restare fisso all'origine, così
+    // non lascia al buio le sezioni successive.
+    this.alone = new THREE.PointLight(0xfacc15, 26, 34, 2);
+    this.alone.position.set(0, 0.6, -2.4);
+    this.scena.add(this.alone);
 
     this.gruppoLibri = new THREE.Group();
     this.scena.add(this.gruppoLibri);
@@ -344,23 +356,61 @@ export default class Biblioteca {
 
     const legno = this.materialeLegno;
 
-    const larghezzaTotale =
-      this.sezioni * (this.larghezzaSezione + PASSO_X) + PASSO_X * 2;
+    // I ripiani devono coprire esattamente lo spazio dove stanno i
+    // libri. Il calcolo precedente partiva dalla larghezza complessiva
+    // divisa a metà, ma i libri della prima sezione sono centrati su
+    // zero, non allineati a sinistra: il risultato era un ripiano
+    // spostato a destra di mezza libreria, con la prima sezione fuori
+    // dal legno e al buio.
+    //
+    // Ricavo gli estremi reali dalla stessa formula che posiziona i
+    // libri, così i due non possono più divergere.
+    const passoSezione = this.larghezzaSezione + PASSO_X;
+    const mezzaFila = ((this.colonne ?? 1) - 1) * PASSO_X / 2;
 
-    const centroX = larghezzaTotale / 2 - PASSO_X * 1.5;
+    // Una libreria per sezione, non un ripiano unico che scorre.
+    //
+    // Il legno continuo faceva sembrare le sezioni pezzi arbitrari di
+    // un nastro infinito: passando alla successiva non si capiva di
+    // essere arrivati da qualche parte. Ogni sezione ora è un mobile
+    // a sé, con i suoi montanti laterali — spostarsi è entrare in una
+    // libreria diversa, non scorrere la stessa.
+    const larghezzaMobile = this.larghezzaSezione + LIBRO_LARGHEZZA * 0.6;
+    const altezzaMobile = PASSO_Y * this.righe + 0.5;
 
-    for (let riga = 0; riga < this.righe; riga++) {
-      const y = ((this.righe - 1) / 2 - riga) * PASSO_Y;
+    for (let sezione = 0; sezione < this.sezioni; sezione++) {
+      const centroSezione = sezione * passoSezione;
 
-      const piano = new THREE.Mesh(
-        new THREE.BoxGeometry(larghezzaTotale, 0.08, 1.1),
-        legno
-      );
+      for (let riga = 0; riga < this.righe; riga++) {
+        const y = ((this.righe - 1) / 2 - riga) * PASSO_Y;
 
-      // Mezzo libro più in basso: il ripiano sta sotto i volumi.
-      piano.position.set(centroX, y - LIBRO_ALTEZZA / 2 - 0.04, -0.1);
+        const piano = new THREE.Mesh(
+          new THREE.BoxGeometry(larghezzaMobile, 0.08, 1.1),
+          legno
+        );
 
-      this.gruppoScaffale.add(piano);
+        // Mezzo libro più in basso: il ripiano sta sotto i volumi.
+        piano.position.set(centroSezione, y - LIBRO_ALTEZZA / 2 - 0.04, -0.1);
+
+        this.gruppoScaffale.add(piano);
+      }
+
+      // I due montanti che chiudono il mobile ai lati. Sono loro a
+      // dire "questa libreria finisce qui".
+      for (const lato of [-1, 1]) {
+        const montante = new THREE.Mesh(
+          new THREE.BoxGeometry(0.12, altezzaMobile, 1.1),
+          legno
+        );
+
+        montante.position.set(
+          centroSezione + (lato * larghezzaMobile) / 2,
+          -0.06,
+          -0.1
+        );
+
+        this.gruppoScaffale.add(montante);
+      }
     }
 
     // Il fondo dello scaffale: una parete scura dietro i libri, che
@@ -472,6 +522,10 @@ export default class Biblioteca {
     const x = nuova * (this.larghezzaSezione + PASSO_X);
     const destinazione = new THREE.Vector3(x, 0.1, this.distanza);
     const sguardo = new THREE.Vector3(x, 0, 0);
+
+    // L'alone caldo accompagna lo sguardo: restando all'origine
+    // illuminava solo la prima sezione e lasciava le altre spente.
+    this.alone?.position.set(x, 0.6, -2.4);
 
     if (immediato || this.menoMovimento) {
       this.camera.position.copy(destinazione);

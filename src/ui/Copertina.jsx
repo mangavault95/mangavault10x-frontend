@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { urlCopertina } from "../services/api";
 
 /**
  * Una copertina che reagisce al mouse.
@@ -92,6 +93,12 @@ export default function Copertina({
 
   useEffect(() => () => cancelAnimationFrame(fotogramma.current), []);
 
+  // Le immagini passano dal ponte del backend: AnimeClick da sola
+  // impiega secondi a rispondere, e in cache la stessa copertina
+  // torna in millisecondi. Serve anche a leggerne i colori altrove,
+  // cosa impossibile in diretta perché le fonti non mandano CORS.
+  const indirizzo = useMemo(() => urlCopertina(src), [src]);
+
   const senzaImmagine = !src || rotta;
 
   return (
@@ -116,7 +123,7 @@ export default function Copertina({
                 ha esattamente il rapporto 2:3 — senza, restano due bande
                 nere ai lati che fanno sembrare l'immagine sbagliata. */}
             <img
-              src={src}
+              src={indirizzo}
               alt=""
               aria-hidden="true"
               className={`absolute inset-0 h-full w-full scale-110 object-cover blur-xl transition-opacity duration-slow ${
@@ -125,7 +132,7 @@ export default function Copertina({
             />
 
             <img
-              src={src}
+              src={indirizzo}
               alt={alt}
               loading={priorita ? "eager" : "lazy"}
               decoding="async"

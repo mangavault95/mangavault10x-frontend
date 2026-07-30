@@ -1,134 +1,372 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Pagina, { Sezione } from "../ui/Pagina";
 import Copertina from "../ui/Copertina";
-import Progresso from "../ui/Progresso";
-import { Bottone } from "../ui/Controlli";
+import LibroAperto from "../ui/LibroAperto";
+import ScaffaleVolumi from "../ui/ScaffaleVolumi";
+import ScaffaleCoste from "../ui/ScaffaleCoste";
+import { Bottone, CampoRicerca } from "../ui/Controlli";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
 import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
+import { dataIt, plurale } from "../dati/serie";
 import {
   addReadingHistory,
+  deleteReadingHistory,
   deleteReadingSession,
   getReadingHistory,
   getReadingSessions,
+  getStoricoPerSerie,
+  saveReadingSession,
   updateReadingSession
 } from "../services/api";
-import { dataIt } from "../dati/serie";
 
 /**
- * A che punto sono le letture.
+ * Le letture, in tre tempi.
  *
- * Due elenchi con ruoli diversi: sopra quello che stai leggendo
- * adesso — poche voci, ognuna con i comandi per avanzare — sotto lo
- * storico, che è solo memoria e non si tocca.
+ *   Adesso    — i libri aperti sul tavolo, con il segnalibro
+ *   Scaffali  — le serie già lette, volume per volume
+ *   Cronologia— l'ordine in cui li hai finiti
  *
- * I comandi cambiano il numero subito sullo schermo e poi lo mandano
- * al server. Aspettare la risposta di Render per veder salire un
- * numero da 3 a 4 rende ogni click una piccola attesa; se il salvataggio
- * fallisce il numero torna indietro e compare l'avviso.
+ * I comandi aggiornano il numero sullo schermo prima di scrivere sul
+ * server: aspettare Render per veder salire un contatore da 3 a 4
+ * rende ogni click un'attesa. Se il salvataggio fallisce il numero
+ * torna indietro e compare l'avviso — meglio un passo indietro
+ * visibile che un numero sbagliato salvato in silenzio.
  */
+/**
+ * Fin dove si può arrivare col segnalibro.
+ *
+ * Non si legge un volume che non si ha in mano: il tetto è quello
+ * che possiedi davvero. Per una serie conclusa e completa i due
+ * numeri coincidono; per una in corso di cui hai 7 volumi su 30
+ * usciti, il tetto resta 7.
+ *
+ * Se i volumi posseduti non sono registrati si ripiega sul totale,
+ * e in mancanza di entrambi non si mette alcun limite: meglio
+ * nessun vincolo che un vincolo inventato su dati assenti.
+ */
+function tettoLettura(posseduti, totali) {
+  if (posseduti > 0) return posseduti;
+  if (totali > 0) return totali;
+  return null;
+}
+
 export default function LetturaPage() {
   const { serie } = useCollezione();
 
   const sessioni = useRisorsa(getReadingSessions);
-  const storico = useRisorsa(getReadingHistory);
+  const perSerie = useRisorsa(getStoricoPerSerie);
+  const storico = useRisorsa(() => getReadingHistory(40));
 
   const [problema, setProblema] = useState(null);
+  const [sceltaAperta, setSceltaAperta] = useState(false);
 
-  // Le sessioni salvano una copia di titolo e copertina, che col tempo
-  // invecchia. Se la serie esiste ancora in collezione vincono i dati
-  // veri; la copia resta come ripiego per le serie cancellate.
+  // Il salvataggio del segnalibro va rimandato di poco.
+  //
+  // Premendo "+" cinque volte di fila partivano cinque richieste
+  // parallele: ognuna calcolata sul volume catturato al proprio
+  // render, e le risposte rientravano in ordine sparso. Bastava che
+  // l'ultima a tornare fosse quella con il numero più basso perché
+  // il server restasse indietro rispetto a quello che vedevi.
+  //
+  // Qui lo schermo si aggiorna subito e il server riceve una sola
+  // richiesta, con il valore finale, quando i click si fermano.
+  const daSalvare = useRef(new Map());
+  const timer = useRef(null);
+
+  const svuotaCoda = useCallback(async () => {
+    const coda = [...daSalvare.current.entries()];
+    daSalvare.current.clear();
+
+    for (const [mangaId, volume] of coda) {
+      try {
+        await updateReadingSession(mangaId, volume);
+      } catch {
+        setProblema("Non sono riuscito a salvare il segnalibro.");
+        sessioni.ricarica();
+      }
+    }
+  }, [sessioni]);
+
+  // Se la pagina viene lasciata con un salvataggio in sospeso, lo
+  // mando comunque: un segnalibro perso perché hai cambiato pagina
+  // troppo in fretta sarebbe difficile da capire.
+  useEffect(
+    () => () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+        svuotaCoda();
+      }
+    },
+    [svuotaCoda]
+  );
+
+  /* -------------------- Letture in corso -------------------- */
+
+  // Le sessioni conservano una copia di titolo e copertina che col
+  // tempo invecchia. Se la serie è ancora in collezione vincono i
+  // dati veri; la copia resta come ripiego per le serie cancellate.
   const attive = useMemo(() => {
     const elenco = sessioni.dati || [];
+    const storicoIndicizzato = new Map(
+      (perSerie.dati || []).map((s) => [String(s.manga_id), s])
+    );
 
     return elenco.map((s) => {
       const collegata = serie.find((m) => String(m.id) === String(s.manga_id));
+      const letti = storicoIndicizzato.get(String(s.manga_id));
+
+      const totali = collegata?.totali ?? (Number(s.volumitotali) || null);
+      const posseduti = Number(collegata?.posseduti) || 0;
 
       return {
         idSessione: s.id,
         mangaId: s.manga_id,
         titolo: collegata?.titolo || s.titolo,
         autore: collegata?.autore || s.autore,
+        editore: collegata?.editore || null,
         copertina: collegata?.copertina || s.coverurl,
-        totali: collegata?.totali ?? (Number(s.volumitotali) || null),
+        totali,
+        posseduti,
+        massimo: tettoLettura(posseduti, totali),
         volume: Number(s.volume) || 1,
+        volumiLetti: letti?.volumi || [],
         aggiornata: s.updated_at,
         inCollezione: Boolean(collegata)
       };
     });
-  }, [sessioni.dati, serie]);
+  }, [sessioni.dati, perSerie.dati, serie]);
+
+  const idInLettura = useMemo(
+    () => new Set(attive.map((a) => String(a.mangaId))),
+    [attive]
+  );
+
+  // Una serie di cui hai letto tutti i volumi che possiedi non ha
+  // senso fra quelle da aprire: proporla sarebbe rumore. Restano
+  // invece proponibili quelle lasciate a metà, che si vogliono
+  // riprendere.
+  const idFinite = useMemo(() => {
+    const finite = new Set();
+
+    for (const s of perSerie.dati || []) {
+      const collegata = serie.find((m) => String(m.id) === String(s.manga_id));
+      const tetto = tettoLettura(
+        Number(collegata?.posseduti) || 0,
+        collegata?.totali ?? (Number(s.volumitotali) || null)
+      );
+
+      if (tetto && Number(s.volumi_letti) >= tetto) {
+        finite.add(String(s.manga_id));
+      }
+    }
+
+    return finite;
+  }, [perSerie.dati, serie]);
+
+  const idDaNascondere = useMemo(
+    () => new Set([...idInLettura, ...idFinite]),
+    [idInLettura, idFinite]
+  );
+
+  /* -------------------- Scaffali -------------------- */
+
+  // Sullo scaffale vanno le serie di cui hai letto qualcosa ma che
+  // non stai leggendo adesso: quelle aperte hanno già il loro posto
+  // in cima e mostrarle due volte confonderebbe.
+  const scaffali = useMemo(
+    () =>
+      (perSerie.dati || [])
+        .filter((s) => !idInLettura.has(String(s.manga_id)))
+        .map((s) => {
+          const collegata = serie.find((m) => String(m.id) === String(s.manga_id));
+          const posseduti = Number(collegata?.posseduti) || 0;
+          const totali = collegata?.totali ?? (Number(s.volumitotali) || null);
+          const tetto = tettoLettura(posseduti, totali);
+          const letti = Number(s.volumi_letti) || 0;
+
+          return {
+            ...s,
+            volumi: (s.volumi || []).map(Number),
+            totali,
+            posseduti,
+            // "Completa" rispetto a quello che hai in mano, non
+            // rispetto ai volumi usciti: una serie in corso di cui
+            // hai letto tutti i tuoi 7 volumi è a posto, non a metà.
+            completa: Boolean(tetto) && letti >= tetto,
+            mancanti: tetto ? Math.max(0, tetto - letti) : 0
+          };
+        }),
+    [perSerie.dati, idInLettura, serie]
+  );
 
   /* -------------------- Azioni -------------------- */
 
-  async function cambiaVolume(sessione, delta) {
-    const nuovo = Math.max(1, sessione.volume + delta);
+  function segnalaErrore(messaggio) {
+    setProblema(messaggio);
+  }
 
-    if (nuovo === sessione.volume) return;
-
+  async function iniziaLettura(m) {
     setProblema(null);
-
-    sessioni.setDati((precedenti) =>
-      (precedenti || []).map((s) =>
-        s.id === sessione.idSessione ? { ...s, volume: nuovo } : s
-      )
-    );
+    setSceltaAperta(false);
 
     try {
-      await updateReadingSession(sessione.mangaId, nuovo);
-    } catch {
-      setProblema("Non sono riuscito a salvare il volume. Ricarico i dati.");
+      await saveReadingSession({
+        manga_id: m.id,
+        titolo: m.titolo,
+        autore: m.autore || "",
+        coverurl: m.copertina || "",
+        volume: 1,
+        volumitotali: m.totali ?? null
+      });
+
       sessioni.ricarica();
+    } catch {
+      segnalaErrore(`Non sono riuscito ad aprire la lettura di ${m.titolo}.`);
     }
   }
 
   /**
-   * "Finito questo volume": segna il volume nello storico e fa
-   * avanzare la sessione. Sono due gesti che nella realtà sono uno
-   * solo, quindi qui è un bottone solo.
+   * Sposta il segnalibro.
+   *
+   * `delta` fa un passo relativo al volume attuale, `assoluto` va
+   * direttamente a un numero. La differenza conta: con il passo
+   * relativo il valore va calcolato sullo stato del momento, non su
+   * quello catturato quando il pulsante è stato disegnato — è
+   * esattamente lì che nasceva lo sfasamento fra schermo e server.
    */
-  async function segnaLetto(sessione) {
+  function impostaVolume(lettura, { delta = 0, assoluto = null } = {}) {
+    // Il tetto non è solo un vincolo di interfaccia: senza, un click
+    // ripetuto porterebbe il segnalibro al volume 40 di una serie che
+    // ne ha 12, e il dato resterebbe salvato così.
+    const tetto = lettura.massimo;
+    let finale = null;
+
+    sessioni.setDati((precedenti) =>
+      (precedenti || []).map((s) => {
+        if (s.id !== lettura.idSessione) return s;
+
+        const attuale = Number(s.volume) || 1;
+        const richiesto = assoluto !== null ? assoluto : attuale + delta;
+        const volume = Math.max(1, tetto ? Math.min(tetto, richiesto) : richiesto);
+
+        finale = volume;
+
+        return volume === attuale ? s : { ...s, volume };
+      })
+    );
+
+    // Il calcolo avviene dentro l'aggiornamento di stato, quindi
+    // l'avviso va deciso dopo, quando `finale` è noto.
+    queueMicrotask(() => {
+      if (finale === null) return;
+
+      if (tetto && finale >= tetto && (assoluto ?? lettura.volume + delta) > tetto) {
+        setProblema(
+          lettura.posseduti > 0 && lettura.posseduti < (lettura.totali ?? Infinity)
+            ? `Di ${lettura.titolo} possiedi ${lettura.posseduti} volumi: non puoi segnarne oltre.`
+            : `${lettura.titolo} ha ${tetto} volumi in tutto.`
+        );
+        return;
+      }
+
+      setProblema(null);
+
+      daSalvare.current.set(lettura.mangaId, finale);
+
+      clearTimeout(timer.current);
+      timer.current = setTimeout(svuotaCoda, 450);
+    });
+  }
+
+  /**
+   * "Finito, avanti": registra il volume nello storico e sposta il
+   * segnalibro al successivo. Nella realtà è un gesto solo, quindi
+   * qui è un bottone solo.
+   */
+  async function segnaLetto(lettura) {
     setProblema(null);
+
+    // All'ultimo volume "Finito" registra la lettura ma non ha dove
+    // avanzare: segnalarlo è meglio che far finta di proseguire.
+    const eUltimo = lettura.massimo ? lettura.volume >= lettura.massimo : false;
 
     try {
       await addReadingHistory({
-        manga_id: sessione.mangaId,
-        titolo: sessione.titolo,
-        autore: sessione.autore,
-        coverurl: sessione.copertina,
-        volume: sessione.volume
+        manga_id: lettura.mangaId,
+        titolo: lettura.titolo,
+        autore: lettura.autore,
+        coverurl: lettura.copertina,
+        volume: lettura.volume
       });
 
-      await cambiaVolume(sessione, 1);
+      if (!eUltimo) {
+        impostaVolume(lettura, { delta: 1 });
+      }
 
       storico.ricarica();
+      perSerie.ricarica();
+
+      if (eUltimo) {
+        setProblema(
+          lettura.posseduti > 0 && lettura.posseduti < (lettura.totali ?? Infinity)
+            ? `Hai finito i ${lettura.posseduti} volumi di ${lettura.titolo} che possiedi.`
+            : `Hai finito ${lettura.titolo}. Puoi chiudere la lettura.`
+        );
+      }
     } catch {
-      setProblema("Il volume non è stato registrato nello storico.");
+      segnalaErrore("Il volume non è stato registrato nello storico.");
     }
   }
 
-  async function chiudi(sessione) {
+  async function chiudi(lettura) {
     setProblema(null);
 
     sessioni.setDati((precedenti) =>
-      (precedenti || []).filter((s) => s.id !== sessione.idSessione)
+      (precedenti || []).filter((s) => s.id !== lettura.idSessione)
     );
 
     try {
-      await deleteReadingSession(sessione.mangaId);
+      await deleteReadingSession(lettura.mangaId);
+      perSerie.ricarica();
     } catch {
-      setProblema("Non sono riuscito a chiudere la lettura.");
+      segnalaErrore("Non sono riuscito a chiudere la lettura.");
       sessioni.ricarica();
     }
   }
 
+  async function rimuoviDaStorico(voce) {
+    setProblema(null);
+
+    storico.setDati((precedenti) =>
+      (precedenti || []).filter((v) => v.id !== voce.id)
+    );
+
+    try {
+      await deleteReadingHistory(voce.id);
+      perSerie.ricarica();
+    } catch {
+      segnalaErrore("Non sono riuscito a togliere il volume dallo storico.");
+      storico.ricarica();
+    }
+  }
+
+  /* -------------------- Vista -------------------- */
+
+  const inCaricamento = sessioni.inCorso && !sessioni.dati;
+
   return (
     <Pagina
       occhiello="Letture"
-      titolo="In lettura"
-      sommario="Dove sei arrivato, e cosa hai già letto."
+      titolo="Il tavolo di lettura"
+      sommario="Dove sei arrivato, cosa hai già letto, e in che ordine."
+      // Nessun pulsante qui in alto: ce n'era anche uno al centro
+      // della sezione "Adesso", e due comandi identici a mezzo schermo
+      // di distanza fanno solo esitare. Resta quello centrale, che ora
+      // compare sempre — prima appariva solo a elenco vuoto.
     >
-      <div className="space-y-14">
+      <div className="space-y-16">
         {problema && (
           <p
             role="alert"
@@ -138,85 +376,125 @@ export default function LetturaPage() {
           </p>
         )}
 
-        {/* ---------- Attive ---------- */}
-        <Sezione titolo="Adesso">
+        {sceltaAperta && (
+          <SceltaSerie
+            serie={serie}
+            escludi={idDaNascondere}
+            onScegli={iniziaLettura}
+            onAnnulla={() => setSceltaAperta(false)}
+          />
+        )}
+
+        {/* ═══════════ ADESSO ═══════════ */}
+        <Sezione
+          titolo="Adesso"
+          extra={
+            attive.length ? (
+              <span className="font-numeric text-sm text-ink-muted">
+                {plurale(attive.length, "lettura aperta", "letture aperte")}
+              </span>
+            ) : null
+          }
+        >
           {sessioni.errore ? (
             <Errore errore={sessioni.errore} riprova={sessioni.ricarica} />
-          ) : sessioni.inCorso && !sessioni.dati ? (
-            <CaricamentoElenco quante={3} />
+          ) : inCaricamento ? (
+            <CaricamentoElenco quante={2} />
           ) : attive.length ? (
-            <ul className="space-y-3">
-              {attive.map((s) => (
-                <li key={s.idSessione}>
-                  <RigaLettura
-                    sessione={s}
-                    onAvanti={() => cambiaVolume(s, 1)}
-                    onIndietro={() => cambiaVolume(s, -1)}
-                    onLetto={() => segnaLetto(s)}
-                    onChiudi={() => chiudi(s)}
+            <>
+            <ul className="space-y-4">
+              {attive.map((lettura) => (
+                <li key={lettura.idSessione}>
+                  <LibroAperto
+                    lettura={lettura}
+                    onAvanti={() => impostaVolume(lettura, { delta: 1 })}
+                    onIndietro={() => impostaVolume(lettura, { delta: -1 })}
+                    onVaiAVolume={(n) => impostaVolume(lettura, { assoluto: n })}
+                    onLetto={() => segnaLetto(lettura)}
+                    onChiudi={() => chiudi(lettura)}
                   />
                 </li>
               ))}
             </ul>
+
+            {/* Lo stesso comando che compare a elenco vuoto, così è
+                sempre nello stesso posto: sotto le letture aperte. */}
+            <div className="flex justify-center pt-2">
+              <Bottone variante="secondario" onClick={() => setSceltaAperta(true)}>
+                Inizia un'altra lettura
+              </Bottone>
+            </div>
+            </>
           ) : (
             <Vuoto
-              titolo="Nessuna lettura aperta"
-              testo="Quando cominci una serie compare qui, con il volume a cui sei arrivato."
+              titolo="Nessun libro aperto"
+              testo="Apri una serie e il segnalibro ti aspetterà qui, al volume dove ti sei fermato."
               azione={
-                <Link to="/collezione">
-                  <Bottone variante="secondario">Scegli cosa leggere</Bottone>
-                </Link>
+                <Bottone onClick={() => setSceltaAperta(true)}>
+                  Inizia una lettura
+                </Bottone>
               }
             />
           )}
         </Sezione>
 
-        {/* ---------- Storico ---------- */}
+        {/* ═══════════ SCAFFALI ═══════════ */}
         <Sezione
-          titolo="Già letti"
+          titolo="Gli scaffali"
           extra={
-            storico.dati?.length ? (
+            scaffali.length ? (
               <span className="font-numeric text-sm text-ink-muted">
-                ultimi {storico.dati.length}
+                {plurale(scaffali.length, "serie", "serie")}
               </span>
             ) : null
           }
         >
+          {perSerie.errore ? (
+            <Errore errore={perSerie.errore} riprova={perSerie.ricarica} />
+          ) : perSerie.inCorso && !perSerie.dati ? (
+            <CaricamentoElenco quante={3} />
+          ) : scaffali.length ? (
+            <div className="space-y-10">
+              {/* Le coste in fila: la vista d'insieme */}
+              <ScaffaleCoste serie={scaffali} />
+
+              {/* Sotto, il dettaglio volume per volume di ogni serie */}
+              <ul className="grid gap-4 lg:grid-cols-2">
+                {scaffali.map((s) => (
+                  <li key={s.manga_id}>
+                    <RipianoSerie serie={s} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <Vuoto
+              titolo="Gli scaffali sono vuoti"
+              testo="Ogni volume che segni come finito prende posto qui, accanto agli altri della sua serie."
+            />
+          )}
+        </Sezione>
+
+        {/* ═══════════ CRONOLOGIA ═══════════ */}
+        <Sezione titolo="Ultimi letti">
           {storico.errore ? (
             <Errore errore={storico.errore} riprova={storico.ricarica} />
           ) : storico.inCorso && !storico.dati ? (
             <CaricamentoElenco quante={4} />
           ) : storico.dati?.length ? (
-            <ol className="space-y-1">
+            <ol className="space-y-0.5">
               {storico.dati.map((v) => (
-                <li
+                <VoceStorico
                   key={v.id}
-                  className="flex items-center gap-4 rounded-card px-3 py-2.5 transition-colors duration-quick hover:bg-glass-1"
-                >
-                  <div className="w-8 shrink-0">
-                    <Copertina src={v.coverurl} alt="" inclina={false} />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm text-ink-bright">{v.titolo}</p>
-                    <p className="font-numeric text-xs text-ink-faint">
-                      Volume {v.volume}
-                    </p>
-                  </div>
-
-                  <time
-                    dateTime={v.read_at}
-                    className="shrink-0 text-xs text-ink-muted"
-                  >
-                    {dataIt(v.read_at)}
-                  </time>
-                </li>
+                  voce={v}
+                  onRimuovi={() => rimuoviDaStorico(v)}
+                />
               ))}
             </ol>
           ) : (
             <Vuoto
-              titolo="Lo storico è vuoto"
-              testo="Ogni volume che segni come finito finisce qui, con la data."
+              titolo="Nessun volume registrato"
+              testo="Qui compare l'ordine in cui hai finito i volumi, con la data."
             />
           )}
         </Sezione>
@@ -226,83 +504,175 @@ export default function LetturaPage() {
 }
 
 /* ==================================================
-   RIGA DI UNA LETTURA ATTIVA
+   SCELTA DELLA SERIE DA APRIRE
    ================================================== */
 
-function RigaLettura({ sessione, onAvanti, onIndietro, onLetto, onChiudi }) {
-  const pct = sessione.totali
-    ? Math.min(100, Math.round((sessione.volume / sessione.totali) * 100))
-    : null;
+function SceltaSerie({ serie, escludi, onScegli, onAnnulla }) {
+  const [cerca, setCerca] = useState("");
+
+  const risultati = useMemo(() => {
+    const q = cerca.trim().toLowerCase();
+
+    return serie
+      .filter((m) => !escludi.has(String(m.id)))
+      .filter((m) =>
+        q
+          ? `${m.titolo} ${m.autore || ""}`.toLowerCase().includes(q)
+          : true
+      )
+      .slice(0, 24);
+  }, [serie, escludi, cerca]);
 
   return (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-4 rounded-panel border border-hairline bg-glass-1 p-4 backdrop-blur-xl transition-colors duration-base hover:border-soft">
-      <div className="w-16 shrink-0">
-        <Copertina src={sessione.copertina} alt={sessione.titolo} />
+    <div className="animate-rise-in rounded-panel border border-brass-400/20 bg-glass-2 p-5 backdrop-blur-xl">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="font-display text-lg font-semibold text-ink-bright">
+            Cosa apriamo?
+          </h3>
+          <p className="text-sm text-ink-muted">
+            Scegli dalla collezione. Il segnalibro parte dal volume 1.
+          </p>
+        </div>
+
+        <div className="w-full sm:w-64">
+          <CampoRicerca
+            valore={cerca}
+            onCambia={setCerca}
+            segnaposto="Cerca fra le tue serie…"
+            risultati={risultati.length}
+          />
+        </div>
       </div>
 
-      <div className="min-w-0 flex-1 space-y-2">
-        {sessione.inCollezione ? (
-          <Link
-            to={`/serie/${sessione.mangaId}`}
-            className="block truncate font-medium text-ink-bright transition-colors duration-quick hover:text-brass-300"
-          >
-            {sessione.titolo}
-          </Link>
-        ) : (
-          <p className="truncate font-medium text-ink-bright">{sessione.titolo}</p>
-        )}
+      {risultati.length ? (
+        <ul className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4">
+          {risultati.map((m) => (
+            <li key={m.id}>
+              <button
+                onClick={() => onScegli(m)}
+                // Il titolo è già dentro il pulsante, ma la copertina
+                // accanto lo spezza in più nodi: l'etichetta esplicita
+                // garantisce che un lettore di schermo annunci la serie
+                // invece di un generico "pulsante".
+                aria-label={`Inizia a leggere ${m.titolo}`}
+                className="group flex w-full items-center gap-3 rounded-card border border-hairline bg-glass-1 p-2 text-left transition-all duration-quick ease-settle
+                           hover:border-brass-400/40 hover:bg-glass-2 active:scale-[0.98]
+                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+              >
+                <span className="w-9 shrink-0">
+                  <Copertina src={m.copertina} alt="" inclina={false} />
+                </span>
 
-        <p className="font-numeric text-xs text-ink-muted">
-          Volume {sessione.volume}
-          {sessione.totali ? ` di ${sessione.totali}` : ""}
-          {sessione.aggiornata && ` · aggiornato il ${dataIt(sessione.aggiornata)}`}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm text-ink-bright">
+                    {m.titolo}
+                  </span>
+                  {m.totali ? (
+                    <span className="font-numeric text-xs text-ink-faint">
+                      {m.totali} volumi
+                    </span>
+                  ) : null}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="py-6 text-center text-sm text-ink-muted">
+          {cerca
+            ? "Nessuna serie con questo nome."
+            : "Hai già aperto tutte le serie della collezione."}
         </p>
+      )}
 
-        <Progresso valore={pct} sottile />
-      </div>
-
-      {/* Il contatore: due passi da un volume, non un campo da riempire */}
-      <div className="flex items-center gap-1 rounded-card border border-hairline bg-glass-2 p-1">
-        <BottoneTondo
-          etichetta="Volume precedente"
-          onClick={onIndietro}
-          disabled={sessione.volume <= 1}
-        >
-          −
-        </BottoneTondo>
-
-        <span className="min-w-[2.5rem] text-center font-numeric text-sm font-semibold text-ink-bright">
-          {sessione.volume}
-        </span>
-
-        <BottoneTondo etichetta="Volume successivo" onClick={onAvanti}>
-          +
-        </BottoneTondo>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Bottone onClick={onLetto}>Finito</Bottone>
-
-        <Bottone variante="fantasma" onClick={onChiudi} title="Chiudi questa lettura">
-          Chiudi
+      <div className="mt-4 flex justify-end">
+        <Bottone variante="fantasma" onClick={onAnnulla}>
+          Annulla
         </Bottone>
       </div>
     </div>
   );
 }
 
-function BottoneTondo({ etichetta, children, ...resto }) {
+/* ==================================================
+   UN RIPIANO: UNA SERIE GIÀ LETTA
+   ================================================== */
+
+function RipianoSerie({ serie: s }) {
   return (
-    <button
-      aria-label={etichetta}
-      title={etichetta}
-      className="grid h-8 w-8 place-items-center rounded-lg text-lg text-ink-muted transition-all duration-quick
-                 hover:bg-glass-3 hover:text-ink-bright active:scale-90
-                 disabled:pointer-events-none disabled:opacity-30
-                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
-      {...resto}
-    >
-      {children}
-    </button>
+    <div className="group h-full rounded-panel border border-hairline bg-glass-1 p-4 backdrop-blur-xl transition-all duration-base ease-settle hover:border-soft hover:bg-glass-2">
+      <div className="flex items-start gap-3.5">
+        <div className="w-12 shrink-0">
+          <Copertina src={s.coverurl} alt="" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <Link
+              to={`/serie/${s.manga_id}`}
+              className="min-w-0 flex-1 truncate font-medium text-ink-bright transition-colors duration-quick hover:text-brass-300"
+            >
+              {s.titolo}
+            </Link>
+
+            {s.completa && (
+              <span className="shrink-0 rounded-full border border-jade/25 bg-jade/10 px-2 py-0.5 text-[0.65rem] font-medium text-jade">
+                completata
+              </span>
+            )}
+          </div>
+
+          {s.autore && (
+            <p className="truncate text-xs text-ink-faint">{s.autore}</p>
+          )}
+
+          <p className="mt-1 text-xs text-ink-muted">
+            ultimo il <time dateTime={s.ultimo}>{dataIt(s.ultimo)}</time>
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <ScaffaleVolumi totali={s.totali} letti={s.volumi} />
+      </div>
+    </div>
+  );
+}
+
+/* ==================================================
+   UNA RIGA DI CRONOLOGIA
+   ================================================== */
+
+function VoceStorico({ voce, onRimuovi }) {
+  return (
+    <li className="group flex items-center gap-4 rounded-card px-3 py-2.5 transition-colors duration-quick hover:bg-glass-1">
+      <div className="w-8 shrink-0">
+        <Copertina src={voce.coverurl} alt="" inclina={false} />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm text-ink-bright">{voce.titolo}</p>
+        <p className="font-numeric text-xs text-ink-faint">Volume {voce.volume}</p>
+      </div>
+
+      <time dateTime={voce.read_at} className="shrink-0 text-xs text-ink-muted">
+        {dataIt(voce.read_at)}
+      </time>
+
+      {/* Compare solo al passaggio del mouse: correggere è raro,
+          e un cestino sempre visibile su ogni riga fa rumore.
+          Resta però raggiungibile da tastiera. */}
+      <button
+        onClick={onRimuovi}
+        aria-label={`Togli il volume ${voce.volume} di ${voce.titolo} dallo storico`}
+        title="Togli dallo storico"
+        className="shrink-0 rounded-lg px-2 py-1 text-xs text-ink-faint opacity-0 transition-all duration-quick
+                   hover:text-ember group-hover:opacity-100
+                   focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
+      >
+        Togli
+      </button>
+    </li>
   );
 }

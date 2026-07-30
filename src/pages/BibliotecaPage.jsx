@@ -196,8 +196,11 @@ export default function BibliotecaPage() {
           </Link>
         </div>
 
-        {/* Cartellino del libro guardato */}
-        <div className="flex items-end justify-between gap-4">
+        {/* Cartellino del libro guardato.
+            Il margine a destra su schermo largo lascia libero l'angolo
+            dove sta il banco del bibliotecario: senza, il suo pulsante
+            copriva la freccia per passare alla libreria successiva. */}
+        <div className="flex items-end justify-between gap-4 md:pr-52">
           <Cartellino serie={mirata} />
 
           <Comandi

@@ -9,7 +9,8 @@ import { Sezione } from "../ui/Pagina";
 import { BottonePreferito, ContaVolumi, VotoStelle } from "../ui/AzioniSerie";
 import Icon from "../app/Icon";
 import { useCollezione, useSerie } from "../dati/collezione";
-import { getMarketPrice } from "../services/api";
+import { getMarketPrice, getStoricoPerSerie, urlCopertina } from "../services/api";
+import useRisorsa from "../dati/useRisorsa";
 import {
   ETICHETTE_STATO,
   completamento,
@@ -32,6 +33,19 @@ export default function SeriePage() {
   const navigate = useNavigate();
 
   const { serie, inCorso, errore } = useSerie(id);
+
+  // Quali volumi hai già finito. Lo storico è raggruppato per serie,
+  // quindi basta pescare la riga di questa: è una sola richiesta e
+  // vale anche per le sezioni sotto.
+  const storico = useRisorsa(getStoricoPerSerie);
+
+  const volumiLetti = useMemo(() => {
+    const riga = (storico.dati || []).find(
+      (s) => String(s.manga_id) === String(id)
+    );
+
+    return (riga?.volumi || []).map(Number);
+  }, [storico.dati, id]);
   const { serie: tutte, ricarica, aggiornaLocale } = useCollezione();
 
   if (errore) {
@@ -76,7 +90,7 @@ export default function SeriePage() {
         {serie.copertina && (
           <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
             <img
-              src={serie.copertina}
+              src={urlCopertina(serie.copertina)}
               alt=""
               className="h-full w-full scale-125 object-cover opacity-25 blur-3xl"
             />
@@ -214,7 +228,7 @@ export default function SeriePage() {
           </Sezione>
         )}
 
-        {serie.totali > 0 && <Volumi serie={serie} />}
+        {serie.totali > 0 && <Volumi serie={serie} letti={volumiLetti} />}
 
         <QuotazioneMercato serie={serie} />
 
@@ -254,16 +268,27 @@ function Dato({ etichetta, valore }) {
 }
 
 /**
- * I volumi come quadratini: quelli che hai pieni, quelli che mancano
- * vuoti. Un colpo d'occhio dice se ti manca il 7 o gli ultimi tre —
- * cosa che la percentuale da sola non dice mai.
+ * I volumi come quadratini, con tre stati distinti:
+ *
+ *   letto      — pieno, in ottone: l'hai finito
+ *   posseduto  — contorno pieno ma fondo tenue: ce l'hai, non l'hai letto
+ *   mancante   — contorno tratteggiato: non ce l'hai
+ *
+ * Servono tre stati e non due perché "avere" e "aver letto" sono cose
+ * diverse, ed è proprio la differenza fra le due che dice cosa
+ * leggere stasera.
  */
-function Volumi({ serie }) {
+function Volumi({ serie, letti = [] }) {
+  const insiemeLetti = new Set(letti.map(Number));
+
   return (
     <Sezione
       titolo="Volumi"
       extra={
         <span className="font-numeric text-sm text-ink-muted">
+          {insiemeLetti.size > 0 && (
+            <span className="text-brass-400">{insiemeLetti.size} letti · </span>
+          )}
           {serie.posseduti} di {serie.totali}
         </span>
       }
@@ -276,16 +301,33 @@ function Volumi({ serie }) {
           // 1: è vero per quasi tutte le collezioni, e comunque il
           // conteggio totale resta quello registrato.
           const posseduto = numero <= serie.posseduti;
+          const letto = insiemeLetti.has(numero);
+
+          const stato = letto
+            ? "letto"
+            : posseduto
+              ? "posseduto"
+              : "mancante";
+
+          const aspetto = {
+            letto:
+              "border-brass-400 bg-brass-400 font-semibold text-void shadow-brass",
+            posseduto: "border-brass-400/30 bg-brass-400/12 text-brass-300",
+            mancante: "border-dashed border-soft text-ink-faint"
+          }[stato];
+
+          const descrizione = {
+            letto: `Volume ${numero}: letto`,
+            posseduto: `Volume ${numero}: in collezione, non ancora letto`,
+            mancante: `Volume ${numero}: manca`
+          }[stato];
 
           return (
             <span
               key={numero}
-              title={posseduto ? `Volume ${numero}: in collezione` : `Volume ${numero}: manca`}
-              className={`grid h-9 w-9 place-items-center rounded-lg border font-numeric text-xs transition-transform duration-quick ease-spring hover:scale-110 ${
-                posseduto
-                  ? "border-brass-400/30 bg-brass-400/12 text-brass-300"
-                  : "border-dashed border-soft text-ink-faint"
-              }`}
+              title={descrizione}
+              aria-label={descrizione}
+              className={`grid h-9 w-9 place-items-center rounded-lg border font-numeric text-xs transition-transform duration-quick ease-spring hover:scale-110 ${aspetto}`}
             >
               {numero}
             </span>

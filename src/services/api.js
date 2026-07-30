@@ -91,6 +91,28 @@ async function request(path, { method = "GET", body, auth = false } = {}) {
 }
 
 /* ==================================================
+   COPERTINE
+   ================================================== */
+
+/**
+ * L'indirizzo di una copertina passando dal ponte del backend.
+ *
+ * Serve perché né AniList né AnimeClick mandano gli header CORS:
+ * disegnare una di quelle immagini su una canvas la rende
+ * illeggibile, quindi non si potrebbero ricavare i colori del dorso.
+ * In più il ponte tiene una copia in cache, e AnimeClick da sola
+ * impiega secondi a rispondere.
+ */
+export function urlCopertina(originale) {
+  if (!originale) return null;
+
+  // Un'immagine già nostra o già in formato dati non va rimbalzata.
+  if (originale.startsWith("data:") || originale.startsWith("/")) return originale;
+
+  return `${API_URL}/api/cover?url=${encodeURIComponent(originale)}`;
+}
+
+/* ==================================================
    MANGA
    ================================================== */
 
@@ -154,10 +176,20 @@ export const purchaseWishlistItem = (id) =>
    LETTURA
    ================================================== */
 
-export const getReadingHistory = () => request("/api/reading-history");
+export const getReadingHistory = (limite = 60) =>
+  request(`/api/reading-history?limit=${limite}`);
+
+// La cronologia vista per scaffale: una riga per serie, con dentro
+// i volumi letti. Il raggruppamento lo fa il database.
+export const getStoricoPerSerie = () => request("/api/reading-history/per-serie");
 
 export const addReadingHistory = (entry) =>
   request("/api/reading-history", { method: "POST", body: entry });
+
+// Serve a correggere un volume segnato per sbaglio: senza questo
+// lo storico accumula errori e si smette di fidarsene.
+export const deleteReadingHistory = (id) =>
+  request(`/api/reading-history/${id}`, { method: "DELETE" });
 
 export const getReadingSessions = () => request("/api/reading-sessions");
 
