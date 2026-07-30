@@ -199,11 +199,13 @@ export default function SeriePage() {
 
                   {pct === 100 && <Etichetta tono="jade">Serie completa</Etichetta>}
 
-                  <Etichetta tono={ETICHETTE_LETTURA[statoLettura].tono}>
-                    {ETICHETTE_LETTURA[statoLettura].testo}
-                  </Etichetta>
-
-                  {serie.droppato && <Etichetta tono="ember">Droppato</Etichetta>}
+                  {serie.droppato ? (
+                    <Etichetta tono="ember">Droppato</Etichetta>
+                  ) : (
+                    <Etichetta tono={ETICHETTE_LETTURA[statoLettura].tono}>
+                      {ETICHETTE_LETTURA[statoLettura].testo}
+                    </Etichetta>
+                  )}
 
                   {mancanti > 0 && (
                     <Etichetta tono="ember">

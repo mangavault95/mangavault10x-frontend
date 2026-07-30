@@ -165,14 +165,16 @@ function Costa({ serie, altezza, spessore, onApri }) {
       </span>
 
       {/* Serie droppata: una X ben visibile, non solo un colore
-          diverso — deve saltare all'occhio anche scorrendo veloce. */}
+          diverso — deve saltare all'occhio anche scorrendo veloce.
+          Dentro il dorso, non a cavallo del bordo: anche la costa più
+          sottile (spessore minimo ~29px) la contiene per intero. */}
       {serie.droppato && (
         <span
           aria-hidden="true"
           title="Droppata"
-          className="absolute -right-1.5 -top-1.5 z-10 grid h-5 w-5 place-items-center rounded-full bg-ember text-void shadow-lift"
+          className="absolute right-0.5 top-0.5 z-10 grid h-4 w-4 place-items-center rounded-full bg-ember text-void shadow-lift"
         >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round">
             <path d="M6 6l12 12M18 6L6 18" />
           </svg>
         </span>
