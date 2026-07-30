@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import confetti from "canvas-confetti";
 import Pagina, { Sezione } from "../ui/Pagina";
 import Copertina from "../ui/Copertina";
 import LibroAperto from "../ui/LibroAperto";
 import ScaffaleVolumi from "../ui/ScaffaleVolumi";
 import ScaffaleCoste from "../ui/ScaffaleCoste";
 import { Bottone, CampoRicerca } from "../ui/Controlli";
+import { VotoStelle } from "../ui/AzioniSerie";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
 import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
@@ -18,8 +20,11 @@ import {
   getReadingSessions,
   getStoricoPerSerie,
   saveReadingSession,
+  updateManga,
   updateReadingSession
 } from "../services/api";
+
+const CRONOLOGIA_VISIBILE = 20;
 
 /**
  * Le letture, in tre tempi.
@@ -53,14 +58,16 @@ function tettoLettura(posseduti, totali) {
 }
 
 export default function LetturaPage() {
-  const { serie } = useCollezione();
+  const { serie, aggiornaLocale } = useCollezione();
 
   const sessioni = useRisorsa(getReadingSessions);
   const perSerie = useRisorsa(getStoricoPerSerie);
-  const storico = useRisorsa(() => getReadingHistory(40));
+  const storico = useRisorsa(() => getReadingHistory(200));
 
   const [problema, setProblema] = useState(null);
   const [sceltaAperta, setSceltaAperta] = useState(false);
+  const [completata, setCompletata] = useState(null);
+  const [cercaStorico, setCercaStorico] = useState("");
 
   // Il salvataggio del segnalibro va rimandato di poco.
   //
@@ -165,9 +172,16 @@ export default function LetturaPage() {
     return finite;
   }, [perSerie.dati, serie]);
 
+  // Anche le serie droppate restano fuori dalla scelta: proporle di
+  // nuovo vorrebbe dire ignorare la scelta appena fatta di mollarle.
+  const idDroppate = useMemo(
+    () => new Set(serie.filter((m) => m.droppato).map((m) => String(m.id))),
+    [serie]
+  );
+
   const idDaNascondere = useMemo(
-    () => new Set([...idInLettura, ...idFinite]),
-    [idInLettura, idFinite]
+    () => new Set([...idInLettura, ...idFinite, ...idDroppate]),
+    [idInLettura, idFinite, idDroppate]
   );
 
   /* -------------------- Scaffali -------------------- */
@@ -195,7 +209,8 @@ export default function LetturaPage() {
             // rispetto ai volumi usciti: una serie in corso di cui
             // hai letto tutti i tuoi 7 volumi è a posto, non a metà.
             completa: Boolean(tetto) && letti >= tetto,
-            mancanti: tetto ? Math.max(0, tetto - letti) : 0
+            mancanti: tetto ? Math.max(0, tetto - letti) : 0,
+            droppato: Boolean(collegata?.droppato)
           };
         }),
     [perSerie.dati, idInLettura, serie]
@@ -309,11 +324,9 @@ export default function LetturaPage() {
       perSerie.ricarica();
 
       if (eUltimo) {
-        setProblema(
-          lettura.posseduti > 0 && lettura.posseduti < (lettura.totali ?? Infinity)
-            ? `Hai finito i ${lettura.posseduti} volumi di ${lettura.titolo} che possiedi.`
-            : `Hai finito ${lettura.titolo}. Puoi chiudere la lettura.`
-        );
+        // La lettura è finita per davvero: coriandoli e voto, non
+        // solo una riga di testo che si perde nello schermo.
+        setCompletata(lettura);
       }
     } catch {
       segnalaErrore("Il volume non è stato registrato nello storico.");
@@ -336,6 +349,32 @@ export default function LetturaPage() {
     }
   }
 
+  /**
+   * Droppare non è chiudere e basta: resta il segno che questa serie
+   * l'hai mollata, così non ricompare fra le scelte per aprirne una
+   * nuova finché non clicchi tu stesso un volume per riprenderla.
+   */
+  async function droppa(lettura) {
+    setProblema(null);
+
+    sessioni.setDati((precedenti) =>
+      (precedenti || []).filter((s) => s.id !== lettura.idSessione)
+    );
+    aggiornaLocale(lettura.mangaId, { droppato: true });
+
+    try {
+      await Promise.all([
+        deleteReadingSession(lettura.mangaId),
+        updateManga(lettura.mangaId, { droppato: true })
+      ]);
+      perSerie.ricarica();
+    } catch {
+      segnalaErrore("Non sono riuscito a droppare la lettura.");
+      sessioni.ricarica();
+      aggiornaLocale(lettura.mangaId, { droppato: false });
+    }
+  }
+
   async function rimuoviDaStorico(voce) {
     setProblema(null);
 
@@ -351,6 +390,21 @@ export default function LetturaPage() {
       storico.ricarica();
     }
   }
+
+  /* -------------------- Cronologia -------------------- */
+
+  // Di default solo le ultime 20: è la parte che si guarda davvero
+  // ogni giorno. Chi cerca un titolo più vecchio ha la barra sotto,
+  // che scorre l'intero lotto già scaricato invece di interrogare
+  // di nuovo il server per ogni lettera digitata.
+  const storicoFiltrato = useMemo(() => {
+    const q = cercaStorico.trim().toLowerCase();
+    const tutti = storico.dati || [];
+
+    return q
+      ? tutti.filter((v) => v.titolo.toLowerCase().includes(q))
+      : tutti.slice(0, CRONOLOGIA_VISIBILE);
+  }, [storico.dati, cercaStorico]);
 
   /* -------------------- Vista -------------------- */
 
@@ -385,6 +439,15 @@ export default function LetturaPage() {
           />
         )}
 
+        {completata && (
+          <ModaleCompletamento
+            lettura={completata}
+            serie={serie.find((m) => String(m.id) === String(completata.mangaId))}
+            onVotoCambiato={(nuovo) => aggiornaLocale(completata.mangaId, { valutazione: nuovo })}
+            onChiudi={() => setCompletata(null)}
+          />
+        )}
+
         {/* ═══════════ ADESSO ═══════════ */}
         <Sezione
           titolo="Adesso"
@@ -412,6 +475,7 @@ export default function LetturaPage() {
                     onVaiAVolume={(n) => impostaVolume(lettura, { assoluto: n })}
                     onLetto={() => segnaLetto(lettura)}
                     onChiudi={() => chiudi(lettura)}
+                    onDroppa={() => droppa(lettura)}
                   />
                 </li>
               ))}
@@ -476,21 +540,41 @@ export default function LetturaPage() {
         </Sezione>
 
         {/* ═══════════ CRONOLOGIA ═══════════ */}
-        <Sezione titolo="Ultimi letti">
+        <Sezione
+          titolo="Ultimi letti"
+          extra={
+            storico.dati?.length ? (
+              <div className="w-full sm:w-64">
+                <CampoRicerca
+                  valore={cercaStorico}
+                  onCambia={setCercaStorico}
+                  segnaposto="Cerca nella cronologia…"
+                  risultati={storicoFiltrato.length}
+                />
+              </div>
+            ) : null
+          }
+        >
           {storico.errore ? (
             <Errore errore={storico.errore} riprova={storico.ricarica} />
           ) : storico.inCorso && !storico.dati ? (
             <CaricamentoElenco quante={4} />
           ) : storico.dati?.length ? (
-            <ol className="space-y-0.5">
-              {storico.dati.map((v) => (
-                <VoceStorico
-                  key={v.id}
-                  voce={v}
-                  onRimuovi={() => rimuoviDaStorico(v)}
-                />
-              ))}
-            </ol>
+            storicoFiltrato.length ? (
+              <ol className="space-y-0.5">
+                {storicoFiltrato.map((v) => (
+                  <VoceStorico
+                    key={v.id}
+                    voce={v}
+                    onRimuovi={() => rimuoviDaStorico(v)}
+                  />
+                ))}
+              </ol>
+            ) : (
+              <p className="py-6 text-center text-sm text-ink-muted">
+                Nessun volume con questo titolo.
+              </p>
+            )
           ) : (
             <Vuoto
               titolo="Nessun volume registrato"
@@ -616,10 +700,16 @@ function RipianoSerie({ serie: s }) {
               {s.titolo}
             </Link>
 
-            {s.completa && (
-              <span className="shrink-0 rounded-full border border-jade/25 bg-jade/10 px-2 py-0.5 text-[0.65rem] font-medium text-jade">
-                completata
+            {s.droppato ? (
+              <span className="shrink-0 rounded-full border border-ember/25 bg-ember/10 px-2 py-0.5 text-[0.65rem] font-medium text-ember">
+                droppato
               </span>
+            ) : (
+              s.completa && (
+                <span className="shrink-0 rounded-full border border-jade/25 bg-jade/10 px-2 py-0.5 text-[0.65rem] font-medium text-jade">
+                  completata
+                </span>
+              )
             )}
           </div>
 
@@ -674,5 +764,57 @@ function VoceStorico({ voce, onRimuovi }) {
         Togli
       </button>
     </li>
+  );
+}
+
+/* ==================================================
+   FINE LETTURA: CORIANDOLI + VOTO
+   ================================================== */
+
+/**
+ * L'ultimo volume che possiedi di una serie è un momento, non una
+ * riga di log: coriandoli, un titolo di congratulazioni, e — se la
+ * serie è ancora in collezione — la stessa fila di stelle usata
+ * ovunque per votarla, così il voto resta unico per serie invece di
+ * moltiplicarsi per ogni lettura.
+ */
+function ModaleCompletamento({ lettura, serie, onVotoCambiato, onChiudi }) {
+  useEffect(() => {
+    confetti({
+      particleCount: 140,
+      spread: 75,
+      origin: { y: 0.6 }
+    });
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-toast grid place-items-center bg-void/70 p-5 backdrop-blur-sm animate-rise-in"
+      onClick={(e) => e.target === e.currentTarget && onChiudi()}
+    >
+      <div className="w-full max-w-sm space-y-5 rounded-panel border border-hairline bg-glass-3 p-6 text-center shadow-float backdrop-blur-2xl">
+        <div>
+          <h2 className="font-display text-xl font-semibold text-ink-bright">
+            Complimenti!
+          </h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            Hai finito {lettura.titolo}.
+          </p>
+        </div>
+
+        {serie && (
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-xs uppercase tracking-wider text-ink-faint">
+              Che voto le dai?
+            </p>
+            <VotoStelle serie={serie} onCambiato={onVotoCambiato} dimensione={26} />
+          </div>
+        )}
+
+        <Bottone onClick={onChiudi} className="w-full">
+          Chiudi
+        </Bottone>
+      </div>
+    </div>
   );
 }

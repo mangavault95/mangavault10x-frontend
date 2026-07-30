@@ -374,6 +374,32 @@
     border: 2px solid rgba(0, 0, 0, 0);
   }
 
+  /* La finestra intera, non solo i pannelli con overflow interno:
+     senza questo la scrollbar nativa del browser stona con quelle
+     già a tema dentro le modali. */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  }
+
+  html::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  html::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  html::-webkit-scrollbar-thumb {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.14),
+      rgba(255, 255, 255, 0.08)
+    );
+    border-radius: 999px;
+    border: 2px solid rgba(0, 0, 0, 0);
+  }
+
   /* =========================================================
      COMPAT LEGACY HELPERS
      ========================================================= */

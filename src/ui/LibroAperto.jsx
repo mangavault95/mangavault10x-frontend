@@ -105,6 +105,7 @@ export default function LibroAperto({
   onIndietro,
   onLetto,
   onChiudi,
+  onDroppa,
   onVaiAVolume
 }) {
   const {
@@ -264,6 +265,13 @@ export default function LibroAperto({
             className="rounded-card px-3 py-1.5 text-xs text-ink-faint transition-colors duration-quick hover:text-ember focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
           >
             Chiudi la lettura
+          </button>
+
+          <button
+            onClick={onDroppa}
+            className="rounded-card px-3 py-1.5 text-xs text-ink-faint transition-colors duration-quick hover:text-ember focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
+          >
+            Droppa la lettura
           </button>
         </div>
       </div>

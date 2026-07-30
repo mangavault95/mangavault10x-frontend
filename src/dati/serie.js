@@ -70,6 +70,7 @@ export function normalizzaSerie(riga) {
       (riga.Concluso === true ? "conclusa" : riga.Concluso === false ? "in_corso" : null),
 
     preferito: Boolean(riga.Preferito),
+    droppato: Boolean(riga.Droppato),
     dataAggiunta: riga.DataAggiunta || null,
 
     // La riga originale resta a disposizione per la pagina Gestione,

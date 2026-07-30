@@ -9,7 +9,13 @@ import { Sezione } from "../ui/Pagina";
 import { BottonePreferito, ContaVolumi, VotoStelle } from "../ui/AzioniSerie";
 import Icon from "../app/Icon";
 import { useCollezione, useSerie } from "../dati/collezione";
-import { getMarketPrice, getStoricoPerSerie, urlCopertina } from "../services/api";
+import {
+  getMarketPrice,
+  getStoricoPerSerie,
+  saveReadingSession,
+  updateManga,
+  urlCopertina
+} from "../services/api";
 import { cercaFuori, scegliCorrispondenza, similiFuoriPerId } from "../bibliotecario/esterni";
 import { costruisciCercaPosseduto } from "../dati/consigli";
 import { generiDiSerie, idDa } from "../dati/generi";
@@ -82,6 +88,46 @@ export default function SeriePage() {
   const pct = completamento(serie);
   const mancanti = volumiMancanti(serie);
 
+  // Letto/in lettura/non letto guarda cosa hai davvero finito, non
+  // quanti volumi possiedi: sono due domande diverse (vedi Volumi).
+  const statoLettura =
+    volumiLetti.length === 0
+      ? "non_letto"
+      : serie.totali && volumiLetti.length >= serie.totali
+        ? "letto"
+        : "in_lettura";
+
+  const ETICHETTE_LETTURA = {
+    letto: { testo: "Letto", tono: "jade" },
+    in_lettura: { testo: "In lettura", tono: "lapis" },
+    non_letto: { testo: "Non letto", tono: "neutro" }
+  };
+
+  // Riprendere in mano una serie droppata: click su un volume,
+  // ripulisce il flag e riapre la lettura esattamente lì.
+  async function riprendi(numero) {
+    try {
+      await Promise.all([
+        updateManga(serie.id, { droppato: false }),
+        saveReadingSession({
+          manga_id: serie.id,
+          titolo: serie.titolo,
+          autore: serie.autore || "",
+          coverurl: serie.copertina || "",
+          volume: numero,
+          volumitotali: serie.totali ?? null
+        })
+      ]);
+
+      aggiornaLocale(serie.id, { droppato: false });
+      navigate("/letture");
+    } catch {
+      // Un tentativo fallito qui non è grave: si può sempre riaprire
+      // la lettura dalla pagina Letture. Non serve un banner d'errore
+      // per un click su un quadratino.
+    }
+  }
+
   return (
     <article>
       {/* ---------- Testata con la copertina come sfondo ----------
@@ -152,6 +198,12 @@ export default function SeriePage() {
                   )}
 
                   {pct === 100 && <Etichetta tono="jade">Serie completa</Etichetta>}
+
+                  <Etichetta tono={ETICHETTE_LETTURA[statoLettura].tono}>
+                    {ETICHETTE_LETTURA[statoLettura].testo}
+                  </Etichetta>
+
+                  {serie.droppato && <Etichetta tono="ember">Droppato</Etichetta>}
 
                   {mancanti > 0 && (
                     <Etichetta tono="ember">
@@ -238,7 +290,9 @@ export default function SeriePage() {
           </Sezione>
         )}
 
-        {serie.totali > 0 && <Volumi serie={serie} letti={volumiLetti} />}
+        {serie.totali > 0 && (
+          <Volumi serie={serie} letti={volumiLetti} onRiprendi={riprendi} />
+        )}
 
         <QuotazioneMercato serie={serie} />
 
@@ -288,8 +342,13 @@ function Dato({ etichetta, valore }) {
  * diverse, ed è proprio la differenza fra le due che dice cosa
  * leggere stasera.
  */
-function Volumi({ serie, letti = [] }) {
+function Volumi({ serie, letti = [], onRiprendi }) {
   const insiemeLetti = new Set(letti.map(Number));
+
+  // Cliccabili solo se la serie è droppata: altrimenti sarebbe un
+  // quadratino che sembra un bottone ma non fa niente in nessun altro
+  // stato, e cliccarlo per sbaglio riaprirebbe una lettura non voluta.
+  const riprendibile = Boolean(serie.droppato) && typeof onRiprendi === "function";
 
   return (
     <Sezione
@@ -303,6 +362,12 @@ function Volumi({ serie, letti = [] }) {
         </span>
       }
     >
+      {riprendibile && (
+        <p className="mb-3 text-xs text-ink-faint">
+          Serie droppata — clicca un volume per riprendere da lì.
+        </p>
+      )}
+
       <div className="flex flex-wrap gap-1.5">
         {Array.from({ length: serie.totali }).map((_, i) => {
           const numero = i + 1;
@@ -330,17 +395,22 @@ function Volumi({ serie, letti = [] }) {
             letto: `Volume ${numero}: letto`,
             posseduto: `Volume ${numero}: in collezione, non ancora letto`,
             mancante: `Volume ${numero}: manca`
-          }[stato];
+          }[stato] + (riprendibile ? ", clicca per riprendere la lettura da qui" : "");
+
+          const Elemento = riprendibile ? "button" : "span";
 
           return (
-            <span
+            <Elemento
               key={numero}
+              type={riprendibile ? "button" : undefined}
+              onClick={riprendibile ? () => onRiprendi(numero) : undefined}
               title={descrizione}
               aria-label={descrizione}
-              className={`grid h-9 w-9 place-items-center rounded-lg border font-numeric text-xs transition-transform duration-quick ease-spring hover:scale-110 ${aspetto}`}
+              className={`grid h-9 w-9 place-items-center rounded-lg border font-numeric text-xs transition-transform duration-quick ease-spring hover:scale-110 ${aspetto}
+                ${riprendibile ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400" : ""}`}
             >
               {numero}
-            </span>
+            </Elemento>
           );
         })}
       </div>

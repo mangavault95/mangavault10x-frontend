@@ -62,7 +62,8 @@ function Costa({ serie, altezza, spessore, onApri }) {
       aria-label={
         `${serie.titolo}${serie.editore ? `, ${serie.editore}` : ""}, ` +
         `${serie.volumi_letti} volumi letti` +
-        (serie.mancanti > 0 ? `, ${serie.mancanti} ancora da leggere` : ", serie completata")
+        (serie.mancanti > 0 ? `, ${serie.mancanti} ancora da leggere` : ", serie completata") +
+        (serie.droppato ? ", droppata" : "")
       }
       title={
         serie.mancanti > 0
@@ -162,6 +163,20 @@ function Costa({ serie, altezza, spessore, onApri }) {
           style={{ background: "linear-gradient(to right, rgba(0,0,0,0.45), transparent)" }}
         />
       </span>
+
+      {/* Serie droppata: una X ben visibile, non solo un colore
+          diverso — deve saltare all'occhio anche scorrendo veloce. */}
+      {serie.droppato && (
+        <span
+          aria-hidden="true"
+          title="Droppata"
+          className="absolute -right-1.5 -top-1.5 z-10 grid h-5 w-5 place-items-center rounded-full bg-ember text-void shadow-lift"
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </span>
+      )}
     </button>
   );
 }
