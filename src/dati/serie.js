@@ -19,7 +19,7 @@
 // I generi arrivano come stringa separata da virgole, a volte con
 // spazi doppi o virgole finali. Una lista pulita è più facile da
 // filtrare e da mostrare come etichette.
-function separaGeneri(grezzo) {
+export function separaGeneri(grezzo) {
   if (!grezzo) return [];
 
   return String(grezzo)

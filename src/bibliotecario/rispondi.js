@@ -291,7 +291,7 @@ function consiglio(serie, genere) {
       (genere ? `Fra le tue serie complete di genere ${genere}` : "Fra le tue serie complete") +
       ", queste le hai già tutte e sono pronte da leggere:",
     serie: scelte,
-    dettaglio: (s) => (s.valutazione > 0 ? `${s.valutazione.toFixed(1)}/10` : `${s.posseduti} vol.`)
+    dettaglio: (s) => (s.valutazione > 0 ? `${s.valutazione}/5` : `${s.posseduti} vol.`)
   };
 }
 
@@ -307,7 +307,7 @@ function primato(serie, quale) {
     },
     voto: {
       estrai: (s) => (s.valutazione > 0 ? s.valutazione : null),
-      frase: (s, v) => `Il voto più alto che hai dato è ${v.toFixed(1)}, a ${s.titolo}.`
+      frase: (s, v) => `Il voto più alto che hai dato è ${v}/5, a ${s.titolo}.`
     }
   };
 
@@ -592,7 +592,7 @@ function serieVoto(s, tutte) {
 
   return {
     testo:
-      `Hai dato ${s.valutazione.toFixed(1)} a ${s.titolo}. ` +
+      `Hai dato ${s.valutazione}/5 a ${s.titolo}. ` +
       (migliori === 0
         ? "È il voto più alto che hai messo."
         : `${plurale(migliori, "serie ha", "serie hanno")} un voto più alto.`),

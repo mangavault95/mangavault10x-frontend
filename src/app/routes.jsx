@@ -15,6 +15,7 @@ const Collezione = lazy(() => import("../pages/CollezionePage"));
 const BibliotecaTre = lazy(() => import("../pages/BibliotecaPage"));
 const Serie = lazy(() => import("../pages/SeriePage"));
 const Wishlist = lazy(() => import("../pages/WishlistPage"));
+const Desiderio = lazy(() => import("../pages/DesiderioPage"));
 const Lettura = lazy(() => import("../pages/LetturaPage"));
 const Statistiche = lazy(() => import("../pages/StatistichePage"));
 const Admin = lazy(() => import("../pages/AdminPage"));
@@ -50,6 +51,7 @@ export default function AppRoutes() {
               <Route path="/biblioteca" element={<BibliotecaTre />} />
               <Route path="/serie/:id" element={<Serie />} />
               <Route path="/wishlist" element={<Wishlist />} />
+              <Route path="/desiderio/:id" element={<Desiderio />} />
               <Route path="/lettura" element={<Lettura />} />
               <Route path="/statistiche" element={<Statistiche />} />
               <Route path="/admin" element={<Admin />} />

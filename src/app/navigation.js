@@ -44,7 +44,7 @@ export const SEZIONI = [
     percorso: "/wishlist",
     etichetta: "Desideri",
     descrizione: "Le serie che vuoi comprare",
-    icona: "star",
+    icona: "cartellino",
     tasto: "4"
   },
   {

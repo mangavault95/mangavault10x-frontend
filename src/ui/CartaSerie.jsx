@@ -50,7 +50,7 @@ export default function CartaSerie({ serie, priorita = false, riempi = false }) 
             ancora votato", e un "0.0" in bella vista sembra una stroncatura. */}
         {serie.valutazione > 0 && (
           <span className="absolute left-2 top-2 rounded-full bg-void/70 px-2 py-0.5 font-numeric text-xs font-medium text-brass-300 backdrop-blur-sm">
-            {serie.valutazione.toFixed(1)}
+            {serie.valutazione}★
           </span>
         )}
 
@@ -89,7 +89,12 @@ export default function CartaSerie({ serie, priorita = false, riempi = false }) 
       </div>
 
       <div className="mt-3 space-y-1.5 px-0.5">
-        <h3 className="line-clamp-2 text-sm font-medium leading-snug text-ink-bright transition-colors duration-quick group-hover:text-brass-300">
+        {/* Altezza riservata per due righe sempre, non solo quante ne
+            usa il titolo: un titolo corto su una riga sola altrimenti
+            lascia la barra di completamento più in alto di quella della
+            scheda accanto con un titolo lungo, e la griglia sembra
+            storta anche se ogni riga, tecnicamente, è allineata. */}
+        <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-snug text-ink-bright transition-colors duration-quick group-hover:text-brass-300">
           {serie.titolo}
         </h3>
 

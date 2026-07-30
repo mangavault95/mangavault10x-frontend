@@ -112,7 +112,7 @@ export default function StatistichePage() {
 
     return [
       migliore("Più volumi", (s) => s.posseduti || null, (v) => `${v} volumi`),
-      migliore("Voto più alto", (s) => s.valutazione, (v) => `${v.toFixed(1)} / 10`),
+      migliore("Voto più alto", (s) => s.valutazione, (v) => `${v} / 5`),
       migliore("Serie più lunga", (s) => s.totali, (v) => `${v} volumi totali`),
       migliore("Vale di più", (s) => valoreSerie(s) || null, (v) => euro(v)),
       migliore("Ne mancano di più", (s) => volumiMancanti(s) || null, (v) => `${v} da prendere`)
@@ -175,7 +175,7 @@ export default function StatistichePage() {
             <Tessera
               etichetta="Voto medio"
               valore={n.votoMedio ? n.votoMedio.toFixed(1) : "—"}
-              nota={n.votoMedio ? "su 10" : "nessun voto registrato"}
+              nota={n.votoMedio ? "su 5" : "nessun voto registrato"}
             />
           </div>
         </Sezione>

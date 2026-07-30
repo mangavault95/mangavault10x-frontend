@@ -50,15 +50,19 @@ export default class LibroVetrina {
       metalness: 0.04
     });
 
-    // Stesso ordine facce di `scena.js`: la quinta (+Z... qui -Z verso
-    // la telecamera con la rotazione di riposo) è la copertina.
+    // Stesso ordine facce di `scena.js`: la quinta è quella rivolta a
+    // chi guarda a riposo. La sesta (il retro) usa la stessa copertina
+    // invece della carta bianca: un libro vero mostra il dorso quando
+    // giri le spalle, ma qui non c'è un dorso disegnato a parte, e la
+    // pagina bianca vista girando il libro sembrava un pezzo mancante
+    // più che un dettaglio realistico.
     const materiali = [
       materialeCarta,
       materialeCarta,
       materialeCarta,
       materialeCarta,
       this.materialeCopertina,
-      materialeCarta
+      this.materialeCopertina
     ];
 
     this.libro = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.2, 0.24), materiali);

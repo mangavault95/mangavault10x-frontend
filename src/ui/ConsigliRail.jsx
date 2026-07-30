@@ -21,11 +21,11 @@ export default function ConsigliRail({ serie }) {
   if (!consigli.inCorso && !consigli.dati?.length) return null;
 
   return (
-    <Sezione titolo="Da scoprire" extra={<span className="text-xs text-ink-faint">consigliati da chi ha letto le tue serie preferite</span>}>
+    <Sezione titolo="Da scoprire" extra={<span className="text-xs text-ink-faint">quello che non hai ancora, scelto dai tuoi preferiti</span>}>
       <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:thin]">
         {consigli.inCorso && !consigli.dati
           ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="w-32 shrink-0 space-y-2 sm:w-36">
+              <div key={i} className="w-36 shrink-0 space-y-2 sm:w-40">
                 <div className="aspect-cover w-full animate-pulse rounded-card border border-hairline bg-glass-1" />
                 <div className="h-3 w-4/5 animate-pulse rounded bg-glass-1" />
               </div>
@@ -37,17 +37,25 @@ export default function ConsigliRail({ serie }) {
 }
 
 function CartaConsiglio({ manga }) {
+  // Il romaji ("Hagane no Renkinjutsushi") è quello che AniList
+  // preferisce di default, ma è irriconoscibile per chi non legge
+  // giapponese. L'inglese ("Fullmetal Alchemist") è la forma con cui
+  // la serie si conosce davvero da queste parti — non è la scheda
+  // italiana ufficiale, che AniList non ha, ma è la scelta più onesta
+  // fra quello che c'è.
+  const titolo = manga.titoloInglese || manga.titolo;
+
   return (
     <a
       href={manga.collegamento || undefined}
       target="_blank"
       rel="noopener noreferrer"
-      className="group block w-32 shrink-0 outline-none transition-transform duration-base ease-settle
-                 hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-brass-400 sm:w-36"
-      title={`${manga.titolo} — apri su AniList`}
+      className="group block w-36 shrink-0 outline-none transition-transform duration-base ease-settle
+                 hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-brass-400 sm:w-40"
+      title={`${titolo} — apri su AniList`}
     >
       <div className="relative">
-        <Copertina src={manga.copertina} alt={manga.titolo} riempi />
+        <Copertina src={manga.copertina} alt={titolo} riempi />
 
         {manga.voto !== null && (
           <span className="absolute left-2 top-2 rounded-full bg-void/70 px-2 py-0.5 font-numeric text-xs font-medium text-brass-300 backdrop-blur-sm">
@@ -61,12 +69,16 @@ function CartaConsiglio({ manga }) {
       </div>
 
       <div className="mt-2 space-y-1 px-0.5">
-        <h3 className="line-clamp-2 text-xs font-medium leading-snug text-ink-bright transition-colors duration-quick group-hover:text-brass-300">
-          {manga.titolo}
+        <h3 className="line-clamp-2 min-h-[2.1rem] text-xs font-medium leading-snug text-ink-bright transition-colors duration-quick group-hover:text-brass-300">
+          {titolo}
         </h3>
 
         {manga.generi.length > 0 && (
           <p className="truncate text-[0.65rem] text-ink-faint">{manga.generi.slice(0, 2).join(" · ")}</p>
+        )}
+
+        {manga.motivo && (
+          <p className="line-clamp-2 text-[0.65rem] italic text-brass-500/80">{manga.motivo}</p>
         )}
       </div>
     </a>

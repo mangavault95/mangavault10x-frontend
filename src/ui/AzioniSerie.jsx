@@ -72,14 +72,14 @@ export function BottonePreferito({ serie, onCambiato, dimensione = 18, className
 }
 
 /* ==================================================
-   VOTO — cinque stelle, ognuna vale due punti
+   VOTO — cinque stelle intere
    ================================================== */
 
 /**
- * Il voto è su dieci con un decimale (`8.5`), ma nessuno pensa in
- * decimi guardando delle stelle: cinque stelle, ciascuna vale due
- * punti, e la metà sinistra o destra della stella decide se il click
- * vale un punto pieno o mezzo.
+ * Un voto da 1 a 5, una stella intera per punto. Prima erano decimi
+ * con mezze stelle (`8.5 su 10`): nessuno pensa davvero in decimi
+ * guardando delle stelle, e la mezza stella complicava il click senza
+ * aggiungere precisione utile. Cliccare la stella N imposta il voto a N.
  */
 export function VotoStelle({ serie, onCambiato, dimensione = 20, sospeso = false }) {
   const eseguiProtetto = useAccessoProtetto();
@@ -113,45 +113,25 @@ export function VotoStelle({ serie, onCambiato, dimensione = 20, sospeso = false
       className={`inline-flex items-center gap-0.5 ${sospeso ? "opacity-60" : ""}`}
       onMouseLeave={() => setAnteprima(null)}
       role="radiogroup"
-      aria-label={`Voto: ${valoreVisibile.toFixed(1)} su 10`}
+      aria-label={`Voto: ${valoreVisibile} su 5`}
     >
-      {[0, 1, 2, 3, 4].map((indice) => {
-        const soglia = (indice + 1) * 2;
-        const quotaStella = Math.max(0, Math.min(1, valoreVisibile - indice * 2));
-
-        return (
-          <button
-            key={indice}
-            type="button"
-            disabled={inCorso}
-            className="relative grid place-items-center p-0.5 text-ink-faint transition-transform duration-quick ease-spring hover:scale-110 disabled:pointer-events-none"
-            onMouseMove={(e) => {
-              const r = e.currentTarget.getBoundingClientRect();
-              const meta = (e.clientX - r.left) / r.width < 0.5;
-
-              setAnteprima(indice * 2 + (meta ? 1 : 2));
-            }}
-            onClick={(e) => salva(anteprima ?? soglia, e)}
-          >
-            {/* Il contorno vuoto sta sempre sotto; sopra, una stella
-                piena ritagliata alla percentuale giusta con `clip-path`
-                — è così che si ottiene una mezza stella senza dover
-                disegnare un tracciato apposta. */}
-            <span className="relative block" style={{ width: dimensione, height: dimensione }}>
-              <Icon nome="star" dimensione={dimensione} className="absolute inset-0" />
-
-              {quotaStella > 0 && (
-                <span
-                  className="absolute inset-0 overflow-hidden text-brass-400"
-                  style={{ width: `${quotaStella * 100}%` }}
-                >
-                  <Icon nome="star" dimensione={dimensione} piena />
-                </span>
-              )}
-            </span>
-          </button>
-        );
-      })}
+      {[1, 2, 3, 4, 5].map((numero) => (
+        <button
+          key={numero}
+          type="button"
+          disabled={inCorso}
+          className="relative grid place-items-center p-0.5 text-ink-faint transition-transform duration-quick ease-spring hover:scale-110 disabled:pointer-events-none"
+          onMouseEnter={() => setAnteprima(numero)}
+          onClick={(e) => salva(numero, e)}
+        >
+          <Icon
+            nome="star"
+            dimensione={dimensione}
+            piena={numero <= valoreVisibile}
+            className={numero <= valoreVisibile ? "text-brass-400" : ""}
+          />
+        </button>
+      ))}
     </div>
   );
 }

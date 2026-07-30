@@ -209,7 +209,7 @@ export default function SeriePage() {
                 <Dato etichetta="Editore" valore={serie.editore} />
                 <Dato
                   etichetta="Voto"
-                  valore={serie.valutazione !== null ? `${serie.valutazione.toFixed(1)} / 10` : null}
+                  valore={serie.valutazione ? `${serie.valutazione} / 5` : null}
                 />
                 <Dato
                   etichetta="Prezzo al volume"

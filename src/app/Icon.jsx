@@ -21,7 +21,10 @@ const TRACCIATI = {
   plus: "M12 5v14M5 12h14",
   menu: "M4 7h16M4 12h16M4 17h16",
   // Una porta socchiusa: l'ingresso della biblioteca
-  porta: "M4 20h6V4l10 2v13l-10 2V4M13 12h.01"
+  porta: "M4 20h6V4l10 2v13l-10 2V4M13 12h.01",
+  // Un cartellino prezzo: i desideri sono da comprare, non da segnare
+  // come preferiti — per questo non riusa "star".
+  cartellino: "M20.6 12.3 12.7 20.2a2 2 0 0 1-2.8 0l-6.1-6.1a2 2 0 0 1 0-2.8L11.7 3.3a2 2 0 0 1 1.4-.6H19a2 2 0 0 1 2 2v5.3a2 2 0 0 1-.4 1.3ZM16.5 7.5h.01"
 };
 
 export default function Icon({ nome, dimensione = 20, className = "", piena = false, ...resto }) {
