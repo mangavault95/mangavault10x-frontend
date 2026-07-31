@@ -18,8 +18,8 @@ import { costruisciParete } from "./stanza";
  * le locandine e la bacheca — e a due metri dietro le spalle si legge,
  * mentre a sei metri sarebbe uno sfondo lontano qualunque.
  *
- * Restituisce mesh e azioni; a registrarle nel raycaster e a metterci i
- * segni a terra pensa `scena.js`, che è chi li possiede.
+ * Restituisce mesh e azioni; a registrarle nel raycaster pensa
+ * `scena.js`, che è chi le possiede.
  */
 
 const COLORE_TARGA = 0x1c1712;
@@ -205,14 +205,18 @@ export async function costruisciBancone({
     bersaglio.userData = { azione: { tipo: "naviga", percorso: "/statistiche" } };
     gruppo.add(bersaglio);
 
-    bersagli.push({
-      mesh: bersaglio,
-      segno: { x, z: bancoZ + profonditaBanco / 2 + metri(0.5) }
-    });
+    bersagli.push({ mesh: bersaglio, evidenza: [cassa] });
   }
 
-  // I volumi posati sul banco: portano a In lettura. Uno aperto, come
-  // se qualcuno l'avesse lasciato lì a metà, e una pila accanto.
+  // I volumi posati sul banco. Uno aperto, come se qualcuno l'avesse
+  // lasciato lì a metà, e una pila accanto: sono arredo e basta.
+  //
+  // Portavano a In lettura, e non ci portano più. Da qui a un metro
+  // stanno la cassa e il bibliotecario, e tre bersagli attaccati sullo
+  // stesso piano si rubavano il puntatore a vicenda: adesso il posto
+  // dove si va a leggere è il tavolino in mezzo alla stanza (vedi
+  // `angolo.js`), che è anche il gesto giusto — ci si siede, non ci si
+  // sporge sul banco.
   const aperto = await magazzino.preleva(url.libroAperto, { alto: 0.06 });
   const pila = await magazzino.preleva(url.libri, { alto: 0.22 });
 
@@ -228,22 +232,6 @@ export async function costruisciBancone({
     pila.position.set(xLibri + metri(0.42), pianoY, bancoZ - metri(0.06));
     pila.rotation.y = -0.5;
     gruppo.add(pila);
-  }
-
-  if (aperto || pila) {
-    const bersaglio = new THREE.Mesh(
-      new THREE.BoxGeometry(metri(1), metri(0.4), metri(0.7)),
-      new THREE.MeshBasicMaterial({ visible: false })
-    );
-
-    bersaglio.position.set(xLibri + metri(0.2), pianoY + metri(0.16), bancoZ);
-    bersaglio.userData = { azione: { tipo: "naviga", percorso: "/lettura" } };
-    gruppo.add(bersaglio);
-
-    bersagli.push({
-      mesh: bersaglio,
-      segno: { x: xLibri + metri(0.2), z: bancoZ + profonditaBanco / 2 + metri(0.5) }
-    });
   }
 
   /* ==================================================
@@ -369,17 +357,12 @@ export async function costruisciBancone({
   bersaglioBacheca.userData = { azione: { tipo: "naviga", percorso: "/wishlist" } };
   gruppo.add(bersaglioBacheca);
 
-  // Il segno a terra ci va anche se la bacheca è appesa al muro: è
-  // l'unico appiglio che ha l'elenco dei punti in `HomePage.jsx` per far
-  // vedere dov'è una cosa quando ci si passa sopra, e senza sarebbe
-  // l'unica voce che indica il nulla.
+  // Cornice e foglio insieme: scegliendo il solo foglio il contorno
+  // correrebbe lungo il bordo interno della cornice, come se la bacheca
+  // fosse una finestra accesa invece che un oggetto profilato.
   bersagli.push({
     mesh: bersaglioBacheca,
-    segno: {
-      x: sinistraBanco + metri(0.2),
-      z: bancoZ + profonditaBanco / 2 + metri(0.5),
-      raggio: 0.5
-    }
+    evidenza: [corniceBacheca, bacheca]
   });
 
   return {

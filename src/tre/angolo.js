@@ -11,9 +11,11 @@ import { metri } from "./modelli";
  * quelle vere (una poltrona è alta ottanta centimetri) e se le sbriga
  * `preleva`.
  *
- * Niente di tutto questo è cliccabile: è quello che riempie il tratto
- * fra gli scaffali e il banco, che altrimenti si legge come vuoto
- * invece che come profondità.
+ * Riempie il tratto fra gli scaffali e il banco, che altrimenti si
+ * legge come vuoto invece che come profondità. Una cosa sola è
+ * cliccabile: il tavolino col volume aperto sopra, che porta a In
+ * lettura. Prima ci si arrivava dai libri posati sul banco, e non aveva
+ * senso — il posto dove si legge è dove ci si siede.
  */
 export async function costruisciAngoloLettura({
   magazzino,
@@ -49,6 +51,11 @@ export async function costruisciAngoloLettura({
 
   const tavolino = await posa("tavolino", { largo: 0.8 }, { x: 0, z: metri(0.05), ry: 0.12 });
 
+  // Il tavolino è il punto di In lettura: si contorna lui col volume che
+  // ci sta sopra, e si clicca tutto insieme.
+  let bersaglio = null;
+  let evidenza = null;
+
   if (tavolino) {
     const libro = await magazzino.preleva(url.libroAperto, { alto: 0.05 });
 
@@ -61,6 +68,28 @@ export async function costruisciAngoloLettura({
       libro.rotation.y = 0.7;
       gruppo.add(libro);
     }
+
+    // Una scatola attorno al tavolo intero, non attorno al solo libro:
+    // le gambe di un tavolino basso sono sottili e da sette metri di
+    // distanza un bersaglio grande quanto un volume aperto è un
+    // francobollo da centrare col mouse.
+    const misure = tavolino.userData.misure;
+    const altezza = misure.y + metri(0.14); // il piano più quello che ci sta sopra
+
+    bersaglio = new THREE.Mesh(
+      new THREE.BoxGeometry(misure.x * 1.12, altezza, misure.z * 1.12),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+
+    bersaglio.position.set(
+      tavolino.position.x,
+      pavimentoY + altezza / 2,
+      tavolino.position.z
+    );
+    bersaglio.userData = { azione: { tipo: "naviga", percorso: "/lettura" } };
+    gruppo.add(bersaglio);
+
+    evidenza = [tavolino, libro].filter(Boolean);
   }
 
   const lampada = await posa("lampadaTerra", { alto: 1.5 }, {
@@ -88,5 +117,5 @@ export async function costruisciAngoloLettura({
   await posa("pianta", { alto: 0.72 }, { x: metri(1.75), z: -metri(0.5) });
   await posa("pianta", { alto: 0.6 }, { x: -metri(1.9), z: metri(0.8), ry: 1.4 });
 
-  return { gruppo };
+  return { gruppo, bersaglio, evidenza };
 }

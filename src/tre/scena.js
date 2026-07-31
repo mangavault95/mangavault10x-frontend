@@ -1,4 +1,7 @@
 import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { copertinaLocale } from "./copertine";
 import { caricaBibliotecario, ALTEZZA_BIBLIOTECARIO } from "./libraio";
 import { Magazzino, metri } from "./modelli";
@@ -6,39 +9,30 @@ import { costruisciGuscio } from "./stanza";
 import { costruisciLibrerie } from "./scaffali";
 import { costruisciBancone } from "./bancone";
 import { costruisciAngoloLettura } from "./angolo";
+import { Evidenza } from "./evidenza";
+import { BIBLIOTECARIO, MODELLI } from "./indirizzi";
 
-const legnoDiffuseUrl = new URL("./assets/legno/legno_diffuse.jpg", import.meta.url).href;
-const legnoRuviditaUrl = new URL("./assets/legno/legno_ruvidita.jpg", import.meta.url).href;
-const legnoNormaliUrl = new URL("./assets/legno/legno_normali.jpg", import.meta.url).href;
-const intonacoDiffuseUrl = new URL("./assets/intonaco/intonaco_diffuse.jpg", import.meta.url).href;
-const bibliotecarioGlbUrl = new URL("./assets/bibliotecario.glb", import.meta.url).href;
-
+// In WebP, non nei JPEG originali: erano quattro immagini da mezzo mega
+// l'una — due megabyte per quattro superfici che si vedono da lontano e
+// ripetute a mattonella. Rifatte pesano centocinquanta chilobyte in
+// tutto, con uno scarto di un'unità e mezza su 255 rispetto agli
+// originali. Come sono state rifatte sta in `assets/CREDITI.md`.
+const legnoDiffuseUrl = new URL("./assets/legno/legno_diffuse.webp", import.meta.url).href;
+const legnoRuviditaUrl = new URL("./assets/legno/legno_ruvidita.webp", import.meta.url).href;
+const legnoNormaliUrl = new URL("./assets/legno/legno_normali.webp", import.meta.url).href;
+const intonacoDiffuseUrl = new URL("./assets/intonaco/intonaco_diffuse.webp", import.meta.url).href;
+// Gli indirizzi dei modelli stanno in un file per conto loro perché
+// servono anche fuori di qui: la pagina li fa partire in anticipo, e per
+// farlo non deve caricarsi dietro three (vedi `indirizzi.js`).
+//
 // Un indirizzo costruito con una variabile dentro `new URL(…,
 // import.meta.url)`: Vite lo riconosce e in build copia tutti i `.glb`
 // della cartella con il nome corretto. Vale a dire che quello che sta in
-// `assets/arredo/` finisce nel pacchetto anche se qui sotto non è
+// `assets/arredo/` finisce nel pacchetto anche se in `MODELLI` non è
 // elencato — un modello che non serve più va cancellato, non solo tolto
-// da `MODELLI`.
+// dalla tabella.
 //
 // Autori e licenze di ogni modello stanno in `assets/CREDITI.md`.
-const arredo = (nome) => new URL(`./assets/arredo/${nome}.glb`, import.meta.url).href;
-
-const MODELLI = {
-  libreria: arredo("libreria"),
-  scala: arredo("scala"),
-  banconeTesta: arredo("banconeTesta"),
-  banconeDritto: arredo("banconeDritto"),
-  cassa: arredo("cassa"),
-  libri: arredo("libri"),
-  libroAperto: arredo("libroAperto"),
-  lampadaTavolo: arredo("lampadaTavolo"),
-  lampadaTerra: arredo("lampadaTerra"),
-  lampadario: arredo("lampadario"),
-  poltrona: arredo("poltrona"),
-  tavolino: arredo("tavolino"),
-  tappeto: arredo("tappeto"),
-  pianta: arredo("pianta")
-};
 
 /**
  * La biblioteca in tre dimensioni.
@@ -220,12 +214,6 @@ const MURO_BANCO_SINISTRA_X = BANCO_CENTRO_X - metri(2.5);
 const ANGOLO_X = 0;
 const ANGOLO_Z = 2.4;
 
-// Ogni punto cliccabile ha un alone sul pavimento, sempre acceso e non
-// solo al passaggio del mouse: senza, un oggetto d'arredo in mezzo ad
-// altro arredo non dice in nessun modo di essere cliccabile.
-const SEGNO_RAGGIO = 0.62;
-const SEGNO_COLORE = 0xfacc15; // brass-400, lo stesso accento del resto del sito
-
 /* ==================================================
    UTILITÀ
    ================================================== */
@@ -260,49 +248,6 @@ function spessoreDaVolumi(volumi) {
 }
 
 const passoDolce = (t) => t * t * (3 - 2 * t);
-
-/**
- * Il segno a terra sotto i punti cliccabili: un anello con dentro un
- * alone, non un disco pieno.
- *
- * Due versioni buttate prima di questa. Un `CircleGeometry` a tinta
- * unita si leggeva per quello che era, una macchia gialla sul parquet.
- * Un alone sfumato in additiva spariva del tutto: la stanza adesso è
- * chiara, e sommare luce a un pavimento già chiaro non produce niente.
- * L'anello invece ha un bordo, e un bordo si vede anche sul chiaro.
- */
-function creaTexturaAlone() {
-  const lato = 256;
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = lato;
-
-  const ctx = canvas.getContext("2d");
-  const centro = lato / 2;
-
-  const alone = ctx.createRadialGradient(centro, centro, 8, centro, centro, centro);
-  alone.addColorStop(0, "rgba(255,255,255,0.34)");
-  alone.addColorStop(0.62, "rgba(255,255,255,0.2)");
-  alone.addColorStop(0.92, "rgba(255,255,255,0)");
-  ctx.fillStyle = alone;
-  ctx.fillRect(0, 0, lato, lato);
-
-  ctx.strokeStyle = "rgba(255,255,255,0.95)";
-  ctx.lineWidth = lato * 0.035;
-  ctx.beginPath();
-  ctx.arc(centro, centro, centro * 0.72, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.strokeStyle = "rgba(255,255,255,0.4)";
-  ctx.lineWidth = lato * 0.014;
-  ctx.beginPath();
-  ctx.arc(centro, centro, centro * 0.58, 0, Math.PI * 2);
-  ctx.stroke();
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-
-  return texture;
-}
 
 /* ==================================================
    LA SCENA
@@ -357,7 +302,6 @@ export default class Biblioteca {
     this.raggio = new THREE.Raycaster();
 
     this.oggettiStanza = []; // tutto il cliccabile della soglia
-    this.segni = [];
     this.copertineStanza = []; // i materiali delle vetrine, in attesa delle immagini
     this.posterBancone = [];
 
@@ -373,6 +317,7 @@ export default class Biblioteca {
 
     this.#creaRenderer();
     this.#creaScena();
+    this.#creaComposer();
     this.#creaStanza();
     this.#collegaEventi();
 
@@ -400,6 +345,48 @@ export default class Biblioteca {
     // `PCFSoftShadowMap` è deprecato in tre 0.185: `PCFShadowMap` è già
     // morbido di suo, non serve più scegliere la variante soft.
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
+  }
+
+  /**
+   * Il fotogramma non va più dritto sullo schermo.
+   *
+   * Il contorno dell'oggetto guardato (`evidenza.js`) si disegna
+   * sull'immagine già fatta, quindi serve una catena: la scena, il
+   * contorno, e in fondo la resa finale.
+   *
+   * Dentro un bersaglio di rendering three non applica né il tone
+   * mapping né la conversione in sRGB — li fa solo quando disegna
+   * direttamente sulla tela — ed è esattamente il motivo per cui
+   * `OutputPass` esiste e chiude la fila. Senza, la stanza uscirebbe
+   * slavata.
+   */
+  #creaComposer() {
+    const dimensione = this.renderer.getDrawingBufferSize(new THREE.Vector2());
+
+    // Il bersaglio se lo fabbricherebbe l'EffectComposer da solo, ma
+    // senza multicampionamento: e la stanza è tutta spigoli di legno
+    // dritti, dove l'assenza di antialiasing si legge come una scaletta
+    // su ogni montante.
+    const bersaglio = new THREE.WebGLRenderTarget(dimensione.x, dimensione.y, {
+      type: THREE.HalfFloatType,
+      samples: 4
+    });
+
+    this.composer = new EffectComposer(this.renderer, bersaglio);
+
+    this.passoScena = new RenderPass(this.scena, this.camera);
+    this.composer.addPass(this.passoScena);
+
+    this.evidenza = new Evidenza({
+      scena: this.scena,
+      camera: this.camera,
+      larghezza: dimensione.x,
+      altezza: dimensione.y
+    });
+    this.composer.addPass(this.evidenza.passo);
+
+    this.passoResa = new OutputPass();
+    this.composer.addPass(this.passoResa);
   }
 
   #creaScena() {
@@ -829,6 +816,13 @@ export default class Biblioteca {
 
     if (!this.vivo) return;
 
+    // La stanza è in piedi: da adesso in poi le copertine possono
+    // partire. Prima no — sono cinquanta immagini che si contendono la
+    // banda con i modelli, e finché i modelli non ci sono la stanza non
+    // esiste. Sono decorazione su volumi alti venti pixel: arrivano
+    // dopo, e nessuno se ne accorge.
+    this.stanzaInPiedi = true;
+
     this.#vestiStanza();
     this.alPronta?.();
   }
@@ -881,7 +875,7 @@ export default class Biblioteca {
     this.gruppoStanza.add(librerie.gruppo);
     this.copertineStanza = librerie.coperture;
 
-    this.#registraBersaglio(librerie.bersaglio, librerie.segno);
+    this.#registraBersaglio(librerie.bersaglio, librerie.evidenza);
   }
 
   async #costruisciBanco() {
@@ -912,15 +906,15 @@ export default class Biblioteca {
     this.gruppoStanza.add(banco.gruppo);
     this.posterBancone = banco.poster;
 
-    for (const { mesh, segno } of banco.bersagli) {
-      this.#registraBersaglio(mesh, segno);
+    for (const { mesh, evidenza } of banco.bersagli) {
+      this.#registraBersaglio(mesh, evidenza);
     }
 
     await this.#mettiIlBibliotecario(banco.postoLibraio);
   }
 
   async #mettiIlBibliotecario({ x, y, z }) {
-    const bibliotecario = await caricaBibliotecario({ url: bibliotecarioGlbUrl, x, y, z });
+    const bibliotecario = await caricaBibliotecario({ url: BIBLIOTECARIO, x, y, z });
 
     if (!this.vivo) return;
 
@@ -940,7 +934,7 @@ export default class Biblioteca {
     bersaglio.userData = { azione: { tipo: "bibliotecario" } };
     this.gruppoStanza.add(bersaglio);
 
-    this.#registraBersaglio(bersaglio, { x, z: z + metri(2.1) });
+    this.#registraBersaglio(bersaglio, [bibliotecario.gruppo]);
   }
 
   async #costruisciAngolo() {
@@ -962,46 +956,26 @@ export default class Biblioteca {
     if (!angolo || !this.vivo) return;
 
     this.gruppoStanza.add(angolo.gruppo);
-  }
 
-  /** Un oggetto cliccabile della soglia, con il suo alone a terra. */
-  #registraBersaglio(mesh, segno) {
-    this.oggettiStanza.push(mesh);
-
-    if (!segno) return;
-
-    mesh.userData.alone = this.#creaSegno(segno.x, segno.z, segno.raggio);
+    if (angolo.bersaglio) {
+      this.#registraBersaglio(angolo.bersaglio, angolo.evidenza);
+    }
   }
 
   /**
-   * L'alone a terra sotto un punto cliccabile.
+   * Un oggetto cliccabile della soglia.
    *
-   * Un materiale non illuminato (Basic, non Standard) fa sì che il segno
-   * si veda uguale ovunque nella stanza, indipendentemente da quanta
-   * luce vera gli arriva addosso.
+   * `evidenza` è cosa si contorna quando ci si passa sopra: non il
+   * bersaglio — che è un rettangolo invisibile davanti alla roba vera —
+   * ma i modelli che rappresenta. Sono elenchi perché quasi mai è un
+   * oggetto solo, e perché il contorno li tratta come una sagoma sola:
+   * la bacheca è cornice più foglio, la vetrina è tre mobili più le
+   * copertine e la scala che ci stanno davanti.
    */
-  #creaSegno(x, z, raggio = SEGNO_RAGGIO) {
-    if (!this.texturaAlone) this.texturaAlone = creaTexturaAlone();
+  #registraBersaglio(mesh, evidenza) {
+    this.oggettiStanza.push(mesh);
 
-    const segno = new THREE.Mesh(
-      new THREE.PlaneGeometry(raggio * 2, raggio * 2),
-      new THREE.MeshBasicMaterial({
-        color: SEGNO_COLORE,
-        map: this.texturaAlone,
-        transparent: true,
-        opacity: 0.6,
-        depthWrite: false
-      })
-    );
-
-    segno.rotation.x = -Math.PI / 2;
-    segno.position.set(x, PAVIMENTO_Y + 0.03, z);
-    segno.renderOrder = 2;
-
-    this.gruppoStanza.add(segno);
-    this.segni.push(segno);
-
-    return segno;
+    if (evidenza?.length) mesh.userData.evidenza = evidenza;
   }
 
   /**
@@ -1015,22 +989,46 @@ export default class Biblioteca {
    */
   #vestiStanza() {
     if (this.stanzaVestita) return;
+    if (!this.stanzaInPiedi) return;
     if (!this.serie?.length) return;
     if (!this.copertineStanza.length && !this.posterBancone.length) return;
 
-    this.stanzaVestita = true;
-
     const conCopertina = this.serie.filter((s) => copertinaLocale(s.copertina));
 
-    const destinazioni = [
-      ...this.copertineStanza.map((materiale) => ({ materiale })),
-      ...this.posterBancone.map((mesh) => ({ materiale: mesh.material }))
-    ];
+    if (!conCopertina.length) return;
 
-    const daFare = destinazioni
-      .map((destinazione, indice) => ({
+    this.stanzaVestita = true;
+
+    // Non una copertina diversa per ogni volume in vetrina. I posti
+    // sono quarantotto e ognuno è un'immagine da scaricare: due
+    // megabyte e mezzo per figurine alte venti pixel sullo schermo.
+    //
+    // Ventiquattro bastano, e la ripetizione non si vede: uno scaffale
+    // ne mostra sedici, quindi il giro delle copertine e quello dei
+    // mobili non vanno mai a tempo — i tre scaffali restano diversi
+    // l'uno dall'altro. Quali siano è comunque arbitrario, anche prima
+    // erano le prime che capitavano.
+    const QUANTE_IN_VETRINA = 24;
+
+    const inVetrina = conCopertina.slice(0, QUANTE_IN_VETRINA);
+    // Le locandine dietro al banco prendono le successive: sono grandi
+    // e in mezzo all'inquadratura, ritrovarcene una identica a un
+    // volume dello scaffale si noterebbe.
+    const inLocandina = conCopertina.slice(QUANTE_IN_VETRINA);
+
+    const daFare = [
+      ...this.copertineStanza.map((materiale, indice) => ({
+        materiale,
+        serie: inVetrina[indice % inVetrina.length]
+      })),
+      ...this.posterBancone.map((mesh, indice) => ({
+        materiale: mesh.material,
+        serie: inLocandina[indice] ?? inVetrina[indice % inVetrina.length]
+      }))
+    ]
+      .map((destinazione) => ({
         ...destinazione,
-        url: copertinaLocale(conCopertina[indice % conCopertina.length]?.copertina)
+        url: copertinaLocale(destinazione.serie?.copertina)
       }))
       .filter((v) => v.url);
 
@@ -1161,6 +1159,7 @@ export default class Biblioteca {
     if (cambiaModo && this.mirato) {
       this.mirato = null;
       this.canvas.style.cursor = "default";
+      this.evidenza.mira(null);
       this.alMirare?.(null);
       this.alMirareOggetto?.(null);
     }
@@ -1271,26 +1270,6 @@ export default class Biblioteca {
     this.vaiA(0);
   }
 
-  /**
-   * Accende il segno a terra di un punto senza che il mouse ci sia
-   * passato sopra: lo usa l'elenco dei punti in `HomePage.jsx` quando ci
-   * si passa sopra o ci si arriva col Tab. Un'azione, non una mesh —
-   * chi chiama non conosce la scena, conosce solo dove porta.
-   */
-  evidenzia(azione) {
-    if (!azione) {
-      this.evidenziato = null;
-      return;
-    }
-
-    this.evidenziato =
-      this.oggettiStanza.find(
-        (o) =>
-          o.userData.azione?.tipo === azione.tipo &&
-          o.userData.azione?.percorso === azione.percorso
-      ) ?? null;
-  }
-
   /** Torna alla soglia: la stanza torna cliccabile. */
   tornaAllaSoglia() {
     this.vaiA(-1);
@@ -1339,6 +1318,9 @@ export default class Biblioteca {
     if (!larghezza || !altezza) return;
 
     this.renderer.setSize(larghezza, altezza, false);
+    // In pixel di CSS: il composer si moltiplica da sé per il rapporto
+    // di pixel che il renderer aveva quando è nato.
+    this.composer.setSize(larghezza, altezza);
     this.camera.aspect = larghezza / altezza;
     this.camera.updateProjectionMatrix();
 
@@ -1419,10 +1401,10 @@ export default class Biblioteca {
     this.#aggiornaViaggio();
     this.#aggiornaMira();
     this.#aggiornaLibri(dt);
-    this.#aggiornaSegni();
+    this.evidenza.aggiorna(dt);
     this.bibliotecario?.aggiorna(dt);
 
-    this.renderer.render(this.scena, this.camera);
+    this.composer.render(dt);
   };
 
   #aggiornaViaggio() {
@@ -1460,32 +1442,12 @@ export default class Biblioteca {
 
     this.canvas.style.cursor = nuovo ? "pointer" : "default";
 
+    // Dentro lo scaffale a rispondere al puntatore è il libro, che esce
+    // dal ripiano: lì l'evidenza non c'entra e va tenuta spenta.
+    this.evidenza.mira(allaSoglia ? nuovo : null);
+
     if (allaSoglia) this.alMirareOggetto?.(nuovo ? nuovo.userData.azione : null);
     else this.alMirare?.(nuovo ? nuovo.userData.serie : null);
-  }
-
-  /**
-   * Gli aloni respirano piano, e quello sotto l'oggetto guardato si
-   * accende. È il modo più economico di rispondere al puntatore: gli
-   * arredi sono modelli con materiali condivisi fra le copie, e
-   * illuminare *quello* vorrebbe dire illuminare tutte le librerie
-   * insieme.
-   */
-  #aggiornaSegni() {
-    if (!this.segni.length || !this.gruppoStanza.visible) return;
-
-    const t = performance.now() / 1000;
-    // Il mouse vince sull'elenco: se stai già guardando qualcosa nella
-    // stanza, non è il momento di accenderti un altro punto altrove.
-    const acceso = (this.mirato ?? this.evidenziato)?.userData.alone;
-
-    for (const segno of this.segni) {
-      const base = segno === acceso ? 1 : 0.62;
-      const respiro = segno === acceso ? 0.05 : 0.13;
-
-      segno.material.opacity = base + Math.sin(t * 1.6) * respiro;
-      segno.scale.setScalar(segno === acceso ? 1.14 : 1);
-    }
   }
 
   /**
@@ -1552,13 +1514,20 @@ export default class Biblioteca {
 
     this.osservatore?.disconnect();
 
+    // La catena dei passaggi ha bersagli di rendering suoi, che
+    // `renderer.dispose()` non conosce e non libererebbe.
+    this.evidenza.smaltisci();
+    this.passoScena.dispose();
+    this.passoResa.dispose();
+    this.composer.dispose();
+
     this.#svuotaLibri();
 
     // I modelli scaricati li smaltisce il magazzino, una volta sola:
     // geometrie e materiali sono condivisi fra tutte le copie (otto
     // librerie, una geometria), e liberarli copia per copia
     // significherebbe lavorare su buffer già chiusi. Qui restano solo i
-    // pezzi costruiti a mano — pareti, copertine, aloni.
+    // pezzi costruiti a mano — pareti, copertine, bersagli.
     this.gruppoStanza?.traverse((oggetto) => {
       if (!oggetto.isMesh || oggetto.userData.daModello) return;
 
@@ -1578,7 +1547,6 @@ export default class Biblioteca {
 
     this.magazzino.smaltisci();
 
-    this.texturaAlone?.dispose();
     this.geometriaLibro.dispose();
     this.geometriaCopertina.dispose();
     this.materialeCarta.dispose();

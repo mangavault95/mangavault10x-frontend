@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { ritiraModello } from "./indirizzi";
 
 /**
  * Il bibliotecario: un personaggio vero, scaricato — non disegnato a
@@ -33,7 +34,14 @@ const SPALLE = ["upperarml", "upperarmr"];
 
 export async function caricaBibliotecario({ url, x, y, z, rotazioneY = 0 }) {
   const loader = new GLTFLoader();
-  const gltf = await loader.loadAsync(url);
+
+  // I byte possono essere già arrivati: la richiesta parte prima che la
+  // scena esista (vedi `indirizzi.js`).
+  const anticipati = await ritiraModello(url);
+
+  const gltf = anticipati
+    ? await loader.parseAsync(anticipati, "")
+    : await loader.loadAsync(url);
 
   const modello = gltf.scene;
 

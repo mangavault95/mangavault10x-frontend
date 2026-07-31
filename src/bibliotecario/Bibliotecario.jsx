@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import Icon from "../app/Icon";
 import { useBibliotecario } from "./contesto";
 
@@ -19,11 +20,21 @@ import { useBibliotecario } from "./contesto";
  *
  * Lo stato di apertura vive in `BibliotecarioProvider`, non qui: anche
  * il bancone dentro la stanza 3D deve poter aprire lo stesso pannello.
+ *
+ * Sulla soglia il bottone non c'è. Lì il bibliotecario è una persona in
+ * piedi dietro al banco, e un pulsante che fa la stessa cosa in un
+ * angolo dello schermo toglie a chiunque la voglia di provare a
+ * cliccarla — che è tutto quello che la stanza ha da offrire. Il
+ * pannello resta comunque a un tasto di distanza ("b") e a un click
+ * dalla bibliotecaria stessa.
  */
 const Pannello = lazy(() => import("./Banco"));
 
 export default function Bibliotecario() {
   const { aperto, apri, chiudi, alterna } = useBibliotecario();
+  const { pathname } = useLocation();
+
+  const nellaStanza = pathname === "/";
 
   // Scorciatoia: "b" da qualunque punto del sito. Non ruba il tasto a
   // chi sta scrivendo in un campo.
@@ -47,7 +58,7 @@ export default function Bibliotecario() {
 
   return (
     <>
-      {!aperto && <BottoneBanco onApri={apri} />}
+      {!aperto && !nellaStanza && <BottoneBanco onApri={apri} />}
 
       {aperto && (
         <Suspense fallback={null}>

@@ -22,15 +22,20 @@ import { completamento, euro, valoreSerie } from "../dati/serie";
  * mouse e cosa è stato cliccato.
  *
  *
- * PERCHÉ C'È ANCHE UN ELENCO DEI PUNTI
+ * SOPRA IL VETRO NON C'È NESSUN MENU
  *
- * Una stanza da esplorare col mouse è bella e inaccessibile: chi
- * naviga da tastiera non ha modo di sapere che il registratore di cassa
- * è un collegamento, e chi arriva col telefono non ha nemmeno un
- * puntatore da far passare sopra le cose. L'elenco in basso a destra
- * dice cosa c'è e dove sta, si usa con Tab, e passandoci sopra accende
- * il segno a terra del punto corrispondente — così insegna la stanza
- * invece di sostituirla.
+ * C'erano un elenco dei cinque punti della stanza e il bottone del
+ * bibliotecario, tutti e due in basso a destra, e insieme facevano
+ * esattamente il danno che dovevano evitare: davanti a una scorciatoia
+ * scritta, nessuno prova più a cliccare la cassa. Sono spariti — anche
+ * il bottone "Chiedi", che qui si nasconde da solo (vedi
+ * `bibliotecario/Bibliotecario.jsx`) e torna in ogni altra pagina.
+ *
+ * Le stesse mete restano tutte nella barra laterale della cornice, coi
+ * tasti da 1 a 5, e il banco si apre da tastiera con "b": togliere il
+ * menu dalla stanza non toglie niente a chi non usa il mouse. Quello che
+ * la stanza si tiene per sé è la sola cosa che non esiste altrove —
+ * entrare fra i volumi — e a tastiera ci si va con la freccia destra.
  *
  *
  * IL TELEFONO È UN RIPIEGO CONSAPEVOLE
@@ -44,9 +49,10 @@ import { completamento, euro, valoreSerie } from "../dati/serie";
 
 /**
  * I punti d'interesse della stanza. Sono la stessa cosa che `scena.js`
- * registra come bersagli cliccabili, elencata qui una volta sola: le
- * etichette del cartellino, le voci dell'elenco e le icone escono tutte
- * da qui, così non possono raccontare due storie diverse.
+ * registra come bersagli cliccabili, elencata qui una volta sola: il
+ * cartellino che compare quando ci si passa sopra prende nome, icona e
+ * invito da qui, così la stanza e la scritta non raccontano due storie
+ * diverse.
  */
 const PUNTI = [
   {
@@ -54,7 +60,6 @@ const PUNTI = [
     azione: { tipo: "scaffale" },
     icona: "shelf",
     nome: "Lo scaffale",
-    dove: "Le librerie a sinistra",
     invito: "Entra fra i volumi"
   },
   {
@@ -62,7 +67,6 @@ const PUNTI = [
     azione: { tipo: "bibliotecario" },
     icona: "search",
     nome: "Il bibliotecario",
-    dove: "Dietro il banco",
     invito: "Fagli una domanda"
   },
   {
@@ -70,7 +74,6 @@ const PUNTI = [
     azione: { tipo: "naviga", percorso: "/lettura" },
     icona: "bookmark",
     nome: "In lettura",
-    dove: "I volumi sul banco",
     invito: "Riprendi da dove eri"
   },
   {
@@ -78,7 +81,6 @@ const PUNTI = [
     azione: { tipo: "naviga", percorso: "/statistiche" },
     icona: "chart",
     nome: "I numeri",
-    dove: "Il registratore di cassa",
     invito: "Valore, spesa, primati"
   },
   {
@@ -86,7 +88,6 @@ const PUNTI = [
     azione: { tipo: "naviga", percorso: "/wishlist" },
     icona: "cartellino",
     nome: "I desideri",
-    dove: "La bacheca alla parete",
     invito: "Cosa manca alla collezione"
   }
 ];
@@ -223,9 +224,18 @@ export default function HomePage() {
       const dentroCampo = /^(input|textarea|select)$/i.test(e.target.tagName);
       if (dentroCampo) return;
 
-      // Alla soglia le frecce servono solo dove ci sono più postazioni
-      // da cui guardare la stanza — cioè su schermo stretto.
-      if (posizione.sezione === -1 && posizione.soglia?.totali <= 1) return;
+      // Alla soglia, dove la stanza ci sta tutta in un'inquadratura, la
+      // freccia destra entra fra i volumi: è l'unica meta che esiste
+      // solo qui dentro, e da quando l'elenco dei punti non c'è più
+      // sarebbe altrimenti raggiungibile soltanto col mouse.
+      if (posizione.sezione === -1 && posizione.soglia?.totali <= 1) {
+        if (e.key !== "ArrowRight") return;
+
+        e.preventDefault();
+        scena.current.entraNelloScaffale();
+
+        return;
+      }
 
       if (e.key === "ArrowRight") {
         e.preventDefault();
@@ -315,11 +325,7 @@ export default function HomePage() {
       <div className="pointer-events-none absolute inset-0 flex flex-col justify-between gap-4 p-5 sm:p-8">
         <Testata inStanza={inStanza} caricando={caricando} />
 
-        {/* Lo spazio in basso a destra non è libero: ci sta il bottone
-            fisso del bibliotecario (`Bibliotecario.jsx`), che vive nella
-            cornice e non sa niente di questa pagina. Il margine glielo
-            lascia qui chi arriva dopo. */}
-        <div className="flex items-end justify-between gap-4 pb-16 md:pb-12">
+        <div className="flex items-end justify-between gap-4 pb-16 md:pb-0">
           {inStanza ? (
             // Sul telefono non esiste "passarci sopra": un cartellino
             // che non si accende mai è solo spazio tolto alla stanza.
@@ -331,38 +337,31 @@ export default function HomePage() {
           )}
 
           {inStanza ? (
-            <>
-              <ElencoPunti
-                onScegli={alAzione}
-                onIndica={(punto) => scena.current?.evidenzia(punto?.azione ?? null)}
-              />
+            // Il telefono non ha un puntatore da far passare sopra le
+            // cose, e senza la stanza resterebbe un fondale. Finché il
+            // mobile è quello che è (vedi `ROADMAP.md`) gli restano
+            // queste due maniglie; su schermo largo non esistono.
+            <div className="flex shrink-0 flex-col items-end gap-2 sm:hidden">
+              {posizione.soglia?.totali > 1 && (
+                <GiraSoglia
+                  soglia={posizione.soglia}
+                  onIndietro={() => scena.current?.indietro()}
+                  onAvanti={() => scena.current?.avanti()}
+                />
+              )}
 
-              {/* Sul telefono l'elenco sparisce: dei cinque punti, tre
-                  sono già nella barra in basso e uno nel bottone del
-                  bibliotecario. Ripeterli ruberebbe metà schermo alla
-                  stanza; resta il quinto, che nella barra non c'è. */}
-              <div className="flex shrink-0 flex-col items-end gap-2 sm:hidden">
-                {posizione.soglia?.totali > 1 && (
-                  <GiraSoglia
-                    soglia={posizione.soglia}
-                    onIndietro={() => scena.current?.indietro()}
-                    onAvanti={() => scena.current?.avanti()}
-                  />
-                )}
-
-                <button
-                  onClick={() => alAzione({ tipo: "scaffale" })}
-                  className="pointer-events-auto flex items-center gap-2.5 rounded-full border border-brass-400/35 bg-glass-3 py-3 pl-4 pr-5
-                             shadow-float backdrop-blur-xl transition-transform duration-quick active:scale-95
-                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
-                >
-                  <Icon nome="shelf" dimensione={16} className="text-brass-400" />
-                  <span className="text-sm font-medium text-ink-bright">
-                    Entra nello scaffale
-                  </span>
-                </button>
-              </div>
-            </>
+              <button
+                onClick={() => alAzione({ tipo: "scaffale" })}
+                className="pointer-events-auto flex items-center gap-2.5 rounded-full border border-brass-400/35 bg-glass-3 py-3 pl-4 pr-5
+                           shadow-float backdrop-blur-xl transition-transform duration-quick active:scale-95
+                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+              >
+                <Icon nome="shelf" dimensione={16} className="text-brass-400" />
+                <span className="text-sm font-medium text-ink-bright">
+                  Entra nello scaffale
+                </span>
+              </button>
+            </div>
           ) : (
             <Comandi
               posizione={posizione}
@@ -455,43 +454,6 @@ function CartellinoPunto({ punto }) {
         </div>
       </div>
     </div>
-  );
-}
-
-/**
- * L'elenco dei punti della stanza.
- *
- * Passandoci sopra (col mouse o col Tab) si accende il segno a terra
- * corrispondente: è il pezzo che trasforma un menu in una legenda.
- */
-function ElencoPunti({ onScegli, onIndica }) {
-  return (
-    <nav
-      aria-label="Punti della stanza"
-      className="pointer-events-auto hidden shrink-0 flex-col gap-1 rounded-panel border border-hairline bg-glass-3 p-2 backdrop-blur-xl sm:flex"
-      onMouseLeave={() => onIndica(null)}
-    >
-      {PUNTI.map((punto) => (
-        <button
-          key={punto.id}
-          onClick={() => onScegli(punto.azione)}
-          onMouseEnter={() => onIndica(punto)}
-          onFocus={() => onIndica(punto)}
-          onBlur={() => onIndica(null)}
-          className="group flex items-center gap-3 rounded-lg px-2.5 py-2 text-left transition-colors duration-quick
-                     hover:bg-glass-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
-        >
-          <span className="text-ink-muted transition-colors duration-quick group-hover:text-brass-300">
-            <Icon nome={punto.icona} dimensione={18} />
-          </span>
-
-          <span className="min-w-0">
-            <span className="block text-sm font-medium text-ink-bright">{punto.nome}</span>
-            <span className="hidden text-xs text-ink-faint sm:block">{punto.dove}</span>
-          </span>
-        </button>
-      ))}
-    </nav>
   );
 }
 

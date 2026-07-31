@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { ritiraModello } from "./indirizzi";
 
 /**
  * Il magazzino dei modelli scaricati.
@@ -41,15 +42,30 @@ export class Magazzino {
 
   vivo = true;
 
-  /** Il modello grezzo, scaricato una volta sola per URL. */
+  /**
+   * Il modello grezzo, scaricato una volta sola per URL.
+   *
+   * Se i byte erano già stati chiesti in anticipo (vedi `indirizzi.js`)
+   * si interpretano quelli invece di rifare la richiesta: il `.glb` si
+   * porta dentro tutto, texture comprese, quindi al lettore non serve
+   * sapere da che cartella veniva.
+   */
   #carica(url) {
     if (!this.#promesse.has(url)) {
-      const promessa = new GLTFLoader()
-        .loadAsync(url)
-        .then((gltf) => {
-          this.#originali.push(gltf.scene);
-          return gltf.scene;
-        });
+      const lettore = new GLTFLoader();
+
+      const anticipati = ritiraModello(url);
+
+      const arrivo = anticipati
+        ? anticipati.then((byte) =>
+            byte ? lettore.parseAsync(byte, "") : lettore.loadAsync(url)
+          )
+        : lettore.loadAsync(url);
+
+      const promessa = arrivo.then((gltf) => {
+        this.#originali.push(gltf.scene);
+        return gltf.scene;
+      });
 
       this.#promesse.set(url, promessa);
     }

@@ -60,9 +60,10 @@ const ALTEZZA_MOBILE = 2.5; // metri
  * @param materialeCarta le facce che non sono la copertina
  * @param tinta          il colore di ripiego di una copertina non ancora arrivata
  *
- * @returns { gruppo, coperture, bersaglio, segno }
+ * @returns { gruppo, coperture, bersaglio, evidenza }
  *   `coperture` sono i materiali su cui chi chiama applicherà le
- *   immagini vere, in ordine da sinistra a destra e dall'alto in basso.
+ *   immagini vere, in ordine da sinistra a destra e dall'alto in basso;
+ *   `evidenza` sono i mobili che si accendono al passaggio del mouse.
  */
 export async function costruisciLibrerie({
   magazzino,
@@ -80,6 +81,14 @@ export async function costruisciLibrerie({
 }) {
   const gruppo = new THREE.Group();
   const coperture = [];
+
+  // Cosa si contorna al passaggio del mouse. Ci va dentro tutto quello
+  // che sta *davanti* alla prima fila, non solo i mobili: il contorno si
+  // ricava mascherando gli oggetti scelti, e ogni cosa non scelta che ne
+  // copre un pezzo gli apre un buco che diventa un altro bordo. Con le
+  // sole librerie, ognuna delle duecento copertine si ritrovava il suo
+  // profilo giallo.
+  const vetrine = [];
 
   const primo = await magazzino.preleva(urlLibreria, { alto: ALTEZZA_MOBILE });
   if (!primo) return null;
@@ -109,6 +118,7 @@ export async function costruisciLibrerie({
 
     mobile.position.set(x, pavimentoY, vetrinaZ);
     gruppo.add(mobile);
+    vetrine.push(mobile);
 
     riempiDiCopertine({
       gruppo,
@@ -119,7 +129,8 @@ export async function costruisciLibrerie({
       geometriaLibro,
       materialeCarta,
       tinta,
-      coperture
+      coperture,
+      vetrine
     });
   }
 
@@ -169,6 +180,7 @@ export async function costruisciLibrerie({
     );
     scala.rotation.x = -0.13; // appoggiata, non in piedi da sola
     gruppo.add(scala);
+    vetrine.push(scala);
   }
 
   /* ==================================================
@@ -187,16 +199,7 @@ export async function costruisciLibrerie({
   bersaglio.userData = { azione: { tipo: "scaffale" } };
   gruppo.add(bersaglio);
 
-  return {
-    gruppo,
-    coperture,
-    bersaglio,
-    segno: {
-      x: vetrinaCentroX,
-      z: vetrinaZ + profondita / 2 + 1,
-      raggio: passo * VETRINE * 0.34
-    }
-  };
+  return { gruppo, coperture, bersaglio, evidenza: vetrine };
 }
 
 /**
@@ -213,7 +216,8 @@ function riempiDiCopertine({
   geometriaLibro,
   materialeCarta,
   tinta,
-  coperture
+  coperture,
+  vetrine
 }) {
   const utile = LARGHEZZA_UTILE * altezza;
   const altezzaLibro = VANO * altezza * 0.92;
@@ -252,6 +256,7 @@ function riempiDiCopertine({
 
       gruppo.add(libro);
       coperture.push(copertina);
+      vetrine.push(libro);
     }
   }
 }

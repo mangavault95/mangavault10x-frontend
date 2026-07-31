@@ -56,3 +56,28 @@ tutta la scena; finché resta questo, la riga qui sopra va tenuta.
 
 Tutti i modelli sono stati scaricati da [poly.pizza](https://poly.pizza),
 che raccoglie le librerie di Kenney, Quaternius e l'archivio di Google Poly.
+
+## Come sono stati rimpiccioliti (31/07/2026)
+
+Quello che c'è qui dentro non è il file scaricato: è la sua versione
+alleggerita. Gli originali pesavano quattro megabyte e mezzo per una stanza
+che si guarda da lontano, ed erano il grosso di quello che si aspetta
+aprendo il sito.
+
+**Texture** — da JPEG a qualità piena a WebP, con `sharp`: 1,9 MB → 151 kB,
+uno scarto medio di 1,5 su 255 rispetto all'originale.
+
+| File | Misura | Qualità |
+| --- | --- | --- |
+| `legno_diffuse.webp` | 1024 | 85 |
+| `legno_normali.webp` | 1024 | 82 |
+| `legno_ruvidita.webp` | 512, in scala di grigi | 75 |
+| `intonaco_diffuse.webp` | 1024 | 85 |
+
+**`cassa.glb`** — 511 → 228 kB. Si portava dentro una texture PNG da
+1024×1024 (290 kB) per un oggetto che sullo schermo occupa cento pixel:
+rifatta a 256 in JPEG, 8 kB. Il resto del file è geometria e non si tocca.
+
+Rifarli richiede `sharp` (non è una dipendenza del progetto: si installa
+con `npm i --no-save sharp` e si disinstalla dopo). Gli originali si
+riscaricano dalle fonti qui sopra.
