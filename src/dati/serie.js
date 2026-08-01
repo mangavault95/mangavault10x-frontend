@@ -108,6 +108,31 @@ export function valoreSerie(serie) {
 
 export const eCompleta = (serie) => completamento(serie) === 100;
 
+/**
+ * Fin dove si può arrivare col segnalibro.
+ *
+ * Non si legge un volume che non si ha in mano: il tetto è quello che
+ * possiedi davvero. Per una serie conclusa e completa i due numeri
+ * coincidono; per una in corso di cui hai 7 volumi su 30 usciti, il
+ * tetto resta 7.
+ *
+ * Se i volumi posseduti non sono registrati si ripiega sul totale, e in
+ * mancanza di entrambi non si mette alcun limite: meglio nessun vincolo
+ * che un vincolo inventato su dati assenti.
+ *
+ * Sta qui e non dentro una pagina perché è il denominatore di ogni
+ * conto sulle letture, e le pagine che ne fanno sono due: `/lettura`,
+ * che ci limita i bottoni, e il volume aperto sul tavolino, che ci
+ * scrive «sei al 4 di 7». Con due copie della regola una delle due
+ * finirebbe per dire «13 di 12».
+ */
+export function tettoLettura(posseduti, totali) {
+  if (posseduti > 0) return posseduti;
+  if (totali > 0) return totali;
+
+  return null;
+}
+
 /* ==================================================
    FORMATTAZIONE
    ================================================== */

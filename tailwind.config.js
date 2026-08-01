@@ -47,7 +47,19 @@ export default {
         // ---- Semantici ----
         jade: "#34d399", // completato, confermato
         ember: "#fb7185", // mancante, distruttivo
-        lapis: "#818cf8" // in corso, informativo
+        lapis: "#818cf8", // in corso, informativo
+
+        // ---- Materiali ----
+        // Le pagine che si raggiungono dalla stanza non sono pannelli di
+        // vetro su fondo scuro: sono oggetti. Uno scontrino è di carta
+        // termica, una bacheca è di sughero, un volume aperto è di carta
+        // ingiallita — e su quelle superfici si scrive in nero, non in
+        // avorio. Sono gli unici punti del sito in cui il fondo è chiaro,
+        // ed è voluto: lì si sta guardando una cosa, non una schermata.
+        carta: "#efe6d2", // la pagina di un volume
+        scontrino: "#e9e7e0", // la carta termica del registratore
+        sughero: "#8b6a45", // il pannello della bacheca
+        inchiostro: "#2a2118" // quello che ci si scrive sopra
       },
 
       // Vetro a tre livelli: più un pannello è "vicino", più è denso.
@@ -134,13 +146,47 @@ export default {
         shimmer: {
           from: { backgroundPosition: "-200% 0" },
           to: { backgroundPosition: "200% 0" }
+        },
+
+        /* ---- Le pagine che si raggiungono dalla stanza ----
+           Sono oggetti, non schermate, e arrivano come arriverebbe
+           l'oggetto: la carta esce dalla fessura, la riga si stampa, la
+           locandina cade sulla bacheca. */
+
+        // Lo scontrino che scorre fuori dal registratore.
+        stampa: {
+          from: { transform: "translate3d(0, -100%, 0)" },
+          to: { transform: "translate3d(0, 0, 0)" }
+        },
+        // Una riga che la testina ha appena battuto.
+        batti: {
+          from: { opacity: "0", transform: "translate3d(0, -6px, 0)" },
+          to: { opacity: "1", transform: "translate3d(0, 0, 0)" }
+        },
+        // Una locandina appuntata: arriva da sopra e si assesta
+        // attorno alla puntina. La rotazione finale la mette il
+        // componente, che ne ha una diversa per ogni foglio.
+        appunta: {
+          from: { opacity: "0", transform: "translate3d(0, -22px, 0) scale(1.04)" },
+          to: { opacity: "1", transform: "translate3d(0, 0, 0) scale(1)" }
+        },
+        // Il volume che si apre sul tavolino.
+        apri: {
+          from: { opacity: "0", transform: "perspective(1400px) rotateX(9deg) scale(0.97)" },
+          to: { opacity: "1", transform: "perspective(1400px) rotateX(0) scale(1)" }
+        },
+        // Il riquadro di dialogo della visual novel.
+        battuta: {
+          from: { opacity: "0", transform: "translate3d(0, 14px, 0)" },
+          to: { opacity: "1", transform: "translate3d(0, 0, 0)" }
         }
       },
 
       animation: {
         "rise-in": "rise-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both",
         "glow-pulse": "glow-pulse 4s ease-in-out infinite",
-        shimmer: "shimmer 1.6s linear infinite"
+        shimmer: "shimmer 1.6s linear infinite",
+        battuta: "battuta 380ms cubic-bezier(0.16, 1, 0.3, 1) both"
       },
 
       zIndex: {

@@ -5,13 +5,8 @@ import Classifica from "../ui/Classifica";
 import Copertina from "../ui/Copertina";
 import { CaricamentoGriglia, Errore } from "../ui/Stati";
 import { useCollezione } from "../dati/collezione";
-import {
-  completamento,
-  euro,
-  numeroIt,
-  valoreSerie,
-  volumiMancanti
-} from "../dati/serie";
+import { primati, riepilogo } from "../dati/numeri";
+import { euro, numeroIt, valoreSerie } from "../dati/serie";
 
 /**
  * I numeri della collezione.
@@ -28,51 +23,12 @@ import {
 export default function StatistichePage() {
   const { serie, inCorso, errore, ricarica } = useCollezione();
 
-  const n = useMemo(() => {
-    if (!serie.length) return null;
-
-    const volumi = serie.reduce((t, s) => t + s.posseduti, 0);
-    const valore = serie.reduce((t, s) => t + valoreSerie(s), 0);
-
-    const conCosto = serie.filter((s) => s.costo);
-    const prezzoMedio = conCosto.length
-      ? conCosto.reduce((t, s) => t + s.costo, 0) / conCosto.length
-      : 0;
-
-    const complete = serie.filter((s) => completamento(s) === 100).length;
-    const daCompletare = serie.filter((s) => volumiMancanti(s) > 0).length;
-    const inCorsoEditore = serie.filter((s) => s.stato === "in_corso").length;
-
-    // Quanto costerebbe finire tutto quello che hai cominciato: è il
-    // numero che nessun'altra pagina dice, e quello che serve sapere
-    // prima di aggiungere un'altra serie nuova.
-    const perCompletare = serie.reduce((t, s) => {
-      const mancanti = volumiMancanti(s);
-
-      return t + (mancanti && s.costo ? mancanti * s.costo : 0);
-    }, 0);
-
-    // Zero non è un voto: nella collezione significa "non l'ho ancora
-    // giudicato". Contarlo abbasserebbe la media di due punti buoni e
-    // farebbe sembrare mediocre tutto quello che hai comprato.
-    const votate = serie.filter((s) => s.valutazione > 0);
-    const votoMedio = votate.length
-      ? votate.reduce((t, s) => t + s.valutazione, 0) / votate.length
-      : null;
-
-    return {
-      serie: serie.length,
-      volumi,
-      valore,
-      prezzoMedio,
-      complete,
-      daCompletare,
-      inCorsoEditore,
-      perCompletare,
-      votoMedio,
-      volumiMancantiTotali: serie.reduce((t, s) => t + (volumiMancanti(s) || 0), 0)
-    };
-  }, [serie]);
+  // I conti stavano qui, e da quando il registratore di cassa della
+  // stanza batte lo stesso scontrino stanno in `dati/numeri.js`: due
+  // copie della stessa somma finiscono sempre per divergere, e il giorno
+  // che divergono il sito mostra due valori della collezione a due click
+  // di distanza.
+  const n = useMemo(() => riepilogo(serie), [serie]);
 
   /* -------------------- Classifiche -------------------- */
 
@@ -97,27 +53,7 @@ export default function StatistichePage() {
 
   /* -------------------- Primati -------------------- */
 
-  const primati = useMemo(() => {
-    if (!serie.length) return [];
-
-    const migliore = (etichetta, estrai, formatta) => {
-      const candidate = serie.filter((s) => estrai(s) !== null && estrai(s) !== undefined);
-
-      if (!candidate.length) return null;
-
-      const vincitrice = candidate.reduce((a, b) => (estrai(b) > estrai(a) ? b : a));
-
-      return { etichetta, serie: vincitrice, dettaglio: formatta(estrai(vincitrice)) };
-    };
-
-    return [
-      migliore("Più volumi", (s) => s.posseduti || null, (v) => `${v} volumi`),
-      migliore("Voto più alto", (s) => s.valutazione, (v) => `${v} / 5`),
-      migliore("Serie più lunga", (s) => s.totali, (v) => `${v} volumi totali`),
-      migliore("Vale di più", (s) => valoreSerie(s) || null, (v) => euro(v)),
-      migliore("Ne mancano di più", (s) => volumiMancanti(s) || null, (v) => `${v} da prendere`)
-    ].filter(Boolean);
-  }, [serie]);
+  const record = useMemo(() => primati(serie), [serie]);
 
   if (errore) {
     return (
@@ -198,7 +134,7 @@ export default function StatistichePage() {
         {/* ---------- Primati ---------- */}
         <Sezione titolo="Primati">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {primati.map((p) => (
+            {record.map((p) => (
               <Primato key={p.etichetta} {...p} />
             ))}
           </div>

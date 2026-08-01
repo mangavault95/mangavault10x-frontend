@@ -10,6 +10,7 @@ import { costruisciLibrerie } from "./scaffali";
 import { costruisciBancone } from "./bancone";
 import { costruisciAngoloLettura } from "./angolo";
 import { Evidenza } from "./evidenza";
+import { Avvicinamento } from "./avvicinamento";
 import { BIBLIOTECARIO, MODELLI } from "./indirizzi";
 
 // In WebP, non nei JPEG originali: erano quattro immagini da mezzo mega
@@ -66,6 +67,17 @@ const intonacoDiffuseUrl = new URL("./assets/intonaco/intonaco_diffuse.webp", im
  * viceversa (vedi `vaiA`). Farle convivere significava, letteralmente,
  * vedere il bibliotecario spuntare da dietro il terzo ripiano.
  *
+ * Che lo scambio sia istantaneo non vuol dire che debba *vedersi*: da
+ * un luogo all'altro non si taglia, ci si avvicina. La sequenza sta in
+ * `avvicinamento.js`, qui restano le inquadrature che le si passano
+ * (`AFFACCI`, `#primoPiano`, `#primoPianoScaffale`) e l'ondata con cui i
+ * volumi escono dal mobile a cose fatte (`apertura`).
+ *
+ * Lo stesso vale per gli altri quattro punti — la cassa, la bacheca, il
+ * tavolino, il bibliotecario — che invece di un luogo hanno una pagina:
+ * ci si accosta e si finisce al buio, e dal buio si riaccende il DOM.
+ * Nessuno dei cinque «apre» qualcosa: a tutti e cinque ci si va.
+ *
  *
  * COME CI SI MUOVE
  *
@@ -73,6 +85,11 @@ const intonacoDiffuseUrl = new URL("./assets/intonaco/intonaco_diffuse.webp", im
  * sezione di scaffale. È una scelta, non una scorciatoia — il movimento
  * libero su un sito dà la nausea a parecchia gente, non funziona col
  * dito su un telefono e non si usa da tastiera.
+ *
+ * L'unica eccezione è l'entrata: lì la telecamera attraversa davvero la
+ * stanza, perché è l'unico momento in cui il movimento dice qualcosa —
+ * che i volumi grandi che si stanno per vedere sono quelli piccoli che
+ * si vedevano da lontano.
  *
  *
  * LE COPERTINE
@@ -120,6 +137,83 @@ const SPORGENZA = 0.32;
 // Inclinazione di riposo: di taglio si vedrebbe solo la copertina e lo
 // spessore sparirebbe. Un filo di rotazione lo rimette in mostra.
 const ROTAZIONE_RIPOSO = -0.16;
+
+/* --------------------------------------------------
+   L'ENTRATA NELLO SCAFFALE
+   Come si arriva qui dentro dalla stanza: la sequenza sta in
+   `avvicinamento.js`, questi sono i numeri che riguardano lo scaffale.
+   -------------------------------------------------- */
+
+// Quanto i volumi stanno rientrati nel mobile prima di uscirne, e di
+// quanto sono girati mentre ci stanno dentro. Non è un effetto di
+// comparsa: è lo stesso gesto della sporgenza al passaggio del mouse,
+// al contrario, e usa lo stesso vocabolario perché è la stessa
+// libreria.
+const RIENTRO = 0.34;
+const ROTAZIONE_RIENTRO = -0.2;
+
+// Quanto è sfalsata l'ondata con cui escono: 0 li fa uscire tutti
+// insieme (e allora è uno scatto solo), 1 li mette in fila indiana (e
+// allora l'ultimo arriva quando la telecamera si è già fermata).
+const SCAGLIONE = 0.55;
+
+// L'alone caldo dietro lo scaffale. È una costante perché durante
+// l'apertura si accende insieme ai volumi, e serve sapere a quanto
+// deve tornare.
+const ALONE_INTENSITA = 22;
+
+/* --------------------------------------------------
+   COME CI SI AFFACCIA A OGNI PUNTO
+   -------------------------------------------------- */
+
+/**
+ * Da che parte ci si arriva, e quanto vicino.
+ *
+ * Sta qui e non nei moduli che costruiscono i mobili perché è roba di
+ * regia, non di falegnameria: `bancone.js` sa quanto è larga la cassa,
+ * non da che parte la si guarda. Quelli sanno solo dire come si chiama
+ * il proprio bersaglio (`userData.punto`); dove piazzarsi per guardarlo
+ * dipende da com'è messa la stanza, e la stanza la mette insieme questo
+ * file.
+ *
+ * - `verso`   da che parte sta la telecamera rispetto all'oggetto. Non
+ *             va normalizzato: ci pensa `#primoPiano`.
+ * - `stretta` quanto ci si arriva vicino, in frazione della distanza che
+ *             inquadra il bersaglio per intero. Sotto 1 si sta addosso,
+ *             sopra 1 si lascia aria attorno. I bersagli sono scatole
+ *             invisibili tirate larghe per essere cliccabili da lontano,
+ *             quindi «per intero» è già più largo dell'oggetto vero: i
+ *             numeri sopra 1 non sono generosità, sono correzioni.
+ * - `alza`    di quanto spostare in su il punto guardato, in frazione
+ *             dell'altezza del bersaglio. Serve dove il centro
+ *             geometrico non è il centro d'interesse — di una persona si
+ *             guarda la faccia, non la cintura.
+ */
+const AFFACCI = {
+  // Le librerie sono l'unico punto che porta in un altro luogo in tre
+  // dimensioni, e la stretta a metà è quella che fa combaciare le due
+  // scale nel momento dello scambio: non toccarla senza rileggere
+  // `avvicinamento.js`.
+  librerie: { verso: [0, 0, 1], stretta: 0.5 },
+
+  // Sul banco, dal lato del cliente e un filo dall'alto: una cassa la si
+  // guarda dall'angolo di chi sta pagando.
+  cassa: { verso: [0.1, 0.42, 1], stretta: 1.55 },
+
+  // Appesa alla parete dietro il banco. Frontale e basta: è un foglio,
+  // e un foglio guardato di sbieco è un foglio storto.
+  bacheca: { verso: [0, 0.05, 1], stretta: 1.25 },
+
+  // Il tavolino si guarda da sopra, come chi si è appena seduto e ha
+  // davanti il volume che qualcuno ha lasciato aperto.
+  tavolino: { verso: [0.12, 0.78, 0.62], stretta: 1.5 },
+
+  // In faccia, dal lato del cliente. La stretta stringe sul busto invece
+  // che sulla figura intera, e l'alzata porta lo sguardo dove sta la
+  // faccia: è la stessa inquadratura in cui riparte la conversazione di
+  // là, e le due si devono somigliare.
+  bibliotecario: { verso: [0, 0.06, 1], stretta: 0.82, alza: 0.2 }
+};
 
 const COLORE_LEGNO = 0x6b4b32;
 const COLORE_INTONACO = 0xefe3cd;
@@ -270,6 +364,8 @@ export default class Biblioteca {
       alAzione,
       alMirareOggetto,
       alPronta,
+      alViaggiare,
+      rientroDa = null,
       menoMovimento = false
     }
   ) {
@@ -288,6 +384,10 @@ export default class Biblioteca {
     this.alAzione = alAzione;
     this.alMirareOggetto = alMirareOggetto;
     this.alPronta = alPronta;
+    // Mentre si entra o si esce dallo scaffale la pagina si toglie di
+    // mezzo: pannelli di vetro fermi sopra una telecamera che vola sono
+    // esattamente il genere di cosa che fa sembrare il 3D un fondale.
+    this.alViaggiare = alViaggiare;
     this.menoMovimento = menoMovimento;
 
     this.libri = [];
@@ -302,10 +402,19 @@ export default class Biblioteca {
     this.raggio = new THREE.Raycaster();
 
     this.oggettiStanza = []; // tutto il cliccabile della soglia
+    this.puntiStanza = new Map(); // nome del punto → il suo bersaglio
     this.copertineStanza = []; // i materiali delle vetrine, in attesa delle immagini
     this.posterBancone = [];
 
+    // Da dove si sta rientrando, se si sta rientrando. Non è uno stato
+    // che cambia: è una consegna che la pagina fa alla scena una volta
+    // sola, e che la scena onora appena ha finito di arredarsi.
+    this.rientroDa = rientroDa;
+
     this.viaggio = null; // { da, a, guardaDa, guardaA, inizio, durata }
+    // Quanto i volumi sono usciti dal mobile: 1 è lo stato normale, e
+    // finché resta 1 l'ondata non costa niente (vedi `#aggiornaLibri`).
+    this.apertura = 1;
     this.orologio = new THREE.Clock();
     this.fotogramma = 0;
     this.vivo = true;
@@ -318,6 +427,25 @@ export default class Biblioteca {
     this.#creaRenderer();
     this.#creaScena();
     this.#creaComposer();
+
+    // Dopo il renderer, che è da lì che legge l'esposizione di riposo.
+    this.avvicinamento = new Avvicinamento({
+      camera: this.camera,
+      renderer: this.renderer
+    });
+
+    // Chi rientra da una pagina non deve vedere la soglia neanche per un
+    // fotogramma: lo schermo resta spento da adesso fino a quando la
+    // stanza è in piedi e la riemersione può cominciare (`#arreda`). Va
+    // fatto dopo aver costruito l'avvicinamento, che è chi si è appena
+    // segnato l'esposizione di riposo a cui tornare.
+    //
+    // Non a chi ha chiesto meno movimento: lì non ci sarà nessuna
+    // riemersione, quindi non ci sarebbe nessuno a riaccendere. Il velo
+    // nero della pagina (`Buio` in `HomePage`) copre l'attesa lo stesso,
+    // e si alza appena la stanza è pronta.
+    if (this.rientroDa && !menoMovimento) this.renderer.toneMappingExposure = 0.0001;
+
     this.#creaStanza();
     this.#collegaEventi();
 
@@ -446,7 +574,7 @@ export default class Biblioteca {
     // stanza illuminata invece che semplicemente grigia. Segue la
     // sezione inquadrata invece di restare fisso all'origine, così non
     // lascia al buio le sezioni successive.
-    this.alone = new THREE.PointLight(0xfacc15, 22, 34, 2);
+    this.alone = new THREE.PointLight(0xfacc15, ALONE_INTENSITA, 34, 2);
     this.alone.position.set(0, 0.6, -2.4);
     this.scena.add(this.alone);
 
@@ -605,6 +733,19 @@ export default class Biblioteca {
   /* -------------------- Le serie -------------------- */
 
   impostaSerie(serie, { mantieni } = {}) {
+    // Una collezione che si aggiorna mentre si sta entrando nello
+    // scaffale: la sequenza arriva subito, o si ritroverebbe a portare la
+    // telecamera dentro volumi che nel frattempo sono stati buttati e
+    // rifatti.
+    //
+    // Una riemersione invece si lascia stare, ed è il caso normale, non
+    // un caso limite: rientrando da una pagina la collezione è già in
+    // memoria e arriva nello stesso istante in cui la stanza si alza.
+    // Interromperla vorrebbe dire che tornare indietro funziona solo la
+    // prima volta. Non le serve niente dei libri — le sue due
+    // inquadrature stanno tutte e due nella stanza.
+    if (this.avvicinamento?.tipo === "attraversa") this.avvicinamento.concludi();
+
     this.#svuotaLibri();
 
     this.serie = serie;
@@ -637,7 +778,12 @@ export default class Biblioteca {
         ? Math.min(this.sezioni - 1, Math.floor(mantieni / this.perSezione))
         : -1;
 
-    this.vaiA(partenza, { immediato: true });
+    // `guidata` quando c'è una riemersione in corso: la telecamera ha già
+    // un padrone, e qui si cambia solo di che mondo è fatta la scena.
+    this.vaiA(partenza, {
+      immediato: true,
+      guidata: Boolean(this.avvicinamento?.inCorso)
+    });
   }
 
   #creaLibro(serie, indice) {
@@ -684,12 +830,20 @@ export default class Biblioteca {
     libro.castShadow = true;
     libro.receiveShadow = true;
 
+    // Il posto del libro nell'ondata con cui la sezione si apre: zero al
+    // centro dello scaffale, uno ai due montanti. Solo la colonna, non
+    // la riga — l'apertura è un allargarsi, e un'ondata che scende
+    // dall'alto racconterebbe un'altra cosa.
+    const mezzo = (this.colonne - 1) / 2;
+    const ritardo = mezzo ? Math.abs(colonna - mezzo) / mezzo : 0;
+
     libro.userData = {
       serie,
       sezione,
       copertina,
       riposoZ: 0,
-      sporgenza: 0
+      sporgenza: 0,
+      ritardo
     };
 
     this.libri.push(libro);
@@ -824,6 +978,16 @@ export default class Biblioteca {
     this.stanzaInPiedi = true;
 
     this.#vestiStanza();
+
+    // La riemersione prima dell'annuncio, non dopo: `alPronta` fa
+    // svanire il velo nero della pagina, e sotto quel velo la telecamera
+    // deve già essere addosso all'oggetto giusto. L'ordine inverso
+    // mostrerebbe mezzo fotogramma di soglia.
+    if (this.rientroDa) {
+      this.#riemergiDa(this.rientroDa);
+      this.rientroDa = null;
+    }
+
     this.alPronta?.();
   }
 
@@ -931,7 +1095,7 @@ export default class Biblioteca {
     );
 
     bersaglio.position.set(x, y + ALTEZZA_BIBLIOTECARIO / 2, z);
-    bersaglio.userData = { azione: { tipo: "bibliotecario" } };
+    bersaglio.userData = { punto: "bibliotecario" };
     this.gruppoStanza.add(bersaglio);
 
     this.#registraBersaglio(bersaglio, [bibliotecario.gruppo]);
@@ -976,6 +1140,11 @@ export default class Biblioteca {
     this.oggettiStanza.push(mesh);
 
     if (evidenza?.length) mesh.userData.evidenza = evidenza;
+
+    // Indicizzati per nome: è così che si ritrova un punto quando lo
+    // chiede qualcuno che non ha in mano la mesh — chi ci si vuole
+    // avvicinare, e chi ci sta rientrando da una pagina.
+    if (mesh.userData.punto) this.puntiStanza.set(mesh.userData.punto, mesh);
   }
 
   /**
@@ -1043,6 +1212,14 @@ export default class Biblioteca {
       materiale.needsUpdate = true;
 
       this.testureStanza.add(testura);
+    }).then(() => {
+      // Finite quelle della stanza, si prepara la prima sezione dello
+      // scaffale: nessuno la sta guardando, ma è dove si finisce
+      // cliccando le librerie, e l'apertura deve scoprire copertine
+      // vere. Adesso e non prima — sono le stesse sei connessioni.
+      if (this.vivo && this.sezioneCorrente === -1) {
+        this.#caricaCoperturePerSezione(0);
+      }
     });
   }
 
@@ -1107,6 +1284,17 @@ export default class Biblioteca {
       .filter((v) => v.url);
 
     await this.#scaricaAFlusso(daFare, ({ libro }, testura) => {
+      // I libri possono essere stati rifatti mentre l'immagine era per
+      // strada — una collezione che si aggiorna, la finestra che cambia
+      // forma — e allora questa copertina è già stata smaltita: la
+      // texture non ha più dove andare e nessuno la libererebbe più.
+      // Prima contava poco, adesso la prima sezione si scarica mentre si
+      // è ancora nella stanza e la finestra è larga come tutta la visita.
+      if (this.testureInUso.get(sezione) !== set) {
+        testura.dispose();
+        return;
+      }
+
       libro.userData.copertina.map = testura;
       libro.userData.copertina.color.set(0xffffff);
       libro.userData.copertina.needsUpdate = true;
@@ -1136,7 +1324,40 @@ export default class Biblioteca {
 
   /* -------------------- Postazioni -------------------- */
 
-  vaiA(sezione, { immediato = false } = {}) {
+  /**
+   * Dove sta la telecamera in una certa postazione, e dove guarda.
+   *
+   * Separata da `vaiA` perché la stessa inquadratura serve a due
+   * padroni: a chi ci si sposta e basta, e all'avvicinamento, che ne ha
+   * bisogno *prima* di muoversi per sapere dove andrà a finire.
+   */
+  #posa(sezione) {
+    if (sezione === -1) {
+      const posti = this.#postiSoglia();
+      const x = posti[Math.max(0, Math.min(posti.length - 1, this.postoSoglia))];
+
+      return {
+        posizione: new THREE.Vector3(x, CAMERA_SOGLIA_Y, this.distanzaSoglia),
+        mira: new THREE.Vector3(x, SOGLIA_Y, 0),
+        alone: new THREE.Vector3(x, 0.6, 1)
+      };
+    }
+
+    const x = sezione * (this.larghezzaSezione + PASSO_X);
+
+    return {
+      posizione: new THREE.Vector3(x, 0.1, this.distanza),
+      mira: new THREE.Vector3(x, 0, 0),
+      alone: new THREE.Vector3(x, 0.6, -2.4)
+    };
+  }
+
+  /**
+   * @param immediato  ci si trova già lì, senza viaggio
+   * @param guidata    la telecamera la muove qualcun altro
+   *                   (`avvicinamento.js`): qui si cambia solo mondo
+   */
+  vaiA(sezione, { immediato = false, guidata = false } = {}) {
     const nuova = Math.max(-1, Math.min(this.sezioni - 1, sezione));
 
     // Si passa da un mondo cliccabile all'altro: i libri non sono
@@ -1156,52 +1377,34 @@ export default class Biblioteca {
     this.gruppoScaffale.visible = dentroScaffale;
     this.gruppoStanza.visible = !dentroScaffale;
 
-    if (cambiaModo && this.mirato) {
-      this.mirato = null;
-      this.canvas.style.cursor = "default";
-      this.evidenza.mira(null);
-      this.alMirare?.(null);
-      this.alMirareOggetto?.(null);
-    }
-
-    let destinazione, sguardo, aloneX, aloneZ;
+    if (cambiaModo && this.mirato) this.#spegniLaMira();
 
     if (nuova === -1) {
       const posti = this.#postiSoglia();
 
       this.postoSoglia = Math.max(0, Math.min(posti.length - 1, this.postoSoglia));
-
-      const x = posti[this.postoSoglia];
-
-      destinazione = new THREE.Vector3(x, CAMERA_SOGLIA_Y, this.distanzaSoglia);
-      sguardo = new THREE.Vector3(x, SOGLIA_Y, 0);
-      aloneX = x;
-      aloneZ = 1;
-    } else {
-      const x = nuova * (this.larghezzaSezione + PASSO_X);
-
-      destinazione = new THREE.Vector3(x, 0.1, this.distanza);
-      sguardo = new THREE.Vector3(x, 0, 0);
-      aloneX = x;
-      aloneZ = -2.4;
     }
+
+    const posa = this.#posa(nuova);
 
     // L'alone caldo accompagna lo sguardo: restando all'origine
     // illuminava solo la prima sezione e lasciava le altre spente.
-    this.alone?.position.set(aloneX, 0.6, aloneZ);
+    this.alone?.position.copy(posa.alone);
     this.alone.visible = dentroScaffale;
 
-    if (immediato || this.menoMovimento) {
-      this.camera.position.copy(destinazione);
-      this.bersaglioSguardo.copy(sguardo);
+    if (guidata) {
+      this.viaggio = null;
+    } else if (immediato || this.menoMovimento) {
+      this.camera.position.copy(posa.posizione);
+      this.bersaglioSguardo.copy(posa.mira);
       this.camera.lookAt(this.bersaglioSguardo);
       this.viaggio = null;
     } else {
       this.viaggio = {
         da: this.camera.position.clone(),
-        a: destinazione,
+        a: posa.posizione,
         guardaDa: this.bersaglioSguardo.clone(),
-        guardaA: sguardo,
+        guardaA: posa.mira,
         inizio: performance.now(),
         durata: 900
       };
@@ -1234,6 +1437,7 @@ export default class Biblioteca {
    * postazioni ce n'è una sola e non fanno niente.
    */
   avanti() {
+    if (this.#saltaAvvicinamento()) return;
     if (this.sezioneCorrente === -1) return this.#giraSoglia(1);
 
     this.vaiA(this.sezioneCorrente + 1);
@@ -1253,26 +1457,291 @@ export default class Biblioteca {
   // deve far uscire dallo scaffale, quel gesto è riservato a Escape
   // (`tornaAllaSoglia`).
   indietro() {
+    if (this.#saltaAvvicinamento()) return;
     if (this.sezioneCorrente === -1) return this.#giraSoglia(-1);
 
     this.vaiA(Math.max(0, this.sezioneCorrente - 1));
   }
 
-  /** Porta la telecamera alla sezione che contiene una certa serie. */
+  /**
+   * Porta la telecamera alla sezione che contiene una certa serie.
+   *
+   * Qui la sequenza si conclude ma non assorbe la chiamata: non è un
+   * gesto di chi guarda, è qualcuno che chiede di essere portato in un
+   * posto preciso, e quel posto lo vuole comunque.
+   */
   vaiAllaSerie(id) {
+    this.avvicinamento.concludi();
+
     const indice = this.libri.findIndex((l) => String(l.userData.serie.id) === String(id));
 
     if (indice >= 0) this.vaiA(this.libri[indice].userData.sezione);
   }
 
-  /** Entra nel flythrough dello scaffale, dalla prima sezione. */
+  /**
+   * Ci si affaccia a un punto della stanza.
+   *
+   * È l'unico modo in cui la stanza reagisce a un click, e vale per
+   * tutti e cinque i punti: quello che cambia è cosa c'è in fondo. Le
+   * librerie portano in un altro luogo in tre dimensioni e si
+   * attraversano; gli altri quattro hanno una pagina, e ci si accosta e
+   * basta — poi il buio passa la mano al DOM.
+   */
+  avvicinatiA(punto) {
+    if (this.#saltaAvvicinamento()) return;
+    if (this.sezioneCorrente !== -1) return;
+
+    if (punto === "librerie") return this.#avvicina(true);
+
+    this.#accosta(punto);
+  }
+
+  /** Entra fra i volumi, dalla prima sezione. */
   entraNelloScaffale() {
-    this.vaiA(0);
+    if (this.#saltaAvvicinamento()) return;
+
+    // Già dentro: non c'è niente da attraversare, si torna in testa.
+    if (this.sezioneCorrente !== -1) return this.vaiA(0);
+
+    this.#avvicina(true);
   }
 
   /** Torna alla soglia: la stanza torna cliccabile. */
   tornaAllaSoglia() {
-    this.vaiA(-1);
+    if (this.#saltaAvvicinamento()) return;
+    if (this.sezioneCorrente === -1) return;
+
+    this.#avvicina(false);
+  }
+
+  /**
+   * Un comando arrivato mentre la sequenza è in corso non la interrompe:
+   * la finisce. Chi ha già visto l'avvicinamento e clicca di nuovo vuole
+   * essere dall'altra parte, non tornare indietro — e chi invece stava
+   * solo strisciando il mouse non se ne accorge nemmeno, perché durante
+   * la sequenza il puntatore non mira niente.
+   *
+   * @returns se ha assorbito il comando
+   */
+  #saltaAvvicinamento() {
+    if (!this.avvicinamento.inCorso) return false;
+
+    this.avvicinamento.concludi();
+
+    return true;
+  }
+
+  /**
+   * L'entrata (e l'uscita) come attraversamento invece che come stacco.
+   *
+   * Le quattro inquadrature che servono alla sequenza (vedi
+   * `avvicinamento.js`) sono sempre le stesse due coppie, prese in un
+   * verso o nell'altro: il primo piano delle librerie nella stanza, e il
+   * primo piano della sezione dello scaffale. Sono calcolate con la
+   * stessa frazione (`AFFACCI.librerie.stretta`) della rispettiva
+   * distanza d'inquadratura,
+   * ed è quello che fa combaciare i due mondi nel momento in cui si
+   * scambiano.
+   *
+   * Se i modelli della stanza non sono ancora arrivati non c'è niente a
+   * cui avvicinarsi: si va e basta, com'era prima. Lo stesso vale per
+   * chi ha chiesto meno movimento.
+   *
+   * @param dentro  true si entra nello scaffale, false si torna in sala
+   */
+  #avvicina(dentro) {
+    const sezione = dentro ? 0 : -1;
+
+    const nellaStanza = this.#primoPiano("librerie");
+    const nelloScaffale = this.#primoPianoScaffale(dentro ? 0 : this.sezioneCorrente);
+
+    if (this.menoMovimento || !nellaStanza || !nelloScaffale) {
+      this.vaiA(sezione);
+      return;
+    }
+
+    this.viaggio = null;
+    this.#spegniLaMira();
+    this.alViaggiare?.(true);
+
+    // Le copertine della sezione che si sta per scoprire partono adesso,
+    // non al trapasso: due secondi e mezzo di volo sono esattamente il
+    // tempo che ci vuole perché al momento dell'apertura ci siano.
+    if (dentro) this.#caricaCoperturePerSezione(0);
+
+    this.apertura = dentro ? 0 : 1;
+
+    this.avvicinamento.attraversa({
+      sguardo: this.bersaglioSguardo,
+      partenza: {
+        posizione: this.camera.position.clone(),
+        mira: this.bersaglioSguardo.clone()
+      },
+      vicino: dentro ? nellaStanza : nelloScaffale,
+      arrivo: dentro ? nelloScaffale : nellaStanza,
+      fine: this.#posa(sezione),
+      alTrapasso: () => this.vaiA(sezione, { guidata: true }),
+      alMuovere: ({ tratta, t }) => {
+        // Entrando i volumi escono dal mobile mentre lo scaffale si
+        // allarga — è l'ultima tratta, quella che si guarda. Uscendo
+        // rientrano subito, durante l'avvicinamento: al trapasso il
+        // mobile è già chiuso, e dopo non c'è più niente da guardare.
+        if (dentro) this.apertura = tratta === "apertura" ? t : 0;
+        else this.apertura = tratta === "avvicinamento" ? 1 - t : 0;
+
+        // Lo scaffale si accende insieme ai suoi volumi. Da fermo
+        // l'alone è la sola luce che lo stacchi dal fondo, e vederlo
+        // salire mentre le copertine escono lo fa leggere come una
+        // stanza che si illumina invece che come un fondale acceso.
+        if (dentro && this.alone) {
+          this.alone.intensity = ALONE_INTENSITA * (0.3 + 0.7 * this.apertura);
+        }
+      },
+      alFinire: () => {
+        this.apertura = 1;
+
+        if (this.alone) this.alone.intensity = ALONE_INTENSITA;
+
+        this.alViaggiare?.(false);
+      }
+    });
+  }
+
+  /**
+   * L'accostata a un oggetto della stanza, con la pagina in fondo.
+   *
+   * L'azione non parte cliccando: parte quando si è arrivati. È tutta la
+   * differenza fra una stanza e un menu con sopra una fotografia — nel
+   * menu il click *è* l'azione, qui il click è il primo passo.
+   */
+  #accosta(punto) {
+    const vicino = this.#primoPiano(punto);
+
+    if (this.menoMovimento || !vicino) {
+      this.alAzione?.(punto);
+      return;
+    }
+
+    this.viaggio = null;
+    this.#spegniLaMira();
+    this.alViaggiare?.(true);
+
+    this.avvicinamento.accosta({
+      sguardo: this.bersaglioSguardo,
+      partenza: {
+        posizione: this.camera.position.clone(),
+        mira: this.bersaglioSguardo.clone()
+      },
+      vicino,
+      alArrivare: () => this.alAzione?.(punto),
+      alFinire: () => this.alViaggiare?.(false)
+    });
+  }
+
+  /**
+   * Il rientro da una pagina: si riapre gli occhi addosso all'oggetto da
+   * cui si era usciti e si arretra fino alla soglia.
+   *
+   * Lo chiama `#arreda` e nessun altro: prima che i modelli siano
+   * arrivati non c'è nessun oggetto a cui essere addosso.
+   */
+  #riemergiDa(punto) {
+    const vicino = this.#primoPiano(punto);
+
+    if (this.menoMovimento || !vicino) {
+      // Lo schermo è spento da quando la scena è nata (vedi il
+      // costruttore) e la sequenza che avrebbe dovuto riaccenderlo non
+      // parte: senza questa riga la stanza resta nera per sempre, ed è
+      // esattamente quello che succedeva a chi ha chiesto meno
+      // movimento.
+      this.avvicinamento.riaccendi();
+      this.vaiA(-1, { immediato: true });
+
+      return;
+    }
+
+    this.viaggio = null;
+    this.alViaggiare?.(true);
+
+    this.avvicinamento.riemergi({
+      sguardo: this.bersaglioSguardo,
+      vicino,
+      fine: this.#posa(-1),
+      alFinire: () => this.alViaggiare?.(false)
+    });
+  }
+
+  /**
+   * L'inquadratura ravvicinata su un punto della stanza.
+   *
+   * Il bersaglio serve già a due cose — cliccare e contornare — e adesso
+   * a una terza: dice quanto è grosso quello che si sta guardando, e
+   * quindi da quanto lontano ci sta dentro tutto. Le scatole invisibili
+   * sono tirate larghe apposta per essere cliccabili da sette metri, e
+   * di questo tiene conto la `stretta` di ogni punto (vedi `AFFACCI`).
+   */
+  #primoPiano(punto) {
+    const bersaglio = this.puntiStanza.get(punto);
+    const affaccio = AFFACCI[punto];
+
+    if (!bersaglio || !affaccio) return null;
+
+    // Il bersaglio può non essere mai stato disegnato — si arriva qui
+    // anche subito dopo l'arredamento, prima del primo fotogramma — e
+    // una scatola calcolata su una matrice vecchia sta nel posto
+    // sbagliato.
+    bersaglio.updateWorldMatrix(true, false);
+
+    const scatola = new THREE.Box3().setFromObject(bersaglio);
+    const centro = scatola.getCenter(new THREE.Vector3());
+    const misura = scatola.getSize(new THREE.Vector3());
+
+    centro.y += misura.y * (affaccio.alza ?? 0);
+
+    const distanza =
+      this.#distanzaPerInquadrare(
+        Math.max(misura.x, misura.z) / 2,
+        misura.y / 2
+      ) * affaccio.stretta;
+
+    const verso = new THREE.Vector3(...affaccio.verso).normalize();
+
+    return {
+      posizione: centro.clone().addScaledVector(verso, distanza),
+      mira: centro
+    };
+  }
+
+  /**
+   * Lo stesso primo piano, ma dentro lo scaffale.
+   *
+   * Usa la stretta delle librerie e non una sua: è tutto il punto —
+   * stessa frazione d'inquadratura di qua e di là dello scambio, quindi
+   * stessa misura dei volumi sullo schermo.
+   */
+  #primoPianoScaffale(sezione) {
+    if (!this.sezioni) return null;
+
+    const posa = this.#posa(Math.max(0, sezione));
+
+    return {
+      posizione: new THREE.Vector3(
+        posa.mira.x,
+        posa.posizione.y,
+        this.distanza * AFFACCI.librerie.stretta
+      ),
+      mira: posa.mira
+    };
+  }
+
+  #spegniLaMira() {
+    if (!this.mirato) return;
+
+    this.mirato = null;
+    this.canvas.style.cursor = "default";
+    this.evidenza.mira(null);
+    this.alMirare?.(null);
+    this.alMirareOggetto?.(null);
   }
 
   /* -------------------- Eventi -------------------- */
@@ -1290,15 +1759,24 @@ export default class Biblioteca {
     };
 
     this.alClick = () => {
+      // Un click mentre si sta volando salta alla fine: è la stessa
+      // cortesia del bottone "Salta" sulla porta d'ingresso, e non serve
+      // scriverla da nessuna parte perché è dove il dito è già.
+      if (this.#saltaAvvicinamento()) return;
+
       if (!this.mirato) return;
 
       const d = this.mirato.userData;
 
-      // Un libro ha `serie`, un oggetto della stanza ha `azione`: le due
+      // Un libro ha `serie`, un oggetto della stanza ha `punto`: le due
       // forme non si mescolano, così chi ascolta sa sempre cosa gli è
       // arrivato senza doverlo dedurre.
+      //
+      // Il libro si sceglie e basta — è già a mezzo metro dagli occhi.
+      // Al punto della stanza invece ci si va: l'azione la fa partire
+      // l'arrivo, non il click.
       if (d.serie) this.alScegliere?.(d.serie);
-      else if (d.azione) this.alAzione?.(d.azione);
+      else if (d.punto) this.avvicinatiA(d.punto);
     };
 
     this.canvas.addEventListener("pointermove", this.alMuovere);
@@ -1316,6 +1794,23 @@ export default class Biblioteca {
     const altezza = this.contenitore.clientHeight;
 
     if (!larghezza || !altezza) return;
+
+    // Un `ResizeObserver` consegna una prima misura appena gli si dà
+    // qualcosa da osservare, e quella misura è la stessa che il
+    // costruttore ha già usato. Uscire subito quando non è cambiato
+    // niente non è un'ottimizzazione: qui sotto si interrompono le
+    // sequenze in corso, e una riemersione che parte mentre la stanza si
+    // arreda verrebbe uccisa da un ridimensionamento che non è avvenuto.
+    if (larghezza === this.larghezzaVista && altezza === this.altezzaVista) return;
+
+    this.larghezzaVista = larghezza;
+    this.altezzaVista = altezza;
+
+    // La sequenza è stata calcolata sulle proporzioni di prima: le
+    // distanze d'inquadratura dipendono dall'aspetto, e proseguire
+    // porterebbe la telecamera in un posto che non è più quello giusto.
+    // Si arriva subito e si riparte dalle misure nuove.
+    this.avvicinamento?.concludi();
 
     this.renderer.setSize(larghezza, altezza, false);
     // In pixel di CSS: il composer si moltiplica da sé per il rapporto
@@ -1398,8 +1893,18 @@ export default class Biblioteca {
 
     const dt = Math.min(this.orologio.getDelta(), 0.1);
 
-    this.#aggiornaViaggio();
-    this.#aggiornaMira();
+    // Durante l'avvicinamento la telecamera ha un padrone solo, e il
+    // puntatore non mira niente: mirare vorrebbe dire accendere il
+    // contorno di un mobile mentre gli si sta volando addosso, e
+    // ritrovarsi con l'etichetta di un oggetto che nel frattempo non
+    // esiste più.
+    if (this.avvicinamento.inCorso) {
+      this.avvicinamento.aggiorna(dt);
+    } else {
+      this.#aggiornaViaggio();
+      this.#aggiornaMira();
+    }
+
     this.#aggiornaLibri(dt);
     this.evidenza.aggiorna(dt);
     this.bibliotecario?.aggiorna(dt);
@@ -1446,7 +1951,7 @@ export default class Biblioteca {
     // dal ripiano: lì l'evidenza non c'entra e va tenuta spenta.
     this.evidenza.mira(allaSoglia ? nuovo : null);
 
-    if (allaSoglia) this.alMirareOggetto?.(nuovo ? nuovo.userData.azione : null);
+    if (allaSoglia) this.alMirareOggetto?.(nuovo ? nuovo.userData.punto : null);
     else this.alMirare?.(nuovo ? nuovo.userData.serie : null);
   }
 
@@ -1456,11 +1961,18 @@ export default class Biblioteca {
    * L'inseguimento è esponenziale e legato al tempo trascorso, non ai
    * fotogrammi: così il movimento dura lo stesso su uno schermo a 60 e
    * su uno a 144, invece di essere il doppio più veloce.
+   *
+   * Sopra ci sta l'apertura, che è tutt'altra cosa: non insegue niente,
+   * la sua posizione gliela detta l'avvicinamento (`this.apertura`), e
+   * ogni volume ha il suo ritardo, così la sezione si apre a ventaglio
+   * dal centro invece che tutta in un colpo. Ad apertura piena — cioè
+   * sempre, tranne durante l'entrata — il conto si salta del tutto.
    */
   #aggiornaLibri(dt) {
     if (this.sezioneCorrente === -1) return;
 
     const velocita = 1 - Math.exp(-11 * dt);
+    const spalancato = this.apertura >= 1;
 
     for (const libro of this.libri) {
       const d = libro.userData;
@@ -1472,13 +1984,29 @@ export default class Biblioteca {
         d.sporgenza = 0;
       }
 
-      libro.position.z = d.riposoZ + d.sporgenza;
+      // Quanto è ancora dentro al mobile. La finestra di ogni volume è
+      // lunga `1 - SCAGLIONE` e comincia in ritardo sulla sua distanza
+      // dal centro dello scaffale.
+      const chiuso = spalancato
+        ? 0
+        : 1 -
+          passoDolce(
+            Math.min(
+              1,
+              Math.max(0, (this.apertura - d.ritardo * SCAGLIONE) / (1 - SCAGLIONE))
+            )
+          );
+
+      libro.position.z = d.riposoZ + d.sporgenza - RIENTRO * chiuso;
 
       // Uscendo il libro si raddrizza verso chi guarda: è il gesto di
       // chi tira fuori un volume dallo scaffale per guardarlo meglio.
+      // Quello che sta ancora dentro è girato dalla parte opposta, come
+      // un volume spinto in fondo al ripiano.
       const quota = d.sporgenza / SPORGENZA;
 
-      libro.rotation.y = ROTAZIONE_RIPOSO * (1 - quota * 0.85);
+      libro.rotation.y =
+        ROTAZIONE_RIPOSO * (1 - quota * 0.85) + ROTAZIONE_RIENTRO * chiuso;
     }
   }
 

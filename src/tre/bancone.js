@@ -202,7 +202,7 @@ export async function costruisciBancone({
     );
 
     bersaglio.position.set(x, pianoY + metri(0.28), bancoZ - metri(0.05));
-    bersaglio.userData = { azione: { tipo: "naviga", percorso: "/statistiche" } };
+    bersaglio.userData = { punto: "cassa" };
     gruppo.add(bersaglio);
 
     bersagli.push({ mesh: bersaglio, evidenza: [cassa] });
@@ -354,7 +354,7 @@ export async function costruisciBancone({
     new THREE.MeshBasicMaterial({ visible: false })
   );
   bersaglioBacheca.position.set(bachecaX, bachecaY, zParete + 0.2);
-  bersaglioBacheca.userData = { azione: { tipo: "naviga", percorso: "/wishlist" } };
+  bersaglioBacheca.userData = { punto: "bacheca" };
   gruppo.add(bersaglioBacheca);
 
   // Cornice e foglio insieme: scegliendo il solo foglio il contorno

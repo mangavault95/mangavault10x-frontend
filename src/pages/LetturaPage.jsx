@@ -11,7 +11,7 @@ import { VotoStelle } from "../ui/AzioniSerie";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
 import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
-import { dataIt, plurale } from "../dati/serie";
+import { dataIt, plurale, tettoLettura } from "../dati/serie";
 import {
   addReadingHistory,
   deleteReadingHistory,
@@ -39,23 +39,10 @@ const CRONOLOGIA_VISIBILE = 20;
  * torna indietro e compare l'avviso — meglio un passo indietro
  * visibile che un numero sbagliato salvato in silenzio.
  */
-/**
- * Fin dove si può arrivare col segnalibro.
- *
- * Non si legge un volume che non si ha in mano: il tetto è quello
- * che possiedi davvero. Per una serie conclusa e completa i due
- * numeri coincidono; per una in corso di cui hai 7 volumi su 30
- * usciti, il tetto resta 7.
- *
- * Se i volumi posseduti non sono registrati si ripiega sul totale,
- * e in mancanza di entrambi non si mette alcun limite: meglio
- * nessun vincolo che un vincolo inventato su dati assenti.
- */
-function tettoLettura(posseduti, totali) {
-  if (posseduti > 0) return posseduti;
-  if (totali > 0) return totali;
-  return null;
-}
+// `tettoLettura` stava qui, e da quando il tavolino della stanza scrive
+// «sei al 4 di 7» sta in `dati/serie.js`: era il denominatore di due
+// pagine, e in duplice copia una delle due avrebbe finito per dire
+// «13 di 12».
 
 export default function LetturaPage() {
   const { serie, aggiornaLocale } = useCollezione();

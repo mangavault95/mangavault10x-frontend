@@ -20,6 +20,15 @@ const Statistiche = lazy(() => import("../pages/StatistichePage"));
 const Admin = lazy(() => import("../pages/AdminPage"));
 const NonTrovata = lazy(() => import("../pages/NonTrovataPage"));
 
+// Le quattro vesti che si raggiungono dalla stanza. Stessi dati delle
+// pagine qui sopra, altro racconto: il perché sta in `ui/Approdo.jsx`.
+// Ognuna è un chunk suo — chi non passa mai dalla stanza non le scarica,
+// e chi ci passa ne scarica una alla volta.
+const Cassa = lazy(() => import("../pages/CassaPage"));
+const Bacheca = lazy(() => import("../pages/BachecaPage"));
+const Tavolino = lazy(() => import("../pages/TavolinoPage"));
+const Banco = lazy(() => import("../pages/BancoPage"));
+
 /**
  * Ogni schermata ha il suo indirizzo.
  *
@@ -61,6 +70,18 @@ export default function AppRoutes() {
                 <Route path="/lettura" element={<Lettura />} />
                 <Route path="/statistiche" element={<Statistiche />} />
                 <Route path="/admin" element={<Admin />} />
+
+                {/* Le porte della stanza. Non stanno nella barra
+                    laterale apposta: ci si arriva camminandoci, e una
+                    voce di menu che porta allo stesso posto toglierebbe
+                    la ragione per cui esistono. Restano indirizzi veri —
+                    condivisibili, salvabili, aggiornabili — e chi ci
+                    arriva senza essere passato dalla stanza trova il
+                    collegamento alla veste normale in alto a destra. */}
+                <Route path="/cassa" element={<Cassa />} />
+                <Route path="/bacheca" element={<Bacheca />} />
+                <Route path="/tavolino" element={<Tavolino />} />
+                <Route path="/banco" element={<Banco />} />
 
                 {/* Vecchi indirizzi mantenuti funzionanti */}
                 <Route path="/records" element={<Navigate to="/statistiche" replace />} />

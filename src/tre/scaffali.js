@@ -196,7 +196,11 @@ export async function costruisciLibrerie({
   );
 
   bersaglio.position.set(vetrinaCentroX, pavimentoY + altezza / 2, vetrinaZ + profondita / 2 + 0.5);
-  bersaglio.userData = { azione: { tipo: "scaffale" } };
+  // Il nome del punto e basta: cosa succede cliccandolo e da che parte
+  // ci si arriva lo decidono `scena.js` e la pagina, che sono gli unici
+  // due a sapere rispettivamente com'è fatta la stanza e com'è fatto il
+  // sito. Qui si sa solo che questo rettangolo *sono* le librerie.
+  bersaglio.userData = { punto: "librerie" };
   gruppo.add(bersaglio);
 
   return { gruppo, coperture, bersaglio, evidenza: vetrine };

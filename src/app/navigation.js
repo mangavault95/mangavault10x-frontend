@@ -59,11 +59,28 @@ export const SEZIONE_ADMIN = {
 };
 
 /**
+ * Le quattro porte della stanza.
+ *
+ * Non sono sezioni e non stanno in nessun menu: ci si arriva solo
+ * cliccando l'oggetto dentro la stanza d'ingresso. Qui figurano per una
+ * ragione sola — un indirizzo condiviso deve dire cosa contiene anche
+ * quando non è una voce di navigazione.
+ */
+const PORTE = {
+  "/cassa": "Lo scontrino",
+  "/bacheca": "La bacheca",
+  "/tavolino": "Il tavolino",
+  "/banco": "Il banco"
+};
+
+/**
  * Il titolo che compare nella scheda del browser.
  * Un indirizzo condiviso deve dire cosa contiene.
  */
 export function titoloPer(percorso) {
   if (percorso.startsWith("/serie/")) return "Scheda serie · MangaVault";
+
+  if (PORTE[percorso]) return `${PORTE[percorso]} · MangaVault`;
 
   const sezione = [...SEZIONI, SEZIONE_ADMIN].find((s) => s.percorso === percorso);
 

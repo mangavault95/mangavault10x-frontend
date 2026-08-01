@@ -25,16 +25,22 @@ import { useBibliotecario } from "./contesto";
  * piedi dietro al banco, e un pulsante che fa la stessa cosa in un
  * angolo dello schermo toglie a chiunque la voglia di provare a
  * cliccarla — che è tutto quello che la stanza ha da offrire. Il
- * pannello resta comunque a un tasto di distanza ("b") e a un click
- * dalla bibliotecaria stessa.
+ * pannello resta comunque a un tasto di distanza ("b").
+ *
+ * Al banco (`/banco`) non c'è per una ragione più semplice: lì si sta
+ * già parlando con lui, e un bottone che apre un cassetto per parlargli
+ * di nuovo è la stessa conversazione in due finestre.
  */
 const Pannello = lazy(() => import("./Banco"));
+
+// Dove il bibliotecario è già in scena, e quindi non serve chiamarlo.
+const IN_PERSONA = ["/", "/banco"];
 
 export default function Bibliotecario() {
   const { aperto, apri, chiudi, alterna } = useBibliotecario();
   const { pathname } = useLocation();
 
-  const nellaStanza = pathname === "/";
+  const nellaStanza = IN_PERSONA.includes(pathname);
 
   // Scorciatoia: "b" da qualunque punto del sito. Non ruba il tasto a
   // chi sta scrivendo in un campo.

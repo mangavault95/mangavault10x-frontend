@@ -86,7 +86,7 @@ export async function costruisciAngoloLettura({
       pavimentoY + altezza / 2,
       tavolino.position.z
     );
-    bersaglio.userData = { azione: { tipo: "naviga", percorso: "/lettura" } };
+    bersaglio.userData = { punto: "tavolino" };
     gruppo.add(bersaglio);
 
     evidenza = [tavolino, libro].filter(Boolean);

@@ -4,17 +4,19 @@ import Biblioteca from "../tre/scena";
 import { Bottone } from "../ui/Controlli";
 import { Errore, Vuoto } from "../ui/Stati";
 import Icon from "../app/Icon";
+import { dimenticaUscita, leggiUscita, segnaUscita } from "../app/passaggio";
 import { useCollezione } from "../dati/collezione";
-import { useBibliotecario } from "../bibliotecario/contesto";
 import { completamento, euro, valoreSerie } from "../dati/serie";
 
 /**
  * La home: una stanza, non un cruscotto.
  *
  * Questa pagina è la soglia del sito. A sinistra le librerie con le
- * copertine vere — cliccarle porta dentro lo scaffale in tre
- * dimensioni; a destra il banco, con il bibliotecario, il registratore
- * di cassa e la bacheca dei desideri.
+ * copertine vere — cliccarle non apre una vista, ci si va: la
+ * telecamera attraversa la stanza, arriva a un passo dai volumi e di lì
+ * sbuca dentro lo scaffale, che si allarga fino a mostrarli tutti (la
+ * sequenza sta in `tre/avvicinamento.js`). A destra il banco, con il
+ * bibliotecario, il registratore di cassa e la bacheca dei desideri.
  *
  * React qui non disegna la stanza: la costruisce e la smonta
  * `Biblioteca` (in `tre/scena.js`), che vive nel suo canvas e nel suo
@@ -48,67 +50,75 @@ import { completamento, euro, valoreSerie } from "../dati/serie";
  */
 
 /**
- * I punti d'interesse della stanza. Sono la stessa cosa che `scena.js`
- * registra come bersagli cliccabili, elencata qui una volta sola: il
- * cartellino che compare quando ci si passa sopra prende nome, icona e
- * invito da qui, così la stanza e la scritta non raccontano due storie
- * diverse.
+ * I cinque punti della stanza, e cosa c'è dietro ognuno.
+ *
+ * Le chiavi sono i nomi che `scena.js` si trova scritti sui bersagli
+ * (`userData.punto`): la stanza sa solo *che cosa* è ogni oggetto, cosa
+ * ci sia dall'altra parte lo sa questo elenco. Da qui escono sia il
+ * cartellino che compare passandoci sopra, sia l'indirizzo dove si
+ * finisce quando la telecamera è arrivata.
+ *
+ *
+ * DUE PORTE PER LA STESSA STANZA
+ *
+ * Nessuno di questi indirizzi è quello della barra laterale, e non è una
+ * duplicazione: sono gli stessi dati raccontati da due posti diversi.
+ * Dalla barra i desideri sono un elenco con la ricerca e i moduli — è
+ * l'attrezzo, e da lì ci si va per lavorare. Dalla bacheca appesa al
+ * muro sono un muro di locandine appuntate — è il posto, e da lì ci si
+ * va perché si stava girando per la stanza.
+ *
+ * Chi arriva dalla stanza ha appena visto la telecamera fermarsi davanti
+ * a una bacheca di sughero: aprirgli una tabella con i filtri
+ * romperebbe la cosa in due. Chi ha premuto «4» nella barra laterale
+ * voleva la tabella.
  */
-const PUNTI = [
-  {
-    id: "scaffale",
-    azione: { tipo: "scaffale" },
+const PUNTI = {
+  librerie: {
     icona: "shelf",
-    nome: "Lo scaffale",
+    nome: "Le librerie",
     invito: "Entra fra i volumi"
+    // Nessun indirizzo: di là non c'è una pagina, c'è lo scaffale in tre
+    // dimensioni, e a portarcisi pensa la scena da sé.
   },
-  {
-    id: "bibliotecario",
-    azione: { tipo: "bibliotecario" },
+  bibliotecario: {
     icona: "search",
     nome: "Il bibliotecario",
-    invito: "Fagli una domanda"
+    invito: "Fagli una domanda",
+    percorso: "/banco"
   },
-  {
-    id: "lettura",
-    azione: { tipo: "naviga", percorso: "/lettura" },
+  tavolino: {
     icona: "bookmark",
-    nome: "In lettura",
-    invito: "Riprendi da dove eri"
+    nome: "Il tavolino",
+    invito: "Riprendi da dove eri",
+    percorso: "/tavolino"
   },
-  {
-    id: "statistiche",
-    azione: { tipo: "naviga", percorso: "/statistiche" },
+  cassa: {
     icona: "chart",
-    nome: "I numeri",
-    invito: "Valore, spesa, primati"
+    nome: "Il registratore",
+    invito: "Batti lo scontrino",
+    percorso: "/cassa"
   },
-  {
-    id: "wishlist",
-    azione: { tipo: "naviga", percorso: "/wishlist" },
+  bacheca: {
     icona: "cartellino",
-    nome: "I desideri",
-    invito: "Cosa manca alla collezione"
+    nome: "La bacheca",
+    invito: "Cosa manca alla collezione",
+    percorso: "/bacheca"
   }
-];
-
-const puntoPerAzione = (azione) => {
-  if (!azione) return null;
-
-  return (
-    PUNTI.find(
-      (p) => p.azione.tipo === azione.tipo && p.azione.percorso === azione.percorso
-    ) ?? null
-  );
 };
 
 export default function HomePage() {
   const { serie, inCorso, errore, ricarica } = useCollezione();
-  const { apri: apriBibliotecario } = useBibliotecario();
   const navigate = useNavigate();
 
   const stanza = useRef(null);
   const scena = useRef(null);
+
+  // Da dove si sta rientrando, congelato al montaggio. Deve restare
+  // fermo: è una dipendenza dell'effetto che costruisce la scena, e
+  // vederlo passare a `null` a metà visita — quando il segno viene
+  // dimenticato, poco più sotto — ricostruirebbe tutta la stanza.
+  const [rientroDa] = useState(leggiUscita);
 
   const [mirata, setMirata] = useState(null);
   const [mirataOggetto, setMirataOggetto] = useState(null);
@@ -117,8 +127,10 @@ export default function HomePage() {
     totali: 1,
     soglia: { indice: 0, totali: 1 }
   });
-  const [introFinita, setIntroFinita] = useState(false);
+  // Chi rientra non trova nessuna porta: la stanza c'era già, e lui pure.
+  const [introFinita, setIntroFinita] = useState(Boolean(rientroDa));
   const [stanzaPronta, setStanzaPronta] = useState(false);
+  const [inViaggio, setInViaggio] = useState(false);
   const [guasto, setGuasto] = useState(null);
 
   // Letto una volta sola: non cambia mentre la pagina è aperta, e
@@ -130,16 +142,35 @@ export default function HomePage() {
 
   const apri = useCallback((s) => navigate(`/serie/${s.id}`), [navigate]);
 
+  /**
+   * Si è arrivati addosso all'oggetto, ed è adesso che si va di là.
+   *
+   * Non è il click a portare qui: il click fa partire la telecamera, e
+   * questa funzione la chiama la scena quando la telecamera si è
+   * fermata e lo schermo è ormai buio. Il buio è la giuntura — di là la
+   * pagina si riaccende da lì (vedi `ui/Approdo`).
+   *
+   * Prima di andarsene lascia detto da quale oggetto si è usciti, che è
+   * come si fa a rientrarci dallo stesso (vedi `app/passaggio`).
+   */
   const alAzione = useCallback(
-    (azione) => {
-      if (azione.tipo === "naviga") navigate(azione.percorso);
-      else if (azione.tipo === "bibliotecario") apriBibliotecario();
-      else if (azione.tipo === "scaffale") scena.current?.entraNelloScaffale();
+    (punto) => {
+      const percorso = PUNTI[punto]?.percorso;
+
+      if (!percorso) return;
+
+      segnaUscita(punto);
+      navigate(percorso);
     },
-    [navigate, apriBibliotecario]
+    [navigate]
   );
 
   const pronta = useCallback(() => setStanzaPronta(true), []);
+
+  // Un rientro si spende una volta sola: letto sopra, dimenticato qui.
+  // Senza, tornando alla home dalla barra laterale si riemergerebbe da
+  // un oggetto che in quel giro nessuno ha toccato.
+  useEffect(() => dimenticaUscita(), []);
 
   /* -------------------- Vita della scena -------------------- */
 
@@ -157,6 +188,8 @@ export default function HomePage() {
         alAzione,
         alMirareOggetto: setMirataOggetto,
         alPronta: pronta,
+        alViaggiare: setInViaggio,
+        rientroDa,
         menoMovimento
       });
     } catch (e) {
@@ -191,7 +224,7 @@ export default function HomePage() {
 
       if (import.meta.env.DEV) delete window.__biblioteca;
     };
-  }, [apri, alAzione, pronta, menoMovimento]);
+  }, [apri, alAzione, pronta, rientroDa, menoMovimento]);
 
   // Le serie arrivano dopo la scena: appena ci sono, si costruisce lo
   // scaffale. Ricostruirlo a ogni render sarebbe uno spreco enorme,
@@ -232,7 +265,7 @@ export default function HomePage() {
         if (e.key !== "ArrowRight") return;
 
         e.preventDefault();
-        scena.current.entraNelloScaffale();
+        scena.current.avvicinatiA("librerie");
 
         return;
       }
@@ -292,9 +325,9 @@ export default function HomePage() {
               <Link to="/statistiche">
                 <Bottone variante="secondario">Numeri</Bottone>
               </Link>
-              <Bottone variante="secondario" onClick={apriBibliotecario}>
-                Chiedi al bibliotecario
-              </Bottone>
+              <Link to="/banco">
+                <Bottone variante="secondario">Chiedi al bibliotecario</Bottone>
+              </Link>
             </div>
           }
         />
@@ -303,7 +336,7 @@ export default function HomePage() {
   }
 
   const inStanza = posizione.sezione === -1;
-  const puntoMirato = puntoPerAzione(mirataOggetto);
+  const puntoMirato = mirataOggetto ? PUNTI[mirataOggetto] : null;
   const caricando = !stanzaPronta || (inCorso && !serie.length);
 
   return (
@@ -320,21 +353,41 @@ export default function HomePage() {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_95%_at_50%_38%,transparent_42%,rgba(6,7,11,0.42)_100%)]"
       />
 
+      {/* Il nome di quello che si sta guardando, attaccato al puntatore.
+          Sul telefono non esiste passarci sopra, e un cartellino che non
+          si accende mai è solo spazio tolto alla stanza. */}
+      {inStanza && !inViaggio && (
+        <div className="hidden sm:block">
+          <CartellinoPuntatore punto={puntoMirato} area={stanza} />
+        </div>
+      )}
+
       {/* ---------- Sopra il vetro ---------- */}
 
-      <div className="pointer-events-none absolute inset-0 flex flex-col justify-between gap-4 p-5 sm:p-8">
+      {/* Mentre si vola verso le librerie sopra il vetro non resta
+          niente. Non è pudore grafico: i pannelli raccontano dove sei, e
+          durante l'avvicinamento "dove sei" cambia due volte in due
+          secondi — la testata passerebbe da "La soglia" a "Lo scaffale"
+          a metà volo, e i comandi delle sezioni comparirebbero prima che
+          ci sia una sezione. Meglio che si tolgano di mezzo e tornino a
+          cose ferme. Con loro se ne va anche il puntatore: durante la
+          sequenza sotto non c'è niente da cliccare. */}
+      <div
+        className={`pointer-events-none absolute inset-0 flex flex-col justify-between gap-4 p-5 transition-opacity ease-settle sm:p-8
+                    ${
+                      inViaggio
+                        ? "opacity-0 duration-base [&_*]:!pointer-events-none"
+                        : "opacity-100 duration-slow"
+                    }`}
+      >
         <Testata inStanza={inStanza} caricando={caricando} />
 
         <div className="flex items-end justify-between gap-4 pb-16 md:pb-0">
-          {inStanza ? (
-            // Sul telefono non esiste "passarci sopra": un cartellino
-            // che non si accende mai è solo spazio tolto alla stanza.
-            <div className="hidden sm:block">
-              <CartellinoPunto punto={puntoMirato} />
-            </div>
-          ) : (
-            <CartellinoSerie serie={mirata} />
-          )}
+          {/* Alla soglia il cartellino non sta più qui: segue il
+              puntatore (vedi `CartellinoPuntatore`, sotto il canvas).
+              Resta lo spazio, così i comandi accanto non si spostano
+              quando si passa da un mondo all'altro. */}
+          {inStanza ? <span /> : <CartellinoSerie serie={mirata} />}
 
           {inStanza ? (
             // Il telefono non ha un puntatore da far passare sopra le
@@ -351,7 +404,7 @@ export default function HomePage() {
               )}
 
               <button
-                onClick={() => alAzione({ tipo: "scaffale" })}
+                onClick={() => scena.current?.avvicinatiA("librerie")}
                 className="pointer-events-auto flex items-center gap-2.5 rounded-full border border-brass-400/35 bg-glass-3 py-3 pl-4 pr-5
                            shadow-float backdrop-blur-xl transition-transform duration-quick active:scale-95
                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
@@ -381,6 +434,14 @@ export default function HomePage() {
       {!introFinita && (
         <Porta menoMovimento={menoMovimento} onFinita={() => setIntroFinita(true)} />
       )}
+
+      {/* Chi rientra da una pagina non trova la porta ma il buio, ed è
+          lo stesso buio in cui la pagina che sta lasciando si è appena
+          spenta: di qua e di là dello stacco lo schermo è nero, quindi
+          lo stacco non c'è. Si alza quando la stanza è in piedi — cioè
+          quando sotto c'è già la telecamera addosso all'oggetto da cui
+          si era usciti, pronta ad arretrare. */}
+      {rientroDa && <Buio alzato={stanzaPronta} />}
     </div>
   );
 }
@@ -432,25 +493,78 @@ function BarraCaricamento() {
   );
 }
 
-/** Cosa si sta guardando nella stanza. */
-function CartellinoPunto({ punto }) {
+/**
+ * Cosa si sta guardando, attaccato al puntatore.
+ *
+ * Stava in un pannello fisso in basso a sinistra, ed era la cosa
+ * sbagliata per una stanza in cui si punta e si clicca: il nome
+ * dell'oggetto compariva a mezzo schermo di distanza dall'oggetto, e per
+ * leggerlo bisognava staccare gli occhi da quello che si stava
+ * guardando. In ogni avventura grafica mai scritta quella riga sta
+ * attaccata al cursore, e ci sta per questo motivo.
+ *
+ *
+ * PERCHÉ NON PASSA DA REACT
+ *
+ * La posizione del mouse cambia decine di volte al secondo; farne uno
+ * stato vorrebbe dire ridisegnare l'albero a ogni pixel, sopra una scena
+ * WebGL che sta già usando tutto il tempo che ha. Il nodo si sposta a
+ * mano dentro l'ascoltatore, e React si occupa solo di *cosa* c'è
+ * scritto — che cambia una volta ogni tanto, quando il puntatore passa
+ * da un mobile all'altro.
+ *
+ * Il cartellino sta in basso a destra del cursore, e si ribalta a
+ * sinistra quando finirebbe oltre il bordo: contro il margine destro
+ * della finestra è dove finisce il bancone, cioè uno dei cinque punti.
+ */
+const LARGHEZZA_CARTELLINO = 260;
+
+function CartellinoPuntatore({ punto, area }) {
+  const nodo = useRef(null);
+
+  useEffect(() => {
+    const contenitore = area.current;
+
+    if (!contenitore) return undefined;
+
+    const muovi = (e) => {
+      const riquadro = contenitore.getBoundingClientRect();
+      const x = e.clientX - riquadro.left;
+      const y = e.clientY - riquadro.top;
+
+      const ribalta = x + LARGHEZZA_CARTELLINO > riquadro.width;
+
+      nodo.current?.style.setProperty("--x", `${x}px`);
+      nodo.current?.style.setProperty("--y", `${y}px`);
+      nodo.current?.style.setProperty("--verso", ribalta ? "-100%" : "0%");
+    };
+
+    contenitore.addEventListener("pointermove", muovi);
+
+    return () => contenitore.removeEventListener("pointermove", muovi);
+  }, [area]);
+
   return (
     <div
+      ref={nodo}
       aria-live="polite"
-      className={`max-w-xs rounded-panel border border-hairline bg-glass-3 px-5 py-4 backdrop-blur-xl
-                  transition-all duration-base ease-settle
-                  ${punto ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}
+      className="pointer-events-none absolute left-0 top-0 z-raised translate-x-[var(--x,50%)] translate-y-[var(--y,50%)]"
     >
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-brass-400/30 bg-brass-400/10 text-brass-300">
-          <Icon nome={punto?.icona ?? "shelf"} dimensione={18} />
+      <div
+        className={`ml-4 mt-4 flex w-fit max-w-[16rem] translate-x-[var(--verso,0%)] items-center gap-3
+                    rounded-full border border-brass-400/30 bg-void/80 py-2 pl-2.5 pr-5 shadow-float backdrop-blur-xl
+                    transition-all duration-base ease-settle
+                    ${punto ? "scale-100 opacity-100" : "scale-90 opacity-0"}`}
+      >
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brass-400/15 text-brass-300">
+          <Icon nome={punto?.icona ?? "shelf"} dimensione={16} />
         </span>
 
         <div className="min-w-0">
-          <p className="font-display text-lg font-semibold leading-tight text-ink-bright">
+          <p className="truncate font-display text-sm font-semibold leading-tight text-ink-bright">
             {punto?.nome ?? " "}
           </p>
-          <p className="mt-0.5 text-sm text-ink-muted">{punto?.invito ?? " "}</p>
+          <p className="truncate text-xs text-brass-300/80">{punto?.invito ?? " "}</p>
         </div>
       </div>
     </div>
@@ -649,6 +763,24 @@ function Porta({ menoMovimento, onFinita }) {
         Salta
       </button>
     </div>
+  );
+}
+
+/**
+ * Il nero da cui si rientra.
+ *
+ * Non è la porta con un altro vestito: la porta è un'entrata, questo è
+ * il rovescio di un'uscita. Si alza e basta, senza ante e senza bottone
+ * da saltare — sotto c'è già la stanza, e quello che si sta aspettando
+ * non è un'animazione ma tre megabyte di modelli.
+ */
+function Buio({ alzato }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none absolute inset-0 z-raised bg-void transition-opacity duration-700 ease-settle
+                  ${alzato ? "opacity-0" : "opacity-100"}`}
+    />
   );
 }
 
