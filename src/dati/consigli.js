@@ -11,10 +11,10 @@
 import { cercaFuori, scegliCorrispondenza, similiFuoriPerId } from "../bibliotecario/esterni";
 import { indiceAutori } from "./corrispondenzaAutore";
 
-// v3: cambia ogni volta che cambia la forma dei dati salvati o la
+// v4: cambia ogni volta che cambia la forma dei dati salvati o la
 // regola di esclusione, altrimenti la cache del giorno prima
 // continuerebbe a servire consigli con il vecchio filtro più permissivo.
-const PREFISSO_CACHE = "mv_consigli_v3";
+const PREFISSO_CACHE = "mv_consigli_v4";
 
 // Una chiave per giorno: le raccomandazioni non devono rifarsi a ogni
 // apertura della pagina, ma nemmeno restare identiche per sempre.
@@ -25,16 +25,19 @@ function oggi() {
 const normalizzaTitolo = (t) => (t || "").trim().toLowerCase();
 
 /**
- * I semi da cui partire: preferiti prima, poi i voti più alti. La
- * scelta di *quali* due usare oggi è deterministica sul giorno — così
- * il rail non salta a un altro consiglio ogni volta che riapri la
- * pagina, ma cambia da un giorno all'altro.
+ * I semi da cui partire: preferiti prima, poi i voti alti (4-5 stelle,
+ * "mi sono piaciuti"). Un 1-2 non ha senso come base di un consiglio —
+ * suggerirebbe di leggere altro che assomiglia a ciò che non piace —
+ * e un 3 è neutro, non un endorsement. La scelta di *quali* due usare
+ * oggi è deterministica sul giorno — così il rail non salta a un altro
+ * consiglio ogni volta che riapri la pagina, ma cambia da un giorno
+ * all'altro.
  */
 function scegliSemi(serie, quanti = 2) {
   const preferiti = serie.filter((s) => s.preferito);
 
   const votate = [...serie]
-    .filter((s) => s.valutazione > 0)
+    .filter((s) => s.valutazione >= 4)
     .sort((a, b) => b.valutazione - a.valutazione);
 
   const visti = new Set();
