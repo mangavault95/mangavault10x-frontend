@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TornaInBiblioteca from "./TornaInBiblioteca";
+import Sovrapposizione from "./Sovrapposizione";
 
 /**
  * La cornice delle pagine che si raggiungono dalla stanza.
@@ -110,12 +111,14 @@ export default function Approdo({ titolo, fondo, children, className = "" }) {
 
       {/* ---------- Il velo ---------- */}
 
-      <div
-        aria-hidden="true"
-        className={`pointer-events-none fixed inset-0 z-overlay bg-void transition-opacity ease-settle
-                    ${alzato && !uscendo ? "opacity-0" : "opacity-100"}`}
-        style={{ transitionDuration: `${uscendo ? NERO_MS : 700}ms` }}
-      />
+      <Sovrapposizione>
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none fixed inset-0 z-overlay bg-void transition-opacity ease-settle
+                      ${alzato && !uscendo ? "opacity-0" : "opacity-100"}`}
+          style={{ transitionDuration: `${uscendo ? NERO_MS : 700}ms` }}
+        />
+      </Sovrapposizione>
     </div>
   );
 }

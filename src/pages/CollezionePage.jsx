@@ -9,7 +9,10 @@ import FiltriCollezione from "../ui/FiltriCollezione";
 import AnalisiCollezione from "../ui/AnalisiCollezione";
 import ConsigliRail from "../ui/ConsigliRail";
 import LibroVetrina from "../ui/LibroVetrina";
+import Copertina from "../ui/Copertina";
 import Icon from "../app/Icon";
+import Sovrapposizione from "../ui/Sovrapposizione";
+import useChiusuraVelo from "../ui/useChiusuraVelo";
 import { useCollezione } from "../dati/collezione";
 import { useAccessoProtetto } from "../dati/accesso";
 import { creaManga, enrichManga } from "../services/api";
@@ -390,33 +393,45 @@ function ModuloNuovaSerie({ tutteLeSerie, onChiuso, onCreata }) {
     }
   }
 
+  const velo = useChiusuraVelo(onChiuso);
+
   return (
+    <Sovrapposizione>
     <div
       className="fixed inset-0 z-modal grid place-items-center overflow-y-auto bg-void/70 p-5 py-10 backdrop-blur-sm animate-rise-in"
-      onClick={(e) => e.target === e.currentTarget && onChiuso()}
+      {...velo}
     >
       <form
         onSubmit={salva}
         className="w-full max-w-lg space-y-5 rounded-panel border border-hairline bg-glass-3 p-6 shadow-float backdrop-blur-2xl"
       >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="font-display text-xl font-semibold text-ink-bright">
-              Nuova serie
-            </h2>
-            <p className="mt-1 text-sm text-ink-muted">
-              Basta il titolo: il resto puoi compilarlo da solo.
-            </p>
+        <div className="flex items-start gap-4">
+          {/* La copertina si vede da subito, non solo a scheda salvata:
+              incollare un URL o premere "Compila dal titolo" altrimenti
+              non dà nessun riscontro finché non si torna sulla scheda. */}
+          <div className="w-20 shrink-0 sm:w-24">
+            <Copertina src={campi.coverurl} alt={campi.titolo} inclina={false} />
           </div>
 
-          <button
-            type="button"
-            onClick={onChiuso}
-            aria-label="Chiudi"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
-          >
-            ✕
-          </button>
+          <div className="flex flex-1 items-start justify-between gap-4">
+            <div>
+              <h2 className="font-display text-xl font-semibold text-ink-bright">
+                Nuova serie
+              </h2>
+              <p className="mt-1 text-sm text-ink-muted">
+                Basta il titolo: il resto puoi compilarlo da solo.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onChiuso}
+              aria-label="Chiudi"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -531,6 +546,7 @@ function ModuloNuovaSerie({ tutteLeSerie, onChiuso, onCreata }) {
         </div>
       </form>
     </div>
+    </Sovrapposizione>
   );
 }
 

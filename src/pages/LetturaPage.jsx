@@ -8,6 +8,8 @@ import ScaffaleVolumi from "../ui/ScaffaleVolumi";
 import ScaffaleCoste from "../ui/ScaffaleCoste";
 import { Bottone, CampoRicerca } from "../ui/Controlli";
 import { VotoStelle } from "../ui/AzioniSerie";
+import Sovrapposizione from "../ui/Sovrapposizione";
+import useChiusuraVelo from "../ui/useChiusuraVelo";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
 import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
@@ -766,6 +768,8 @@ function VoceStorico({ voce, onRimuovi }) {
  * moltiplicarsi per ogni lettura.
  */
 function ModaleCompletamento({ lettura, serie, onVotoCambiato, onChiudi }) {
+  const velo = useChiusuraVelo(onChiudi);
+
   useEffect(() => {
     confetti({
       particleCount: 140,
@@ -775,9 +779,10 @@ function ModaleCompletamento({ lettura, serie, onVotoCambiato, onChiudi }) {
   }, []);
 
   return (
+    <Sovrapposizione>
     <div
       className="fixed inset-0 z-toast grid place-items-center bg-void/70 p-5 backdrop-blur-sm animate-rise-in"
-      onClick={(e) => e.target === e.currentTarget && onChiudi()}
+      {...velo}
     >
       <div className="w-full max-w-sm space-y-5 rounded-panel border border-hairline bg-glass-3 p-6 text-center shadow-float backdrop-blur-2xl">
         <div>
@@ -803,5 +808,6 @@ function ModaleCompletamento({ lettura, serie, onVotoCambiato, onChiudi }) {
         </Bottone>
       </div>
     </div>
+    </Sovrapposizione>
   );
 }

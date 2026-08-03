@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { getToken, login as accedi } from "../services/api";
 import { ContestoAccesso } from "./accesso";
+import useChiusuraVelo from "../ui/useChiusuraVelo";
 
 /**
  * Rende possibile scrivere sulla collezione da qualunque punto del
@@ -85,6 +86,7 @@ function ModuloAccesso({ onRiuscito, onAnnulla }) {
   const [password, setPassword] = useState("");
   const [errore, setErrore] = useState(null);
   const [inCorso, setInCorso] = useState(false);
+  const velo = useChiusuraVelo(onAnnulla);
 
   async function invia(e) {
     e.preventDefault();
@@ -110,7 +112,7 @@ function ModuloAccesso({ onRiuscito, onAnnulla }) {
   return (
     <div
       className="fixed inset-0 z-toast grid place-items-center bg-void/70 p-5 backdrop-blur-sm animate-rise-in"
-      onClick={(e) => e.target === e.currentTarget && onAnnulla()}
+      {...velo}
     >
       <form
         onSubmit={invia}

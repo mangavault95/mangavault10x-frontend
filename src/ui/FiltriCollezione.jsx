@@ -3,6 +3,8 @@ import Icon from "../app/Icon";
 import { Pastiglie, Tendina } from "./Controlli";
 import { FILTRI } from "../dati/serie";
 import { elencoGeneri, elencoEditori } from "../dati/generi";
+import Sovrapposizione from "./Sovrapposizione";
+import useChiusuraVelo from "./useChiusuraVelo";
 
 /**
  * Il pannello dei filtri: sidebar fissa su schermo largo, lastra a
@@ -29,6 +31,7 @@ export default function FiltriCollezione({
 }) {
   const generi = useMemo(() => elencoGeneri(serie), [serie]);
   const editori = useMemo(() => elencoEditori(serie), [serie]);
+  const velo = useChiusuraVelo(onChiudere);
 
   // Un filtro con zero risultati (oggi "Sospese" e "Annullate" non
   // hanno nessuna serie) è solo un bottone morto: si nasconde, a meno
@@ -133,35 +136,37 @@ export default function FiltriCollezione({
 
   if (variante === "sheet") {
     return (
-      <div
-        className="fixed inset-0 z-overlay flex items-end justify-center bg-void/70 p-0 backdrop-blur-sm animate-rise-in sm:items-center sm:p-5"
-        onClick={(e) => e.target === e.currentTarget && onChiudere()}
-      >
-        <div className="max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-t-sheet border border-hairline bg-glass-3 p-6 backdrop-blur-2xl sm:rounded-sheet">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold text-ink-bright">Filtri</h2>
+      <Sovrapposizione>
+        <div
+          className="fixed inset-0 z-overlay flex items-end justify-center bg-void/70 p-0 backdrop-blur-sm animate-rise-in sm:items-center sm:p-5"
+          {...velo}
+        >
+          <div className="max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-t-sheet border border-hairline bg-glass-3 p-6 backdrop-blur-2xl sm:rounded-sheet">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="font-display text-lg font-semibold text-ink-bright">Filtri</h2>
 
-            <button
-              onClick={onChiudere}
-              aria-label="Chiudi filtri"
-              className="grid h-9 w-9 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
-            >
-              <Icon nome="close" dimensione={18} />
-            </button>
-          </div>
+              <button
+                onClick={onChiudere}
+                aria-label="Chiudi filtri"
+                className="grid h-9 w-9 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
+              >
+                <Icon nome="close" dimensione={18} />
+              </button>
+            </div>
 
-          {contenuto}
+            {contenuto}
 
-          <div className="mt-6 border-t border-hairline pt-5">
-            <button
-              onClick={onChiudere}
-              className="w-full rounded-card bg-brass-400 px-4 py-2.5 text-sm font-semibold text-void transition-all duration-quick ease-spring hover:brightness-110 active:scale-95"
-            >
-              Mostra i risultati
-            </button>
+            <div className="mt-6 border-t border-hairline pt-5">
+              <button
+                onClick={onChiudere}
+                className="w-full rounded-card bg-brass-400 px-4 py-2.5 text-sm font-semibold text-void transition-all duration-quick ease-spring hover:brightness-110 active:scale-95"
+              >
+                Mostra i risultati
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </Sovrapposizione>
     );
   }
 
