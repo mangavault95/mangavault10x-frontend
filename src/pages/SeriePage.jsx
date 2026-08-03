@@ -8,7 +8,7 @@ import { Errore, Vuoto } from "../ui/Stati";
 import { Sezione } from "../ui/Pagina";
 import { BottonePreferito, ContaVolumi, VotoStelle } from "../ui/AzioniSerie";
 import Icon from "../app/Icon";
-import { useCollezione, useSerie } from "../dati/collezione";
+import { edizioniSorelle, useCollezione, useSerie } from "../dati/collezione";
 import {
   getMarketPrice,
   getStoricoPerSerie,
@@ -87,6 +87,7 @@ export default function SeriePage() {
 
   const pct = completamento(serie);
   const mancanti = volumiMancanti(serie);
+  const sorelle = edizioniSorelle(serie, tutte);
 
   // Letto/in lettura/non letto guarda cosa hai davvero finito, non
   // quanti volumi possiedi: sono due domande diverse (vedi Volumi).
@@ -197,6 +198,8 @@ export default function SeriePage() {
                     </Etichetta>
                   )}
 
+                  {serie.edizione && <Etichetta tono="brass">{serie.edizione}</Etichetta>}
+
                   {pct === 100 && <Etichetta tono="jade">Serie completa</Etichetta>}
 
                   {serie.droppato ? (
@@ -223,6 +226,21 @@ export default function SeriePage() {
                     </Link>
                   ))}
                 </div>
+
+                {sorelle.length > 0 && (
+                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
+                    Altre edizioni:
+                    {sorelle.map((s) => (
+                      <Link
+                        key={s.id}
+                        to={`/serie/${s.id}`}
+                        className="text-lapis underline decoration-lapis/30 underline-offset-2 hover:decoration-lapis"
+                      >
+                        {s.edizione || s.titolo}
+                      </Link>
+                    ))}
+                  </p>
+                )}
               </div>
 
               {/* ---------- Progresso ---------- */}
@@ -296,7 +314,7 @@ export default function SeriePage() {
           <Volumi serie={serie} letti={volumiLetti} onRiprendi={riprendi} />
         )}
 
-        <QuotazioneMercato serie={serie} />
+        <QuotazioneMercato serie={serie} sorelle={sorelle} />
 
         <Simili serie={serie} tutte={tutte} />
       </div>
@@ -432,7 +450,7 @@ function Volumi({ serie, letti = [], onRiprendi }) {
  * Il caricamento parte solo al click: interrogare eBay per ogni
  * scheda aperta sarebbe lento e inutile nella maggior parte dei casi.
  */
-function QuotazioneMercato({ serie }) {
+function QuotazioneMercato({ serie, sorelle }) {
   const [stato, setStato] = useState("fermo");
   const [dati, setDati] = useState(null);
 
@@ -440,7 +458,14 @@ function QuotazioneMercato({ serie }) {
     setStato("caricamento");
 
     try {
-      const risposta = await getMarketPrice(serie.titolo);
+      const risposta = await getMarketPrice({
+        titolo: serie.titolo,
+        edizione: serie.edizione,
+        // Le etichette delle edizioni sorelle: servono al server per
+        // scartare gli annunci che nominano l'edizione sbagliata.
+        altreEdizioni: sorelle.map((s) => s.edizione).filter(Boolean),
+        volumiTotali: serie.totali
+      });
 
       setDati(risposta);
       setStato("fatto");
@@ -450,6 +475,7 @@ function QuotazioneMercato({ serie }) {
   }
 
   const nonConfigurato = stato === "non_configurato";
+  const scartati = dati?.campioneGrezzo > dati?.campione ? dati.campioneGrezzo - dati.campione : 0;
 
   return (
     <Sezione titolo="Prezzo su eBay">
@@ -465,11 +491,22 @@ function QuotazioneMercato({ serie }) {
 
             <p className="text-xs text-ink-muted">
               {dati.mediana
-                ? `Mediana di ${dati.campione} annunci attivi su eBay Italia${
-                    dati.media ? ` — media ${euro(dati.media)}` : ""
-                  }.`
-                : "Nessun annuncio attivo trovato per questo titolo."}
+                ? `Mediana di ${dati.campione} annunci di serie completa su eBay Italia${
+                    serie.edizione ? ` (edizione ${serie.edizione})` : ""
+                  }${dati.media ? ` — media ${euro(dati.media)}` : ""}.`
+                : dati.campioneGrezzo > 0
+                  ? `Trovati ${dati.campioneGrezzo} annunci, ma nessuno sembrava la serie completa nell'edizione giusta.`
+                  : "Nessun annuncio attivo trovato per questo titolo."}
             </p>
+
+            {/* Trasparenza sul filtro: se il campione si è ridotto molto
+                è giusto dirlo, invece di far sembrare il numero più
+                solido di quanto sia. */}
+            {scartati > 0 && (
+              <p className="text-xs text-ink-faint">
+                Scartati {scartati} annunci su {dati.campioneGrezzo}: volumi singoli o edizione diversa.
+              </p>
+            )}
           </div>
         ) : (
           <p className="text-sm text-ink-muted">
@@ -477,7 +514,7 @@ function QuotazioneMercato({ serie }) {
               ? "La ricerca su eBay non ha risposto. Riprova fra poco."
               : nonConfigurato
                 ? "Questa funzione non è ancora attivata: servono le credenziali eBay sul server."
-                : "Cerca su eBay quanto chiedono adesso per questa serie."}
+                : "Cerca su eBay quanto chiedono adesso per la serie completa."}
           </p>
         )}
 

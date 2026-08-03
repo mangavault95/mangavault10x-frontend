@@ -224,6 +224,7 @@ function Redazione({ onEsci }) {
           <Scheda
             key={selezionata.id}
             serie={selezionata}
+            tutteLeSerie={ordinate}
             onSalvata={(modifiche) => {
               aggiornaLocale(selezionata.id, modifiche);
               ricarica();
@@ -256,6 +257,7 @@ function corpoDaCampi(campi) {
     editore: campi.editore,
     genere: campi.genere,
     coverurl: campi.coverurl,
+    edizione: campi.edizione,
     trama: campi.trama,
     costo: campi.costo === "" ? null : Number(campi.costo),
     volumiposseduti: campi.volumiposseduti === "" ? null : Number(campi.volumiposseduti),
@@ -266,7 +268,14 @@ function corpoDaCampi(campi) {
   };
 }
 
-function Scheda({ serie, onSalvata }) {
+function Scheda({ serie, tutteLeSerie, onSalvata }) {
+  // Il collegamento si sceglie puntando a UNA sorella; quale delle
+  // eventuali più sorelle è ininfluente, "salva" risolve comunque il
+  // gruppo giusto (vedi sotto).
+  const sorellaIniziale = tutteLeSerie.find(
+    (s) => s.id !== serie.id && (s.operaId ?? s.id) === (serie.operaId ?? serie.id) && serie.operaId != null
+  );
+
   const [campi, setCampi] = useState(() => ({
     titolo: serie.titolo || "",
     autore: serie.autore || "",
@@ -274,13 +283,15 @@ function Scheda({ serie, onSalvata }) {
     editore: serie.editore || "",
     genere: serie.generi.join(", "),
     coverurl: serie.copertina || "",
+    edizione: serie.edizione || "",
     trama: serie.trama || "",
     costo: serie.costo ?? "",
     volumiposseduti: serie.posseduti ?? "",
     volumitotali: serie.totali ?? "",
     valutazione: serie.valutazione ?? "",
     statoSerie: serie.stato || "",
-    preferito: serie.preferito
+    preferito: serie.preferito,
+    collegamento: sorellaIniziale ? String(sorellaIniziale.id) : ""
   }));
 
   const [stato, setStato] = useState(null); // { tipo, testo }
@@ -300,7 +311,15 @@ function Scheda({ serie, onSalvata }) {
     setStato(null);
 
     try {
-      await updateManga(serie.id, corpoDaCampi(campi));
+      // Il gruppo di un'edizione non è il suo id, è quello della
+      // bersaglio scelta (o il proprio id, se la bersaglio non è
+      // ancora collegata a nessuno): così due sorelle nuove finiscono
+      // nello stesso gruppo di una terza già esistente, invece di
+      // formarne uno separato.
+      const bersaglio = tutteLeSerie.find((s) => String(s.id) === campi.collegamento);
+      const operaId = bersaglio ? (bersaglio.operaId ?? bersaglio.id) : null;
+
+      await updateManga(serie.id, { ...corpoDaCampi(campi), operaId });
 
       setStato({ tipo: "ok", testo: "Salvato." });
 
@@ -308,7 +327,9 @@ function Scheda({ serie, onSalvata }) {
         titolo: campi.titolo,
         autore: campi.autore || null,
         copertina: campi.coverurl || null,
-        trama: campi.trama || null
+        trama: campi.trama || null,
+        edizione: campi.edizione || null,
+        operaId
       });
     } catch (e2) {
       setStato({
@@ -373,6 +394,12 @@ function Scheda({ serie, onSalvata }) {
           <CampoTesto etichetta="Autore" valore={campi.autore} onChange={cambia("autore")} />
           <CampoTesto etichetta="Disegnatore" valore={campi.disegnatore} onChange={cambia("disegnatore")} />
           <CampoTesto etichetta="Editore" valore={campi.editore} onChange={cambia("editore")} />
+          <CampoTesto
+            etichetta="Edizione"
+            valore={campi.edizione}
+            onChange={cambia("edizione")}
+            placeholder="es. Perfect Edition — vuoto se standard/unica"
+          />
           <CampoTesto
             etichetta="Generi"
             valore={campi.genere}
@@ -439,6 +466,28 @@ function Scheda({ serie, onSalvata }) {
                 {etichetta}
               </option>
             ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted">
+            Stessa opera di
+          </span>
+
+          <select
+            value={campi.collegamento}
+            onChange={cambia("collegamento")}
+            className="max-w-xs rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
+          >
+            <option value="" className="bg-alcove">Nessuna — edizione a sé</option>
+            {tutteLeSerie
+              .filter((s) => s.id !== serie.id)
+              .map((s) => (
+                <option key={s.id} value={s.id} className="bg-alcove">
+                  {s.titolo}
+                  {s.edizione ? ` (${s.edizione})` : ""}
+                </option>
+              ))}
           </select>
         </label>
 

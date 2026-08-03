@@ -212,5 +212,17 @@ export const deleteReadingSession = (mangaId) =>
 // Niente parametro "months": la Browse API di eBay vede solo gli
 // annunci attivi, non le vendite passate, quindi non esiste una
 // finestra temporale da chiedere.
-export const getMarketPrice = (query) =>
-  request(`/api/marketplace/avg-price?query=${encodeURIComponent(query)}`);
+//
+// `edizione`/`altreEdizioni` servono a non mischiare i prezzi di
+// edizioni diverse della stessa opera (es. Perfect Edition vs
+// classica); `volumiTotali` al server per riconoscere se un annuncio
+// sembra la serie completa.
+export function getMarketPrice({ titolo, edizione, altreEdizioni, volumiTotali }) {
+  const parametri = new URLSearchParams({ query: titolo });
+
+  if (edizione) parametri.set("edizione", edizione);
+  if (altreEdizioni?.length) parametri.set("altreEdizioni", altreEdizioni.join(","));
+  if (volumiTotali) parametri.set("volumiTotali", String(volumiTotali));
+
+  return request(`/api/marketplace/avg-price?${parametri.toString()}`);
+}

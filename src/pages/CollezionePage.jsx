@@ -209,7 +209,11 @@ export default function CollezionePage() {
       }
     >
       {modaleAperto && (
-        <ModuloNuovaSerie onChiuso={() => setModaleAperto(false)} onCreata={ricarica} />
+        <ModuloNuovaSerie
+          tutteLeSerie={serie}
+          onChiuso={() => setModaleAperto(false)}
+          onCreata={ricarica}
+        />
       )}
 
       {filtriMobileAperti && (
@@ -281,6 +285,8 @@ const CAMPI_VUOTI = {
   editore: "",
   genere: "",
   coverurl: "",
+  edizione: "",
+  collegamento: "",
   trama: "",
   costo: "",
   volumiposseduti: "0",
@@ -295,7 +301,7 @@ const CAMPI_VUOTI = {
  * il titolo: lo stesso servizio che arricchisce le schede in Gestione
  * compila il resto.
  */
-function ModuloNuovaSerie({ onChiuso, onCreata }) {
+function ModuloNuovaSerie({ tutteLeSerie, onChiuso, onCreata }) {
   const eseguiProtetto = useAccessoProtetto();
   const navigate = useNavigate();
 
@@ -345,6 +351,12 @@ function ModuloNuovaSerie({ onChiuso, onCreata }) {
     setSalvando(true);
     setErrore(null);
 
+    // Il gruppo di un'edizione è quello della bersaglio scelta (o il suo
+    // stesso id, se la bersaglio non è ancora collegata a nessuno) —
+    // stessa regola di Gestione, vedi AdminPage.jsx.
+    const bersaglio = tutteLeSerie.find((s) => String(s.id) === campi.collegamento);
+    const operaId = bersaglio ? (bersaglio.operaId ?? bersaglio.id) : null;
+
     const corpo = {
       titolo: campi.titolo.trim(),
       autore: campi.autore || null,
@@ -352,6 +364,8 @@ function ModuloNuovaSerie({ onChiuso, onCreata }) {
       editore: campi.editore || null,
       genere: campi.genere || null,
       coverurl: campi.coverurl || null,
+      edizione: campi.edizione || null,
+      operaId,
       trama: campi.trama || null,
       costo: campi.costo === "" ? null : Number(campi.costo),
       volumiposseduti: campi.volumiposseduti === "" ? 0 : Number(campi.volumiposseduti),
@@ -420,6 +434,33 @@ function ModuloNuovaSerie({ onChiuso, onCreata }) {
             onChange={cambia("disegnatore")}
           />
           <CampoModulo etichetta="Editore" valore={campi.editore} onChange={cambia("editore")} />
+          <CampoModulo
+            etichetta="Edizione"
+            valore={campi.edizione}
+            onChange={cambia("edizione")}
+            placeholder="es. Perfect Edition — vuoto se standard/unica"
+          />
+          {tutteLeSerie.length > 0 && (
+            <label className="block sm:col-span-2">
+              <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted">
+                Stessa opera di
+              </span>
+
+              <select
+                value={campi.collegamento}
+                onChange={cambia("collegamento")}
+                className="w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
+              >
+                <option value="" className="bg-alcove">Nessuna — edizione a sé</option>
+                {tutteLeSerie.map((s) => (
+                  <option key={s.id} value={s.id} className="bg-alcove">
+                    {s.titolo}
+                    {s.edizione ? ` (${s.edizione})` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <CampoModulo
             etichetta="Volumi posseduti"
             tipo="number"

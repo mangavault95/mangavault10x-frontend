@@ -33,3 +33,21 @@ export function useSerie(id) {
 
   return { serie: trovata, inCorso, errore };
 }
+
+/**
+ * Le altre edizioni della stessa opera.
+ *
+ * Il "gruppo effettivo" di una serie è `operaId` se collegata,
+ * altrimenti il proprio `id` — quindi due righe sono sorelle quando
+ * questo valore coincide. Nessuna nuova richiesta: la collezione
+ * intera è già in memoria via `useCollezione`.
+ */
+export function edizioniSorelle(serieCorrente, tutteLeSerie) {
+  if (!serieCorrente) return [];
+
+  const gruppo = serieCorrente.operaId ?? serieCorrente.id;
+
+  return tutteLeSerie.filter(
+    (s) => s.id !== serieCorrente.id && (s.operaId ?? s.id) === gruppo
+  );
+}

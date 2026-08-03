@@ -292,7 +292,12 @@ function QuotazioneMercatoDesiderio({ elemento }) {
     setStato("caricamento");
 
     try {
-      const risposta = await getMarketPrice(elemento.titolo);
+      // Nessuna edizione da escludere: un desiderio non è ancora in
+      // collezione, quindi non ha sorelle collegate.
+      const risposta = await getMarketPrice({
+        titolo: elemento.titolo,
+        volumiTotali: elemento.volumitotali
+      });
 
       setDati(risposta);
       setStato("fatto");

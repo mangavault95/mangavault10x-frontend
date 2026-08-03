@@ -73,6 +73,12 @@ export function normalizzaSerie(riga) {
     droppato: Boolean(riga.Droppato),
     dataAggiunta: riga.DataAggiunta || null,
 
+    // Edizioni collegate: `operaId` punta alla riga "capogruppo",
+    // `null` se questa riga non è collegata a nessun'altra edizione.
+    // Vedi `edizioniSorelle` in `collezione.js` per trovare le altre.
+    edizione: riga.Edizione || null,
+    operaId: numero(riga.OperaId),
+
     // La riga originale resta a disposizione per la pagina Gestione,
     // che deve poter salvare i campi con i nomi che il server si aspetta.
     grezzo: riga
