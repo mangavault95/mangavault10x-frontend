@@ -72,15 +72,42 @@ export default function Shell({ children }) {
         aria-label="Navigazione principale"
         className="fixed left-0 top-0 z-sticky hidden h-dvh w-rail flex-col items-center gap-2 border-r border-hairline bg-glass-1 py-6 backdrop-blur-xl md:flex"
       >
+        {/* La porta della biblioteca, non un logo.
+            Era una "M" d'ottone, cioè un marchio, e un marchio non si
+            clicca: da qualunque pagina del sito la via di ritorno alla
+            sala era la cosa meno riconoscibile dello schermo. Adesso è
+            un battente di legno con la maniglia, largo quanto la barra,
+            col nome scritto sotto — e quando non ci si è già dentro
+            pulsa appena. */}
         <NavLink
           to="/"
-          className="mb-4 grid h-11 w-11 place-items-center rounded-card bg-brass-400 font-display text-lg font-semibold text-void transition-transform duration-quick ease-spring hover:scale-105 active:scale-95"
-          aria-label="MangaVault, torna allo scaffale"
+          aria-label="Torna in biblioteca"
+          title="Torna in biblioteca (1)"
+          aria-current={location.pathname === "/" ? "page" : undefined}
+          className={`group mb-5 grid w-full place-items-center gap-1 border-b border-hairline pb-4 transition-transform duration-quick ease-spring active:scale-95
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
+            ${location.pathname === "/" ? "" : "hover:scale-[1.04]"}`}
         >
-          M
+          <span
+            className={`grid h-12 w-12 place-items-center rounded-card border transition-colors duration-base
+              ${
+                location.pathname === "/"
+                  ? "border-brass-400/60 bg-brass-400/20 text-brass-300"
+                  : "border-brass-400/40 bg-legno text-brass-400 shadow-brass group-hover:bg-brass-400 group-hover:text-void"
+              }`}
+          >
+            <Icon nome="kanjiLibro" dimensione={24} />
+          </span>
+
+          <span className="text-[0.6rem] font-medium uppercase tracking-wider text-ink-muted transition-colors group-hover:text-brass-300">
+            Sala
+          </span>
         </NavLink>
 
-        {SEZIONI.map((sezione) => (
+        {/* La home non si ripete fra le voci: è già il battente qui
+            sopra, e due strade per lo stesso posto a otto pixel di
+            distanza sono una strada e un dubbio. */}
+        {SEZIONI.filter((s) => s.percorso !== "/").map((sezione) => (
           <VoceMenu
             key={sezione.id}
             sezione={sezione}

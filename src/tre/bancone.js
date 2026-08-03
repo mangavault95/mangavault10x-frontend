@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { metri } from "./modelli";
 import { costruisciParete } from "./stanza";
+import { COLORE_TARGA } from "./tinte";
 
 /**
  * Il banco del bibliotecario e la parete che gli sta dietro.
@@ -21,8 +22,6 @@ import { costruisciParete } from "./stanza";
  * Restituisce mesh e azioni; a registrarle nel raycaster pensa
  * `scena.js`, che è chi le possiede.
  */
-
-const COLORE_TARGA = 0x1c1712;
 
 // Retini e forme da fumetteria per le locandine senza copertina vera:
 // generiche, non citano nessuna testata precisa.
@@ -387,7 +386,7 @@ export async function costruisciBancone({
    pacchetto di modelli: nessuno ha modellato l'insegna di MangaVault.
    ================================================== */
 
-function creaTexturaInsegna(larghezzaMondo, altezzaMondo) {
+export function creaTexturaInsegna(larghezzaMondo, altezzaMondo) {
   const scala = 320;
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(larghezzaMondo * scala);

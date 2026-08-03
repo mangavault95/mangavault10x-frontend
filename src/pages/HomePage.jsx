@@ -4,6 +4,7 @@ import Biblioteca from "../tre/scena";
 import { Bottone } from "../ui/Controlli";
 import { Errore, Vuoto } from "../ui/Stati";
 import Icon from "../app/Icon";
+import TornaInBiblioteca from "../ui/TornaInBiblioteca";
 import { dimenticaUscita, leggiUscita, segnaUscita } from "../app/passaggio";
 import { useCollezione } from "../dati/collezione";
 import { completamento, euro, valoreSerie } from "../dati/serie";
@@ -386,8 +387,25 @@ export default function HomePage() {
           {/* Alla soglia il cartellino non sta più qui: segue il
               puntatore (vedi `CartellinoPuntatore`, sotto il canvas).
               Resta lo spazio, così i comandi accanto non si spostano
-              quando si passa da un mondo all'altro. */}
-          {inStanza ? <span /> : <CartellinoSerie serie={mirata} />}
+              quando si passa da un mondo all'altro.
+
+              Il ritorno alla biblioteca è lo stesso bottone giallo delle
+              quattro pagine, ma non nello stesso angolo: messo in alto a
+              sinistra copriva il primo libro in alto a sinistra
+              dell'inquadratura, cioè proprio la libreria che dice di
+              tornare a guardare. In basso a sinistra non c'è niente sotto
+              — la telecamera guarda una sezione centrata, mai fino ai
+              piedi dello scaffale — ed è la stessa base d'appoggio dei
+              comandi qui a destra. Alla soglia non c'è, perché lì ci si
+              è già. */}
+          {inStanza ? (
+            <span />
+          ) : (
+            <div className="flex flex-col items-start gap-3">
+              <CartellinoSerie serie={mirata} />
+              <TornaInBiblioteca onClick={() => scena.current?.tornaAllaSoglia()} />
+            </div>
+          )}
 
           {inStanza ? (
             // Il telefono non ha un puntatore da far passare sopra le
@@ -420,7 +438,6 @@ export default function HomePage() {
               posizione={posizione}
               onIndietro={() => scena.current?.indietro()}
               onAvanti={() => scena.current?.avanti()}
-              onUscire={() => scena.current?.tornaAllaSoglia()}
             />
           )}
         </div>
@@ -640,21 +657,18 @@ function GiraSoglia({ soglia, onIndietro, onAvanti }) {
   );
 }
 
-function Comandi({ posizione, onIndietro, onAvanti, onUscire }) {
+/**
+ * Le frecce fra le sezioni dello scaffale.
+ *
+ * Non c'è più il bottone della porta: se ne occupa quello giallo in alto
+ * a sinistra, come in ogni altra schermata. Qui restano le due frecce e
+ * il contatore, cioè le uniche due cose che esistono solo qui dentro.
+ */
+function Comandi({ posizione, onIndietro, onAvanti }) {
   const { sezione, totali } = posizione;
 
   return (
     <div className="pointer-events-auto flex items-center gap-2 rounded-card border border-hairline bg-glass-3 p-1.5 backdrop-blur-xl">
-      <BottoneScorrimento
-        etichetta="Torna alla soglia"
-        scorciatoia="Esc"
-        onClick={onUscire}
-      >
-        <Icon nome="porta" dimensione={18} />
-      </BottoneScorrimento>
-
-      <span aria-hidden="true" className="h-6 w-px bg-hairline" />
-
       <BottoneScorrimento
         etichetta="Sezione precedente"
         scorciatoia="←"

@@ -10,9 +10,15 @@ export const SEZIONI = [
   {
     id: "home",
     percorso: "/",
-    etichetta: "Scaffale",
-    descrizione: "La vista d'insieme della collezione",
-    icona: "shelf",
+    // "Scaffale" era il nome di quando la home era una vista della
+    // collezione. Adesso è una biblioteca in cui si entra, con dentro
+    // gli scaffali fra le altre cose, e chiamarla come una delle cose
+    // che contiene faceva sembrare le altre quattro un altro sito.
+    etichetta: "Biblioteca",
+    descrizione: "La sala: scaffali, banco, bacheca, tavolino",
+    // 本, il kanji di «libro»: una porta d'ottone diceva «uscita», che è
+    // il contrario di dove porta questa voce.
+    icona: "kanjiLibro",
     tasto: "1"
   },
   {

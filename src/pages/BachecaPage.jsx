@@ -71,7 +71,6 @@ export default function BachecaPage() {
   return (
     <Approdo
       titolo="La bacheca dei desideri"
-      elenco={{ percorso: "/wishlist", etichetta: "Apri l'elenco" }}
       className="bg-legno"
       fondo={<Sughero />}
     >

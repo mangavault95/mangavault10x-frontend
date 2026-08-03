@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Approdo from "../ui/Approdo";
-import Ritratto from "../bibliotecario/Ritratto";
+import ScenaBanco from "../bibliotecario/ScenaBanco";
 import Copertina from "../ui/Copertina";
 import Icon from "../app/Icon";
 import { creaIndiceAutori, creaIndiceTitoli, interpreta } from "../bibliotecario/intenti";
@@ -158,19 +158,16 @@ export default function BancoPage() {
   return (
     <Approdo
       titolo="Il banco del bibliotecario"
-      elenco={{ percorso: "/collezione", etichetta: "Sfoglia la collezione" }}
       className="bg-void"
       fondo={<Retrobanco />}
     >
-      <div className="relative flex min-h-dvh flex-col">
-        {/* ---------- Il personaggio ---------- */}
-        <div className="relative flex flex-1 items-end justify-center pt-24 sm:justify-start sm:pl-[8vw]">
-          <Ritratto
-            pensando={pensando}
-            className="h-[46vh] w-[52vw] max-w-[26rem] sm:h-[58vh] sm:w-[34vw]"
-          />
-        </div>
+      {/* Il banco occupa tutto: non è un ritratto messo sopra un fondale,
+          è il posto in cui si sta. Il riquadro di dialogo qui sotto si
+          posa sul piano del bancone — l'inquadratura è calcolata perché
+          il legno finisca appena sopra di lui (vedi `ScenaBanco`). */}
+      <ScenaBanco pensando={pensando} className="absolute inset-0" />
 
+      <div className="relative flex min-h-dvh flex-col justify-end">
         {/* ---------- La battuta ---------- */}
         <div className="relative px-4 pb-6 sm:px-8 sm:pb-10">
           <div className="mx-auto w-full max-w-3xl">

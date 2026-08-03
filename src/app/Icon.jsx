@@ -22,6 +22,29 @@ const TRACCIATI = {
   menu: "M4 7h16M4 12h16M4 17h16",
   // Una porta socchiusa: l'ingresso della biblioteca
   porta: "M4 20h6V4l10 2v13l-10 2V4M13 12h.01",
+  /**
+   * 本 — il kanji di «libro», stilizzato.
+   *
+   * Segna la biblioteca: la porta d'ottone che c'era prima diceva
+   * «uscita», che è il contrario di dove porta. Fra i modi di scrivere
+   * «libreria» in giapponese questo è l'unico che regge ventiquattro
+   * pixel — 書 e 館 hanno dieci e sedici tratti e a questa misura
+   * diventano una macchia, mentre 本 ne ha cinque e si legge anche
+   * grande come un'unghia.
+   *
+   * I due tratti obliqui sono curvi e non dritti: sono pennellate, e un
+   * kanji fatto di segmenti geometrici si riconosce ma sembra un
+   * diagramma. Le altre tre aste restano dritte, come nella scrittura.
+   *
+   * Quanto si aprono non è estetica, è leggibilità: con una sferzata
+   * stretta restavano dentro il tratto dell'asta verticale — che è
+   * spesso 1,6 come tutti gli altri — e la metà alta del carattere
+   * diventava una macchia piena. Aprendoli si staccano dopo tre unità, e
+   * la traversina corta trova due unità di aria per parte invece di
+   * annegarci dentro. A venti pixel un'unità è un pixel, e quei due
+   * pixel sono la differenza fra un kanji e uno scarabocchio.
+   */
+  kanjiLibro: "M3.8 7.6h16.4M12 3v18M12 8.2Q8 12.6 3.4 19.8M12 8.2Q16 12.6 20.6 19.8M9 16.4h6",
   // Un cartellino prezzo: i desideri sono da comprare, non da segnare
   // come preferiti — per questo non riusa "star".
   cartellino: "M20.6 12.3 12.7 20.2a2 2 0 0 1-2.8 0l-6.1-6.1a2 2 0 0 1 0-2.8L11.7 3.3a2 2 0 0 1 1.4-.6H19a2 2 0 0 1 2 2v5.3a2 2 0 0 1-.4 1.3ZM16.5 7.5h.01"

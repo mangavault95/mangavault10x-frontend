@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import Icon from "../app/Icon";
+import { useNavigate } from "react-router-dom";
+import TornaInBiblioteca from "./TornaInBiblioteca";
 
 /**
  * La cornice delle pagine che si raggiungono dalla stanza.
@@ -11,6 +11,17 @@ import Icon from "../app/Icon";
  * telecamera fermarsi davanti a un oggetto, e aprirgli una tabella con i
  * filtri spezzerebbe in due la cosa che si era appena costruita. Chi ha
  * premuto «4» voleva la tabella, e la tabella è rimasta dov'era.
+ *
+ *
+ * DUE MONDI, NESSUN PONTE
+ *
+ * C'era un collegamento da qui alla pagina-elenco corrispondente, ed è
+ * stato tolto. Sembrava un gesto di cortesia — «gli stessi dati, di là»
+ * — ma faceva esattamente il danno che queste pagine devono evitare:
+ * dichiarava che sono due modi di guardare la stessa tabella, mentre
+ * devono essere due posti diversi. Dalla stanza si arriva alla bacheca;
+ * all'elenco dei desideri si arriva dalla barra laterale. Chi vuole
+ * l'altro passa dalla sala, che è la porta di tutto.
  *
  *
  * IL NERO È LA GIUNTURA
@@ -41,13 +52,7 @@ import Icon from "../app/Icon";
 // davvero, mai prima.
 const NERO_MS = 420;
 
-export default function Approdo({
-  titolo,
-  elenco,
-  fondo,
-  children,
-  className = ""
-}) {
+export default function Approdo({ titolo, fondo, children, className = "" }) {
   const navigate = useNavigate();
 
   // Tre stati e non due: si nasce neri, ci si alza, e alla fine si torna
@@ -91,37 +96,14 @@ export default function Approdo({
 
       <div className="relative z-raised">{children}</div>
 
-      {/* ---------- I due comandi ---------- */}
-
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-sticky flex items-start justify-between gap-4 p-5 sm:p-6">
-        <button
-          onClick={esci}
-          className="pointer-events-auto flex items-center gap-2 rounded-full border border-hairline bg-void/70 py-2 pl-3 pr-4 text-sm font-medium text-ink-bright
-                     shadow-float backdrop-blur-xl transition-all duration-quick ease-settle
-                     hover:border-brass-400/40 hover:text-brass-300 active:scale-95
-                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
-        >
-          <Icon nome="porta" dimensione={16} />
-          Torna nella stanza
-          <kbd className="ml-1 rounded border border-soft px-1.5 py-0.5 font-numeric text-[0.6rem] text-ink-muted">
-            Esc
-          </kbd>
-        </button>
-
-        {/* L'altra veste degli stessi dati, dichiarata. Senza, questa
-            pagina sembrerebbe l'unica che c'è, e chi cerca la ricerca o
-            i moduli di modifica penserebbe che siano spariti. */}
-        {elenco && (
-          <Link
-            to={elenco.percorso}
-            className="pointer-events-auto rounded-full border border-hairline bg-void/70 px-4 py-2 text-xs text-ink-muted
-                       shadow-float backdrop-blur-xl transition-colors duration-quick
-                       hover:border-soft hover:text-ink-bright
-                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
-          >
-            {elenco.etichetta}
-          </Link>
-        )}
+      {/* ---------- La via di ritorno ----------
+          Una sola, e grossa. Era un bottone di vetro fra i tanti, e da
+          una pagina che riempie lo schermo di uno scontrino o di un muro
+          di sughero la strada per tornare indietro deve essere la cosa
+          più evidente che c'è: qui dentro non c'è nient'altro da
+          premere, e chi non la trova resta chiuso in un cassetto. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-sticky p-5 sm:p-6">
+        <TornaInBiblioteca onClick={esci} />
       </div>
 
       {titolo && <h1 className="sr-only">{titolo}</h1>}

@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import Approdo from "../ui/Approdo";
+import { Boiserie, Intonaco } from "../ui/materiali";
+import legnoUrl from "../tre/assets/legno/legno_diffuse.webp";
 import { CaricamentoGriglia, Errore } from "../ui/Stati";
 import { useCollezione } from "../dati/collezione";
 import { primati, riepilogo } from "../dati/numeri";
@@ -53,9 +55,8 @@ export default function CassaPage() {
   return (
     <Approdo
       titolo="Lo scontrino della collezione"
-      elenco={{ percorso: "/statistiche", etichetta: "Vedi i numeri per esteso" }}
-      className="bg-void"
-      fondo={<Fessura />}
+      className="bg-legno"
+      fondo={<Retrobanco />}
     >
       <div className="flex min-h-dvh items-start justify-center px-5 pb-16 pt-20 sm:pt-24">
         {errore ? (
@@ -81,18 +82,44 @@ export default function CassaPage() {
 }
 
 /**
- * La fessura da cui esce la carta: una bocca di metallo in cima allo
- * schermo, con la sua ombra sotto. È il pezzo che spiega il movimento —
- * senza, la carta scenderebbe dal nulla.
+ * Il retrobanco, e la fessura da cui esce la carta.
+ *
+ * Era un fondo nero con un alone caldo, e faceva sembrare lo scontrino
+ * sospeso nel vuoto: si era appena usciti da una sala di legno e si
+ * finiva da nessuna parte. Adesso dietro c'è la parete della sala —
+ * intonaco e boiserie, le texture vere (vedi `ui/materiali.jsx`) — e in
+ * basso il piano del banco su cui la carta va a posarsi.
+ *
+ * La fessura resta dov'era, in alto: è lei a spiegare il movimento, e
+ * senza la carta scenderebbe dal nulla.
  */
-function Fessura() {
+function Retrobanco() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-      {/* La luce calda della lampada sul banco, rimasta accesa di là */}
-      <div className="absolute -top-32 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-brass-500/[0.09] blur-[120px]" />
+      <Intonaco className="inset-x-0 top-0 h-[74%]" />
+      <Boiserie className="inset-x-0 top-[42%] h-[32%]" />
 
-      <div className="absolute inset-x-0 top-0 z-sticky h-16 bg-gradient-to-b from-void via-void to-transparent" />
-      <div className="absolute inset-x-0 top-14 z-sticky mx-auto h-px w-[min(28rem,88vw)] bg-brass-400/25 shadow-[0_2px_18px_rgba(250,204,21,0.18)]" />
+      {/* Il piano del banco, in basso: è lì che lo scontrino finisce */}
+      <div
+        className="absolute inset-x-0 bottom-0 top-[74%]"
+        style={{
+          backgroundImage: `url(${legnoUrl})`,
+          backgroundSize: "300px auto"
+        }}
+      >
+        <div className="absolute inset-0 bg-legno/40" />
+        <div className="absolute inset-x-0 top-0 h-px bg-brass-400/30" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(6,7,11,0.55))]" />
+      </div>
+
+      {/* La luce della lampada sul banco, rimasta accesa di là */}
+      <div className="absolute -top-32 left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full bg-brass-500/[0.14] blur-[120px]" />
+
+      {/* La bocca del registratore */}
+      <div className="absolute inset-x-0 top-0 z-sticky h-16 bg-gradient-to-b from-void via-void/85 to-transparent" />
+      <div className="absolute inset-x-0 top-14 z-sticky mx-auto h-px w-[min(28rem,88vw)] bg-brass-400/30 shadow-[0_2px_18px_rgba(250,204,21,0.2)]" />
+
+      <div className="absolute inset-0 bg-[radial-gradient(115%_95%_at_50%_40%,transparent_38%,rgba(6,7,11,0.72)_100%)]" />
     </div>
   );
 }

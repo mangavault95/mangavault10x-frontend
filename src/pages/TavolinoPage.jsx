@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Approdo from "../ui/Approdo";
+import { Parquet, PianoDiLegno } from "../ui/materiali";
 import Copertina from "../ui/Copertina";
 import Icon from "../app/Icon";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
@@ -98,9 +99,8 @@ export default function TavolinoPage() {
   return (
     <Approdo
       titolo="Il volume aperto sul tavolino"
-      elenco={{ percorso: "/lettura", etichetta: "Apri In lettura" }}
-      className="bg-void"
-      fondo={<Lampada />}
+      className="bg-legno"
+      fondo={<AngoloLettura />}
     >
       <div className="mx-auto flex min-h-dvh max-w-5xl items-center px-4 pb-16 pt-20 sm:px-8 sm:pt-24">
         {errore ? (
@@ -138,13 +138,32 @@ export default function TavolinoPage() {
   );
 }
 
-/** La lampada da terra dell'angolo lettura, rimasta accesa di là. */
-function Lampada() {
+/**
+ * L'angolo lettura visto da chi si è appena seduto.
+ *
+ * Era un fondo nero con un alone caldo, cioè niente: il volume aperto
+ * galleggiava. Adesso sotto c'è il parquet della sala — la texture vera,
+ * la stessa che sta sul pavimento in tre dimensioni (vedi
+ * `ui/materiali.jsx`) — e sopra la luce della lampada da terra, che di
+ * là è rimasta accesa a sinistra e qui pure.
+ *
+ * Il tappeto è quello dell'angolo: un rettangolo più scuro col suo bordo
+ * chiaro, appena ruotato, perché nessuno stende un tappeto in squadra.
+ */
+function AngoloLettura() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-      <div className="absolute -left-20 -top-24 h-[34rem] w-[34rem] rounded-full bg-brass-500/[0.13] blur-[130px]" />
-      <div className="absolute inset-0 bg-[radial-gradient(110%_85%_at_38%_28%,rgba(255,207,153,0.1),transparent_62%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(120%_100%_at_50%_50%,transparent_30%,rgba(6,7,11,0.86)_100%)]" />
+      <Parquet className="inset-0" />
+
+      {/* Il tappeto sotto al tavolino */}
+      <div className="absolute inset-x-[6%] bottom-[-8%] top-[16%] rotate-[-1.2deg] rounded-sm bg-legno/70 shadow-float ring-1 ring-brass-400/10">
+        <div className="absolute inset-3 rounded-sm ring-1 ring-brass-400/12" />
+      </div>
+
+      {/* La lampada da terra, a sinistra come là */}
+      <div className="absolute -left-24 -top-28 h-[36rem] w-[36rem] rounded-full bg-brass-500/[0.16] blur-[130px]" />
+      <div className="absolute inset-0 bg-[radial-gradient(110%_85%_at_34%_26%,rgba(255,207,153,0.14),transparent_62%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(120%_100%_at_50%_48%,transparent_28%,rgba(6,7,11,0.82)_100%)]" />
     </div>
   );
 }
@@ -177,14 +196,18 @@ function Volume({ lettura, indice, totale, verso, onSfogliare }) {
       />
 
       <div className="min-w-0 flex-1">
-        <div
-          // La chiave sull'indice fa ripartire l'animazione a ogni
-          // sfogliata: senza, il volume si apre una volta sola e poi il
-          // contenuto cambia di scatto.
-          key={indice}
-          className="animate-[apri_540ms_cubic-bezier(0.16,1,0.3,1)_both] rounded-sm bg-carta shadow-float"
-          style={{ transformOrigin: verso > 0 ? "left center" : "right center" }}
-        >
+        {/* Il piano del tavolino, che sporge da sotto il volume: è
+            l'unica cosa che dice che il libro è posato invece che
+            sospeso, ed è lo stesso legno del mobile in tre dimensioni. */}
+        <PianoDiLegno className="rotate-[0.4deg] rounded-md p-3 shadow-float sm:p-5">
+          <div
+            // La chiave sull'indice fa ripartire l'animazione a ogni
+            // sfogliata: senza, il volume si apre una volta sola e poi il
+            // contenuto cambia di scatto.
+            key={indice}
+            className="animate-[apri_540ms_cubic-bezier(0.16,1,0.3,1)_both] rounded-sm bg-carta shadow-raised"
+            style={{ transformOrigin: verso > 0 ? "left center" : "right center" }}
+          >
           <div className="relative grid gap-0 md:grid-cols-2">
             {/* La costa: l'ombra della piega, che si scava verso il
                 centro da tutte e due le parti. È l'unico pezzo che dice
@@ -209,14 +232,15 @@ function Volume({ lettura, indice, totale, verso, onSfogliare }) {
             />
           </div>
 
-          {/* Il taglio del libro, sotto: tre righe chiare sovrapposte
-              danno lo spessore delle pagine sotto quella aperta. */}
-          <div aria-hidden="true" className="mx-4 space-y-[2px] pb-2 pt-1">
-            <div className="h-px bg-inchiostro/12" />
-            <div className="h-px bg-inchiostro/8" />
-            <div className="h-px bg-inchiostro/5" />
+            {/* Il taglio del libro, sotto: tre righe chiare sovrapposte
+                danno lo spessore delle pagine sotto quella aperta. */}
+            <div aria-hidden="true" className="mx-4 space-y-[2px] pb-2 pt-1">
+              <div className="h-px bg-inchiostro/12" />
+              <div className="h-px bg-inchiostro/8" />
+              <div className="h-px bg-inchiostro/5" />
+            </div>
           </div>
-        </div>
+        </PianoDiLegno>
 
         {totale > 1 && (
           <p className="mt-4 text-center font-numeric text-xs text-ink-muted">

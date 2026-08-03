@@ -12,6 +12,14 @@ import { costruisciAngoloLettura } from "./angolo";
 import { Evidenza } from "./evidenza";
 import { Avvicinamento } from "./avvicinamento";
 import { BIBLIOTECARIO, MODELLI } from "./indirizzi";
+import {
+  COLORE_FOG,
+  COLORE_FONDO_ALTO,
+  COLORE_FONDO_BASSO,
+  COLORE_INTONACO,
+  COLORE_LEGNO,
+  COLORE_OTTONE
+} from "./tinte";
 
 // In WebP, non nei JPEG originali: erano quattro immagini da mezzo mega
 // l'una — due megabyte per quattro superfici che si vedono da lontano e
@@ -139,6 +147,30 @@ const SPORGENZA = 0.32;
 const ROTAZIONE_RIPOSO = -0.16;
 
 /* --------------------------------------------------
+   LA STANZA ATTORNO ALLO SCAFFALE
+   Pavimento, parete e cornice che tolgono di mezzo il fondo bianco
+   (vedi `#creaContorno`). Sempre in unità di scaffale: qui un libro è
+   alto 1.
+   -------------------------------------------------- */
+
+// Quanto pavimento e parete sporgono oltre l'ultimo mobile, da tutte e
+// due le parti. Serve solo a non farli finire dentro l'inquadratura
+// mentre la telecamera scorre fra le sezioni.
+const MARGINE_CONTORNO = 14;
+
+// Quanto pavimento c'è davanti alla parete. Deve passare sotto la
+// telecamera, non fermarsi allo scaffale: nella metà bassa
+// dell'inquadratura si vede il pavimento da lì fino ai piedi di chi
+// guarda, e uno che finisce a metà lascia una fascia di vuoto.
+const PROFONDITA_CONTORNO = 26;
+
+// Quanta parete si vede sopra i mobili. Generosa rispetto al necessario
+// (da nove unità di distanza ne avanza si e no una): costa un
+// rettangolo, e su uno schermo molto alto sarebbe l'unica cosa a
+// separare la biblioteca dal cielo.
+const ALTEZZA_SOPRA = 6;
+
+/* --------------------------------------------------
    L'ENTRATA NELLO SCAFFALE
    Come si arriva qui dentro dalla stanza: la sequenza sta in
    `avvicinamento.js`, questi sono i numeri che riguardano lo scaffale.
@@ -215,12 +247,9 @@ const AFFACCI = {
   bibliotecario: { verso: [0, 0.06, 1], stretta: 0.82, alza: 0.2 }
 };
 
-const COLORE_LEGNO = 0x6b4b32;
-const COLORE_INTONACO = 0xefe3cd;
-const COLORE_FONDO_ALTO = 0xfdfbf4;
-const COLORE_FONDO_BASSO = 0xe9dbc0;
-const COLORE_FOG = 0xe8dcc4;
-const COLORE_OTTONE = 0xc9a24b;
+// I colori dei materiali stanno in un file loro (`tinte.js`): li usa
+// anche la scena del banco, che ricostruisce lo stesso mobile fuori di
+// qui, e due copie degli stessi esadecimali prima o poi divergono.
 
 /* ==================================================
    MISURE DELLA STANZA
@@ -633,6 +662,12 @@ export default class Biblioteca {
 
     this.materialeLegno = legno(); // scaffale, boiserie, travi
     this.materialeLegnoPavimento = legno();
+    // Il parquet sotto lo scaffale. È un terzo materiale e non il
+    // pavimento della stanza perché le due scale non c'entrano niente
+    // l'una con l'altra: là il pavimento è largo venti unità e qui
+    // ottanta, e con le stesse ripetizioni le doghe passerebbero da
+    // essere doghe a essere venature.
+    this.materialeParquet = legno();
 
     this.materialeIntonaco = new THREE.MeshStandardMaterial({
       color: COLORE_INTONACO,
@@ -685,19 +720,27 @@ export default class Biblioteca {
       });
     };
 
+    // Il parquet dello scaffale è largo un centinaio di unità e profondo
+    // ventisei: le ripetizioni seguono quella proporzione, o le doghe
+    // escono schiacciate in un verso solo.
+    const PARQUET = [30, 9];
+
     applica(legnoDiffuseUrl, [
       { materiale: this.materialeLegno, chiave: "map", ripeti: [4, 2], srgb: true },
-      { materiale: this.materialeLegnoPavimento, chiave: "map", ripeti: [9, 7], srgb: true }
+      { materiale: this.materialeLegnoPavimento, chiave: "map", ripeti: [9, 7], srgb: true },
+      { materiale: this.materialeParquet, chiave: "map", ripeti: PARQUET, srgb: true }
     ]);
 
     applica(legnoRuviditaUrl, [
       { materiale: this.materialeLegno, chiave: "roughnessMap", ripeti: [4, 2] },
-      { materiale: this.materialeLegnoPavimento, chiave: "roughnessMap", ripeti: [9, 7] }
+      { materiale: this.materialeLegnoPavimento, chiave: "roughnessMap", ripeti: [9, 7] },
+      { materiale: this.materialeParquet, chiave: "roughnessMap", ripeti: PARQUET }
     ]);
 
     applica(legnoNormaliUrl, [
       { materiale: this.materialeLegno, chiave: "normalMap", ripeti: [4, 2] },
-      { materiale: this.materialeLegnoPavimento, chiave: "normalMap", ripeti: [9, 7] }
+      { materiale: this.materialeLegnoPavimento, chiave: "normalMap", ripeti: [9, 7] },
+      { materiale: this.materialeParquet, chiave: "normalMap", ripeti: PARQUET }
     ]);
 
     applica(intonacoDiffuseUrl, [
@@ -917,6 +960,101 @@ export default class Biblioteca {
     fondo.receiveShadow = true;
 
     this.gruppoScaffale.add(fondo);
+
+    this.#creaContorno(centroX, larghezzaTotale, altezzaMobile);
+  }
+
+  /**
+   * La stanza attorno allo scaffale.
+   *
+   * Prima qui non c'era niente: sopra i mobili e sotto i mobili si vedeva
+   * il gradiente di sfondo, cioè una campitura chiara e anonima, e
+   * l'effetto era di essere finiti da un'altra parte — un catalogo su
+   * fondo bianco invece di uno scaffale in una biblioteca.
+   *
+   * Adesso c'è la stessa architettura della soglia, con gli stessi
+   * materiali: parquet a terra, parete con la cornice sopra i mobili. Non
+   * è la stessa stanza — le due scale non c'entrano niente l'una con
+   * l'altra, qui un libro è alto un'unità e là una persona ne è alta 2,6
+   * (vedi in cima al file) — ma è lo stesso *posto*, e questo si vede.
+   *
+   * Basta poco perché quello che si vede attorno allo scaffale è poco: da
+   * dove sta la telecamera avanzano si e no un'unità sopra il mobile e
+   * tre quarti sotto. Era tutto lì il bianco.
+   */
+  #creaContorno(centroX, larghezzaTotale, altezzaMobile) {
+    // Con un margine per parte: passando fra una sezione e l'altra la
+    // telecamera scorre, e pavimento e parete non devono mai finire
+    // dentro l'inquadratura.
+    const larghezza = larghezzaTotale + MARGINE_CONTORNO * 2;
+
+    const bassoMobile = -0.06 - altezzaMobile / 2;
+    const altoMobile = -0.06 + altezzaMobile / 2;
+
+    /* ---- Il pavimento ----
+       Appena sotto ai piedi dei mobili, non alla loro stessa quota: due
+       piani complanari litigano per lo stesso pixel e il parquet si
+       riempie di chiazze. Arriva fin sotto la telecamera, perché nella
+       metà bassa dell'inquadratura si vede da lì in poi. */
+    const pavimento = new THREE.Mesh(
+      new THREE.PlaneGeometry(larghezza, PROFONDITA_CONTORNO),
+      this.materialeParquet
+    );
+
+    pavimento.rotation.x = -Math.PI / 2;
+    pavimento.position.set(centroX, bassoMobile - 0.04, PROFONDITA_CONTORNO / 2 - 1);
+    pavimento.receiveShadow = true;
+
+    this.gruppoScaffale.add(pavimento);
+
+    /* ---- La parete ----
+       Dietro il fondo dello scaffale, e più alta di lui: quello che se ne
+       vede è la fascia che avanza sopra i mobili. */
+    const altezzaParete = altezzaMobile + ALTEZZA_SOPRA * 2;
+
+    const parete = new THREE.Mesh(
+      new THREE.PlaneGeometry(larghezza, altezzaParete),
+      this.materialeIntonaco
+    );
+
+    parete.position.set(centroX, bassoMobile + altezzaParete / 2, -0.78);
+    parete.receiveShadow = true;
+
+    this.gruppoScaffale.add(parete);
+
+    /* ---- La cornice ----
+       Il listello di legno che chiude i mobili in alto. È il pezzo che
+       fa più lavoro di tutti: senza, la parete comincia dal nulla e i
+       mobili sembrano ritagliati e incollati sopra un muro. */
+    const cornice = new THREE.Mesh(
+      new THREE.BoxGeometry(larghezza, 0.34, 0.5),
+      this.materialeLegno
+    );
+
+    cornice.position.set(centroX, altoMobile + 0.17, -0.45);
+    cornice.castShadow = true;
+    cornice.receiveShadow = true;
+
+    this.gruppoScaffale.add(cornice);
+
+    /* ---- Lo zoccolo ----
+       Il basamento su cui poggiano i mobili, davanti e non dietro: un
+       battiscopa contro la parete sarebbe nascosto dal fondo dello
+       scaffale, che corre per tutta la lunghezza. Qui invece chiude in
+       basso i montanti — sotto il ripiano più basso restano sei decimi
+       di legno vuoto — e soprattutto nasconde la giuntura fra il mobile
+       e il pavimento, che è il punto in cui si vedrebbe che i due sono
+       due oggetti appoggiati invece che una libreria in una stanza. */
+    const zoccolo = new THREE.Mesh(
+      new THREE.BoxGeometry(larghezza, 0.34, 1.2),
+      this.materialeLegno
+    );
+
+    zoccolo.position.set(centroX, bassoMobile + 0.17, -0.1);
+    zoccolo.castShadow = true;
+    zoccolo.receiveShadow = true;
+
+    this.gruppoScaffale.add(zoccolo);
   }
 
   /* -------------------- La stanza d'ingresso -------------------- */
@@ -2082,6 +2220,7 @@ export default class Biblioteca {
     for (const materiale of [
       this.materialeLegno,
       this.materialeLegnoPavimento,
+      this.materialeParquet,
       this.materialeIntonaco,
       this.materialeOttone
     ]) {
@@ -2105,6 +2244,7 @@ export default class Biblioteca {
     return (
       materiale === this.materialeLegno ||
       materiale === this.materialeLegnoPavimento ||
+      materiale === this.materialeParquet ||
       materiale === this.materialeIntonaco ||
       materiale === this.materialeOttone ||
       materiale === this.materialeCarta
