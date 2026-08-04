@@ -1,8 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Pagina, { Sezione } from "../ui/Pagina";
 import Classifica from "../ui/Classifica";
 import Copertina from "../ui/Copertina";
+import DaCompletare from "../ui/DaCompletare";
 import { CaricamentoGriglia, Errore } from "../ui/Stati";
 import { useCollezione } from "../dati/collezione";
 import { primati, riepilogo } from "../dati/numeri";
@@ -22,6 +23,7 @@ import { euro, numeroIt, valoreSerie } from "../dati/serie";
  */
 export default function StatistichePage() {
   const { serie, inCorso, errore, ricarica } = useCollezione();
+  const [mostraDaCompletare, setMostraDaCompletare] = useState(false);
 
   // I conti stavano qui, e da quando il registratore di cassa della
   // stanza batte lo stesso scontrino stanno in `dati/numeri.js`: due
@@ -94,8 +96,13 @@ export default function StatistichePage() {
             valore={euro(n.perCompletare)}
             nota={`${numeroIt(n.volumiMancantiTotali)} volumi`}
             tono="ember"
+            onClick={() => setMostraDaCompletare(true)}
           />
         </dl>
+
+        {mostraDaCompletare && (
+          <DaCompletare serie={serie} onChiudere={() => setMostraDaCompletare(false)} />
+        )}
 
         {/* ---------- Stato ---------- */}
         <Sezione titolo="Com'è messa">
@@ -164,15 +171,23 @@ function conteggia(serie, estraiValori) {
     .sort((a, b) => b.valore - a.valore);
 }
 
-function Tessera({ etichetta, valore, nota, tono = "neutro" }) {
+function Tessera({ etichetta, valore, nota, tono = "neutro", onClick }) {
   const toni = {
     neutro: "text-ink-bright",
     jade: "text-jade",
     ember: "text-ember"
   };
 
+  const Contenitore = onClick ? "button" : "div";
+
   return (
-    <div className="rounded-panel border border-hairline bg-glass-1 px-5 py-4 backdrop-blur-xl transition-colors duration-base hover:border-soft">
+    <Contenitore
+      onClick={onClick}
+      type={onClick ? "button" : undefined}
+      className={`rounded-panel border border-hairline bg-glass-1 px-5 py-4 text-left backdrop-blur-xl transition-colors duration-base hover:border-soft ${
+        onClick ? "w-full cursor-pointer hover:bg-glass-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400" : ""
+      }`}
+    >
       <dt className="text-xs font-medium uppercase tracking-wider text-ink-muted">
         {etichetta}
       </dt>
@@ -182,7 +197,7 @@ function Tessera({ etichetta, valore, nota, tono = "neutro" }) {
       </dd>
 
       {nota && <p className="mt-1 text-xs text-ink-faint">{nota}</p>}
-    </div>
+    </Contenitore>
   );
 }
 
