@@ -133,8 +133,6 @@ export function valoreSerie(serie) {
   return serie.costo * serie.posseduti;
 }
 
-export const eCompleta = (serie) => completamento(serie) === 100;
-
 /**
  * Fin dove si può arrivare col segnalibro.
  *
@@ -238,18 +236,6 @@ export const FILTRI = [
     etichetta: "Annullate",
     descrizione: "Interrotte prima della fine",
     test: (s) => s.stato === "annullata"
-  },
-  {
-    id: "da-completare",
-    etichetta: "Da completare",
-    descrizione: "Ti mancano dei volumi",
-    test: (s) => volumiMancanti(s) > 0
-  },
-  {
-    id: "complete",
-    etichetta: "In pari",
-    descrizione: "Le hai tutte",
-    test: (s) => eCompleta(s)
   },
   {
     id: "brevi",
