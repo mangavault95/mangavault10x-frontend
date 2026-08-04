@@ -7,7 +7,7 @@ import Icon from "../app/Icon";
 import TornaInBiblioteca from "../ui/TornaInBiblioteca";
 import { dimenticaUscita, leggiUscita, segnaUscita } from "../app/passaggio";
 import { useCollezione } from "../dati/collezione";
-import { completamento, euro, valoreSerie } from "../dati/serie";
+import { completamento, euro, totaleDisponibile, valoreSerie } from "../dati/serie";
 
 /**
  * La home: una stanza, non un cruscotto.
@@ -595,6 +595,7 @@ function CartellinoPuntatore({ punto, area }) {
  */
 function CartellinoSerie({ serie }) {
   const pct = serie ? completamento(serie) : null;
+  const totale = serie ? totaleDisponibile(serie) : null;
 
   return (
     <div
@@ -613,7 +614,7 @@ function CartellinoSerie({ serie }) {
 
           <p className="mt-2 font-numeric text-xs text-ink-muted">
             {serie.posseduti}
-            {serie.totali ? ` / ${serie.totali}` : ""} volumi
+            {totale ? ` / ${totale}` : ""} volumi
             {pct !== null && ` · ${pct}%`}
             {serie.costo ? ` · ${euro(valoreSerie(serie))}` : ""}
           </p>

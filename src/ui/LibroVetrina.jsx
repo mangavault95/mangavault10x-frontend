@@ -4,7 +4,7 @@ import LibroVetrinaScena from "../tre/libroVetrina";
 import Copertina from "./Copertina";
 import Icon from "../app/Icon";
 import { urlCopertina } from "../services/api";
-import { completamento, volumiMancanti } from "../dati/serie";
+import { completamento, totaleDisponibile, volumiMancanti } from "../dati/serie";
 
 /**
  * Chi va in vetrina oggi.
@@ -85,6 +85,7 @@ export default function LibroVetrina({ serie }) {
   if (!pick) return null;
 
   const pct = completamento(pick);
+  const totale = totaleDisponibile(pick);
 
   return (
     <div className="relative overflow-hidden rounded-panel border border-hairline bg-glass-1 backdrop-blur-xl">
@@ -108,7 +109,7 @@ export default function LibroVetrina({ serie }) {
 
           <p className="font-numeric text-sm text-ink-muted">
             {pick.posseduti}
-            {pick.totali ? ` / ${pick.totali}` : ""} volumi
+            {totale ? ` / ${totale}` : ""} volumi
             {pct !== null && ` · ${pct}% completa`}
           </p>
 

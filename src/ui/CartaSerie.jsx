@@ -3,7 +3,7 @@ import Copertina from "./Copertina";
 import Progresso from "./Progresso";
 import { BottonePreferito } from "./AzioniSerie";
 import { useCollezione } from "../dati/collezione";
-import { completamento, volumiMancanti } from "../dati/serie";
+import { completamento, totaleDisponibile, volumiMancanti } from "../dati/serie";
 import { generiDiSerie } from "../dati/generi";
 
 /**
@@ -22,6 +22,7 @@ export default function CartaSerie({ serie, priorita = false, riempi = false }) 
 
   const pct = completamento(serie);
   const mancanti = volumiMancanti(serie);
+  const totale = totaleDisponibile(serie);
   const generi = generiDiSerie(serie).slice(0, 3);
 
   return (
@@ -100,7 +101,7 @@ export default function CartaSerie({ serie, priorita = false, riempi = false }) 
 
         <p className="font-numeric text-xs text-ink-muted">
           {serie.posseduti}
-          {serie.totali ? ` / ${serie.totali}` : ""} vol.
+          {totale ? ` / ${totale}` : ""} vol.
           {mancanti > 0 && (
             <span className="ml-1.5 text-ember/80">−{mancanti}</span>
           )}

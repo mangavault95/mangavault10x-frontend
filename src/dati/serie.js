@@ -44,6 +44,7 @@ export function normalizzaSerie(riga) {
 
   const posseduti = numero(riga.VolumiPosseduti) ?? 0;
   const totali = numero(riga.VolumiTotali);
+  const volumiItalia = numero(riga.VolumiItalia);
 
   return {
     id: riga.ID,
@@ -57,6 +58,7 @@ export function normalizzaSerie(riga) {
 
     posseduti,
     totali,
+    volumiItalia,
 
     valutazione: numero(riga.Valutazione),
     costo: numero(riga.Costo),
@@ -92,17 +94,36 @@ export const normalizzaElenco = (righe) =>
    CONTI DERIVATI
    ================================================== */
 
+/**
+ * Quanti volumi puoi davvero avere in mano oggi.
+ *
+ * `totali` è il totale della serie — in Giappone, quando lo sappiamo
+ * da AniList — ma un lettore italiano non può comprare quello che
+ * l'editore qui non ha ancora pubblicato. `volumiItalia` (da
+ * AnimeClick, vedi services/providers/animeclick.js sul backend) è
+ * l'ultimo volume uscito in Italia, ed è il numero giusto per dire
+ * se manca qualcosa da recuperare o se sei semplicemente in pari con
+ * l'editore italiano. Senza quel dato si ripiega sul totale.
+ */
+export function totaleDisponibile(serie) {
+  return serie?.volumiItalia ?? serie?.totali ?? null;
+}
+
 /** Percentuale 0-100, oppure null se non sappiamo quanti volumi siano. */
 export function completamento(serie) {
-  if (!serie?.totali || serie.totali <= 0) return null;
+  const totale = totaleDisponibile(serie);
 
-  return Math.min(100, Math.round((serie.posseduti / serie.totali) * 100));
+  if (!totale || totale <= 0) return null;
+
+  return Math.min(100, Math.round((serie.posseduti / totale) * 100));
 }
 
 export function volumiMancanti(serie) {
-  if (!serie?.totali) return null;
+  const totale = totaleDisponibile(serie);
 
-  return Math.max(0, serie.totali - serie.posseduti);
+  if (!totale) return null;
+
+  return Math.max(0, totale - serie.posseduti);
 }
 
 /** Quanto vale lo scaffale: prezzo di copertina per volumi in casa. */
@@ -226,7 +247,7 @@ export const FILTRI = [
   },
   {
     id: "complete",
-    etichetta: "Complete",
+    etichetta: "In pari",
     descrizione: "Le hai tutte",
     test: (s) => eCompleta(s)
   },

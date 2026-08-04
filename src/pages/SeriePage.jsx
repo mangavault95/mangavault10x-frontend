@@ -25,6 +25,7 @@ import {
   completamento,
   dataIt,
   euro,
+  totaleDisponibile,
   valoreSerie,
   volumiMancanti
 } from "../dati/serie";
@@ -87,6 +88,7 @@ export default function SeriePage() {
 
   const pct = completamento(serie);
   const mancanti = volumiMancanti(serie);
+  const totaleAttuale = totaleDisponibile(serie);
   const sorelle = edizioniSorelle(serie, tutte);
 
   // Letto/in lettura/non letto guarda cosa hai davvero finito, non
@@ -253,7 +255,7 @@ export default function SeriePage() {
                     />
 
                     <span className="font-numeric text-sm text-ink-faint">
-                      {serie.totali ? `su ${serie.totali}` : "volumi"}
+                      {totaleAttuale ? `su ${totaleAttuale}` : "volumi"}
                     </span>
                   </div>
 
@@ -271,7 +273,7 @@ export default function SeriePage() {
                   }
                 />
 
-                {serie.totali === null && (
+                {totaleAttuale === null && (
                   <p className="text-xs text-ink-faint">
                     Numero totale di volumi non registrato: il completamento non è calcolabile.
                   </p>
