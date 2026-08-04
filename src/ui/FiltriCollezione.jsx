@@ -75,6 +75,7 @@ export default function FiltriCollezione({
           </h3>
           <Tendina
             etichetta="Editore"
+            mostraEtichetta={false}
             valore={editoreAttivo || "tutti"}
             opzioni={opzioniEditore}
             onCambia={(v) => onCambiaEditore(v === "tutti" ? null : v)}

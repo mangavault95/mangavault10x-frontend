@@ -127,12 +127,14 @@ export function Pastiglie({ opzioni, attiva, onCambia, conteggi }) {
  * un elenco che dice "Ordina: Titolo / Ordina: Voto / Ordina: …"
  * fa leggere la stessa parola sei volte per scegliere una volta.
  */
-export function Tendina({ etichetta, valore, opzioni, onCambia }) {
+export function Tendina({ etichetta, valore, opzioni, onCambia, mostraEtichetta = true }) {
   return (
     <label className="relative inline-flex items-center gap-2.5">
-      <span className="hidden text-xs font-medium uppercase tracking-wider text-ink-muted sm:block">
-        {etichetta}
-      </span>
+      {mostraEtichetta && (
+        <span className="hidden text-xs font-medium uppercase tracking-wider text-ink-muted sm:block">
+          {etichetta}
+        </span>
+      )}
 
       <select
         value={valore}
