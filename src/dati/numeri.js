@@ -1,4 +1,11 @@
-import { completamento, euro, plurale, valoreSerie, volumiMancanti } from "./serie";
+import {
+  completamento,
+  euro,
+  numeroIt,
+  plurale,
+  valoreSerie,
+  volumiMancanti
+} from "./serie";
 
 /**
  * I conti della collezione, in un posto solo.
@@ -71,10 +78,25 @@ export function riepilogo(serie) {
 }
 
 /**
- * I primati: una serie per categoria, quella che svetta.
+ * I primati, in due gruppi che rispondono a due domande diverse.
  *
- * @param formatta  come scrivere il valore vinto. Lo scontrino lo vuole
- *                  corto e in maiuscolo, la pagina dei Numeri disteso.
+ * Erano un elenco solo, e mescolava cose che non si confrontano: «la
+ * serie più lunga» parla di quello che è già sullo scaffale, «ne
+ * mancano di più» della caccia ancora aperta. Divisi si leggono come
+ * due bilanci separati; insieme erano una classifica di tutto e di
+ * niente.
+ *
+ * «Più volumi» (quanti ne possiedi) è sparito perché vinceva sempre
+ * insieme a «serie più lunga» (quanti ne esistono): chi ha la serie più
+ * lunga ha quasi per forza anche più volumi di chiunque altro, e due
+ * riquadri con la stessa copertina e quasi lo stesso numero sembrano un
+ * errore, non due record.
+ *
+ * Ogni voce esce nella stessa forma — `titolo` è la cosa che ha vinto,
+ * `dettaglio` il valore con cui ha vinto, `nota` il conto che lo spiega
+ * — così chi la disegna non deve sapere di che primato si tratti.
+ * `serie` è la scheda da aprire, e resta `null` per il primato che non
+ * premia una serie ma una casa editrice.
  */
 export function primati(serie) {
   if (!serie?.length) return [];
@@ -82,8 +104,8 @@ export function primati(serie) {
   // `direzione` sceglie se vince il valore più alto o più basso, senza
   // duplicare il resto del confronto: "ne mancano di più" e "prossima
   // da completare" sono la stessa domanda letta al contrario.
-  const estremo = (etichetta, estrai, formatta, direzione) => {
-    const candidate = serie.filter((s) => estrai(s) !== null && estrai(s) !== undefined);
+  const estremo = (elenco, direzione, { id, etichetta, estrai, scrivi }) => {
+    const candidate = elenco.filter((s) => estrai(s) !== null && estrai(s) !== undefined);
 
     if (!candidate.length) return null;
 
@@ -91,24 +113,117 @@ export function primati(serie) {
       direzione * estrai(b) > direzione * estrai(a) ? b : a
     );
 
-    return { etichetta, serie: vincitrice, dettaglio: formatta(estrai(vincitrice)) };
+    return { id, etichetta, titolo: vincitrice.titolo, serie: vincitrice, ...scrivi(vincitrice) };
   };
 
-  const migliore = (etichetta, estrai, formatta) => estremo(etichetta, estrai, formatta, 1);
-  const minore = (etichetta, estrai, formatta) => estremo(etichetta, estrai, formatta, -1);
+  const migliore = (elenco, voce) => estremo(elenco, 1, voce);
+  const minore = (elenco, voce) => estremo(elenco, -1, voce);
+
+  /* -------------------- La libreria -------------------- */
+
+  const libreria = [
+    migliore(serie, {
+      id: "volume-caro",
+      etichetta: "Volume più caro",
+      estrai: (s) => s.costo || null,
+      scrivi: (s) => ({
+        dettaglio: euro(s.costo),
+        nota: plurale(s.posseduti, "volume in casa", "volumi in casa")
+      })
+    }),
+    migliore(serie, {
+      id: "serie-lunga",
+      etichetta: "Serie più lunga",
+      estrai: (s) => s.totali,
+      scrivi: (s) => ({
+        dettaglio: `${numeroIt(s.totali)} volumi`,
+        nota: `ne hai ${numeroIt(s.posseduti)}`
+      })
+    }),
+    migliore(serie, {
+      id: "serie-costosa",
+      etichetta: "Serie più costosa",
+      estrai: (s) => valoreSerie(s) || null,
+      // Il conto in chiaro sotto il totale: è la moltiplicazione a fare
+      // il primato, e senza si crederebbe a un prezzo di listino.
+      scrivi: (s) => ({
+        dettaglio: euro(valoreSerie(s)),
+        nota: `${numeroIt(s.posseduti)} × ${euro(s.costo)}`
+      })
+    })
+  ].filter(Boolean);
+
+  /* -------------------- Le serie in corso -------------------- */
+
+  // Un solo elenco per tutti e tre: qui la domanda è sempre "cosa manca",
+  // e le serie complete non hanno voce in capitolo.
+  const daFinire = serie.filter((s) => volumiMancanti(s) > 0);
+
+  const mancaDiPiu = migliore(daFinire, {
+    id: "manca-di-piu",
+    etichetta: "Ne mancano di più",
+    estrai: (s) => volumiMancanti(s),
+    scrivi: (s) => ({
+      dettaglio: plurale(volumiMancanti(s), "volume", "volumi"),
+      nota: s.costo ? `${euro(volumiMancanti(s) * s.costo)} per finirla` : null
+    })
+  });
+
+  let prossima = minore(daFinire, {
+    id: "prossima",
+    etichetta: "Prossima da completare",
+    estrai: (s) => volumiMancanti(s),
+    scrivi: (s) => ({
+      dettaglio: plurale(volumiMancanti(s), "volume", "volumi"),
+      nota: s.costo ? `${euro(volumiMancanti(s) * s.costo)} e la chiudi` : null
+    })
+  });
+
+  // Con una sola serie incompleta il massimo e il minimo sono la stessa
+  // riga: è lo stesso doppione che ha fatto togliere "più volumi".
+  if (prossima && mancaDiPiu && prossima.serie.id === mancaDiPiu.serie.id) prossima = null;
+
+  const inCorso = [mancaDiPiu, prossima, editorePiuAperto(daFinire)].filter(Boolean);
 
   return [
-    migliore("Più volumi", (s) => s.posseduti || null, (v) => `${v} volumi`),
-    migliore("Serie più lunga", (s) => s.totali, (v) => `${v} volumi totali`),
-    migliore("Vale di più", (s) => valoreSerie(s) || null, (v) => euro(v)),
-    migliore("Ne mancano di più", (s) => volumiMancanti(s) || null, (v) => `${v} da prendere`),
-    // "Voto più alto" è stato tolto: con un tetto a 5 stelle e tante
-    // serie a pari voto, chi vince sarebbe arbitrario, non un primato.
-    minore(
-      "Prossima da completare",
-      (s) => (volumiMancanti(s) > 0 ? volumiMancanti(s) : null),
-      (v) => plurale(v, "volume da recuperare", "volumi da recuperare")
-    ),
-    migliore("Più cara per volume", (s) => s.costo || null, (v) => `${euro(v)} a volume`)
-  ].filter(Boolean);
+    { id: "libreria", titolo: "La libreria", sommario: "Quello che è già sullo scaffale", voci: libreria },
+    { id: "in-corso", titolo: "Le serie in corso", sommario: "Quello che manca ancora", voci: inCorso }
+  ].filter((g) => g.voci.length);
+}
+
+/**
+ * L'unico primato che non premia una serie ma una casa editrice: quella
+ * che ti ha lasciato più buchi da riempire.
+ *
+ * Vince per numero di serie aperte, non per volumi mancanti: dice quanti
+ * fronti hai aperto con lo stesso editore, che è la cosa che si traduce
+ * in ordini da fare. I volumi restano scritti sotto, perché una serie
+ * cui manca un volume e una cui ne mancano venti non pesano uguale.
+ */
+function editorePiuAperto(daFinire) {
+  const mappa = new Map();
+
+  for (const s of daFinire) {
+    if (!s.editore) continue;
+
+    const conto = mappa.get(s.editore) || { quante: 0, volumi: 0 };
+
+    conto.quante += 1;
+    conto.volumi += volumiMancanti(s);
+
+    mappa.set(s.editore, conto);
+  }
+
+  if (!mappa.size) return null;
+
+  const [nome, conto] = [...mappa].reduce((a, b) => (b[1].quante > a[1].quante ? b : a));
+
+  return {
+    id: "editore-aperto",
+    etichetta: "Editore da completare",
+    titolo: nome,
+    serie: null,
+    dettaglio: plurale(conto.quante, "serie aperta", "serie aperte"),
+    nota: `${numeroIt(conto.volumi)} volumi da prendere`
+  };
 }

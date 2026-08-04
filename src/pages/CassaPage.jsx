@@ -46,7 +46,11 @@ export default function CassaPage() {
   const { serie, inCorso, errore, ricarica } = useCollezione();
 
   const conti = useMemo(() => riepilogo(serie), [serie]);
-  const record = useMemo(() => primati(serie), [serie]);
+
+  // I primati arrivano divisi in gruppi, che è come li vuole la pagina
+  // dei Numeri. Uno scontrino non ha sezioni: è una colonna di righe, e
+  // qui i gruppi tornano a essere un elenco solo.
+  const record = useMemo(() => primati(serie).flatMap((g) => g.voci), [serie]);
 
   // L'ora della battuta. Uno scontrino senza data e ora non è uno
   // scontrino, è un volantino.
@@ -221,12 +225,12 @@ function Scontrino({ conti, record, battuto }) {
             </Riga>
 
             {record.map((p) => (
-              <Riga key={p.etichetta} ritardo={prossimo()}>
+              <Riga key={p.id} ritardo={prossimo()}>
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="truncate uppercase opacity-70">{p.etichetta}</span>
                   <span className="shrink-0 text-right">{p.dettaglio}</span>
                 </div>
-                <p className="truncate text-[0.7rem] font-semibold">{p.serie.titolo}</p>
+                <p className="truncate text-[0.7rem] font-semibold">{p.titolo}</p>
               </Riga>
             ))}
           </>
