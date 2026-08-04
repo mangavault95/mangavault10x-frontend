@@ -1,4 +1,4 @@
-import { completamento, euro, valoreSerie, volumiMancanti } from "./serie";
+import { completamento, euro, plurale, valoreSerie, volumiMancanti } from "./serie";
 
 /**
  * I conti della collezione, in un posto solo.
@@ -29,7 +29,13 @@ export function riepilogo(serie) {
     ? conCosto.reduce((t, s) => t + s.costo, 0) / conCosto.length
     : 0;
 
-  const complete = serie.filter((s) => completamento(s) === 100).length;
+  // "Completa" richiede due cose insieme: hai tutto quello che è uscito
+  // (completamento 100) E l'editore ha finito di pubblicarla. Una serie
+  // in corso di cui possiedi ogni volume uscito finora non è completa,
+  // è solo in pari — l'editore può pubblicarne un altro il mese prossimo.
+  const complete = serie.filter(
+    (s) => completamento(s) === 100 && s.stato === "conclusa"
+  ).length;
   const daCompletare = serie.filter((s) => volumiMancanti(s) > 0).length;
   const inCorsoEditore = serie.filter((s) => s.stato === "in_corso").length;
 
@@ -73,21 +79,36 @@ export function riepilogo(serie) {
 export function primati(serie) {
   if (!serie?.length) return [];
 
-  const migliore = (etichetta, estrai, formatta) => {
+  // `direzione` sceglie se vince il valore più alto o più basso, senza
+  // duplicare il resto del confronto: "ne mancano di più" e "prossima
+  // da completare" sono la stessa domanda letta al contrario.
+  const estremo = (etichetta, estrai, formatta, direzione) => {
     const candidate = serie.filter((s) => estrai(s) !== null && estrai(s) !== undefined);
 
     if (!candidate.length) return null;
 
-    const vincitrice = candidate.reduce((a, b) => (estrai(b) > estrai(a) ? b : a));
+    const vincitrice = candidate.reduce((a, b) =>
+      direzione * estrai(b) > direzione * estrai(a) ? b : a
+    );
 
     return { etichetta, serie: vincitrice, dettaglio: formatta(estrai(vincitrice)) };
   };
 
+  const migliore = (etichetta, estrai, formatta) => estremo(etichetta, estrai, formatta, 1);
+  const minore = (etichetta, estrai, formatta) => estremo(etichetta, estrai, formatta, -1);
+
   return [
     migliore("Più volumi", (s) => s.posseduti || null, (v) => `${v} volumi`),
-    migliore("Voto più alto", (s) => s.valutazione, (v) => `${v} / 5`),
     migliore("Serie più lunga", (s) => s.totali, (v) => `${v} volumi totali`),
     migliore("Vale di più", (s) => valoreSerie(s) || null, (v) => euro(v)),
-    migliore("Ne mancano di più", (s) => volumiMancanti(s) || null, (v) => `${v} da prendere`)
+    migliore("Ne mancano di più", (s) => volumiMancanti(s) || null, (v) => `${v} da prendere`),
+    // "Voto più alto" è stato tolto: con un tetto a 5 stelle e tante
+    // serie a pari voto, chi vince sarebbe arbitrario, non un primato.
+    minore(
+      "Prossima da completare",
+      (s) => (volumiMancanti(s) > 0 ? volumiMancanti(s) : null),
+      (v) => plurale(v, "volume da recuperare", "volumi da recuperare")
+    ),
+    migliore("Più cara per volume", (s) => s.costo || null, (v) => `${euro(v)} a volume`)
   ].filter(Boolean);
 }

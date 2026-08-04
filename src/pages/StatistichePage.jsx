@@ -4,6 +4,7 @@ import Pagina, { Sezione } from "../ui/Pagina";
 import Classifica from "../ui/Classifica";
 import Copertina from "../ui/Copertina";
 import DaCompletare from "../ui/DaCompletare";
+import VotiSerie from "../ui/VotiSerie";
 import { CaricamentoGriglia, Errore } from "../ui/Stati";
 import { useCollezione } from "../dati/collezione";
 import { primati, riepilogo } from "../dati/numeri";
@@ -24,6 +25,7 @@ import { euro, numeroIt, valoreSerie } from "../dati/serie";
 export default function StatistichePage() {
   const { serie, inCorso, errore, ricarica } = useCollezione();
   const [mostraDaCompletare, setMostraDaCompletare] = useState(false);
+  const [mostraVoti, setMostraVoti] = useState(false);
 
   // I conti stavano qui, e da quando il registratore di cassa della
   // stanza batte lo stesso scontrino stanno in `dati/numeri.js`: due
@@ -36,6 +38,7 @@ export default function StatistichePage() {
 
   const editori = useMemo(() => conteggia(serie, (s) => (s.editore ? [s.editore] : [])), [serie]);
   const generi = useMemo(() => conteggia(serie, (s) => s.generi), [serie]);
+  const autori = useMemo(() => conteggia(serie, (s) => (s.autore ? [s.autore] : [])), [serie]);
 
   const spesaPerEditore = useMemo(() => {
     const mappa = new Map();
@@ -104,8 +107,12 @@ export default function StatistichePage() {
           <DaCompletare serie={serie} onChiudere={() => setMostraDaCompletare(false)} />
         )}
 
+        {mostraVoti && (
+          <VotiSerie serie={serie} media={n.votoMedio} onChiudere={() => setMostraVoti(false)} />
+        )}
+
         {/* ---------- Stato ---------- */}
-        <Sezione titolo="Com'è messa">
+        <Sezione titolo="Stato attuale">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Tessera
               etichetta="Serie complete"
@@ -118,7 +125,8 @@ export default function StatistichePage() {
             <Tessera
               etichetta="Voto medio"
               valore={n.votoMedio ? n.votoMedio.toFixed(1) : "—"}
-              nota={n.votoMedio ? "su 5" : "nessun voto registrato"}
+              nota={n.votoMedio ? "su 5 · vedi il dettaglio" : "nessun voto registrato"}
+              onClick={n.votoMedio ? () => setMostraVoti(true) : undefined}
             />
           </div>
         </Sezione>
@@ -135,6 +143,10 @@ export default function StatistichePage() {
 
           <Sezione titolo="Dove sono finiti i soldi">
             <Classifica voci={spesaPerEditore} formatta={(v) => euro(v)} />
+          </Sezione>
+
+          <Sezione titolo="Autori con più serie">
+            <Classifica voci={autori.slice(0, 8)} unita="serie" />
           </Sezione>
         </div>
 
