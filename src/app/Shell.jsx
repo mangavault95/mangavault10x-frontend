@@ -96,11 +96,11 @@ export default function Shell({ children }) {
                   : "border-brass-400/40 bg-legno text-brass-400 shadow-brass group-hover:bg-brass-400 group-hover:text-void"
               }`}
           >
-            <Icon nome="kanjiLibro" dimensione={24} />
+            <Icon nome="portale" dimensione={26} />
           </span>
 
           <span className="text-[0.6rem] font-medium uppercase tracking-wider text-ink-muted transition-colors group-hover:text-brass-300">
-            Sala
+            Biblioteca
           </span>
         </NavLink>
 

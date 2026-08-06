@@ -26,9 +26,21 @@
 
 const arredo = (nome) => new URL(`./assets/arredo/${nome}.glb`, import.meta.url).href;
 
+/* La scala a pioli non c'è più.
+   --------------------------------------------------------------------
+   Stava appoggiata alla prima fila di librerie e doveva dire
+   "biblioteca" invece che "scaffale"; quello che diceva davvero, in
+   mezzo all'inquadratura, era che davanti alle copertine c'era un
+   traliccio.
+
+   `scala.glb` resta nella cartella per poterla rimettere, ma **non è
+   come il mago**: quello è fuori dalla build perché il suo indirizzo si
+   scrive per intero, e Vite emette solo il file che vede nominato. Qui
+   sotto l'indirizzo si compone (`arredo(nome)`), e a un `new URL` con
+   dentro una variabile Vite risponde emettendo **tutta la cartella** —
+   quindi quei venti chilobyte partono comunque, che qualcuno li chieda o
+   no. L'unico modo per non spedirli è cancellare il file. */
 export const MODELLI = {
-  libreria: arredo("libreria"),
-  scala: arredo("scala"),
   banconeTesta: arredo("banconeTesta"),
   banconeDritto: arredo("banconeDritto"),
   cassa: arredo("cassa"),
@@ -36,19 +48,27 @@ export const MODELLI = {
   libroAperto: arredo("libroAperto"),
   lampadaTavolo: arredo("lampadaTavolo"),
   lampadaTerra: arredo("lampadaTerra"),
-  lampadario: arredo("lampadario"),
   poltrona: arredo("poltrona"),
   tavolino: arredo("tavolino"),
   tappeto: arredo("tappeto"),
-  pianta: arredo("pianta")
+  // Tre piante diverse e non una ripetuta: la stessa foglia in cinque
+  // punti della stanza si riconosce, e una volta riconosciuta si vede
+  // solo quella.
+  pianta: arredo("pianta"), // la monstera, larga
+  piantaAlta: arredo("piantaAlta"), // la sansevieria, stretta e verticale
+  piantaRicadente: arredo("piantaRicadente") // il nastrino, che sborda
 };
 
-export const BIBLIOTECARIO = new URL("./assets/bibliotecario.glb", import.meta.url).href;
+// Cambiare personaggio è cambiare questa riga: `libraio.js` non sa cosa
+// sta caricando, gli basta che sia un rig umanoide con una clip che si
+// chiami Idle. Il mago KayKit di prima resta accanto nella cartella.
+export const BIBLIOTECARIO = new URL("./assets/bibliotecaria.glb", import.meta.url).href;
 
-// Solo i tre grossi. Gli altri dodici messi insieme non arrivano al
-// peso di uno di questi, e una fila di richieste minute mentre parte la
-// pagina costa più di quello che fa risparmiare.
-const PESANTI = [MODELLI.libreria, BIBLIOTECARIO, MODELLI.cassa];
+// Solo i due grossi: la bibliotecaria (492 kB) e il registratore (131).
+// La libreria stava in questo elenco quando era un modello scaricato da
+// 331 kB; adesso non è più un file — è costruita a mano in
+//  — e non c'è più niente da anticipare.
+const PESANTI = [BIBLIOTECARIO, MODELLI.cassa];
 
 const anticipati = new Map();
 

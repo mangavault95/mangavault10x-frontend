@@ -13,18 +13,39 @@ l'attribuzione la richiede davvero.
 
 | File | Cos'è | Autore | Licenza |
 | --- | --- | --- | --- |
-| `bibliotecario.glb` | Il bibliotecario (il Mago di *KayKit – Character Pack: Adventurers*) | Kay Lousberg — kaylousberg.com | CC0 |
+| `bibliotecaria.glb` | La bibliotecaria (*Anne*, da *Ultimate Animated Character Pack*) | Quaternius — quaternius.com | CC0 |
+| `bibliotecario.glb` | Il personaggio di prima (il Mago di *KayKit – Character Pack: Adventurers*), non più in uso | Kay Lousberg — kaylousberg.com | CC0 |
+
+Il mago è rimasto nella cartella ma non lo importa nessuno, quindi non
+finisce nella build: sta lì perché tornare indietro è cambiare una riga in
+`tre/indirizzi.js`. Se dopo un po' il personaggio nuovo convince, si
+cancella.
+
+**`bibliotecaria.glb` non è il file scaricato.** L'originale sono 671 kB con
+dentro quattordici clip d'animazione e un'ascia bipenne: di clip ne servono
+due — `Idle`, il respiro da ferma, e `Wave`, il saluto con la mano — e
+l'ascia in una biblioteca non ci sta. Tolto il resto e ricompattato il
+binario: **481 kB, una sola mesh, un solo disegno per fotogramma** (il mago
+ne costava otto).
+
+Attenzione a una cosa, se un giorno si cambia di nuovo personaggio: questi
+pacchetti escono da FBX2glTF con `metallicFactor` a 0,4 e `roughness` a
+0,27, e con le quattro luci della stanza addosso quella è **plastica
+lucida** — è il difetto per cui il mago è stato bocciato, e non era colpa
+del mago. Li opacizza `#opacizza` in `tre/libraio.js` al caricamento, e la
+riga vale per qualunque modello ci si metta.
 
 ## Arredo (`arredo/`)
 
 | File | Cos'è | Autore | Licenza |
 | --- | --- | --- | --- |
-| `libreria.glb` | La libreria, ripetuta per tutta la parete di sinistra | Quaternius | CC0 |
+| `piantaAlta.glb` | La sansevieria: al piede del pilastro e sopra i mobili | Quaternius | CC0 |
+| `piantaRicadente.glb` | Il nastrino che sborda dai ripiani e dal davanzale | Quaternius | CC0 |
 | `banconeDritto.glb`, `banconeTesta.glb` | I moduli del banco | Quaternius | CC0 |
-| `scala.glb` | La scala a pioli | Quaternius | CC0 |
+| `scala.glb` | La scala a pioli, **non più in uso** (vedi sotto) | Quaternius | CC0 |
 | `libroAperto.glb` | Il volume aperto sul banco e sul tavolino | Quaternius | CC0 |
-| `pianta.glb` | Le piante | Quaternius | CC0 |
-| `lampadario.glb` | Le lampade a sospensione | Quaternius | CC0 |
+| `pianta.glb` | La monstera all'angolo del banco e sopra i mobili di fondo | Quaternius | CC0 |
+| `lampadario.glb` | Il lampadario a quattro bracci sopra la sala (*Light Chandelier*). Prima erano globi di vetro: la cosa più moderna della stanza, e in una sala di pietra stonavano. | Quaternius | CC0 |
 | `libri.glb` | La pila di volumi sul banco | Kenney — kenney.nl | CC0 |
 | `poltrona.glb` | Le poltroncine dell'angolo lettura | Kenney | CC0 |
 | `tavolino.glb` | Il tavolino | Kenney | CC0 |
@@ -32,12 +53,32 @@ l'attribuzione la richiede davvero.
 | `lampadaTavolo.glb` | La lampada sul banco | Kenney | CC0 |
 | `lampadaTerra.glb` | La piantana dell'angolo lettura | Kenney | CC0 |
 
+`scala.glb` è rimasto nella cartella, ma **non come il mago**: il mago
+resta fuori dalla build perché il suo indirizzo è scritto per intero,
+mentre i modelli d'arredo hanno l'indirizzo composto (`arredo(nome)` in
+`tre/indirizzi.js`) e a un `new URL` con dentro una variabile Vite
+risponde emettendo tutta la cartella. La scala quindi continua a
+spedirsi: 20 kB per un modello che nessuno usa. Per non spedirla va
+cancellato il file. È stata tolta dalla scena perché in mezzo
+all'inquadratura leggeva come un traliccio davanti alle copertine.
+
+**Il pavimento della soglia non è più una texture scaricata.** È
+disegnato su un canvas (`creaTexturaPavimento` in `tre/stanza.js`):
+doghe a corsi sfalsati, con le fughe, i nodi e un tono diverso per ogni
+asse. Il legno di Poly Haven vestiva pavimento, boiserie, banco e travi
+cambiando solo il numero di ripetizioni, e il risultato era una stanza
+foderata di un colore solo in cui non si capiva dove finisse una
+superficie e cominciasse l'altra. Il parquet *dentro lo scaffale* usa
+ancora la texture scaricata: là il pavimento si vede di scorcio per due
+metri, e le fughe non servono a niente.
+
 ## Texture
 
 | Cartella | Cos'è | Autore | Licenza |
 | --- | --- | --- | --- |
-| `legno/` | Il legno di pavimento, boiserie, travi e scaffali (*Wood Table 001*) | Poly Haven — polyhaven.com | CC0 |
-| `intonaco/` | L'intonaco delle pareti (*Plastered Wall 02*) | Poly Haven | CC0 |
+| `legno/` | Il legno di boiserie, travi, scaffali e del parquet dentro la vetrina (*Wood Table 001*) | Poly Haven — polyhaven.com | CC0 |
+| `intonaco/` | L'intonaco, ormai solo di rincalzo (*Plastered Wall 02*) | Poly Haven | CC0 |
+| `pietra/` | La muratura delle pareti (*Castle Wall Slates*), diffuse a 768 e normali a 512 | Poly Haven | CC0 |
 
 ## L'eccezione: attribuzione dovuta
 

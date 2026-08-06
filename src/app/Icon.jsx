@@ -45,6 +45,27 @@ const TRACCIATI = {
    * pixel sono la differenza fra un kanji e uno scarabocchio.
    */
   kanjiLibro: "M3.8 7.6h16.4M12 3v18M12 8.2Q8 12.6 3.4 19.8M12 8.2Q16 12.6 20.6 19.8M9 16.4h6",
+  /**
+   * Il portale: un torii le cui colonne sono due volumi in piedi.
+   *
+   * È il marchio di MangaVault. L'idea di partenza del sito è entrare da
+   * una porta e trovarsi in un posto (vedi `ROADMAP.md`), e un torii è
+   * l'unica porta al mondo che non ha ante e non si apre: segna un
+   * passaggio, non lo chiude. Fatta di libri, dice anche di che passaggio
+   * si tratta.
+   *
+   * QUI I LIBRI NON SI VEDONO, ED È VOLUTO. Il marchio esiste in due
+   * misure: questa e quella grande sull'insegna della stanza
+   * (`creaTexturaInsegna` in `tre/bancone.js`), dove le colonne hanno le
+   * nervature del dorso e in mezzo si intravedono le pagine. A ventiquattro
+   * unità quei dettagli sono mezzo pixel l'uno e diventano sporco: resta
+   * la sagoma, che è la parte che si riconosce da lontano.
+   *
+   * L'architrave è curva verso l'alto (`Q`) e non dritta, perché è così
+   * che è fatto il kasagi di un torii vero — ed è l'unico tratto che
+   * distingue questa forma da una lettera greca.
+   */
+  portale: "M2.6 6.5Q12 4.4 21.4 6.5M5.4 9.9h13.2M7.7 6.8V20M16.3 6.8V20M4.4 20h15.2",
   // Un cartellino prezzo: i desideri sono da comprare, non da segnare
   // come preferiti — per questo non riusa "star".
   cartellino: "M20.6 12.3 12.7 20.2a2 2 0 0 1-2.8 0l-6.1-6.1a2 2 0 0 1 0-2.8L11.7 3.3a2 2 0 0 1 1.4-.6H19a2 2 0 0 1 2 2v5.3a2 2 0 0 1-.4 1.3ZM16.5 7.5h.01"

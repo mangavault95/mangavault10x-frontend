@@ -36,9 +36,23 @@ export const UNITA_PER_METRO = 2.6 / 1.7;
 
 export const metri = (quanti) => quanti * UNITA_PER_METRO;
 
+/* Cosa conta come foglia, in tinta.
+   --------------------------------------------------------------------
+   Le piante arrivano tutte dallo stesso pacchetto e sono tutte dello
+   stesso verde: cinque copie in giro per la stanza si riconoscono come
+   cinque copie. Girare la tinta di un pelo le rende cinque piante
+   diverse — ma solo il fogliame, o il vaso di cotto diventa giallo.
+   Verde è tutto quello che sta fra il giallo-oliva e il ciano: fuori di
+   lì c'è il cotto da una parte e niente dall'altra. */
+const VERDE_DA = 0.16;
+const VERDE_A = 0.48;
+
 export class Magazzino {
   #promesse = new Map();
   #originali = [];
+  // I materiali nati qui dentro con `tinta`: non stanno in nessun
+  // modello originale, quindi nessun altro li libererebbe.
+  #tinti = [];
 
   vivo = true;
 
@@ -82,6 +96,9 @@ export class Magazzino {
    * @param ancora     dove sta l'origine del gruppo restituito:
    *                   "piedi" (posalo sul pavimento), "cima" (appendilo
    *                   al soffitto) o "centro"
+   * @param tinta      `{ foglia, chiaro }`: di quanto girare la tinta
+   *                   del fogliame e di quanto schiarirlo. Serve alle
+   *                   piante, che sono tre modelli sparsi in otto punti.
    *
    * Restituisce un gruppo, non la mesh: così l'origine è sempre nel
    * punto che serve a chi lo posa, qualunque sia il punto di riferimento
@@ -89,7 +106,7 @@ export class Magazzino {
    * l'ingombro finale, che serve per allineare più copie in fila senza
    * doverlo ricalcolare ogni volta.
    */
-  async preleva(url, { alto, largo, ancora = "piedi", ombra = true } = {}) {
+  async preleva(url, { alto, largo, ancora = "piedi", ombra = true, tinta } = {}) {
     const originale = await this.#carica(url);
 
     if (!this.vivo) return null;
@@ -131,6 +148,8 @@ export class Magazzino {
       oggetto.receiveShadow = true;
     });
 
+    if (tinta) this.#tingi(modello, tinta);
+
     const gruppo = new THREE.Group();
     gruppo.add(modello);
 
@@ -139,6 +158,55 @@ export class Magazzino {
       .getSize(new THREE.Vector3());
 
     return gruppo;
+  }
+
+  /**
+   * Gira la tinta di una copia senza toccare l'originale.
+   *
+   * I materiali arrivano condivisi con il modello di partenza — è tutto
+   * il punto del magazzino — quindi scriverci dentro cambierebbe il
+   * colore di *tutte* le copie già in scena. Qui se ne fa una copia per
+   * materiale, e la mappa `fatti` fa sì che due mesh che condividevano
+   * lo stesso materiale continuino a condividerlo anche dopo.
+   *
+   * Le immagini restano quelle dell'originale: una copia di materiale
+   * punta alla stessa texture, e liberarla qui la toglierebbe da sotto i
+   * piedi a chi la usa ancora. Le smaltisce `smaltisci`, una volta sola.
+   */
+  #tingi(modello, { foglia = 0, chiaro = 0 }) {
+    const fatti = new Map();
+
+    const copiaDi = (materiale) => {
+      if (fatti.has(materiale)) return fatti.get(materiale);
+
+      const copia = materiale.clone();
+      const hsl = {};
+      copia.color.getHSL(hsl);
+
+      const foglie = hsl.h >= VERDE_DA && hsl.h <= VERDE_A;
+
+      copia.color.setHSL(
+        foglie ? (hsl.h + foglia + 1) % 1 : hsl.h,
+        hsl.s,
+        // Il vaso si schiarisce con la pianta, ma della metà: due
+        // piante identiche in due vasi identici restano due copie, due
+        // piante diverse in vasi appena diversi sono due piante.
+        Math.min(0.94, Math.max(0.03, hsl.l * (1 + (foglie ? chiaro : chiaro / 2))))
+      );
+
+      this.#tinti.push(copia);
+      fatti.set(materiale, copia);
+
+      return copia;
+    };
+
+    modello.traverse((oggetto) => {
+      if (!oggetto.isMesh || !oggetto.material) return;
+
+      oggetto.material = Array.isArray(oggetto.material)
+        ? oggetto.material.map(copiaDi)
+        : copiaDi(oggetto.material);
+    });
   }
 
   /**
@@ -162,6 +230,12 @@ export class Magazzino {
 
   smaltisci() {
     this.vivo = false;
+
+    // Prima le copie tinte, e solo il materiale: le immagini che ci
+    // stanno attaccate sono quelle degli originali, e li si smaltisce
+    // qui sotto.
+    for (const materiale of this.#tinti) materiale.dispose();
+    this.#tinti = [];
 
     for (const originale of this.#originali) {
       originale.traverse((oggetto) => {

@@ -274,6 +274,12 @@ export default function ScenaBanco({ pensando = false, className = "" }) {
 
           scena.add(libraio.gruppo);
 
+          // Alza la mano appena ci si affaccia. Non subito: mezzo
+          // secondo di ritardo perché la pagina si sta ancora
+          // accendendo dal nero, e un saluto dato al buio è un saluto
+          // sprecato.
+          const benvenuto = setTimeout(() => libraio.saluta(), 500);
+
           /* ---- L'inquadratura ----
              Due vincoli, due incognite: dove sta la telecamera in alto e
              quanto è lontana. Risolti qui invece che tarati a occhio, che
@@ -328,7 +334,10 @@ export default function ScenaBanco({ pensando = false, className = "" }) {
 
           smonta = () => {
             cancelAnimationFrame(fotogramma);
+            clearTimeout(benvenuto);
             osservatore.disconnect();
+
+            libraio.smaltisci();
 
             scena.traverse((oggetto) => {
               if (oggetto.isMesh) oggetto.geometry?.dispose();

@@ -17,6 +17,11 @@ export const COLORE_LEGNO = 0x6b4b32;
 export const COLORE_INTONACO = 0xefe3cd;
 export const COLORE_OTTONE = 0xc9a24b;
 
+// La muratura: grigio caldo, il colore della malta più che quello dei
+// conci. È il ripiego che si vede prima che arrivi la texture, e deve
+// somigliare alla media di quella — non al sasso più scuro.
+export const COLORE_PIETRA = 0x9d9484;
+
 // Il fondo del gradiente dietro allo scaffale. Si vede pochissimo — da
 // quando lo scaffale ha una parete e un pavimento attorno, quasi mai —
 // ma quando si vede deve essere caldo come il resto.

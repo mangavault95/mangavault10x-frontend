@@ -5,8 +5,9 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { copertinaLocale } from "./copertine";
 import { caricaBibliotecario, ALTEZZA_BIBLIOTECARIO } from "./libraio";
 import { Magazzino, metri } from "./modelli";
-import { costruisciGuscio } from "./stanza";
+import { costruisciGuscio, creaLampadario, creaTexturaPavimento } from "./stanza";
 import { costruisciLibrerie } from "./scaffali";
+import { costruisciFinestra } from "./finestra";
 import { costruisciBancone } from "./bancone";
 import { costruisciAngoloLettura } from "./angolo";
 import { Evidenza } from "./evidenza";
@@ -17,6 +18,7 @@ import {
   COLORE_FONDO_ALTO,
   COLORE_FONDO_BASSO,
   COLORE_INTONACO,
+  COLORE_PIETRA,
   COLORE_LEGNO,
   COLORE_OTTONE
 } from "./tinte";
@@ -30,6 +32,8 @@ const legnoDiffuseUrl = new URL("./assets/legno/legno_diffuse.webp", import.meta
 const legnoRuviditaUrl = new URL("./assets/legno/legno_ruvidita.webp", import.meta.url).href;
 const legnoNormaliUrl = new URL("./assets/legno/legno_normali.webp", import.meta.url).href;
 const intonacoDiffuseUrl = new URL("./assets/intonaco/intonaco_diffuse.webp", import.meta.url).href;
+const pietraDiffuseUrl = new URL("./assets/pietra/pietra_diffuse.webp", import.meta.url).href;
+const pietraNormaliUrl = new URL("./assets/pietra/pietra_normali.webp", import.meta.url).href;
 // Gli indirizzi dei modelli stanno in un file per conto loro perché
 // servono anche fuori di qui: la pagina li fa partire in anticipo, e per
 // farlo non deve caricarsi dietro three (vedi `indirizzi.js`).
@@ -285,8 +289,8 @@ const SINISTRA_X = -LARGHEZZA_STANZA / 2;
  */
 const SOGLIA_Y = -0.2;
 const CAMERA_SOGLIA_Y = -0.1;
-const SOGLIA_SEMI_LARGHEZZA = 8.6;
-const SOGLIA_SEMI_ALTEZZA = 4;
+const SOGLIA_SEMI_LARGHEZZA = 7.1;
+const SOGLIA_SEMI_ALTEZZA = 3.35;
 
 /**
  * Dove si sta, alla soglia.
@@ -321,7 +325,7 @@ const POSTI_SOGLIA_STRETTO = [-4.6, 5.2];
  * che si vede è una stanza. Ai punti che restano fuori si arriva
  * dall'elenco (vedi `HomePage.jsx`).
  */
-const DISTANZA_SOGLIA_MAX = 15.5;
+const DISTANZA_SOGLIA_MAX = 12.6;
 
 const LIBRERIE_CENTRO_X = -5;
 const LIBRERIE_Z = -0.7;
@@ -333,6 +337,19 @@ const MURO_BANCO_Z = -2.2;
 // la ricava dalla stessa sottrazione: da qui in poi la stanza è divisa
 // in due, e le librerie in fondo devono fermarsi prima.
 const MURO_BANCO_SINISTRA_X = BANCO_CENTRO_X - metri(2.5);
+
+/* La finestra sulla parete di fondo.
+   --------------------------------------------------------------------
+   Sta nel tratto di muro che si vede fra l'ultima libreria a sinistra e
+   il pilastro del retrobanco: da qualunque altra parte sarebbe dietro un
+   mobile. Le file di scaffali di fondo la scansano (`saltaDaA` in
+   `scaffali.js`), perché una libreria davanti a una finestra è una
+   libreria messa da qualcuno che non voleva vedere il mare. */
+const FINESTRA_X = -0.4;
+const FINESTRA_LARGA = metri(1.25);
+const FINESTRA_ALTA = metri(1.9);
+const FINESTRA_DAVANZALE = metri(1.15);
+const FINESTRA_SPESSORE = metri(0.5);
 
 const ANGOLO_X = 0;
 const ANGOLO_Z = 2.4;
@@ -502,6 +519,47 @@ export default class Biblioteca {
     // `PCFSoftShadowMap` è deprecato in tre 0.185: `PCFShadowMap` è già
     // morbido di suo, non serve più scegliere la variante soft.
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
+
+    /* La mappa d'ombra si ridisegna quando gliela chiediamo, non da sé.
+       ------------------------------------------------------------------
+       È **la** ragione per cui i movimenti di telecamera erano a scatti.
+       Di suo three rifà la mappa a ogni fotogramma, e rifarla vuol dire
+       ridisegnare la scena una seconda volta dal punto di vista della
+       lampada: misurato in questa stanza, 213 chiamate di disegno e
+       settantamila triangoli in più sui 472 e 171 mila totali. Quasi
+       metà del lavoro di ogni fotogramma, speso per ricalcolare ombre
+       che non cambiano — pareti, scaffali e poltrone non si muovono, e
+       la lampada nemmeno.
+
+       Quello che cambia lo sappiamo: quando la stanza finisce di
+       arredarsi, quando si passa dalla stanza allo scaffale, e quando la
+       finestra cambia forma. Lì si chiama `#rinfrescaOmbre`, e sono tre
+       fotogrammi in tutta la visita.
+
+       Non si aggiorna per il respiro della bibliotecaria né per l'onda
+       dei volumi che escono dal ripiano: sono spostamenti di
+       centimetri, dietro un bancone o dentro un mobile, e la loro ombra
+       congelata non si distingue da quella viva. */
+    this.renderer.shadowMap.autoUpdate = false;
+  }
+
+  /**
+   * Ridisegna la mappa d'ombra al prossimo fotogramma, una volta sola:
+   * three rimette i due `needsUpdate` a falso appena li ha usati.
+   *
+   * I *due*: three sbarra la strada in due punti, e chi ne alza uno solo
+   * ottiene silenziosamente niente. Il primo è sul gestore delle ombre —
+   * `renderer.shadowMap.needsUpdate` — e se resta falso la funzione esce
+   * prima ancora di guardare le luci. Il secondo è sulla singola ombra,
+   * ed è quello che sceglie quali luci rifare fra tutte quelle che
+   * proiettano. Qui la luce che proietta è una sola, ma vanno alzati
+   * comunque tutti e due.
+   */
+  #rinfrescaOmbre() {
+    if (!this.lampada) return;
+
+    this.renderer.shadowMap.needsUpdate = true;
+    this.lampada.shadow.needsUpdate = true;
   }
 
   /**
@@ -524,9 +582,18 @@ export default class Biblioteca {
     // senza multicampionamento: e la stanza è tutta spigoli di legno
     // dritti, dove l'assenza di antialiasing si legge come una scaletta
     // su ogni montante.
+    //
+    // Quanti campioni dipende però da quanti pixel ci sono già. Su uno
+    // schermo a densità doppia il montante è largo due pixel fisici
+    // prima ancora di levigarlo, e il quarto campione non si vede: si
+    // paga soltanto, ed è banda di memoria — quella che manca proprio
+    // mentre la telecamera si muove. Su uno schermo normale invece serve
+    // tutto.
+    const campioni = this.renderer.getPixelRatio() > 1.5 ? 2 : 4;
+
     const bersaglio = new THREE.WebGLRenderTarget(dimensione.x, dimensione.y, {
       type: THREE.HalfFloatType,
-      samples: 4
+      samples: campioni
     });
 
     this.composer = new EffectComposer(this.renderer, bersaglio);
@@ -570,7 +637,16 @@ export default class Biblioteca {
        rimbalzo fra le pareti fa quasi tutto, e le direzionali servono
        solo a dare un verso alla luce e a staccare i volumi. */
 
-    this.scena.add(new THREE.HemisphereLight(0xfff6e8, 0xa78a63, 1.15));
+    /* Il rimbalzo, alzato apposta.
+       ------------------------------------------------------------------
+       Una stanza di legno chiaro con le lampade accese non ha ombre
+       nere: la luce che colpisce il pavimento risale sui mobili, e nei
+       film di Ghibli è proprio questo a fare l'atmosfera — le zone in
+       ombra restano *lette*, colorate del colore di quello che c'è
+       intorno, invece di sprofondare. Da 1,15 a 1,55, e il colore da
+       sotto più caldo e più saturo, che è il parquet che rimanda su la
+       sua luce. */
+    this.scena.add(new THREE.HemisphereLight(0xfff4e0, 0xc39a63, 1.55));
 
     // La luce principale: è lei a proiettare le ombre, le altre restano
     // di riempimento (due luci con ombra vera costerebbero il doppio per
@@ -578,6 +654,12 @@ export default class Biblioteca {
     const lampada = new THREE.DirectionalLight(0xffe6bd, 1.55);
     lampada.position.set(-5, 9, 9);
     lampada.castShadow = true;
+    // Tenuta da parte: è l'unica che proietta, quindi è l'unica a cui
+    // chiedere di rifare la mappa (vedi `#rinfrescaOmbre`).
+    this.lampada = lampada;
+    // Duemilaquarantotto non è più un costo per fotogramma ma per
+    // rinfrescata, e le rinfrescate sono tre: tanto vale che l'ombra
+    // dello scaffale abbia i bordi netti.
     lampada.shadow.mapSize.set(2048, 2048);
     lampada.shadow.camera.left = -16;
     lampada.shadow.camera.right = 16;
@@ -640,6 +722,12 @@ export default class Biblioteca {
       metalness: 0
     });
 
+    // Una prima passata subito. Con l'aggiornamento automatico spento,
+    // finché nessuno la chiede la mappa d'ombra non viene disegnata
+    // *mai*, e la scena leggerebbe una texture di profondità mai
+    // riempita — cioè ombre a caso, o tutto in ombra.
+    this.#rinfrescaOmbre();
+
     this.#creaMateriali();
   }
 
@@ -661,13 +749,45 @@ export default class Biblioteca {
       });
 
     this.materialeLegno = legno(); // scaffale, boiserie, travi
-    this.materialeLegnoPavimento = legno();
+
+    /* Il pavimento della soglia non è più lo stesso legno di tutto il
+       resto: è un tavolato a doghe disegnato per conto suo (vedi
+       `creaTexturaPavimento` in `stanza.js`).
+
+       La ragione sta lì; qui basta il motivo per cui è un materiale che
+       nasce già vestito invece di aspettare le texture di Poly Haven
+       come gli altri — perché la sua immagine non arriva dalla rete, e
+       quindi non c'è niente da aspettare. È anche l'unico che non prende
+       la mappa delle normali del legno: quella descrive una venatura che
+       corre in un verso suo, e sotto le doghe disegnate qui
+       contraddirebbe le fughe. La ruvidezza gliela dà il disegno. */
+    this.materialeLegnoPavimento = new THREE.MeshStandardMaterial({
+      map: creaTexturaPavimento(),
+      roughness: 0.74,
+      metalness: 0.02
+    });
+
+    // Tredici ripetizioni in larghezza e otto in profondità: la tela
+    // vale un metro per due, e la stanza è tredici metri per sedici.
+    // Sbagliare questo numero vuol dire doghe larghe come un tavolo.
+    this.materialeLegnoPavimento.map.repeat.set(13, 8);
     // Il parquet sotto lo scaffale. È un terzo materiale e non il
     // pavimento della stanza perché le due scale non c'entrano niente
     // l'una con l'altra: là il pavimento è largo venti unità e qui
     // ottanta, e con le stesse ripetizioni le doghe passerebbero da
     // essere doghe a essere venature.
     this.materialeParquet = legno();
+
+    // La muratura delle pareti. L'intonaco resta perché serve ancora
+    // altrove, ma le pareti adesso sono di pietra — sopra erano un beige
+    // uniforme, ed è la ragione per cui sembravano vuote: un piano
+    // liscio alto tre metri non ha niente da guardare, e nessun quadro
+    // appeso lo salva. Vedi `costruisciParete` in `stanza.js`.
+    this.materialePietra = new THREE.MeshStandardMaterial({
+      color: COLORE_PIETRA,
+      roughness: 0.95,
+      metalness: 0
+    });
 
     this.materialeIntonaco = new THREE.MeshStandardMaterial({
       color: COLORE_INTONACO,
@@ -725,26 +845,38 @@ export default class Biblioteca {
     // escono schiacciate in un verso solo.
     const PARQUET = [30, 9];
 
+    // Il pavimento della soglia non è in nessuno di questi elenchi: ha
+    // un tavolato tutto suo, disegnato in `#creaMateriali`.
     applica(legnoDiffuseUrl, [
       { materiale: this.materialeLegno, chiave: "map", ripeti: [4, 2], srgb: true },
-      { materiale: this.materialeLegnoPavimento, chiave: "map", ripeti: [9, 7], srgb: true },
       { materiale: this.materialeParquet, chiave: "map", ripeti: PARQUET, srgb: true }
     ]);
 
     applica(legnoRuviditaUrl, [
       { materiale: this.materialeLegno, chiave: "roughnessMap", ripeti: [4, 2] },
-      { materiale: this.materialeLegnoPavimento, chiave: "roughnessMap", ripeti: [9, 7] },
       { materiale: this.materialeParquet, chiave: "roughnessMap", ripeti: PARQUET }
     ]);
 
     applica(legnoNormaliUrl, [
       { materiale: this.materialeLegno, chiave: "normalMap", ripeti: [4, 2] },
-      { materiale: this.materialeLegnoPavimento, chiave: "normalMap", ripeti: [9, 7] },
       { materiale: this.materialeParquet, chiave: "normalMap", ripeti: PARQUET }
     ]);
 
     applica(intonacoDiffuseUrl, [
       { materiale: this.materialeIntonaco, chiave: "map", ripeti: [9, 4], srgb: true }
+    ]);
+
+    // La pietra si ripete molto più fitta del vecchio intonaco: un
+    // concio è largo trenta centimetri, e con nove ripetizioni su venti
+    // metri di parete ognuno sarebbe diventato un masso da due metri.
+    const MURATURA = [11, 5];
+
+    applica(pietraDiffuseUrl, [
+      { materiale: this.materialePietra, chiave: "map", ripeti: MURATURA, srgb: true }
+    ]);
+
+    applica(pietraNormaliUrl, [
+      { materiale: this.materialePietra, chiave: "normalMap", ripeti: MURATURA }
     ]);
   }
 
@@ -1078,7 +1210,14 @@ export default class Biblioteca {
       fondoZ: FONDO_Z,
       davantiZ: DAVANTI_Z,
       traviFinoZ: TRAVI_FINO_Z,
-      intonaco: this.materialeIntonaco,
+      // Il tratto di parete di fondo in cui non vanno lesene: è dove sta
+      // la finestra, e il passo delle lesene ne faceva capitare una
+      // esattamente lì in mezzo (vedi `costruisciParete`).
+      vuotoFondo: [
+        FINESTRA_X - FINESTRA_LARGA * 0.9,
+        FINESTRA_X + FINESTRA_LARGA * 0.9
+      ],
+      pietra: this.materialePietra,
       legno: this.materialeLegno,
       legnoPavimento: this.materialeLegnoPavimento,
       ottone: this.materialeOttone
@@ -1087,9 +1226,111 @@ export default class Biblioteca {
     this.gruppoStanza.add(gruppo);
     this.soffittoY = soffittoY;
 
+    // La finestra: appoggiata alla parete di fondo, con l'imbotte che
+    // sporge dentro la stanza (il perché sta in `finestra.js`).
+    this.finestra = costruisciFinestra({
+      larghezza: FINESTRA_LARGA,
+      altezza: FINESTRA_ALTA,
+      spessore: FINESTRA_SPESSORE,
+      pietra: this.materialePietra,
+      legno: this.materialeLegno
+    });
+
+    this.finestra.gruppo.position.set(FINESTRA_X, PAVIMENTO_Y + FINESTRA_DAVANZALE, FONDO_Z);
+    this.gruppoStanza.add(this.finestra.gruppo);
+
+    this.#spargiIlPulviscolo();
+
     this.#arreda(agganciLampadari).catch((errore) =>
       console.error("La stanza non si è arredata:", errore)
     );
+  }
+
+  /**
+   * Il pulviscolo che gira nella luce.
+   *
+   * È il dettaglio più Ghibli che esista e costa **un disegno solo**: un
+   * `Points` con quattrocento granelli, un materiale additivo, nessuna
+   * ombra e nessuna texture. Non c'è interno di quei film in cui la luce
+   * sia vuota — c'è sempre qualcosa che ci galleggia dentro, ed è quello
+   * a far sembrare l'aria una cosa invece che il niente fra gli oggetti.
+   *
+   * Additivo perché la polvere non copre quello che ha dietro, si somma:
+   * un granello davanti a una parete chiara sparisce, lo stesso granello
+   * davanti al legno scuro si accende. È esattamente come si comporta,
+   * e viene gratis dal modo di fondere.
+   *
+   * Si muovono su tre seni a periodi che non vanno d'accordo. Le rette
+   * non esistono in una corrente d'aria, e un ciclo che si chiude si
+   * riconosce dopo due giri.
+   */
+  #spargiIlPulviscolo() {
+    const QUANTI = 400;
+
+    const posizioni = new Float32Array(QUANTI * 3);
+    // Ogni granello parte da un punto suo del proprio giro, o si
+    // muoverebbero tutti insieme come uno stormo.
+    this.fasiPulviscolo = new Float32Array(QUANTI * 3);
+
+    const larghezza = LARGHEZZA_STANZA * 0.9;
+    const profondita = DAVANTI_Z - FONDO_Z;
+
+    for (let i = 0; i < QUANTI; i++) {
+      posizioni[i * 3] = (Math.random() - 0.5) * larghezza;
+      // Più fitti in basso, dove la luce delle lampade arriva e dove
+      // guarda la telecamera: in alto sotto le travi non li vede nessuno.
+      posizioni[i * 3 + 1] = PAVIMENTO_Y + Math.pow(Math.random(), 1.6) * ALTEZZA_STANZA;
+      posizioni[i * 3 + 2] = FONDO_Z + Math.random() * profondita * 0.7;
+
+      this.fasiPulviscolo[i * 3] = Math.random() * Math.PI * 2;
+      this.fasiPulviscolo[i * 3 + 1] = Math.random() * Math.PI * 2;
+      this.fasiPulviscolo[i * 3 + 2] = Math.random() * Math.PI * 2;
+    }
+
+    this.origineePulviscolo = posizioni.slice();
+
+    const geometria = new THREE.BufferGeometry();
+    geometria.setAttribute("position", new THREE.BufferAttribute(posizioni, 3));
+
+    this.pulviscolo = new THREE.Points(
+      geometria,
+      new THREE.PointsMaterial({
+        color: 0xffe9c4,
+        size: 0.055,
+        sizeAttenuation: true,
+        transparent: true,
+        opacity: 0.55,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        // Il pulviscolo non si vela: la nebbia lo spegnerebbe proprio in
+        // fondo alla stanza, che è dove si vede meglio contro il buio.
+        fog: false
+      })
+    );
+
+    this.pulviscolo.frustumCulled = false;
+    this.gruppoStanza.add(this.pulviscolo);
+  }
+
+  #aggiornaPulviscolo(dt) {
+    if (!this.pulviscolo) return;
+
+    this.tempoPulviscolo = (this.tempoPulviscolo ?? 0) + dt;
+
+    const t = this.tempoPulviscolo;
+    const posizioni = this.pulviscolo.geometry.attributes.position;
+    const origine = this.origineePulviscolo;
+    const fasi = this.fasiPulviscolo;
+
+    for (let i = 0; i < posizioni.count; i++) {
+      const k = i * 3;
+
+      posizioni.array[k] = origine[k] + Math.sin(t * 0.13 + fasi[k]) * 0.42;
+      posizioni.array[k + 1] = origine[k + 1] + Math.sin(t * 0.09 + fasi[k + 1]) * 0.3;
+      posizioni.array[k + 2] = origine[k + 2] + Math.sin(t * 0.11 + fasi[k + 2]) * 0.34;
+    }
+
+    posizioni.needsUpdate = true;
   }
 
   /**
@@ -1099,11 +1340,13 @@ export default class Biblioteca {
    * senza niente.
    */
   async #arreda(agganciLampadari) {
+    this.#appendiLampadari(agganciLampadari);
+
     await Promise.all([
-      this.#appendiLampadari(agganciLampadari),
       this.#costruisciLibrerie(),
       this.#costruisciBanco(),
-      this.#costruisciAngolo()
+      this.#costruisciAngolo(),
+      this.#riempiIlDavanzale()
     ]);
 
     if (!this.vivo) return;
@@ -1114,6 +1357,10 @@ export default class Biblioteca {
     // esiste. Sono decorazione su volumi alti venti pixel: arrivano
     // dopo, e nessuno se ne accorge.
     this.stanzaInPiedi = true;
+
+    // Adesso i mobili ci sono: è il momento di calcolare le loro ombre,
+    // ed è la prima delle tre volte in cui succede.
+    this.#rinfrescaOmbre();
 
     this.#vestiStanza();
 
@@ -1129,35 +1376,72 @@ export default class Biblioteca {
     this.alPronta?.();
   }
 
-  async #appendiLampadari(quote) {
-    const colonne = [-metri(3.6), metri(0.2), metri(4)];
+  /**
+   * I lampadari, e il motivo per cui prima sembravano spenti.
+   *
+   * La luce c'era già — una `PointLight` sotto ognuno — ma la luce non si
+   * vede: si vede quello che illumina. Sopra il banco il suo effetto era
+   * evidente perché lì sotto c'è roba a mezzo metro (il piano, la cassa,
+   * i libri); a sinistra sotto le lampade non c'è niente più vicino del
+   * pavimento a quattro metri, quindi la luce si spargeva senza lasciare
+   * traccia e i paralumi restavano oggetti scuri appesi al soffitto.
+   *
+   * Quello che mancava è **la lampadina**: una sfera che si vede accesa
+   * per conto suo. Un materiale base di colore chiaro non risente
+   * dell'illuminazione — è sempre alla sua tinta piena, che è
+   * esattamente come si comporta una sorgente — e dentro un paralume
+   * traslucido basta quella a dire "è accesa".
+   *
+   * Costa una sfera da quaranta triangoli per lampada, e la geometria è
+   * condivisa fra tutte e sei.
+   */
+  /**
+   * I lampadari: ruote di legno con le candele (vedi `creaLampadario` in
+   * `stanza.js`).
+   *
+   * Non sono più un modello scaricato. Ne sono stati provati due — globi
+   * di vetro e poi un lampadario a bracci — e il secondo è stato bocciato
+   * con la motivazione giusta: *«troppo eleganti»*. In una sala di pietra
+   * con le travi a vista un paralume non ci sta, perché è un oggetto
+   * industriale in una stanza che finge di essere di trecento anni fa.
+   *
+   * Le colonne sono due e non tre: la terza stava davanti all'insegna e
+   * ne copriva il marchio.
+   */
+  #appendiLampadari(quote) {
+    const colonne = [-metri(4.2), -metri(0.4)];
 
-    await Promise.all(
-      quote.slice(0, 2).flatMap((z) =>
-        colonne.map(async (x) => {
-          const lampada = await this.magazzino.preleva(MODELLI.lampadario, {
-            alto: 1.35,
-            ancora: "cima"
-          });
+    for (const z of quote.slice(0, 2)) {
+      for (const x of colonne) {
+        const { gruppo, altoCatena, smaltibili } = creaLampadario({
+          raggio: metri(0.52),
+          legno: this.materialeLegno
+        });
 
-          if (!lampada || !this.vivo) return;
+        gruppo.position.set(x, this.soffittoY - altoCatena, z);
+        this.gruppoStanza.add(gruppo);
 
-          lampada.position.set(x, this.soffittoY - 0.34, z);
-          this.gruppoStanza.add(lampada);
+        this.materialiLampadari = [...(this.materialiLampadari ?? []), ...smaltibili];
 
-          const luce = new THREE.PointLight(0xffdcae, 6, metri(7), 2);
-          luce.position.set(x, this.soffittoY - metri(1.5), z);
-          this.gruppoStanza.add(luce);
-        })
-      )
-    );
+        // La luce nasce appena sotto la ruota, non al suo centro: al
+        // centro il legno si mangia metà del cono e la stanza sotto
+        // resta al buio.
+        const luce = new THREE.PointLight(0xffcb8a, 14, metri(10), 2);
+        luce.position.set(x, this.soffittoY - altoCatena - metri(0.2), z);
+        this.gruppoStanza.add(luce);
+      }
+    }
   }
 
   async #costruisciLibrerie() {
     const librerie = await costruisciLibrerie({
       magazzino: this.magazzino,
-      urlLibreria: MODELLI.libreria,
-      urlScala: MODELLI.scala,
+      legno: this.materialeLegno,
+      urlPiante: {
+        alta: MODELLI.piantaAlta,
+        ricadente: MODELLI.piantaRicadente,
+        larga: MODELLI.pianta
+      },
       pavimentoY: PAVIMENTO_Y,
       fondoZ: FONDO_Z,
       sinistraX: SINISTRA_X,
@@ -1167,6 +1451,7 @@ export default class Biblioteca {
       // coperta tutta, altrimenti resta una campata di intonaco vuoto
       // proprio al centro dell'inquadratura.
       fondoFinoA: MURO_BANCO_SINISTRA_X,
+      saltaDaA: [FINESTRA_X - FINESTRA_LARGA, FINESTRA_X + FINESTRA_LARGA],
       geometriaLibro: this.geometriaCopertina,
       materialeCarta: this.materialeCarta,
       tinta: tintaDaTitolo
@@ -1189,7 +1474,9 @@ export default class Biblioteca {
         cassa: MODELLI.cassa,
         libri: MODELLI.libri,
         libroAperto: MODELLI.libroAperto,
-        lampada: MODELLI.lampadaTavolo
+        lampada: MODELLI.lampadaTavolo,
+        pianta: MODELLI.pianta,
+        piantaAlta: MODELLI.piantaAlta
       },
       pavimentoY: PAVIMENTO_Y,
       soffittoY: this.soffittoY,
@@ -1198,7 +1485,7 @@ export default class Biblioteca {
       muroZ: MURO_BANCO_Z,
       muroSinistraX: MURO_BANCO_SINISTRA_X,
       destraX: DESTRA_X,
-      intonaco: this.materialeIntonaco,
+      pietra: this.materialePietra,
       legno: this.materialeLegno,
       ottone: this.materialeOttone
     });
@@ -1239,6 +1526,55 @@ export default class Biblioteca {
     this.#registraBersaglio(bersaglio, [bibliotecario.gruppo]);
   }
 
+  /**
+   * Le due piante sul davanzale della finestra.
+   *
+   * Il muro della finestra è spesso mezzo metro, quindi il davanzale è
+   * una mensola di pietra larga ottanta centimetri all'altezza del
+   * petto: l'unico piano della stanza rimasto completamente vuoto, e
+   * l'unico posto in cui il vuoto si notava come trascuratezza invece
+   * che come spazio.
+   *
+   * Vanno **ai due lati**, mai al centro. Il centro della finestra è
+   * l'orizzonte, che è la cosa che si è appena finito di liberare dalla
+   * lesena che ci stava davanti: rimetterci una pianta sarebbe stato lo
+   * stesso errore con una foglia al posto della pietra.
+   *
+   * Diventano due sagome scure contro il mare — una foglia controluce si
+   * legge solo per profilo — ed è per questo che sono quelle che ricadono
+   * e non quelle diritte: un profilo che sborda oltre il davanzale è
+   * riconoscibile, un cilindro verde no.
+   */
+  async #riempiIlDavanzale() {
+    const finestra = this.finestra;
+    if (!finestra) return;
+
+    const { y, z, larga } = finestra.davanzale;
+
+    const posti = [
+      { x: -larga * 0.34, alto: 0.3, giroDi: 0.8, foglia: -0.04, chiaro: 0.05 },
+      { x: larga * 0.33, alto: 0.24, giroDi: -1.9, foglia: 0.05, chiaro: -0.04 }
+    ];
+
+    for (const { x, alto, giroDi, foglia, chiaro } of posti) {
+      const pianta = await this.magazzino.preleva(MODELLI.piantaRicadente, {
+        alto,
+        tinta: { foglia, chiaro }
+      });
+
+      if (!this.vivo) return;
+      // Una che non arriva non si porta dietro l'altra: sono due modelli
+      // indipendenti, e mezzo davanzale arredato è meglio di zero.
+      if (!pianta) continue;
+
+      pianta.position.set(x, y, z);
+      pianta.rotation.y = giroDi;
+      // Figlie del gruppo della finestra: se un giorno la finestra si
+      // sposta sul muro, il davanzale si porta dietro le sue piante.
+      finestra.gruppo.add(pianta);
+    }
+  }
+
   async #costruisciAngolo() {
     const angolo = await costruisciAngoloLettura({
       magazzino: this.magazzino,
@@ -1248,7 +1584,7 @@ export default class Biblioteca {
         tavolino: MODELLI.tavolino,
         libroAperto: MODELLI.libroAperto,
         lampadaTerra: MODELLI.lampadaTerra,
-        pianta: MODELLI.pianta
+        libri: MODELLI.libri
       },
       pavimentoY: PAVIMENTO_Y,
       centroX: ANGOLO_X,
@@ -1271,8 +1607,8 @@ export default class Biblioteca {
    * bersaglio — che è un rettangolo invisibile davanti alla roba vera —
    * ma i modelli che rappresenta. Sono elenchi perché quasi mai è un
    * oggetto solo, e perché il contorno li tratta come una sagoma sola:
-   * la bacheca è cornice più foglio, la vetrina è tre mobili più le
-   * copertine e la scala che ci stanno davanti.
+   * la bacheca è cornice più filetto più foglio, la vetrina è tre mobili
+   * più le copertine e le piante che ci stanno davanti.
    */
   #registraBersaglio(mesh, evidenza) {
     this.oggettiStanza.push(mesh);
@@ -1391,6 +1727,16 @@ export default class Biblioteca {
 
           testura.colorSpace = THREE.SRGBColorSpace;
           testura.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+
+          // La texture si consegna alla scheda video adesso, non al
+          // primo fotogramma in cui si vede. Di suo three la carica
+          // pigramente, e siccome la sezione accanto si scarica in
+          // anticipo, quel primo fotogramma è proprio quello in cui la
+          // telecamera ci sta arrivando: quaranta copertine caricate
+          // tutte insieme mentre si è a metà del movimento. Farlo qui
+          // sposta il costo dove non dà fastidio — durante l'attesa,
+          // che è già un'attesa.
+          this.renderer.initTexture(testura);
 
           applica(voce, testura);
         } catch {
@@ -1514,6 +1860,11 @@ export default class Biblioteca {
     this.gruppoLibri.visible = dentroScaffale;
     this.gruppoScaffale.visible = dentroScaffale;
     this.gruppoStanza.visible = !dentroScaffale;
+
+    // Metà della scena si è appena accesa e l'altra metà spenta: la
+    // mappa d'ombra congelata è quella dell'altro mondo, e senza questa
+    // riga lo scaffale erediterebbe l'ombra delle poltrone.
+    this.#rinfrescaOmbre();
 
     if (cambiaModo && this.mirato) this.#spegniLaMira();
 
@@ -1957,6 +2308,10 @@ export default class Biblioteca {
     this.camera.aspect = larghezza / altezza;
     this.camera.updateProjectionMatrix();
 
+    // Cambiando la vista cambia il bersaglio su cui l'ombra è disegnata:
+    // quella vecchia è di una misura che non esiste più.
+    this.#rinfrescaOmbre();
+
     // La distanza della soglia si aggiorna sempre, anche quando qui
     // sotto si finisce per ricostruire tutto: non dipende dalla griglia
     // dei libri, e lasciarla al giro dopo significava ritrovarsi la
@@ -2044,6 +2399,10 @@ export default class Biblioteca {
     }
 
     this.#aggiornaLibri(dt);
+    this.#aggiornaPulviscolo(dt);
+    // Il mare. È l'unica cosa della stanza che si muove sempre, anche
+    // quando non si tocca niente — e costa due `offset` di texture.
+    this.finestra?.aggiorna(dt);
     this.evidenza.aggiorna(dt);
     this.bibliotecario?.aggiorna(dt);
 
@@ -2088,6 +2447,14 @@ export default class Biblioteca {
     // Dentro lo scaffale a rispondere al puntatore è il libro, che esce
     // dal ripiano: lì l'evidenza non c'entra e va tenuta spenta.
     this.evidenza.mira(allaSoglia ? nuovo : null);
+
+    // Chi sta dietro a un bancone e ti vede arrivare alza la mano. Il
+    // contorno d'ottone dice «questo si clicca»; il saluto dice «c'è
+    // qualcuno», che è un'altra cosa e la dice meglio di qualunque
+    // etichetta.
+    if (allaSoglia && nuovo?.userData.punto === "bibliotecario") {
+      this.bibliotecario?.saluta();
+    }
 
     if (allaSoglia) this.alMirareOggetto?.(nuovo ? nuovo.userData.punto : null);
     else this.alMirare?.(nuovo ? nuovo.userData.serie : null);
@@ -2179,6 +2546,12 @@ export default class Biblioteca {
     this.canvas.removeEventListener("click", this.alClick);
 
     this.osservatore?.disconnect();
+
+    // Il mixer d'animazione tiene una cache legata alla radice del
+    // modello: non è un buffer video, ma sopravvive alla scena e in
+    // modalità rigorosa (monta, smonta, rimonta) se ne accumulerebbe una
+    // per giro.
+    this.bibliotecario?.smaltisci();
 
     // La catena dei passaggi ha bersagli di rendering suoi, che
     // `renderer.dispose()` non conosce e non libererebbe.

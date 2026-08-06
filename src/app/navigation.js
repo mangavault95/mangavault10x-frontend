@@ -15,10 +15,11 @@ export const SEZIONI = [
     // gli scaffali fra le altre cose, e chiamarla come una delle cose
     // che contiene faceva sembrare le altre quattro un altro sito.
     etichetta: "Biblioteca",
-    descrizione: "La sala: scaffali, banco, bacheca, tavolino",
-    // 本, il kanji di «libro»: una porta d'ottone diceva «uscita», che è
-    // il contrario di dove porta questa voce.
-    icona: "kanjiLibro",
+    descrizione: "La biblioteca: scaffali, banco, bacheca, tavolino",
+    // Il portale, cioè il marchio del sito. Prima era 本, il kanji di
+    // «libro»: giusto come idea ma è un'icona come le altre, e la voce
+    // che riporta a casa dovrebbe essere l'unica a non esserlo.
+    icona: "portale",
     tasto: "1"
   },
   {
@@ -40,7 +41,9 @@ export const SEZIONI = [
   {
     id: "wishlist",
     percorso: "/wishlist",
-    etichetta: "Desideri",
+    // «Wishlist» e non «Desideri»: è il nome che si usa parlandone, e la
+    // voce della barra deve chiamarsi come la chiama chi la clicca.
+    etichetta: "Wishlist",
     descrizione: "Le serie che vuoi comprare",
     icona: "cartellino",
     tasto: "4"

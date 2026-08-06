@@ -318,7 +318,7 @@ export default function HomePage() {
                 <Bottone>Collezione</Bottone>
               </Link>
               <Link to="/wishlist">
-                <Bottone variante="secondario">Desideri</Bottone>
+                <Bottone variante="secondario">Wishlist</Bottone>
               </Link>
               <Link to="/lettura">
                 <Bottone variante="secondario">In lettura</Bottone>

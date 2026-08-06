@@ -46,8 +46,28 @@ export async function costruisciAngoloLettura({
   // Due poltroncine una di fronte all'altra, non una sola girata verso
   // il nulla: due sedie che si guardano dicono "qui ci si siede a
   // leggere" senza bisogno di nessun'altra spiegazione.
-  await posa("poltrona", { alto: 0.76 }, { x: -metri(0.72), z: metri(0.12), ry: 1.15 });
-  await posa("poltrona", { alto: 0.76 }, { x: metri(0.72), z: -metri(0.08), ry: -1.9 });
+  //
+  // I due angoli non sono a occhio. Questa poltrona ha lo **schienale a
+  // +Z**, cioè guarda verso −Z: misurato sul modello (i vertici del
+  // quinto più alto stanno tutti a Z positivo). Prima erano girate di
+  // mezzo giro, e si vedevano due schienali che si davano le spalle
+  // attorno al tavolino. Girata verso il centro vuol dire ±π/2, più uno
+  // scarto che le apre verso chi guarda: di tre quarti si vede la seduta,
+  // di profilo si vedrebbe solo un fianco.
+  const VERSO_IL_CENTRO = Math.PI / 2;
+  const APERTURA = 0.36;
+
+  await posa("poltrona", { alto: 0.76 }, {
+    x: -metri(0.72),
+    z: metri(0.12),
+    ry: -VERSO_IL_CENTRO - APERTURA
+  });
+
+  await posa("poltrona", { alto: 0.76 }, {
+    x: metri(0.72),
+    z: -metri(0.08),
+    ry: VERSO_IL_CENTRO + APERTURA
+  });
 
   const tavolino = await posa("tavolino", { largo: 0.8 }, { x: 0, z: metri(0.05), ry: 0.12 });
 
@@ -110,12 +130,45 @@ export async function costruisciAngoloLettura({
     gruppo.add(alone);
   }
 
-  // Le piante si misurano in altezza, ma questo modello è più largo che
-  // alto: chiedergliene una da un metro e venti ne fa un cespuglio da un
-  // metro e sessanta di diametro, che è come sono diventate alberi in
-  // mezzo alla stanza. Basse, e defilate.
-  await posa("pianta", { alto: 0.72 }, { x: metri(1.75), z: -metri(0.5) });
-  await posa("pianta", { alto: 0.6 }, { x: -metri(1.9), z: metri(0.8), ry: 1.4 });
+  /* ---------- Le quinte ----------
+     Davanti al tappeto, ai due lati, appena dentro l'inquadratura.
+
+     Sotto il tappeto lo schermo era mezzo pavimento vuoto: una stanza
+     inquadrata così è un fondale con davanti del linoleum, perché
+     manca il **primo piano**. È il trucco più vecchio della scenografia
+     e di ogni punta e clicca disegnato a mano — qualcosa di vicino e
+     scuro ai bordi, che l'occhio salta subito ma senza il quale non c'è
+     profondità: con solo il fondo e il mezzo, tutto sembra alla stessa
+     distanza.
+
+     Sono casse di legno con dei volumi accatastati sopra: roba arrivata
+     e non ancora messa a scaffale, che è quello che sta per terra in
+     ogni libreria vera. */
+
+  const quinta = async (x, z, ry, altaCassa) => {
+    const cassa = await magazzino.preleva(url.libri, { alto: altaCassa });
+    if (!cassa) return;
+
+    cassa.position.set(centroX + x, pavimentoY, centroZ + z);
+    cassa.rotation.y = ry;
+    gruppo.add(cassa);
+  };
+
+  await quinta(-metri(2.9), metri(2.6), 0.4, 0.44);
+  await quinta(-metri(2.55), metri(3.3), -0.9, 0.28);
+  await quinta(metri(2.85), metri(2.9), -0.5, 0.5);
+
+  // Qui non ci vanno piante.
+  //
+  // Ce n'erano due, a terra ai lati del tappeto, e Carmine le ha fatte
+  // togliere perché *sembravano messe a caso*. Erano messe a caso: una
+  // pianta in mezzo a una stanza, senza un davanzale, un angolo o un
+  // mobile su cui stare, non ha nessuna ragione di stare lì — e il
+  // centro della stanza è il posto in cui una pianta è più d'intralcio,
+  // perché è dove si cammina.
+  //
+  // La natura non è sparita, si è spostata dove sta nelle case vere:
+  // sopra le librerie (`scaffali.js`) e sul banco (`bancone.js`).
 
   return { gruppo, bersaglio, evidenza };
 }

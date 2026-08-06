@@ -110,7 +110,7 @@ export default function WishlistPage() {
   return (
     <Pagina
       occhiello="Da comprare"
-      titolo="Desideri"
+      titolo="Wishlist"
       sommario="Le serie che vuoi, con dove trovarle."
       azioni={
         <div className="flex flex-wrap items-center gap-3">

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Approdo from "../ui/Approdo";
-import { Parquet, PianoDiLegno } from "../ui/materiali";
+import { ConoDiLuce, Grana, Parquet, PianoDiLegno } from "../ui/materiali";
 import Copertina from "../ui/Copertina";
 import Icon from "../app/Icon";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
@@ -102,7 +102,10 @@ export default function TavolinoPage() {
       className="bg-legno"
       fondo={<AngoloLettura />}
     >
-      <div className="mx-auto flex min-h-dvh max-w-5xl items-center px-4 pb-16 pt-20 sm:px-8 sm:pt-24">
+      {/* Il volume cresce con lo schermo invece di restare largo mille
+          pixel su qualunque monitor: un libro aperto è grande quanto il
+          tavolo su cui è posato, e il tavolo qui è la finestra. */}
+      <div className="mx-auto flex min-h-dvh max-w-5xl items-center px-4 pb-16 pt-20 sm:px-8 sm:pt-24 xl:max-w-6xl 2xl:max-w-7xl">
         {errore ? (
           <div className="mx-auto w-full max-w-md">
             <Errore
@@ -155,15 +158,52 @@ function AngoloLettura() {
     <div aria-hidden="true" className="pointer-events-none absolute inset-0">
       <Parquet className="inset-0" />
 
-      {/* Il tappeto sotto al tavolino */}
+      {/* Il tappeto sotto al tavolino. Ha una frangia sui due lati
+          corti: è il dettaglio che lo fa leggere come un tappeto invece
+          che come un rettangolo di colore più scuro. */}
       <div className="absolute inset-x-[6%] bottom-[-8%] top-[16%] rotate-[-1.2deg] rounded-sm bg-legno/70 shadow-float ring-1 ring-brass-400/10">
         <div className="absolute inset-3 rounded-sm ring-1 ring-brass-400/12" />
+        <div className="absolute inset-x-0 top-0 h-2 bg-[repeating-linear-gradient(90deg,rgba(214,184,140,0.22)_0_2px,transparent_2px_6px)]" />
+        <div className="absolute inset-x-0 bottom-0 h-2 bg-[repeating-linear-gradient(90deg,rgba(214,184,140,0.22)_0_2px,transparent_2px_6px)]" />
       </div>
 
-      {/* La lampada da terra, a sinistra come là */}
+      {/* Le due poltroncine, ai lati, tenute nel buio: si vedono i
+          braccioli entrare in campo e basta. Nella stanza il tavolino è
+          in mezzo a loro, e senza qui il volume sembra posato per terra.
+          Solo da schermo largo — su uno stretto occuperebbero il posto
+          del libro. */}
+      <div className="hidden lg:block">
+        <Bracciolo lato="left" />
+        <Bracciolo lato="right" />
+      </div>
+
+      {/* La piantana, a sinistra come là: il cono che scende e la pozza
+          calda dove va a battere, sul piano del tavolino. */}
+      <ConoDiLuce da={26} className="h-[86%]" />
       <div className="absolute -left-24 -top-28 h-[36rem] w-[36rem] rounded-full bg-brass-500/[0.16] blur-[130px]" />
       <div className="absolute inset-0 bg-[radial-gradient(110%_85%_at_34%_26%,rgba(255,207,153,0.14),transparent_62%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(120%_100%_at_50%_48%,transparent_28%,rgba(6,7,11,0.82)_100%)]" />
+
+      <Grana opacita={0.05} />
+    </div>
+  );
+}
+
+/** Il bracciolo di una poltroncina che entra in campo dal bordo. */
+function Bracciolo({ lato }) {
+  const sinistra = lato === "left";
+
+  return (
+    <div
+      className={`absolute bottom-[6%] top-[34%] w-[14%] bg-legno shadow-float
+                  ${sinistra ? "-left-[5%] rounded-r-[2.5rem]" : "-right-[5%] rounded-l-[2.5rem]"}`}
+    >
+      {/* La luce che sfiora il bordo alto dell'imbottitura */}
+      <div
+        className={`absolute inset-x-0 top-0 h-10 rounded-t-[2.5rem] bg-[linear-gradient(180deg,rgba(255,214,160,0.13),transparent)]
+                    ${sinistra ? "rounded-r-[2.5rem]" : "rounded-l-[2.5rem]"}`}
+      />
+      <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_0%,transparent,rgba(6,7,11,0.72))]" />
     </div>
   );
 }
@@ -199,7 +239,7 @@ function Volume({ lettura, indice, totale, verso, onSfogliare }) {
         {/* Il piano del tavolino, che sporge da sotto il volume: è
             l'unica cosa che dice che il libro è posato invece che
             sospeso, ed è lo stesso legno del mobile in tre dimensioni. */}
-        <PianoDiLegno className="rotate-[0.4deg] rounded-md p-3 shadow-float sm:p-5">
+        <PianoDiLegno className="rotate-[0.4deg] rounded-md p-3 shadow-float sm:p-5 xl:p-7">
           <div
             // La chiave sull'indice fa ripartire l'animazione a ogni
             // sfogliata: senza, il volume si apre una volta sola e poi il
@@ -217,7 +257,7 @@ function Volume({ lettura, indice, totale, verso, onSfogliare }) {
                 mezzo sarebbe una crepa. */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-y-0 left-1/2 z-raised hidden w-16 -translate-x-1/2
+              className="pointer-events-none absolute inset-y-0 left-1/2 z-raised hidden w-16 -translate-x-1/2 xl:w-24
                          bg-[linear-gradient(90deg,transparent,rgba(42,33,24,0.16)_42%,rgba(255,255,255,0.5)_50%,rgba(42,33,24,0.16)_58%,transparent)]
                          md:block"
             />
@@ -262,29 +302,31 @@ function Volume({ lettura, indice, totale, verso, onSfogliare }) {
 /** A sinistra: cosa stai leggendo. La copertina, incollata come una figurina. */
 function FacciataSinistra({ lettura }) {
   return (
-    <div className="relative border-inchiostro/10 p-6 sm:p-8 md:border-r">
+    <div className="relative border-inchiostro/10 p-6 sm:p-8 md:border-r xl:p-12">
       <Rigatura />
 
-      <p className="relative text-[0.62rem] uppercase tracking-[0.24em] text-inchiostro/50">
+      <p className="relative text-[0.62rem] uppercase tracking-[0.24em] text-inchiostro/50 xl:text-[0.72rem]">
         Stai leggendo
       </p>
 
-      <div className="relative mt-5 flex gap-5">
-        <div className="w-24 shrink-0 rotate-[-1.5deg] bg-white p-1 shadow-raised sm:w-28">
+      <div className="relative mt-5 flex gap-5 xl:mt-8 xl:gap-8">
+        <div className="w-24 shrink-0 rotate-[-1.5deg] bg-white p-1 shadow-raised sm:w-28 xl:w-40 xl:p-1.5">
           <Copertina src={lettura.copertina} alt="" inclina={false} />
         </div>
 
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-xl font-semibold leading-tight text-inchiostro sm:text-2xl">
+          <h2 className="font-display text-xl font-semibold leading-tight text-inchiostro sm:text-2xl xl:text-4xl">
             {lettura.titolo}
           </h2>
 
           {lettura.autore && (
-            <p className="mt-1 text-sm italic text-inchiostro/65">{lettura.autore}</p>
+            <p className="mt-1 text-sm italic text-inchiostro/65 xl:mt-2 xl:text-lg">
+              {lettura.autore}
+            </p>
           )}
 
           {lettura.editore && (
-            <p className="mt-3 text-xs uppercase tracking-wider text-inchiostro/45">
+            <p className="mt-3 text-xs uppercase tracking-wider text-inchiostro/45 xl:mt-5 xl:text-sm">
               {lettura.editore}
             </p>
           )}
@@ -295,14 +337,14 @@ function FacciataSinistra({ lettura }) {
           nastro infilato fra le pagine. */}
       <div
         aria-hidden="true"
-        className="absolute -top-3 right-8 h-16 w-7 bg-ember shadow-lift
+        className="absolute -top-3 right-8 h-16 w-7 bg-ember shadow-lift xl:-top-5 xl:right-12 xl:h-24 xl:w-10
                    [clip-path:polygon(0_0,100%_0,100%_100%,50%_82%,0_100%)]"
       />
 
       {lettura.inCollezione && (
         <Link
           to={`/serie/${lettura.mangaId}`}
-          className="relative mt-7 inline-flex items-center gap-1.5 border-b border-inchiostro/30 pb-0.5 text-sm text-inchiostro/75
+          className="relative mt-7 inline-flex items-center gap-1.5 border-b border-inchiostro/30 pb-0.5 text-sm text-inchiostro/75 xl:mt-10 xl:text-base
                      transition-colors duration-quick hover:border-inchiostro hover:text-inchiostro
                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
         >
@@ -319,16 +361,18 @@ function FacciataSinistra({ lettura }) {
 /** A destra: dove sei rimasto. */
 function FacciataDestra({ lettura, letto, su, percentuale }) {
   return (
-    <div className="relative p-6 sm:p-8">
+    <div className="relative p-6 sm:p-8 xl:p-12">
       <Rigatura />
 
-      <p className="relative text-[0.62rem] uppercase tracking-[0.24em] text-inchiostro/50">
+      <p className="relative text-[0.62rem] uppercase tracking-[0.24em] text-inchiostro/50 xl:text-[0.72rem]">
         Sei rimasto qui
       </p>
 
-      <p className="relative mt-4 font-display text-inchiostro">
-        <span className="text-6xl font-semibold leading-none">{lettura.volume}</span>
-        <span className="ml-2 text-lg text-inchiostro/55">
+      <p className="relative mt-4 font-display text-inchiostro xl:mt-6">
+        <span className="text-6xl font-semibold leading-none xl:text-8xl">
+          {lettura.volume}
+        </span>
+        <span className="ml-2 text-lg text-inchiostro/55 xl:ml-3 xl:text-2xl">
           {su ? `di ${su}` : "volume"}
         </span>
       </p>
@@ -337,7 +381,7 @@ function FacciataDestra({ lettura, letto, su, percentuale }) {
           Una barra direbbe la stessa percentuale, ma non quanti pezzi
           mancano — che su un manga da 34 volumi è tutta l'informazione. */}
       {su && su <= 60 && (
-        <ul className="relative mt-6 flex flex-wrap gap-1.5">
+        <ul className="relative mt-6 flex flex-wrap gap-1.5 xl:mt-9 xl:gap-2">
           {Array.from({ length: su }, (_, i) => {
             const numero = i + 1;
             const finito = lettura.volumiLetti.includes(numero);
@@ -347,7 +391,7 @@ function FacciataDestra({ lettura, letto, su, percentuale }) {
               <li
                 key={numero}
                 title={`Volume ${numero}`}
-                className={`h-6 w-4 rounded-[2px] border transition-colors
+                className={`h-6 w-4 rounded-[2px] border transition-colors xl:h-9 xl:w-6
                   ${
                     corrente
                       ? "border-ember bg-ember"
@@ -361,7 +405,7 @@ function FacciataDestra({ lettura, letto, su, percentuale }) {
         </ul>
       )}
 
-      <dl className="relative mt-7 space-y-2 text-sm text-inchiostro/75">
+      <dl className="relative mt-7 space-y-2 text-sm text-inchiostro/75 xl:mt-10 xl:space-y-3 xl:text-base">
         <Riga voce="Volumi letti" valore={su ? `${letto} di ${su}` : String(letto)} />
         {percentuale !== null && <Riga voce="Avanzamento" valore={`${percentuale}%`} />}
         <Riga voce="In casa" valore={`${lettura.posseduti} volumi`} />
@@ -370,7 +414,7 @@ function FacciataDestra({ lettura, letto, su, percentuale }) {
         )}
       </dl>
 
-      <p className="relative mt-7 border-t border-inchiostro/15 pt-3 text-xs italic text-inchiostro/45">
+      <p className="relative mt-7 border-t border-inchiostro/15 pt-3 text-xs italic text-inchiostro/45 xl:mt-10 xl:pt-5 xl:text-sm">
         Per segnare un volume letto si passa da In lettura, qui sopra a destra.
       </p>
     </div>

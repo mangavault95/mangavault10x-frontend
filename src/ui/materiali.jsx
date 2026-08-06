@@ -112,6 +112,59 @@ export function Boiserie({ className = "" }) {
 }
 
 /**
+ * Il cono di luce di una lampada appesa.
+ *
+ * Non un alone tondo — quello è una luce vista da lontano, e queste tre
+ * pagine sono tutte a un palmo dall'oggetto. Da vicino una lampada fa un
+ * cono: stretto in cima dov'è la lampadina, largo in basso dove la luce
+ * arriva sul piano. Il taglio lo dà `clip-path`, il colore il gradiente,
+ * e la sfocatura tiene i bordi dal sembrare un triangolo disegnato.
+ *
+ * `da` è dove sta la lampada, in percentuale di larghezza.
+ */
+export function ConoDiLuce({ da = 50, className = "" }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none absolute inset-x-0 top-0 h-[78%] ${className}`}
+      style={{
+        clipPath: `polygon(${da - 7}% 0, ${da + 7}% 0, ${da + 46}% 100%, ${da - 46}% 100%)`,
+        background:
+          "linear-gradient(180deg, rgba(255,214,150,0.30) 0%, rgba(255,204,130,0.13) 42%, transparent 92%)",
+        filter: "blur(26px)"
+      }}
+    />
+  );
+}
+
+/**
+ * La grana: un velo di rumore sopra tutto.
+ *
+ * Un fondo fatto di gradienti è matematicamente liscio, e a schermo
+ * grande si vede — le sfumature larghe si spezzano in fasce invece di
+ * degradare. Un pizzico di disturbo le rompe. È un SVG di turbolenza
+ * incorporato, quindi non è un file da scaricare.
+ */
+const RUMORE =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180">
+       <filter id="r"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3"/></filter>
+       <rect width="180" height="180" filter="url(#r)"/>
+     </svg>`
+  );
+
+export function Grana({ opacita = 0.05, className = "" }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none absolute inset-0 ${className}`}
+      style={{ backgroundImage: `url("${RUMORE}")`, opacity: opacita }}
+    />
+  );
+}
+
+/**
  * Un piano di legno: il banco, il tavolino.
  *
  * Va sotto le cose che ci si posano sopra, e la sua ombra interna è
