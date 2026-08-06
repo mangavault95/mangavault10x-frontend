@@ -133,6 +133,12 @@ export const updateManga = (id, data) =>
 export const creaManga = (data) =>
   request("/api/manga", { method: "POST", body: data, auth: true });
 
+// Cancella la scheda e tutto ciò che le è legato (acquisti, prezzi,
+// letture). Risponde con quanto se n'è andato insieme: senza cestino,
+// è l'unico modo di sapere cos'è successo davvero.
+export const eliminaManga = (id) =>
+  request(`/api/manga/${id}`, { method: "DELETE", auth: true });
+
 export const updateRating = (id, rating) =>
   request("/api/manga/updateRating", {
     method: "POST",

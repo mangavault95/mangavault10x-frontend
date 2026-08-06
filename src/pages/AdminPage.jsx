@@ -6,6 +6,7 @@ import { Errore } from "../ui/Stati";
 import { useCollezione } from "../dati/collezione";
 import {
   clearToken,
+  eliminaManga,
   enrichManga,
   getToken,
   login as accedi,
@@ -129,10 +130,13 @@ function Accesso({ onEntrato }) {
    ================================================== */
 
 function Redazione({ onEsci }) {
-  const { serie, inCorso, errore, ricarica, aggiornaLocale } = useCollezione();
+  const { serie, inCorso, errore, ricarica, aggiornaLocale, rimuoviLocale } = useCollezione();
 
   const [selezionataId, setSelezionataId] = useState(null);
   const [ricercaTesto, setRicerca] = useState("");
+  // L'esito dell'eliminazione non può stare nella scheda: quella
+  // sparisce insieme alla serie, e con lei il messaggio.
+  const [eliminata, setEliminata] = useState(null);
 
   const ordinate = useMemo(
     () => [...serie].sort((a, b) => a.titolo.localeCompare(b.titolo, "it")),
@@ -229,12 +233,27 @@ function Redazione({ onEsci }) {
               aggiornaLocale(selezionata.id, modifiche);
               ricarica();
             }}
+            onEliminata={(esito) => {
+              rimuoviLocale(selezionata.id);
+              setSelezionataId(null);
+              setEliminata(esito);
+              ricarica();
+            }}
           />
         ) : (
           <div className="grid place-items-center rounded-panel border border-dashed border-soft bg-glass-1 p-12 text-center">
-            <p className="text-sm text-ink-muted">
-              Scegli una scheda dall'elenco per modificarla.
-            </p>
+            {eliminata ? (
+              <div role="status" className="space-y-1">
+                <p className="text-sm text-ink-bright">
+                  «{eliminata.eliminata}» è stata eliminata.
+                </p>
+                <p className="text-sm text-ink-muted">{riepilogoEliminazione(eliminata.insieme)}</p>
+              </div>
+            ) : (
+              <p className="text-sm text-ink-muted">
+                Scegli una scheda dall'elenco per modificarla.
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -268,7 +287,23 @@ function corpoDaCampi(campi) {
   };
 }
 
-function Scheda({ serie, tutteLeSerie, onSalvata }) {
+/** «insieme a 3 acquisti e 2 letture» — al singolare quando è uno solo. */
+function riepilogoEliminazione(insieme = {}) {
+  const pezzi = [
+    [insieme.acquisti, "acquisto", "acquisti"],
+    [insieme.letture, "lettura", "letture"],
+    [insieme.sessioni, "lettura in corso", "letture in corso"],
+    [insieme.prezzi, "prezzo di mercato", "prezzi di mercato"]
+  ]
+    .filter(([quanti]) => quanti > 0)
+    .map(([quanti, uno, molti]) => `${quanti} ${quanti === 1 ? uno : molti}`);
+
+  if (pezzi.length === 0) return "Non c'era altro collegato.";
+
+  return `Con lei se ne sono andati ${pezzi.join(", ").replace(/, ([^,]*)$/, " e $1")}.`;
+}
+
+function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
   // Il collegamento si sceglie puntando a UNA sorella; quale delle
   // eventuali più sorelle è ininfluente, "salva" risolve comunque il
   // gruppo giusto (vedi sotto).
@@ -380,6 +415,7 @@ function Scheda({ serie, tutteLeSerie, onSalvata }) {
   }
 
   return (
+    <div className="space-y-4">
     <form
       onSubmit={salva}
       className="space-y-6 rounded-panel border border-hairline bg-glass-1 p-6 backdrop-blur-xl"
@@ -534,6 +570,91 @@ function Scheda({ serie, tutteLeSerie, onSalvata }) {
         </Bottone>
       </div>
     </form>
+
+    {/* Fuori dal modulo di proposito: un bottone che cancella non
+        deve stare nella stessa cornice di uno che salva. */}
+    <Eliminazione serie={serie} onEliminata={onEliminata} />
+    </div>
+  );
+}
+
+/* ==================================================
+   ELIMINAZIONE
+   ================================================== */
+
+/**
+ * Cancellare una scheda non ha un annulla: la riga sparisce e con lei
+ * gli acquisti, le letture e i prezzi raccolti.
+ *
+ * Per questo il bottone non cancella: apre la domanda. Due gesti
+ * separati, e in mezzo la frase che dice esattamente cosa si porta
+ * via — che è più utile di una finestra `confirm` del browser, dove
+ * il titolo non si può nemmeno leggere.
+ */
+function Eliminazione({ serie, onEliminata }) {
+  const [chiesto, setChiesto] = useState(false);
+  const [inCorso, setInCorso] = useState(false);
+  const [errore, setErrore] = useState(null);
+
+  async function elimina() {
+    setInCorso(true);
+    setErrore(null);
+
+    try {
+      onEliminata(await eliminaManga(serie.id));
+    } catch (e) {
+      setErrore(
+        e?.status === 401 || e?.status === 403
+          ? "Sessione scaduta: rientra dalla pagina Gestione."
+          : e?.message || "Eliminazione non riuscita."
+      );
+      setInCorso(false);
+    }
+  }
+
+  if (!chiesto) {
+    return (
+      <div className="flex justify-end">
+        <Bottone type="button" variante="fantasma" onClick={() => setChiesto(true)}>
+          Elimina questa scheda
+        </Bottone>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 rounded-panel border border-ember/30 bg-ember/5 p-6">
+      <div>
+        <p className="text-sm font-semibold text-ink-bright">
+          Eliminare «{serie.titolo}»?
+        </p>
+        <p className="mt-1 text-sm text-ink-muted">
+          Spariscono anche gli acquisti registrati, le letture e i prezzi di mercato di
+          questa serie. Non si può annullare.
+        </p>
+      </div>
+
+      {errore && (
+        <p role="alert" className="text-sm text-ember">
+          {errore}
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Bottone type="button" variante="pericolo" onClick={elimina} disabled={inCorso}>
+          {inCorso ? "Elimino…" : "Sì, elimina"}
+        </Bottone>
+
+        <Bottone
+          type="button"
+          variante="fantasma"
+          onClick={() => setChiesto(false)}
+          disabled={inCorso}
+        >
+          Lascia stare
+        </Bottone>
+      </div>
+    </div>
   );
 }
 

@@ -50,6 +50,16 @@ export function CollezioneProvider({ children }) {
     [setDati, copia]
   );
 
+  // Dopo un'eliminazione la scheda deve sparire subito: aspettare il
+  // ricarica() lascerebbe in elenco una riga che sul server non c'è
+  // più, e cliccarla darebbe una pagina vuota.
+  const rimuoviLocale = useCallback(
+    (id) => {
+      setDati((precedenti) => (precedenti ?? copia ?? []).filter((s) => s.id !== id));
+    },
+    [setDati, copia]
+  );
+
   const valore = useMemo(
     () => ({
       serie,
@@ -60,9 +70,10 @@ export function CollezioneProvider({ children }) {
       // c'è una richiesta per strada — cosa che non riguarda chi legge.
       inCorso: inCorso && !serie.length,
       ricarica,
-      aggiornaLocale
+      aggiornaLocale,
+      rimuoviLocale
     }),
-    [serie, errore, inCorso, ricarica, aggiornaLocale]
+    [serie, errore, inCorso, ricarica, aggiornaLocale, rimuoviLocale]
   );
 
   return (
