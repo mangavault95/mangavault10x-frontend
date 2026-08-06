@@ -289,7 +289,17 @@ const SINISTRA_X = -LARGHEZZA_STANZA / 2;
  */
 const SOGLIA_Y = -0.2;
 const CAMERA_SOGLIA_Y = -0.1;
-const SOGLIA_SEMI_LARGHEZZA = 7.1;
+
+// La metà larghezza che l'inquadratura deve garantire. Non 7,1 come
+// sembrerebbe bastare guardando dove sta il registratore di cassa
+// (x≈7): quel numero misura la larghezza inquadrata sul piano a z=0, ma
+// la cassa sta più avanti, verso la telecamera (z≈0,5), e un oggetto più
+// vicino alla telecamera vede *meno* margine a parità di distanza — la
+// piramide visiva si allarga con la profondità, quindi meno profondità
+// vuol dire meno larghezza a disposizione lì. Con 7,1 la cassa restava
+// fuori dal fotogramma di una manciata di centimetri, proprio per
+// questo scarto fra dove si misura e dove sta l'oggetto.
+const SOGLIA_SEMI_LARGHEZZA = 7.6;
 const SOGLIA_SEMI_ALTEZZA = 3.35;
 
 /**
@@ -324,8 +334,28 @@ const POSTI_SOGLIA_STRETTO = [-4.6, 5.2];
  * sinistra e il banco da destra. Non si vede tutta la stanza, ma quello
  * che si vede è una stanza. Ai punti che restano fuori si arriva
  * dall'elenco (vedi `HomePage.jsx`).
+ *
+ *
+ * PERCHÉ ESISTE ANCHE UN TETTO PER LO SCHERMO LARGO
+ *
+ * Non doveva essercene bisogno — su schermo largo la telecamera dovrebbe
+ * arretrare finché non entra tutto — ma il tetto pensato per il telefono
+ * si applicava a *qualunque* proporzione, verticale o no. Il risultato:
+ * su una finestra 1024×768 (o su un notebook con la barra laterale che
+ * ruba pixel) il conto chiedeva quindici unità e il tetto lo fermava a
+ * 12,6, la stessa distanza pensata per un telefono. La cassa e la metà
+ * destra dell'insegna restavano fuori dal fotogramma — non per un difetto
+ * del disegno, ma perché la telecamera non aveva il permesso di arretrare
+ * abbastanza per contenerli.
+ *
+ * Un tetto più alto ma ancora finito: oltre le sedici unità la telecamera
+ * si avvicina al bordo del pavimento (che arriva a diciassette, vedi
+ * `DAVANTI_Z`) e per una proporzione vicina al quadrato — rara su un sito,
+ * ma non impossibile con una finestra ridimensionata a mano — un po' di
+ * ritaglio resta: meglio quello che sparire oltre il pavimento.
  */
-const DISTANZA_SOGLIA_MAX = 12.6;
+const DISTANZA_SOGLIA_MAX_STRETTO = 12.6;
+const DISTANZA_SOGLIA_MAX_LARGO = 16;
 
 const LIBRERIE_CENTRO_X = -5;
 const LIBRERIE_Z = -0.7;
@@ -2317,9 +2347,16 @@ export default class Biblioteca {
     // dei libri, e lasciarla al giro dopo significava ritrovarsi la
     // stanza inquadrata da dove stava la telecamera prima che la
     // finestra cambiasse forma.
+    // Il tetto dipende dall'orientamento: in verticale resta quello
+    // pensato per il telefono (vedi sopra), in orizzontale è più alto,
+    // perché in orizzontale la stanza deve stare tutta nel fotogramma e
+    // non solo la fetta centrale.
+    const tettoSoglia =
+      this.camera.aspect < 1 ? DISTANZA_SOGLIA_MAX_STRETTO : DISTANZA_SOGLIA_MAX_LARGO;
+
     this.distanzaSoglia = Math.min(
       this.#distanzaPerInquadrare(SOGLIA_SEMI_LARGHEZZA, SOGLIA_SEMI_ALTEZZA),
-      DISTANZA_SOGLIA_MAX
+      tettoSoglia
     );
 
     // Se la finestra ha cambiato forma abbastanza da meritare un'altra

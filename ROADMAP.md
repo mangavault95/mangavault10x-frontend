@@ -34,7 +34,13 @@ ancora vuol dire rifare il secondo ogni volta.
 - Pulizia dati: editori duplicati (`Panini` / `Panini S.p.A.`), `DataAggiunta`
   quasi sempre vuoto.
 - Spostare `ANTHROPIC_API_KEY` dal `.env` del frontend a Render.
-- Peso della home: ~1,4 MB di modelli, ~2 MB di texture e fino a 48 copertine.
+- Peso della home: ~1,1 MB fra modelli e texture della stanza (dopo la
+  pulizia del 6/8/2026 — via la scala a pioli non più usata, la pietra
+  delle pareti da 768 a 512px), più fino a 48 copertine scaricate a parte.
   È la pagina d'ingresso, quindi è il primo scarico di ogni visita.
+- Compressione Draco/meshopt sui `.glb`: il taglio grosso che resta.
+  `bibliotecaria.glb` da sola pesa 492 kB, più di tutto l'arredo messo
+  insieme; richiede un decoder in più lato client, quindi non è la
+  correzione di un pomeriggio come le texture — va valutata a parte.
 - "Più edizioni della stessa serie": idea non ancora progettata, non esiste
   nessuna colonna né tabella.

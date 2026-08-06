@@ -42,7 +42,6 @@ riga vale per qualunque modello ci si metta.
 | `piantaAlta.glb` | La sansevieria: al piede del pilastro e sopra i mobili | Quaternius | CC0 |
 | `piantaRicadente.glb` | Il nastrino che sborda dai ripiani e dal davanzale | Quaternius | CC0 |
 | `banconeDritto.glb`, `banconeTesta.glb` | I moduli del banco | Quaternius | CC0 |
-| `scala.glb` | La scala a pioli, **non più in uso** (vedi sotto) | Quaternius | CC0 |
 | `libroAperto.glb` | Il volume aperto sul banco e sul tavolino | Quaternius | CC0 |
 | `pianta.glb` | La monstera all'angolo del banco e sopra i mobili di fondo | Quaternius | CC0 |
 | `lampadario.glb` | Il lampadario a quattro bracci sopra la sala (*Light Chandelier*). Prima erano globi di vetro: la cosa più moderna della stanza, e in una sala di pietra stonavano. | Quaternius | CC0 |
@@ -53,14 +52,16 @@ riga vale per qualunque modello ci si metta.
 | `lampadaTavolo.glb` | La lampada sul banco | Kenney | CC0 |
 | `lampadaTerra.glb` | La piantana dell'angolo lettura | Kenney | CC0 |
 
-`scala.glb` è rimasto nella cartella, ma **non come il mago**: il mago
-resta fuori dalla build perché il suo indirizzo è scritto per intero,
-mentre i modelli d'arredo hanno l'indirizzo composto (`arredo(nome)` in
-`tre/indirizzi.js`) e a un `new URL` con dentro una variabile Vite
-risponde emettendo tutta la cartella. La scala quindi continua a
-spedirsi: 20 kB per un modello che nessuno usa. Per non spedirla va
-cancellato il file. È stata tolta dalla scena perché in mezzo
-all'inquadratura leggeva come un traliccio davanti alle copertine.
+`scala.glb` non c'è più: era stata tolta dalla scena perché in mezzo
+all'inquadratura leggeva come un traliccio davanti alle copertine, ma il
+file era rimasto nella cartella — e a differenza del mago, che ha
+l'indirizzo scritto per intero e per questo resta fuori dalla build, i
+modelli d'arredo hanno l'indirizzo composto (`arredo(nome)` in
+`tre/indirizzi.js`): a un `new URL` con dentro una variabile Vite
+risponde emettendo **tutta la cartella**, quindi la scala continuava a
+spedirsi lo stesso, 20 kB per un modello che nessuno usava più.
+Cancellato il file, non il commento: qualunque altro `.glb` finisca in
+questa cartella senza essere importato ha lo stesso destino.
 
 **Il pavimento della soglia non è più una texture scaricata.** È
 disegnato su un canvas (`creaTexturaPavimento` in `tre/stanza.js`):
@@ -122,3 +123,24 @@ rifatta a 256 in JPEG, 8 kB. Il resto del file è geometria e non si tocca.
 Rifarli richiede `sharp` (non è una dipendenza del progetto: si installa
 con `npm i --no-save sharp` e si disinstalla dopo). Gli originali si
 riscaricano dalle fonti qui sopra.
+
+## `pietra_diffuse.webp`, rifatta una seconda volta (06/08/2026)
+
+Questa non era mai passata dal giro qui sopra: 768×768 a 144 kB, quasi il
+doppio di `legno_diffuse` che è più grande (1024) e pesa meno (84 kB). Non
+per un errore di qualità — riprovando a comprimerla alla stessa qualità 85
+il file usciva più pesante di quello che c'era, 150 kB — ma perché una
+pietra fotografata ha più grana ad alta frequenza di una venatura di legno,
+e quella grana costa bit indipendentemente da quanto si stringe la
+qualità.
+
+Quello che ha funzionato è stato *ridurla*, non ricomprimerla: 768→512,
+la stessa misura della sua mappa delle normali (portarle alla stessa
+risoluzione non costa nulla in resa, visto che il muro le campiona
+insieme). **144 kB → 68 kB**, qualità 82, senza perdita visibile alla
+distanza a cui si guarda un muro.
+
+`pietra_normali.webp` è rimasta com'era: una mappa delle normali
+compressa più del necessario si vede — rovina la luce che rimbalza sulla
+pietra — e il risparmio possibile lì (144→122 kB scendendo a qualità 75)
+non valeva il rischio.

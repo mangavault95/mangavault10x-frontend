@@ -379,10 +379,13 @@ export async function costruisciBancone({
      che non è un vetro ma un velo di riflesso, ed è la differenza fra
      "appeso" e "dipinto sul muro".
 
-     Le misure non sono identiche fra una e l'altra. Quattro cornici
-     uguali allineate a passo fisso sono un catalogo; qualche centimetro
-     di scarto in altezza e in formato e diventano quattro quadri appesi
-     da qualcuno. */
+     Le misure non sono identiche fra una e l'altra — un po' più grande,
+     un po' più piccola — ma **il centro sì**: la prima versione le
+     alzava e abbassava di cinque centimetri a testa, e il risultato non
+     si leggeva come "quadri appesi da qualcuno" ma come una locandina
+     scesa dal filo. Quattro cornici a un'unica quota, di taglio
+     leggermente diverso, sono quattro quadri appesi da qualcuno che ha
+     usato la livella; sfalsate in verticale sono una fila storta. */
 
   /* Il noce delle cornici.
      ------------------------------------------------------------------
@@ -428,9 +431,10 @@ export async function costruisciBancone({
     const x = primaLocandina + indice * passoLocandine;
 
     // Uno scarto stabile per posizione: nessun sorteggio, o le cornici
-    // ballano a ogni ricarica.
+    // ballano a ogni ricarica. Solo la taglia varia, mai la quota: tutte
+    // e quattro condividono `locandinaY`.
     const scala = 1 + [0.05, -0.05, 0.02, -0.03][indice];
-    const y = locandinaY + [0, 1, -1, 0][indice] * metri(0.05);
+    const y = locandinaY;
 
     const larga = locandinaLarghezza * scala;
     const alta = locandinaAltezza * scala;
