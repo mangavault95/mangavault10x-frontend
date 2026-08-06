@@ -33,7 +33,17 @@ export default function ScaffaleVolumi({
   const volumi = Array.from({ length: quanti }, (_, i) => i + 1);
   const interattivo = typeof onSelezionaVolume === "function";
 
-  const misura = compatto ? "h-6 w-6 text-[0.6rem]" : "h-8 w-8 text-xs";
+  // Da toccare crescono, ma solo quando c'è davvero qualcosa da premere:
+  // un quadratino di sei millimetri si legge benissimo e si centra male,
+  // e allargare anche quelli che sono solo un disegno vorrebbe dire
+  // sprecare mezzo schermo per una serie da trenta volumi.
+  const perDito = interattivo
+    ? compatto
+      ? " [@media(hover:none)]:h-8 [@media(hover:none)]:w-8 [@media(hover:none)]:text-[0.7rem]"
+      : " [@media(hover:none)]:h-10 [@media(hover:none)]:w-10 [@media(hover:none)]:text-sm"
+    : "";
+
+  const misura = (compatto ? "h-6 w-6 text-[0.6rem]" : "h-8 w-8 text-xs") + perDito;
 
   return (
     <div className={compatto ? "space-y-1.5" : "space-y-2"}>

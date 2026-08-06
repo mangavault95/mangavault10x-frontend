@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import Pagina from "../ui/Pagina";
 import Copertina from "../ui/Copertina";
+import Icon from "../app/Icon";
 import { Bottone, CampoRicerca } from "../ui/Controlli";
 import { Errore } from "../ui/Stati";
 import { useCollezione } from "../dati/collezione";
@@ -180,8 +181,19 @@ function Redazione({ onEsci }) {
       }
     >
       <div className="grid gap-8 lg:grid-cols-[22rem_1fr]">
-        {/* ---------- Elenco ---------- */}
-        <div className="space-y-4">
+        {/* ---------- Elenco ----------
+            Su schermo largo l'elenco e la scheda stanno affiancati, e
+            l'elenco resta lì mentre si corregge: si passa da una serie
+            all'altra senza perdere il posto.
+
+            Su uno stretto le due colonne diventano due piani, e un
+            elenco alto mezzo schermo sopra il modulo vorrebbe dire
+            scorrere oltre duecento titoli a ogni salvataggio. Quindi
+            l'elenco si ritira quando una scheda è aperta: non è
+            un'altra schermata, è la stessa colonna che a turno mostra
+            l'una o l'altra cosa — come fa un telefono con qualunque
+            elenco di posta. */}
+        <div className={`space-y-4 ${selezionata ? "hidden lg:block" : ""}`}>
           <CampoRicerca
             valore={ricercaTesto}
             onCambia={setRicerca}
@@ -225,21 +237,35 @@ function Redazione({ onEsci }) {
 
         {/* ---------- Scheda ---------- */}
         {selezionata ? (
-          <Scheda
-            key={selezionata.id}
-            serie={selezionata}
-            tutteLeSerie={ordinate}
-            onSalvata={(modifiche) => {
-              aggiornaLocale(selezionata.id, modifiche);
-              ricarica();
-            }}
-            onEliminata={(esito) => {
-              rimuoviLocale(selezionata.id);
-              setSelezionataId(null);
-              setEliminata(esito);
-              ricarica();
-            }}
-          />
+          <div className="space-y-4">
+            {/* La via di ritorno all'elenco, e solo dove l'elenco è
+                stato tolto di mezzo: da schermo largo è ancora lì
+                accanto, e un bottone per raggiungere una cosa che si
+                sta già guardando è una cosa in più da leggere. */}
+            <button
+              onClick={() => setSelezionataId(null)}
+              className="inline-flex items-center gap-2 text-sm font-medium text-ink-muted transition-colors duration-quick hover:text-ink-bright lg:hidden"
+            >
+              <Icon nome="back" dimensione={16} />
+              Tutte le schede
+            </button>
+
+            <Scheda
+              key={selezionata.id}
+              serie={selezionata}
+              tutteLeSerie={ordinate}
+              onSalvata={(modifiche) => {
+                aggiornaLocale(selezionata.id, modifiche);
+                ricarica();
+              }}
+              onEliminata={(esito) => {
+                rimuoviLocale(selezionata.id);
+                setSelezionataId(null);
+                setEliminata(esito);
+                ricarica();
+              }}
+            />
+          </div>
         ) : (
           <div className="grid place-items-center rounded-panel border border-dashed border-soft bg-glass-1 p-12 text-center">
             {eliminata ? (
@@ -425,7 +451,7 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
           <Copertina src={campi.coverurl} alt={campi.titolo} inclina={false} />
         </div>
 
-        <div className="grid min-w-0 flex-1 gap-4 sm:grid-cols-2">
+        <div className="grid min-w-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2">
           <CampoTesto etichetta="Titolo" valore={campi.titolo} onChange={cambia("titolo")} required />
           <CampoTesto etichetta="Autore" valore={campi.autore} onChange={cambia("autore")} />
           <CampoTesto etichetta="Disegnatore" valore={campi.disegnatore} onChange={cambia("disegnatore")} />
@@ -451,7 +477,7 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <CampoTesto
           etichetta="Volumi posseduti"
           tipo="number"

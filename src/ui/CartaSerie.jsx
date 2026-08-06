@@ -37,12 +37,23 @@ export default function CartaSerie({ serie, priorita = false, riempi = false }) 
 
         {/* Sempre presente, non solo quando è già preferito: altrimenti
             non ci sarebbe modo di scoprire che si può segnare da qui.
-            Sfumata finché non la guardi o non l'hai già segnata. */}
+            Sfumata finché non la guardi o non l'hai già segnata.
+
+            Col dito «finché non la guardi» non arriva mai, e il cuore
+            resterebbe invisibile per sempre: lì sta acceso a metà — si
+            vede che c'è, senza gridare quanto uno già segnato. È l'unico
+            modo di segnare un preferito dalla griglia, e una funzione
+            raggiungibile solo col mouse su un telefono non esiste. */}
         <BottonePreferito
           serie={serie}
           onCambiato={(nuovo) => aggiornaLocale(serie.id, { preferito: nuovo })}
           className={`absolute right-2 top-2 h-7 w-7 bg-void/70 backdrop-blur-sm transition-opacity duration-quick
-                      ${serie.preferito ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                      [@media(hover:none)]:h-9 [@media(hover:none)]:w-9
+                      ${
+                        serie.preferito
+                          ? "opacity-100"
+                          : "opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-60"
+                      }`}
         />
 
         {/* Il voto sta sulla copertina, non sotto: è l'informazione

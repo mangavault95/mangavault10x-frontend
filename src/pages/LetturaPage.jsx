@@ -511,8 +511,12 @@ export default function LetturaPage() {
               {/* Le coste in fila: la vista d'insieme */}
               <ScaffaleCoste serie={scaffali} />
 
-              {/* Sotto, il dettaglio volume per volume di ogni serie */}
-              <ul className="grid gap-4 lg:grid-cols-2">
+              {/* Sotto, il dettaglio volume per volume di ogni serie.
+                  La colonna singola va dichiarata: senza, la griglia si
+                  costruisce una colonna implicita larga quanto il
+                  contenuto — cioè quanto il titolo più lungo — e la
+                  pagina esce dallo schermo di un telefono. */}
+              <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {scaffali.map((s) => (
                   <li key={s.manga_id}>
                     <RipianoSerie serie={s} />
@@ -741,13 +745,16 @@ function VoceStorico({ voce, onRimuovi }) {
 
       {/* Compare solo al passaggio del mouse: correggere è raro,
           e un cestino sempre visibile su ogni riga fa rumore.
-          Resta però raggiungibile da tastiera. */}
+          Resta però raggiungibile da tastiera — e col dito, dove il
+          passaggio del mouse non esiste, sta acceso a mezza voce: fa
+          meno rumore di un elenco che non si può correggere. */}
       <button
         onClick={onRimuovi}
         aria-label={`Togli il volume ${voce.volume} di ${voce.titolo} dallo storico`}
         title="Togli dallo storico"
         className="shrink-0 rounded-lg px-2 py-1 text-xs text-ink-faint opacity-0 transition-all duration-quick
                    hover:text-ember group-hover:opacity-100
+                   [@media(hover:none)]:px-3 [@media(hover:none)]:py-2 [@media(hover:none)]:opacity-70
                    focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
       >
         Togli

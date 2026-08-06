@@ -1,31 +1,50 @@
 # Roadmap
 
-## Decisione in vigore: si lavora sul desktop, il mobile aspetta
+## Decisione in vigore: una schermata sola, che sa di essere toccata
 
-**Dal 31 luglio 2026** ogni lavoro su questo frontend si valuta e si rifinisce
-**sulla vista web da schermo largo**. Il telefono non è abbandonato — verrà
-sistemato in un giro dedicato — ma fino ad allora:
+**Dal 6 agosto 2026** il telefono non aspetta più. La regola del 31 luglio —
+si rifinisce il desktop, il mobile in un giro dedicato — ha finito il suo
+lavoro: quel giro è stato fatto, e da qui in avanti una schermata si considera
+finita quando funziona **da monitor e da telefono**.
 
-- una schermata si considera finita quando funziona ed è bella da desktop;
-- non si spende tempo a inseguire il layout stretto, e non si rinuncia a una
-  scelta che sta bene sul largo solo perché sul telefono starebbe scomoda;
-- quello che c'è già di responsive resta e non va rotto apposta, ma non è il
-  metro di giudizio.
+Quello che *non* è cambiato è altrettanto importante: **non esistono due
+versioni del sito**. Non c'è una cartella per il telefono, non c'è una pagina
+per il telefono, e nessuna funzione vive solo di qua o solo di là. C'è una
+schermata sola che si dispone in modo diverso, e la domanda che decide non è
+quanto è largo il vetro:
 
-Il motivo è di ordine, non di disinteresse: la riscrittura sta ancora
-definendo l'aspetto delle pagine, e rifinire due layout mentre il primo cambia
-ancora vuol dire rifare il secondo ogni volta.
+- **La larghezza** (`sm:` `md:` `lg:`) decide come si dispongono le cose: due
+  colonne o una, l'elenco accanto alla scheda o al posto della scheda.
+- **`[@media(hover:none)]`** decide cos'è raggiungibile. È la domanda vera,
+  perché col dito **non esiste passare sopra le cose**: tutto quello che il
+  sito rivela al passaggio del mouse, col dito non esiste e basta. Si legge
+  anche da JavaScript, con `useTocco()` (`src/ui/tocco.js`), quando a cambiare
+  non è un colore ma una frase.
 
-### Cosa è già consapevolmente parziale sul telefono
+Un tablet largo senza mouse deve avere il cuore dei preferiti visibile; un
+portatile con lo schermo tattile deve averli tutti e due. La larghezza da sola
+non lo sa, e infatti chiedendo solo quella si sbagliano tutte e due le volte.
 
-- **La soglia in 3D** (`src/pages/HomePage.jsx` + `src/tre/`) — su schermo
-  verticale la stanza non ci sta in un'inquadratura sola: ci sono due
-  postazioni (librerie / banco) e le frecce per passare dall'una all'altra.
-  Funziona, ma è un ripiego, non un progetto per il telefono.
-- **`src/mobile/`** — resta dell'applicazione precedente e **non è importata
-  da nessuna parte**: oggi il telefono vede le stesse pagine del desktop, non
-  quei componenti. Da cancellare o da recuperare quando si affronterà il
-  mobile per davvero; nel frattempo non è codice vivo.
+### Come si legge una regola col dito
+
+- **La stanza resta un punta e clicca.** Col mouse si passa sopra un mobile e
+  poi si clicca; col dito il primo tocco *è* il passaggio sopra — accende il
+  contorno e il cartellino — e il secondo tocco sullo stesso mobile fa partire
+  la telecamera. La traduzione sta in `tre/scena.js` (`alClick`, e la mira che
+  al tocco non si insegue da sé), il cartellino in `pages/HomePage.jsx`
+  (`CartellinoOggetto`). Sopra il vetro non è comparso nessun menu, e non ci
+  deve comparire: la ragione per cui non c'è vale col dito quanto col mouse.
+- **In verticale la stanza non ci sta in un'inquadratura sola**: le postazioni
+  sono due (`POSTI_SOGLIA_STRETTO`) e le due frecce per girarsi compaiono da
+  sé. Non sono «la versione mobile»: compaiono quando la scena dichiara più di
+  una postazione, cioè in risposta a una proporzione.
+- **I bersagli crescono al tocco, e solo lì.** Ventotto pixel si prendono al
+  primo colpo con una freccia larga un pixel, non con un polpastrello largo un
+  centimetro. Su un monitor lo stesso bottone a quaranta pixel urlerebbe.
+- **`src/mobile/`** non esiste più: era l'applicazione precedente, non la
+  importava nessuno, e adesso che il telefono vede le pagine vere non c'è
+  niente da recuperare. (`src/components/` è dello stesso vecchio impianto ed
+  è morto allo stesso modo: da cancellare a parte.)
 
 ## Aperti
 

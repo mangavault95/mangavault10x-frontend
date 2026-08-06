@@ -5,6 +5,7 @@ import { Bottone } from "../ui/Controlli";
 import { Errore, Vuoto } from "../ui/Stati";
 import Icon from "../app/Icon";
 import TornaInBiblioteca from "../ui/TornaInBiblioteca";
+import useTocco from "../ui/tocco";
 import { dimenticaUscita, leggiUscita, segnaUscita } from "../app/passaggio";
 import { useCollezione } from "../dati/collezione";
 import { completamento, euro, totaleDisponibile, valoreSerie } from "../dati/serie";
@@ -41,13 +42,25 @@ import { completamento, euro, totaleDisponibile, valoreSerie } from "../dati/ser
  * entrare fra i volumi — e a tastiera ci si va con la freccia destra.
  *
  *
- * IL TELEFONO È UN RIPIEGO CONSAPEVOLE
+ * COL DITO SI PUNTA E SI CLICCA LO STESSO
  *
- * Quello che qui sotto è marcato `sm:` / `md:` tiene in piedi la pagina
- * su schermo stretto, ma non è pensato per il telefono: la decisione in
- * vigore (vedi `ROADMAP.md`) è di rifinire la vista web da schermo largo
- * e affrontare il mobile in un giro dedicato. Non rompetelo, ma non è il
- * metro con cui giudicare una modifica.
+ * Il telefono non è più un ripiego. La stanza resta un punta e clicca
+ * anche lì, tradotto nell'unico modo in cui si può tradurre: col mouse si
+ * passa sopra un mobile e poi si clicca, col dito il primo tocco *è* il
+ * passaggio sopra — accende il contorno e il cartellino — e il secondo
+ * tocco sullo stesso mobile fa partire la telecamera (la traduzione sta
+ * in `tre/scena.js`, `alClick`).
+ *
+ * Sopra il vetro non è comparso nessun menu, e non ci deve comparire: la
+ * ragione per cui non c'è (vedi qui sopra) vale col dito quanto col
+ * mouse. Quello che cambia è che il cartellino non può stare attaccato al
+ * puntatore — sotto il dito non si vede niente — e allora sta in basso,
+ * dove sta già quello dei volumi.
+ *
+ * L'unica cosa che il telefono ha in più sono le due frecce per girarsi:
+ * in verticale la stanza non ci sta in un'inquadratura sola, quindi le
+ * postazioni sono due (vedi `POSTI_SOGLIA_STRETTO` in `tre/scena.js`) e
+ * senza frecce metà stanza sarebbe irraggiungibile.
  */
 
 /**
@@ -111,6 +124,7 @@ const PUNTI = {
 export default function HomePage() {
   const { serie, inCorso, errore, ricarica } = useCollezione();
   const navigate = useNavigate();
+  const tocco = useTocco();
 
   const stanza = useRef(null);
   const scena = useRef(null);
@@ -355,12 +369,11 @@ export default function HomePage() {
       />
 
       {/* Il nome di quello che si sta guardando, attaccato al puntatore.
-          Sul telefono non esiste passarci sopra, e un cartellino che non
-          si accende mai è solo spazio tolto alla stanza. */}
-      {inStanza && !inViaggio && (
-        <div className="hidden sm:block">
-          <CartellinoPuntatore punto={puntoMirato} area={stanza} />
-        </div>
+          Col dito non c'è nessun puntatore a cui attaccarlo, e sotto il
+          polpastrello non si vedrebbe: di là lo stesso cartellino sta in
+          basso, fermo (vedi `CartellinoOggetto`). */}
+      {inStanza && !inViaggio && !tocco && (
+        <CartellinoPuntatore punto={puntoMirato} area={stanza} />
       )}
 
       {/* ---------- Sopra il vetro ---------- */}
@@ -381,7 +394,7 @@ export default function HomePage() {
                         : "opacity-100 duration-slow"
                     }`}
       >
-        <Testata inStanza={inStanza} caricando={caricando} />
+        <Testata inStanza={inStanza} caricando={caricando} tocco={tocco} />
 
         <div className="flex items-end justify-between gap-4 pb-16 md:pb-0">
           {/* Alla soglia il cartellino non sta più qui: segue il
@@ -399,40 +412,38 @@ export default function HomePage() {
               comandi qui a destra. Alla soglia non c'è, perché lì ci si
               è già. */}
           {inStanza ? (
-            <span />
+            // Col dito il cartellino dell'oggetto mirato viene qui, dove
+            // sta già quello dei volumi: è lo stesso angolo, e in una
+            // stanza in cui tutto succede al centro dello schermo un
+            // riquadro che appare sempre nello stesso posto si impara in
+            // un tocco. Col mouse resta attaccato al puntatore e qui non
+            // c'è niente.
+            tocco ? (
+              <CartellinoOggetto punto={puntoMirato} />
+            ) : (
+              <span />
+            )
           ) : (
             <div className="flex flex-col items-start gap-3">
-              <CartellinoSerie serie={mirata} />
+              <CartellinoSerie serie={mirata} tocco={tocco} />
               <TornaInBiblioteca onClick={() => scena.current?.tornaAllaSoglia()} />
             </div>
           )}
 
           {inStanza ? (
-            // Il telefono non ha un puntatore da far passare sopra le
-            // cose, e senza la stanza resterebbe un fondale. Finché il
-            // mobile è quello che è (vedi `ROADMAP.md`) gli restano
-            // queste due maniglie; su schermo largo non esistono.
-            <div className="flex shrink-0 flex-col items-end gap-2 sm:hidden">
-              {posizione.soglia?.totali > 1 && (
-                <GiraSoglia
-                  soglia={posizione.soglia}
-                  onIndietro={() => scena.current?.indietro()}
-                  onAvanti={() => scena.current?.avanti()}
-                />
-              )}
-
-              <button
-                onClick={() => scena.current?.avvicinatiA("librerie")}
-                className="pointer-events-auto flex items-center gap-2.5 rounded-full border border-brass-400/35 bg-glass-3 py-3 pl-4 pr-5
-                           shadow-float backdrop-blur-xl transition-transform duration-quick active:scale-95
-                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
-              >
-                <Icon nome="shelf" dimensione={16} className="text-brass-400" />
-                <span className="text-sm font-medium text-ink-bright">
-                  Entra nello scaffale
-                </span>
-              </button>
-            </div>
+            // Le frecce per girarsi, e solo dove servono: la scena le
+            // dichiara necessarie dicendo che le postazioni sono più di
+            // una, cioè quando la stanza non ci sta in un'inquadratura
+            // sola. Su un monitor largo `totali` è 1 e qui non compare
+            // niente — non è una versione per telefono, è la risposta a
+            // una proporzione.
+            posizione.soglia?.totali > 1 && (
+              <GiraSoglia
+                soglia={posizione.soglia}
+                onIndietro={() => scena.current?.indietro()}
+                onAvanti={() => scena.current?.avanti()}
+              />
+            )
           ) : (
             <Comandi
               posizione={posizione}
@@ -467,7 +478,23 @@ export default function HomePage() {
    SOPRA IL VETRO
    ================================================== */
 
-function Testata({ inStanza, caricando }) {
+/**
+ * La testata dice due cose: dove sei, e come ci si muove.
+ *
+ * La seconda cambia con l'attrezzo. «Clicca» a chi ha un dito è un
+ * termine di un'altra macchina, e «passaci sopra» è un gesto che col dito
+ * non esiste: è l'unica riga del sito che va detta in due modi, e va detta
+ * in due modi proprio perché è quella che insegna a usare la stanza.
+ */
+function Testata({ inStanza, caricando, tocco }) {
+  const istruzioni = inStanza
+    ? tocco
+      ? "Le librerie a sinistra, il banco a destra. Tocca un mobile per sceglierlo, di nuovo per andarci."
+      : "Le librerie a sinistra, il banco a destra. Ci si sposta cliccando."
+    : tocco
+      ? "Lo spessore di ogni volume è quanto ne possiedi. Toccalo per sfilarlo, di nuovo per aprirlo."
+      : "Lo spessore di ogni volume è quanto ne possiedi. Passaci sopra, o clicca per aprirlo.";
+
   return (
     <div className="max-w-sm rounded-panel border border-hairline bg-glass-3 px-5 py-4 backdrop-blur-xl">
       <p className="text-xs font-medium uppercase tracking-[0.18em] text-brass-500/90">
@@ -478,11 +505,7 @@ function Testata({ inStanza, caricando }) {
         {inStanza ? "La soglia" : "Lo scaffale"}
       </h1>
 
-      <p className="mt-1 text-sm text-ink-muted">
-        {inStanza
-          ? "Le librerie a sinistra, il banco a destra. Ci si sposta cliccando."
-          : "Lo spessore di ogni volume è quanto ne possiedi. Passaci sopra, o clicca per aprirlo."}
-      </p>
+      <p className="mt-1 text-sm text-ink-muted">{istruzioni}</p>
 
       {caricando && <BarraCaricamento />}
     </div>
@@ -589,11 +612,58 @@ function CartellinoPuntatore({ punto, area }) {
 }
 
 /**
+ * Lo stesso cartellino, per chi mira col dito.
+ *
+ * Non è una seconda interfaccia: è lo stesso contenuto — icona, nome,
+ * invito — nell'unico posto dove col dito si può leggere. Attaccato al
+ * puntatore starebbe sotto la mano che l'ha appena toccato; in basso a
+ * sinistra sta dove sta già il cartellino dei volumi dentro lo scaffale,
+ * quindi la stanza e lo scaffale rispondono nello stesso angolo.
+ *
+ * L'invito qui non è quello del mouse. Col mouse «Fagli una domanda»
+ * descrive cosa succede cliccando, e il click è uno solo; col dito i
+ * tocchi sono due, e la riga deve dire che ne manca uno — altrimenti il
+ * primo tocco sembra non aver fatto niente.
+ */
+function CartellinoOggetto({ punto }) {
+  return (
+    <div
+      aria-live="polite"
+      className={`pointer-events-none max-w-[15rem] rounded-panel border border-brass-400/30 bg-glass-3 px-4 py-3 backdrop-blur-xl
+                  transition-all duration-base ease-settle
+                  ${punto ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}
+    >
+      {punto ? (
+        <>
+          <p className="flex items-center gap-2.5 font-display text-base font-semibold leading-tight text-ink-bright">
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brass-400/15 text-brass-300">
+              <Icon nome={punto.icona} dimensione={14} />
+            </span>
+            {punto.nome}
+          </p>
+
+          <p className="mt-1.5 text-xs text-brass-300/80">{punto.invito}</p>
+          <p className="text-xs text-ink-faint">Tocca ancora per andarci</p>
+        </>
+      ) : (
+        // Da vuoto occupa lo stesso spazio: senza, i comandi accanto
+        // salterebbero su e giù a ogni tocco.
+        <p className="invisible font-display text-base leading-tight">
+          segnaposto
+          <span className="block text-xs">due righe</span>
+          <span className="block text-xs">di riempimento</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
  * Il cartellino del libro guardato non scompare quando togli il mouse:
  * si svuota restando al suo posto. Un riquadro che appare e sparisce a
  * ogni passaggio del puntatore fa saltare la pagina sotto gli occhi.
  */
-function CartellinoSerie({ serie }) {
+function CartellinoSerie({ serie, tocco = false }) {
   const pct = serie ? completamento(serie) : null;
   const totale = serie ? totaleDisponibile(serie) : null;
 
@@ -618,6 +688,14 @@ function CartellinoSerie({ serie }) {
             {pct !== null && ` · ${pct}%`}
             {serie.costo ? ` · ${euro(valoreSerie(serie))}` : ""}
           </p>
+
+          {/* Col dito il volume è uscito dal ripiano al primo tocco, e
+              da fermo non si capisce che manca il secondo per aprirlo. */}
+          {tocco && (
+            <p className="mt-1 text-xs text-brass-300/80">
+              Tocca ancora per aprire la scheda
+            </p>
+          )}
         </>
       ) : (
         // Lo spazio resta occupato anche da vuoto, così i comandi accanto

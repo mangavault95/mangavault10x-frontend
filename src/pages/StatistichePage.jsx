@@ -115,7 +115,7 @@ export default function StatistichePage() {
 
         {/* ---------- Stato ---------- */}
         <Sezione titolo="Stato attuale">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Tessera
               etichetta="Serie complete"
               valore={numeroIt(n.complete)}
@@ -134,7 +134,7 @@ export default function StatistichePage() {
         </Sezione>
 
         {/* ---------- Classifiche ---------- */}
-        <div className="grid gap-10 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
           <Sezione titolo="Editori">
             <Classifica voci={editori.slice(0, 8)} unita="serie" />
           </Sezione>
@@ -163,7 +163,7 @@ export default function StatistichePage() {
               <p className="text-xs text-ink-faint">{gruppo.sommario}</p>
             }
           >
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {gruppo.voci.map((p) => (
                 <Primato key={p.id} {...p} />
               ))}

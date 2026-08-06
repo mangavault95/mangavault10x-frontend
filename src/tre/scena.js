@@ -324,16 +324,17 @@ const POSTI_SOGLIA_STRETTO = [-4.6, 5.2];
  * stanza larga venti: la stanza finirebbe in fondo a un corridoio, alta
  * un ottavo dello schermo, con sopra e sotto solo soffitto e pavimento.
  *
- * Quello che segue è un ripiego dichiarato, non un progetto per il
- * telefono: la decisione in vigore (vedi `ROADMAP.md`) è di rifinire la
- * vista da schermo largo e affrontare il mobile in un giro dedicato.
- *
  * Fermandosi qui succede il contrario: in verticale l'inquadratura la
  * decide l'altezza — dal pavimento al soffitto ci sta tutto — e in
  * larghezza si vede la fetta centrale, con le librerie che entrano da
  * sinistra e il banco da destra. Non si vede tutta la stanza, ma quello
- * che si vede è una stanza. Ai punti che restano fuori si arriva
- * dall'elenco (vedi `HomePage.jsx`).
+ * che si vede è una stanza, e una stanza vista da dentro è meglio di
+ * tutta una stanza vista da un corridoio.
+ *
+ * Ai punti che restano fuori dal fotogramma si arriva girandosi: le
+ * postazioni diventano due (`POSTI_SOGLIA_STRETTO`) e le frecce per
+ * passare dall'una all'altra compaiono da sé — non perché lo schermo sia
+ * piccolo, ma perché la scena ha dichiarato più di una postazione.
  *
  *
  * PERCHÉ ESISTE ANCHE UN TETTO PER LO SCHERMO LARGO
@@ -448,7 +449,12 @@ export default class Biblioteca {
     this.contenitore = contenitore;
 
     this.canvas = document.createElement("canvas");
-    this.canvas.className = "block h-full w-full";
+    // `touch-manipulation` toglie una cosa sola: lo zoom col doppio
+    // tocco. Qui è indispensabile, perché nella stanza il doppio tocco è
+    // *il* gesto — miri e vai (vedi `alClick`) — e senza questa riga il
+    // browser lo intercetterebbe per ingrandire la pagina, lasciando la
+    // telecamera ferma e la stanza sformata.
+    this.canvas.className = "block h-full w-full touch-manipulation";
     contenitore.appendChild(this.canvas);
 
     this.alMirare = alMirare;
@@ -476,6 +482,14 @@ export default class Biblioteca {
     this.mirato = null;
     this.puntatore = new THREE.Vector2(-10, -10);
     this.raggio = new THREE.Raycaster();
+
+    // Si mira col dito e non col mouse. Non è una scelta di larghezza
+    // dello schermo — un portatile con lo schermo tattile ha tutti e due
+    // — ma di quale dei due si sta usando adesso: si accende al primo
+    // evento che arriva da un dito e si spegne al primo che arriva da un
+    // mouse, così un ibrido cambia modo mentre lo si usa invece di
+    // decidere una volta all'avvio.
+    this.tocco = false;
 
     this.oggettiStanza = []; // tutto il cliccabile della soglia
     this.puntiStanza = new Map(); // nome del punto → il suo bersaglio
@@ -1896,7 +1910,12 @@ export default class Biblioteca {
     // riga lo scaffale erediterebbe l'ombra delle poltrone.
     this.#rinfrescaOmbre();
 
-    if (cambiaModo && this.mirato) this.#spegniLaMira();
+    // Col dito la mira non si aggiorna da sé (vedi `#disegna`): resta
+    // dov'era finché non la si sposta con un altro tocco. Ma la
+    // telecamera si è appena mossa, e quello che era mirato adesso è
+    // altrove — o non è più in campo. Va spenta, o il contorno resterebbe
+    // acceso su un mobile che nessuno sta più guardando.
+    if (this.mirato && (cambiaModo || this.tocco)) this.#spegniLaMira();
 
     if (nuova === -1) {
       const posti = this.#postiSoglia();
@@ -2266,22 +2285,71 @@ export default class Biblioteca {
   /* -------------------- Eventi -------------------- */
 
   #collegaEventi() {
-    this.alMuovere = (e) => {
+    // Dove sta il puntatore, in coordinate della vista (da -1 a 1).
+    this.puntaA = (e) => {
       const r = this.canvas.getBoundingClientRect();
 
       this.puntatore.x = ((e.clientX - r.left) / r.width) * 2 - 1;
       this.puntatore.y = -((e.clientY - r.top) / r.height) * 2 + 1;
     };
 
+    this.alMuovere = (e) => {
+      this.tocco = e.pointerType !== "mouse";
+
+      this.puntaA(e);
+    };
+
+    // Col dito il `pointermove` non è garantito prima della pressione:
+    // il dito non passa sopra le cose, ci si appoggia. È questo evento a
+    // dire da dove, ed è l'unico posto in cui si può saperlo prima che
+    // arrivi il click — che è un evento di mouse e non sa dire di che
+    // pasta era il dito che l'ha generato.
+    this.alPremere = (e) => {
+      this.tocco = e.pointerType !== "mouse";
+
+      this.puntaA(e);
+    };
+
     this.alUscire = () => {
+      // Col dito il puntatore smette di esistere appena si stacca dal
+      // vetro, e questo evento arriva *prima* del click. Azzerando qui
+      // la mira, il tocco troverebbe sempre il vuoto — ed è per questo
+      // che al tocco la mira non si spegne da sé: la sposta il tocco
+      // dopo, o la spegne un tocco a vuoto.
+      if (this.tocco) return;
+
       this.puntatore.set(-10, -10);
     };
 
-    this.alClick = () => {
+    this.alClick = (e) => {
       // Un click mentre si sta volando salta alla fine: è la stessa
       // cortesia del bottone "Salta" sulla porta d'ingresso, e non serve
       // scriverla da nessuna parte perché è dove il dito è già.
       if (this.#saltaAvvicinamento()) return;
+
+      // COL DITO SI MIRA E POI SI AGISCE
+      //
+      // Il mouse arriva sull'oggetto prima di premere, quindi al click
+      // la mira è già quella giusta da un pezzo. Il dito no: appare già
+      // premuto, e la mira viene calcolata nel ciclo di disegno, cioè al
+      // fotogramma dopo — quando il click è passato da un pezzo. Prima
+      // di questo blocco, nella stanza da telefono non si poteva
+      // cliccare niente: `this.mirato` era sempre nullo.
+      //
+      // Quindi al tocco la mira si rifà qui, sul posto, e il primo tocco
+      // vale come il passaggio del mouse: accende il contorno e il
+      // cartellino. È il secondo tocco sullo stesso oggetto a far
+      // partire l'azione. Non è una cortesia in più — senza, un dito
+      // appoggiato di sbaglio manderebbe la telecamera a fare due
+      // secondi e mezzo di viaggio verso un mobile che non si voleva.
+      if (this.tocco) {
+        const prima = this.mirato;
+
+        this.puntaA(e);
+        this.#aggiornaMira();
+
+        if (!this.mirato || this.mirato !== prima) return;
+      }
 
       if (!this.mirato) return;
 
@@ -2299,6 +2367,7 @@ export default class Biblioteca {
     };
 
     this.canvas.addEventListener("pointermove", this.alMuovere);
+    this.canvas.addEventListener("pointerdown", this.alPremere);
     this.canvas.addEventListener("pointerleave", this.alUscire);
     this.canvas.addEventListener("click", this.alClick);
 
@@ -2432,7 +2501,12 @@ export default class Biblioteca {
       this.avvicinamento.aggiorna(dt);
     } else {
       this.#aggiornaViaggio();
-      this.#aggiornaMira();
+
+      // Col dito la mira non si insegue: il dito non sta sul vetro fra
+      // un tocco e l'altro, e rifare il conto a ogni fotogramma vorrebbe
+      // dire mirare per sempre il punto dell'ultimo tocco — anche mentre
+      // la telecamera gli scorre sotto. La sposta il tocco, e basta.
+      if (!this.tocco) this.#aggiornaMira();
     }
 
     this.#aggiornaLibri(dt);
@@ -2579,6 +2653,7 @@ export default class Biblioteca {
     cancelAnimationFrame(this.fotogramma);
 
     this.canvas.removeEventListener("pointermove", this.alMuovere);
+    this.canvas.removeEventListener("pointerdown", this.alPremere);
     this.canvas.removeEventListener("pointerleave", this.alUscire);
     this.canvas.removeEventListener("click", this.alClick);
 

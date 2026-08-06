@@ -169,7 +169,12 @@ export default function BancoPage() {
 
       <div className="relative flex min-h-dvh flex-col justify-end">
         {/* ---------- La battuta ---------- */}
-        <div className="relative px-4 pb-6 sm:px-8 sm:pb-10">
+        {/* Il fondo abbondante non è aria: su schermo stretto sotto c'è
+            la barra di navigazione, e il campo della domanda — che è
+            l'ultima cosa della colonna — le finiva esattamente sotto.
+            Da `md` in su la barra non c'è e il riquadro torna a
+            posarsi dove si posava. */}
+        <div className="relative px-4 pb-24 sm:px-8 md:pb-10">
           <div className="mx-auto w-full max-w-3xl">
             {inScena?.io && <Eco testo={inScena.io} />}
 

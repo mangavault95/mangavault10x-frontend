@@ -389,7 +389,7 @@ function ModuloDesiderio({ valori, onSalva, onAnnulla }) {
             {campi.id ? "Modifica desiderio" : "Nuovo desiderio"}
           </h2>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="relative sm:col-span-2">
               <Campo
                 etichetta="Titolo"

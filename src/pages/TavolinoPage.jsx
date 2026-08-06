@@ -105,7 +105,11 @@ export default function TavolinoPage() {
       {/* Il volume cresce con lo schermo invece di restare largo mille
           pixel su qualunque monitor: un libro aperto è grande quanto il
           tavolo su cui è posato, e il tavolo qui è la finestra. */}
-      <div className="mx-auto flex min-h-dvh max-w-5xl items-center px-4 pb-16 pt-20 sm:px-8 sm:pt-24 xl:max-w-6xl 2xl:max-w-7xl">
+      {/* In verticale il margine laterale si stringe a due passi: quello
+          che sta in mezzo non è una pagina di testo che si legge meglio
+          stretta, è un volume aperto con due facciate dentro, e ogni
+          pixel tolto ai bordi è un pixel dato a loro. */}
+      <div className="mx-auto flex min-h-dvh max-w-5xl items-center px-2 pb-16 pt-20 sm:px-8 sm:pt-24 xl:max-w-6xl 2xl:max-w-7xl">
         {errore ? (
           <div className="mx-auto w-full max-w-md">
             <Errore
@@ -227,7 +231,7 @@ function Volume({ lettura, indice, totale, verso, onSfogliare }) {
   const percentuale = su ? Math.min(100, Math.round((letto / su) * 100)) : null;
 
   return (
-    <div className="flex w-full items-center gap-2 sm:gap-4">
+    <div className="flex w-full items-center gap-1 sm:gap-4">
       <Pollice
         verso="sinistra"
         etichetta="Lettura precedente"
@@ -248,7 +252,7 @@ function Volume({ lettura, indice, totale, verso, onSfogliare }) {
             className="animate-[apri_540ms_cubic-bezier(0.16,1,0.3,1)_both] rounded-sm bg-carta shadow-raised"
             style={{ transformOrigin: verso > 0 ? "left center" : "right center" }}
           >
-          <div className="relative grid gap-0 md:grid-cols-2">
+          <div className="relative grid grid-cols-1 gap-0 md:grid-cols-2">
             {/* La costa: l'ombra della piega, che si scava verso il
                 centro da tutte e due le parti. È l'unico pezzo che dice
                 «sono due facciate dello stesso foglio» invece che «sono
@@ -302,14 +306,19 @@ function Volume({ lettura, indice, totale, verso, onSfogliare }) {
 /** A sinistra: cosa stai leggendo. La copertina, incollata come una figurina. */
 function FacciataSinistra({ lettura }) {
   return (
-    <div className="relative border-inchiostro/10 p-6 sm:p-8 md:border-r xl:p-12">
+    <div className="relative border-inchiostro/10 p-5 sm:p-8 md:border-r xl:p-12">
       <Rigatura />
 
       <p className="relative text-[0.62rem] uppercase tracking-[0.24em] text-inchiostro/50 xl:text-[0.72rem]">
         Stai leggendo
       </p>
 
-      <div className="relative mt-5 flex gap-5 xl:mt-8 xl:gap-8">
+      {/* Su schermo stretto la figurina va sopra il titolo invece che
+          accanto. Affiancate, alla colonna del testo restavano sessanta
+          pixel: un titolo di due parole ci finiva spezzato in cinque
+          righe, che su una pagina di libro è la cosa più sbagliata che
+          si possa vedere. */}
+      <div className="relative mt-5 flex flex-col gap-4 sm:flex-row sm:gap-5 xl:mt-8 xl:gap-8">
         <div className="w-24 shrink-0 rotate-[-1.5deg] bg-white p-1 shadow-raised sm:w-28 xl:w-40 xl:p-1.5">
           <Copertina src={lettura.copertina} alt="" inclina={false} />
         </div>
@@ -361,7 +370,7 @@ function FacciataSinistra({ lettura }) {
 /** A destra: dove sei rimasto. */
 function FacciataDestra({ lettura, letto, su, percentuale }) {
   return (
-    <div className="relative p-6 sm:p-8 xl:p-12">
+    <div className="relative p-5 sm:p-8 xl:p-12">
       <Rigatura />
 
       <p className="relative text-[0.62rem] uppercase tracking-[0.24em] text-inchiostro/50 xl:text-[0.72rem]">

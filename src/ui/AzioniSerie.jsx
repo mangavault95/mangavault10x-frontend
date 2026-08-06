@@ -16,6 +16,16 @@ import { updateManga, updateRating } from "../services/api";
  *
  * La scrittura resta protetta: `useAccessoProtetto` apre un accesso
  * compatto proprio qui se serve, invece di mandare a `/admin`.
+ *
+ *
+ * QUANTO SONO GRANDI DA TOCCARE
+ *
+ * Col mouse un bersaglio di ventotto pixel si prende al primo colpo,
+ * perché la punta della freccia è larga un pixel e la si vede. Il
+ * polpastrello no: copre quello che sta per premere ed è largo un
+ * centimetro. Dove c'è `[@media(hover:none)]` questi comandi crescono —
+ * solo lì, perché su un monitor un bottone di quaranta pixel accanto a
+ * un titolo è un bottone che urla.
  */
 
 /* ==================================================
@@ -120,7 +130,7 @@ export function VotoStelle({ serie, onCambiato, dimensione = 20, sospeso = false
           key={numero}
           type="button"
           disabled={inCorso}
-          className="relative grid place-items-center p-0.5 text-ink-faint transition-transform duration-quick ease-spring hover:scale-110 disabled:pointer-events-none"
+          className="relative grid place-items-center p-0.5 text-ink-faint transition-transform duration-quick ease-spring hover:scale-110 disabled:pointer-events-none [@media(hover:none)]:p-1.5"
           onMouseEnter={() => setAnteprima(numero)}
           onClick={(e) => salva(numero, e)}
         >
@@ -167,8 +177,8 @@ export function ContaVolumi({ serie, onCambiato, compatto = false }) {
   }
 
   const misura = compatto
-    ? "h-6 w-6 text-xs"
-    : "h-8 w-8 text-sm";
+    ? "h-6 w-6 text-xs [@media(hover:none)]:h-8 [@media(hover:none)]:w-8"
+    : "h-8 w-8 text-sm [@media(hover:none)]:h-10 [@media(hover:none)]:w-10";
 
   return (
     <div

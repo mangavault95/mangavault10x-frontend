@@ -16,7 +16,13 @@ export default class LibroVetrina {
     this.vivo = true;
 
     this.canvas = document.createElement("canvas");
-    this.canvas.className = "block h-full w-full cursor-grab touch-none active:cursor-grabbing";
+    // `touch-pan-y` e non `touch-none`: il libro si gira col dito in
+    // orizzontale, ma la pagina sotto deve restare scorribile in
+    // verticale. Con `touch-none` un pollice appoggiato sul libro
+    // bloccava lo scorrimento della collezione, ed è un vicolo cieco che
+    // capita a chiunque scorra tenendo il dito al centro dello schermo.
+    this.canvas.className =
+      "block h-full w-full cursor-grab touch-pan-y active:cursor-grabbing";
     contenitore.appendChild(this.canvas);
 
     this.renderer = new THREE.WebGLRenderer({
