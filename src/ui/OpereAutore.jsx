@@ -24,15 +24,17 @@ import { abbinaOpere, caricaOpereAutore } from "../dati/autore";
  * *mentre* si guarda una serie, e mandare via da lì per rispondere
  * costringerebbe a tornare indietro ogni volta.
  */
-export default function OpereAutore({ nome, onChiudere }) {
+export default function OpereAutore({ nome, riferimento, onChiudere }) {
   const velo = useChiusuraVelo(onChiudere);
   const { serie: collezione } = useCollezione();
 
-  const persona = useRisorsa(() => caricaOpereAutore(nome), { attivo: Boolean(nome) });
+  const persona = useRisorsa(() => caricaOpereAutore(nome, riferimento), {
+    attivo: Boolean(nome)
+  });
 
   const opere = useMemo(
-    () => abbinaOpere(persona.dati?.opere, collezione),
-    [persona.dati, collezione]
+    () => abbinaOpere(persona.dati?.opere, collezione, nome),
+    [persona.dati, collezione, nome]
   );
 
   useEffect(() => {

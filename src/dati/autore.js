@@ -15,6 +15,7 @@
  */
 
 import { getOpereAutore } from "../services/api";
+import { indiceAutori } from "./corrispondenzaAutore";
 import { costruisciRiconoscitore, ossoDelTitolo } from "./identita";
 
 const PREFISSO_CACHE = "mv_autore_v1";
@@ -44,7 +45,7 @@ function senzaDoppioni(opere) {
  * riaprire lo stesso autore due volte è normale (dalla sua scheda si
  * finisce su un'altra serie sua), rifare la domanda no.
  */
-export async function caricaOpereAutore(nome) {
+export async function caricaOpereAutore(nome, riferimento) {
   if (!nome) return null;
 
   const chiave = `${PREFISSO_CACHE}:${nome.trim().toLowerCase()}`;
@@ -56,7 +57,7 @@ export async function caricaOpereAutore(nome) {
     /* sessionStorage non disponibile: si prosegue senza cache */
   }
 
-  const persona = await getOpereAutore(nome).catch(() => null);
+  const persona = await getOpereAutore(nome, riferimento).catch(() => null);
 
   if (!persona?.opere?.length) return { nome, opere: [] };
 
@@ -64,6 +65,10 @@ export async function caricaOpereAutore(nome) {
     nome,
     opere: senzaDoppioni(persona.opere).map((o) => ({
       idEsterno: `ac-${o.id}`,
+      // L'identificativo nudo, non solo dentro la chiave: è quello che
+      // permette di riconoscere la serie in collezione anche quando i
+      // due titoli non si somigliano affatto (vedi `identita.js`).
+      animeClickId: o.id,
       titolo: o.titolo,
       anno: o.anno,
       copertina: o.copertina,
@@ -88,12 +93,10 @@ export async function caricaOpereAutore(nome) {
  * mostrarle e non dentro il caricamento: la lista in cache resta buona
  * anche quando la collezione cambia sotto.
  */
-export function abbinaOpere(opere, collezione) {
-  if (!opere?.length) return [];
-
+export function abbinaOpere(opere, collezione, nome) {
   const riconosci = costruisciRiconoscitore(collezione || []);
 
-  return opere
+  const abbinate = (opere || [])
     .map((o) => ({ ...o, posseduta: riconosci(o) }))
     // Fuori quello che in Italia non è uscito — è il senso del pannello
     // — ma quello che hai in casa resta comunque, qualunque cosa dica
@@ -101,6 +104,29 @@ export function abbinaOpere(opere, collezione) {
     // benché la serie sia in edicola da anni, e vedersi sparire dal
     // proprio autore una serie che si possiede sarebbe assurdo.
     .filter((o) => o.editoInItalia || o.posseduta);
+
+  // E le tue che AnimeClick non elenca affatto sotto quel nome: la
+  // ricerca per autore è testuale, quindi "Toru Fujisawa" non trova le
+  // opere che loro firmano "Tōru Fujisawa" — e GTO spariva dal pannello
+  // del suo autore. Qui la collezione ha ragione per definizione: se
+  // una serie è tua e porta quel nome, in elenco ci va.
+  const gia = new Set(abbinate.map((o) => o.posseduta?.id).filter(Boolean));
+
+  const tue = (nome ? indiceAutori(collezione || []).trovaSerie(nome) : [])
+    .filter((s) => !gia.has(s.id))
+    .map((s) => ({
+      idEsterno: `mia-${s.id}`,
+      titolo: s.titolo,
+      copertina: s.copertina,
+      anno: null,
+      collegamento: null,
+      editoInItalia: true,
+      posseduta: s
+    }));
+
+  const etichetta = (o) => o.posseduta?.titolo || o.titolo;
+
+  return [...abbinate, ...tue].sort((a, b) => etichetta(a).localeCompare(etichetta(b), "it"));
 }
 
 /**

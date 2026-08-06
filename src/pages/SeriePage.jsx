@@ -326,7 +326,14 @@ export default function SeriePage() {
       </div>
 
       {autoreAperto && (
-        <OpereAutore nome={autoreAperto} onChiudere={() => setAutoreAperto(null)} />
+        <OpereAutore
+          nome={autoreAperto}
+          // La scheda AnimeClick di questa serie: se il nome dell'autore
+          // com'è scritto qui non trova niente da loro, la sua grafia
+          // giusta si legge da lì.
+          riferimento={serie.animeClickId}
+          onChiudere={() => setAutoreAperto(null)}
+        />
       )}
     </article>
   );

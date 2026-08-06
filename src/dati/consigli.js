@@ -220,7 +220,7 @@ export async function consigliaSerieAnimeClick(serie) {
         const chiaveTitolo = normalizzaTitolo(r.titolo);
 
         if (!r.titolo || trovati.has(chiaveTitolo)) continue;
-        if (riconosci({ titolo: r.titolo })) continue;
+        if (riconosci({ titolo: r.titolo, animeClickId: r.id })) continue;
 
         trovati.set(chiaveTitolo, {
           fonte: "animeclick",

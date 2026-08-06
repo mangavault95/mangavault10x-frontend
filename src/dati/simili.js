@@ -234,6 +234,10 @@ export async function similiDaAnimeClick(serie) {
     .map((s) => ({
       fonte: "animeclick",
       idEsterno: `ac-${s.id}`,
+      // Serve al riconoscimento di quello che hai già: due schede con lo
+      // stesso identificativo AnimeClick sono lo stesso fumetto, anche
+      // quando i titoli non si somigliano.
+      animeClickId: s.id,
       titolo: s.titolo,
       copertina: s.copertina,
       collegamento: s.url,

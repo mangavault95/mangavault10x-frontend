@@ -11,11 +11,18 @@
  * mandare alla scheda sbagliata. Provato — "I fiori del male" compariva
  * come "Happiness" solo perché l'autore è lo stesso Oshimi.
  *
- * Qui si confrontano i nomi, tutti quelli che un'opera ha: il titolo,
- * quello inglese e i sinonimi che AniList elenca, dove il titolo
- * dell'edizione italiana c'è quasi sempre. È così che "Oyasumi Punpun"
- * si riconosce in "Buonanotte Punpun", due stringhe che non hanno una
- * lettera in comune.
+ * Quando l'opera arriva da AnimeClick la risposta è certa e non si
+ * discute: la collezione porta l'identificativo della loro scheda
+ * (`"AnimeClickID"`, riempito per quasi tutte le serie), quindi due
+ * numeri uguali sono lo stesso fumetto qualunque cosa dicano i titoli.
+ * È l'unico modo di riconoscere "Etciù" dentro "Kushami (Etciù)", o
+ * "Mujirushi" dentro "Mujirushi - Il Segno dei Sogni".
+ *
+ * Per tutto il resto si confrontano i nomi, tutti quelli che un'opera
+ * ha: il titolo, quello inglese e i sinonimi che AniList elenca, dove il
+ * titolo dell'edizione italiana c'è quasi sempre. È così che "Oyasumi
+ * Punpun" si riconosce in "Buonanotte Punpun", due stringhe che non
+ * hanno una lettera in comune.
  *
  * Niente somiglianze approssimate: un seguito dello stesso autore
  * ("21st Century Boys" accanto a "20th Century Boys") passerebbe per la
@@ -68,14 +75,23 @@ const chiaviDi = (nome) => {
  */
 export function costruisciRiconoscitore(collezione) {
   const perTitolo = new Map();
+  const perAnimeClick = new Map();
 
   for (const s of collezione || []) {
     for (const chiave of chiaviDi(s.titolo)) {
       if (!perTitolo.has(chiave)) perTitolo.set(chiave, s);
     }
+
+    if (s.animeClickId) perAnimeClick.set(Number(s.animeClickId), s);
   }
 
   return (opera) => {
+    // L'identificativo prima di tutto: è un fatto, non una somiglianza.
+    if (opera?.animeClickId) {
+      const perId = perAnimeClick.get(Number(opera.animeClickId));
+      if (perId) return perId;
+    }
+
     for (const nome of nomiDi(opera)) {
       for (const chiave of chiaviDi(nome)) {
         const trovata = perTitolo.get(chiave);

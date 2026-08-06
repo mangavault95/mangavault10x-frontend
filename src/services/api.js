@@ -166,8 +166,15 @@ export const enrichManga = (titolo, autore) =>
  * non è mai arrivato e non si può comprare: la domanda vera la sa solo
  * chi tiene il catalogo italiano.
  */
-export const getOpereAutore = (nome) =>
-  request(`/api/autore/opere?nome=${encodeURIComponent(nome)}`);
+export function getOpereAutore(nome, riferimento) {
+  const parametri = new URLSearchParams({ nome });
+
+  // L'id AnimeClick di una serie sua che abbiamo già: al server serve
+  // solo se il nome, così com'è scritto da noi, non trova niente.
+  if (riferimento) parametri.set("riferimento", String(riferimento));
+
+  return request(`/api/autore/opere?${parametri.toString()}`);
+}
 
 export function getSimiliAnimeClick({ titolo, autore, id }) {
   const parametri = new URLSearchParams();
