@@ -9,13 +9,16 @@ import { useCollezione } from "../dati/collezione";
 import { abbinaOpere, caricaOpereAutore } from "../dati/autore";
 
 /**
- * Tutto quello che ha fatto un autore, in una griglia di copertine.
+ * Le opere italiane di un autore, in una griglia di copertine.
  *
  * Si apre cliccando il suo nome dentro la scheda di una serie, e
  * risponde a colpo d'occhio a "di questo, quanto ho?": le opere in
  * collezione sono a colori e portano alla loro scheda, le altre restano
- * in grigio e portano ad AniList. Il grigio non è decorazione — è
+ * in grigio e portano ad AnimeClick. Il grigio non è decorazione — è
  * l'informazione: quello che manca si vede senza leggere una parola.
+ *
+ * Solo quello che è uscito in Italia (vedi `dati/autore.js`): il resto
+ * sarebbe un elenco di copertine che non puoi comprare.
  *
  * Un pannello e non una pagina: è una domanda che viene in mente
  * *mentre* si guarda una serie, e mandare via da lì per rispondere
@@ -59,10 +62,10 @@ export default function OpereAutore({ nome, onChiudere }) {
 
               <p className="mt-0.5 text-sm text-ink-muted">
                 {persona.inCorso && !persona.dati
-                  ? "Cerco le sue opere…"
+                  ? "Cerco le sue opere uscite in Italia…"
                   : opere.length
-                    ? `${inCasa} di ${opere.length} in collezione`
-                    : "Nessuna opera trovata su AniList"}
+                    ? `${inCasa} di ${opere.length} edite in Italia`
+                    : "Nessuna opera edita in Italia"}
               </p>
             </div>
 
@@ -94,8 +97,8 @@ export default function OpereAutore({ nome, onChiudere }) {
             ) : (
               <p className="py-10 text-center text-sm text-ink-muted">
                 {persona.errore
-                  ? "AniList non ha risposto. Riprova fra poco."
-                  : `Su AniList non risulta nessun autore di nome "${nome}".`}
+                  ? "AnimeClick non ha risposto. Riprova fra poco."
+                  : `Di ${nome} AnimeClick non elenca opere uscite in Italia.`}
               </p>
             )}
           </div>
@@ -108,9 +111,10 @@ export default function OpereAutore({ nome, onChiudere }) {
 function CartaOpera({ opera, onChiudere }) {
   const { posseduta } = opera;
 
-  // In casa vince il titolo dell'edizione italiana, quello con cui la
-  // serie è registrata: è come la chiami tu, non come la chiama AniList.
-  const titolo = posseduta?.titolo || opera.titoloInglese || opera.titolo;
+  // In casa vince il titolo con cui la serie è registrata: è come la
+  // chiami tu, che può differire di una virgola da come la scrive
+  // AnimeClick ("Buonanotte, PunPun").
+  const titolo = posseduta?.titolo || opera.titolo;
 
   const contenuto = (
     <>
@@ -139,7 +143,9 @@ function CartaOpera({ opera, onChiudere }) {
         </h3>
 
         <p className="font-numeric text-[0.65rem] text-ink-faint">
-          {[opera.anno, opera.volumi ? `${opera.volumi} vol.` : null].filter(Boolean).join(" · ")}
+          {posseduta
+            ? `${posseduta.posseduti}${posseduta.totali ? ` / ${posseduta.totali}` : ""} vol.`
+            : opera.anno || ""}
         </p>
       </div>
     </>
@@ -167,7 +173,7 @@ function CartaOpera({ opera, onChiudere }) {
       target="_blank"
       rel="noopener noreferrer"
       className={stile}
-      title={`${titolo} — non ce l'hai, apri su AniList`}
+      title={`${titolo} — non ce l'hai, apri su AnimeClick`}
     >
       {contenuto}
     </a>

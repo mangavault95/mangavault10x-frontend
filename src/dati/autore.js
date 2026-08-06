@@ -3,23 +3,27 @@
  *
  * Serve a una domanda che prima si poteva solo indovinare guardando la
  * collezione: di questo autore, cos'altro ha fatto — e di quello,
- * quanto ho già? Le opere arrivano da AniList (che le conosce tutte,
- * anche quelle mai uscite in Italia); quali sono in casa lo dice il
- * riconoscimento per nome di `identita.js`, lo stesso usato dai titoli
- * simili.
+ * quanto ho già?
+ *
+ * La fonte è AnimeClick, non AniList, e solo per le opere **uscite in
+ * Italia**. AniList conosce la bibliografia completa, ma metà di quei
+ * titoli qui non è mai arrivato: un elenco dove la maggioranza delle
+ * copertine è roba che non puoi comprare risponde a un'altra domanda,
+ * più da enciclopedia che da collezionista. In più i titoli tornano già
+ * in italiano, gli stessi con cui le serie stanno in collezione, e il
+ * riconoscimento di `identita.js` ci azzecca molto più spesso.
  */
 
-import { opereDiAutore } from "../bibliotecario/esterni";
+import { getOpereAutore } from "../services/api";
 import { costruisciRiconoscitore, ossoDelTitolo } from "./identita";
 
 const PREFISSO_CACHE = "mv_autore_v1";
 
 /**
- * AniList tiene schede separate per le riedizioni (l'edizione normale,
- * la kanzenban, la raccolta in volume unico): sono la stessa opera
- * mostrata tre volte, e in una griglia di copertine si vedono come tre
- * carte quasi identiche di fila. Vince la prima, che essendo ordinata
- * per popolarità è quella con cui l'opera si conosce.
+ * Le riedizioni sono schede separate (l'edizione normale, la
+ * deluxe, la raccolta in volume unico): la stessa opera mostrata due o
+ * tre volte, che in una griglia di copertine si vede come una fila di
+ * carte quasi identiche. Vince la prima.
  */
 function senzaDoppioni(opere) {
   const visti = new Set();
@@ -36,10 +40,9 @@ function senzaDoppioni(opere) {
 }
 
 /**
- * Le opere di una persona, chieste ad AniList e messe in cache per la
- * sessione: riaprire lo stesso autore due volte è normale (dalla scheda
- * di una serie si finisce su un'altra dello stesso autore), rifare la
- * domanda no.
+ * Le opere italiane di una persona, messe in cache per la sessione:
+ * riaprire lo stesso autore due volte è normale (dalla sua scheda si
+ * finisce su un'altra serie sua), rifare la domanda no.
  */
 export async function caricaOpereAutore(nome) {
   if (!nome) return null;
@@ -53,11 +56,21 @@ export async function caricaOpereAutore(nome) {
     /* sessionStorage non disponibile: si prosegue senza cache */
   }
 
-  const persona = await opereDiAutore(nome);
+  const persona = await getOpereAutore(nome).catch(() => null);
 
-  if (!persona) return null;
+  if (!persona?.opere?.length) return { nome, opere: [] };
 
-  const risultato = { ...persona, opere: senzaDoppioni(persona.opere) };
+  const risultato = {
+    nome,
+    opere: senzaDoppioni(persona.opere).map((o) => ({
+      idEsterno: `ac-${o.id}`,
+      titolo: o.titolo,
+      anno: o.anno,
+      copertina: o.copertina,
+      collegamento: o.url,
+      editoInItalia: Boolean(o.editoInItalia)
+    }))
+  };
 
   try {
     sessionStorage.setItem(chiave, JSON.stringify(risultato));
@@ -80,7 +93,14 @@ export function abbinaOpere(opere, collezione) {
 
   const riconosci = costruisciRiconoscitore(collezione || []);
 
-  return opere.map((o) => ({ ...o, posseduta: riconosci(o) }));
+  return opere
+    .map((o) => ({ ...o, posseduta: riconosci(o) }))
+    // Fuori quello che in Italia non è uscito — è il senso del pannello
+    // — ma quello che hai in casa resta comunque, qualunque cosa dica
+    // la casella "Disponibilità" di AnimeClick: su Kaiju No. 8 è vuota
+    // benché la serie sia in edicola da anni, e vedersi sparire dal
+    // proprio autore una serie che si possiede sarebbe assurdo.
+    .filter((o) => o.editoInItalia || o.posseduta);
 }
 
 /**

@@ -119,49 +119,6 @@ const PER_TEMI = `
   }
 `;
 
-/**
- * La bibliografia di una persona.
- *
- * Campi ridotti all'osso di proposito: sono quaranta opere in una
- * risposta sola, e chiedere per ognuna tag, trama e staff — come fa la
- * scheda `scheda` qui sopra — vorrebbe dire scaricare mezzo megabyte
- * per disegnare una griglia di copertine.
- *
- * `POPULARITY_DESC` mette in cima le opere per cui l'autore è
- * conosciuto: ordinate per data, un artbook o una storia breve del mese
- * scorso aprirebbero l'elenco al posto del capolavoro.
- */
-const CAMPI_SOMMARIO = `
-  fragment sommario on Media {
-    id
-    title { romaji english native }
-    synonyms
-    format
-    volumes
-    status
-    averageScore
-    startDate { year }
-    coverImage { large }
-    siteUrl
-  }
-`;
-
-const OPERE_AUTORE = `
-  ${CAMPI_SOMMARIO}
-  query ($nome: String) {
-    Staff(search: $nome) {
-      id
-      name { full native }
-      staffMedia(type: MANGA, sort: [POPULARITY_DESC], perPage: 40) {
-        edges {
-          staffRole
-          node { ...sommario }
-        }
-      }
-    }
-  }
-`;
-
 const STATI = {
   FINISHED: "conclusa",
   RELEASING: "in corso",
@@ -338,47 +295,6 @@ export async function similiPerTemi(temi, { escludi = null, quanti = 12 } = {}) 
   const dati = await interroga(PER_TEMI, { temi, escludi, quanti });
 
   return (dati?.Page?.media || []).map(normalizza);
-}
-
-/**
- * Tutto quello che una persona ha scritto o disegnato.
- *
- * Fuori restano due cose. Le assistenze — "Assistant", cioè chi ha dato
- * una mano sulle chine di qualcun altro — non sono opere sue e
- * gonfierebbero la bibliografia di titoli che nessuno gli attribuisce.
- * E i romanzi (`NOVEL`): AniList tiene le light novel dentro `MANGA`,
- * ma in una collezione di fumetti sono un'altra cosa.
- *
- * Torna `null` — non un elenco vuoto — quando AniList non conosce
- * nessuno con quel nome: chi chiama deve poter distinguere "non l'ho
- * trovato" da "non ha scritto niente".
- */
-export async function opereDiAutore(nome) {
-  if (!nome) return null;
-
-  const dati = await interroga(OPERE_AUTORE, { nome });
-  const persona = dati?.Staff;
-
-  if (!persona) return null;
-
-  const opere = (persona.staffMedia?.edges || [])
-    .filter((e) => e.node && e.node.format !== "NOVEL" && !/assistant/i.test(e.staffRole || ""))
-    .map((e) => ({
-      idEsterno: e.node.id,
-      titolo: e.node.title.romaji || e.node.title.english || e.node.title.native,
-      titoloInglese: e.node.title.english || null,
-      sinonimi: e.node.synonyms || [],
-      ruolo: e.staffRole || null,
-      formato: e.node.format || null,
-      volumi: e.node.volumes ?? null,
-      stato: STATI[e.node.status] || null,
-      voto: e.node.averageScore ? e.node.averageScore / 10 : null,
-      anno: e.node.startDate?.year ?? null,
-      copertina: e.node.coverImage?.large || null,
-      collegamento: e.node.siteUrl || null
-    }));
-
-  return { nome: persona.name.full, nomeOriginale: persona.name.native || null, opere };
 }
 
 /**

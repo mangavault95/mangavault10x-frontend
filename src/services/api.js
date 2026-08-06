@@ -159,6 +159,16 @@ export const enrichManga = (titolo, autore) =>
  * controllo dei volumi italiani — quando c'è, il server salta la
  * ricerca per titolo e con essa il rischio di agganciare un omonimo.
  */
+/**
+ * Le opere di un autore uscite in Italia, da AnimeClick.
+ *
+ * AniList conosce la bibliografia intera, ma metà di quei titoli qui
+ * non è mai arrivato e non si può comprare: la domanda vera la sa solo
+ * chi tiene il catalogo italiano.
+ */
+export const getOpereAutore = (nome) =>
+  request(`/api/autore/opere?nome=${encodeURIComponent(nome)}`);
+
 export function getSimiliAnimeClick({ titolo, autore, id }) {
   const parametri = new URLSearchParams();
 

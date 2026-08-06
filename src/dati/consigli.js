@@ -9,7 +9,9 @@
  */
 
 import { cercaFuori, scegliCorrispondenza, similiFuoriPerId } from "../bibliotecario/esterni";
+import { getSimiliAnimeClick } from "../services/api";
 import { indiceAutori } from "./corrispondenzaAutore";
+import { costruisciRiconoscitore } from "./identita";
 
 // v4: cambia ogni volta che cambia la forma dei dati salvati o la
 // regola di esclusione, altrimenti la cache del giorno prima
@@ -155,7 +157,7 @@ export async function consigliaSerie(serie) {
         const chiaveTitolo = normalizzaTitolo(r.titolo);
         if (!r.titolo || trovati.has(chiaveTitolo) || giaPosseduto(r)) continue;
 
-        trovati.set(chiaveTitolo, { ...r, motivo });
+        trovati.set(chiaveTitolo, { ...r, fonte: "anilist", motivo });
       }
     } catch {
       continue;
@@ -170,6 +172,81 @@ export async function consigliaSerie(serie) {
     sessionStorage.setItem(chiave, JSON.stringify(risultato));
   } catch {
     /* niente di grave: la prossima apertura richiama semplicemente AniList */
+  }
+
+  return risultato;
+}
+
+/**
+ * Gli stessi consigli, ma chiesti ai lettori italiani.
+ *
+ * Stessi semi — i preferiti e i voti alti di oggi — e stessa promessa
+ * ("roba che non hai"), con una fonte che ragiona diversamente: su
+ * AnimeClick chi consiglia ha letto l'edizione italiana, e quello che
+ * indica è quasi sempre comprabile qui. Arriva dopo, perché passa dal
+ * backend: la fila si disegna con AniList e si completa quando risponde.
+ *
+ * L'esclusione di quello che possiedi qui è quella stretta per titolo,
+ * non quella larga per autore usata sopra: di questi candidati sappiamo
+ * solo il nome, e nient'altro con cui allargare.
+ */
+export async function consigliaSerieAnimeClick(serie) {
+  if (!serie?.length) return [];
+
+  const chiave = `${PREFISSO_CACHE}:ac:${oggi()}:${serie.length}`;
+
+  try {
+    const inCache = sessionStorage.getItem(chiave);
+    if (inCache) return JSON.parse(inCache);
+  } catch {
+    /* sessionStorage non disponibile: si prosegue senza cache */
+  }
+
+  const semi = scegliSemi(serie);
+  const riconosci = costruisciRiconoscitore(serie);
+  const trovati = new Map();
+
+  for (const seme of semi) {
+    try {
+      const risposta = await getSimiliAnimeClick({
+        titolo: seme.titolo,
+        autore: seme.autore,
+        id: seme.animeClickId
+      });
+
+      const motivo = motivoConsiglio(seme);
+
+      for (const r of risposta?.simili || []) {
+        const chiaveTitolo = normalizzaTitolo(r.titolo);
+
+        if (!r.titolo || trovati.has(chiaveTitolo)) continue;
+        if (riconosci({ titolo: r.titolo })) continue;
+
+        trovati.set(chiaveTitolo, {
+          fonte: "animeclick",
+          idEsterno: `ac-${r.id}`,
+          titolo: r.titolo,
+          copertina: r.copertina,
+          collegamento: r.url,
+          segnalazioni: r.segnalazioni || 0,
+          generi: [],
+          voto: null,
+          motivo
+        });
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  const risultato = [...trovati.values()]
+    .sort((a, b) => b.segnalazioni - a.segnalazioni)
+    .slice(0, 6);
+
+  try {
+    sessionStorage.setItem(chiave, JSON.stringify(risultato));
+  } catch {
+    /* pazienza */
   }
 
   return risultato;

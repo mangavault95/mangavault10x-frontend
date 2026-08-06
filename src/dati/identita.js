@@ -45,6 +45,21 @@ export const nomiDi = (opera) =>
   [opera?.titolo, opera?.titoloInglese, ...(opera?.sinonimi || [])].filter(Boolean);
 
 /**
+ * Le due chiavi con cui un titolo si cerca: com'è, e senza spazi.
+ *
+ * La seconda serve perché le fonti spezzano le parole dove vogliono —
+ * AnimeClick scrive "Dededededestruction" tutto attaccato dove noi
+ * abbiamo "Dededede Destruction" — e per quella differenza una serie
+ * che hai in casa risultava non posseduta. Due titoli che differiscono
+ * solo per uno spazio sono lo stesso titolo: qui non si rischia niente.
+ */
+const chiaviDi = (nome) => {
+  const osso = ossoDelTitolo(nome);
+
+  return osso ? [osso, osso.replace(/ /g, "")] : [];
+};
+
+/**
  * Restituisce una funzione che, data un'opera esterna, trova la serie
  * in collezione che è la stessa opera — o `null`.
  *
@@ -55,14 +70,17 @@ export function costruisciRiconoscitore(collezione) {
   const perTitolo = new Map();
 
   for (const s of collezione || []) {
-    const osso = ossoDelTitolo(s.titolo);
-    if (osso && !perTitolo.has(osso)) perTitolo.set(osso, s);
+    for (const chiave of chiaviDi(s.titolo)) {
+      if (!perTitolo.has(chiave)) perTitolo.set(chiave, s);
+    }
   }
 
   return (opera) => {
     for (const nome of nomiDi(opera)) {
-      const trovata = perTitolo.get(ossoDelTitolo(nome));
-      if (trovata) return trovata;
+      for (const chiave of chiaviDi(nome)) {
+        const trovata = perTitolo.get(chiave);
+        if (trovata) return trovata;
+      }
     }
 
     return null;
