@@ -149,6 +149,26 @@ export const updateRating = (id, rating) =>
 export const enrichManga = (titolo, autore) =>
   request("/api/manga/enrich", { method: "POST", body: { titolo, autore } });
 
+/**
+ * I titoli che i lettori italiani accostano a una serie, letti da
+ * AnimeClick.
+ *
+ * Passa dal server perché AnimeClick non manda gli header CORS, e
+ * perché una risposta costa tre richieste al loro sito: là restano in
+ * cache per un giorno. L'`id` è quello già verificato in tabella per il
+ * controllo dei volumi italiani — quando c'è, il server salta la
+ * ricerca per titolo e con essa il rischio di agganciare un omonimo.
+ */
+export function getSimiliAnimeClick({ titolo, autore, id }) {
+  const parametri = new URLSearchParams();
+
+  if (titolo) parametri.set("titolo", titolo);
+  if (autore) parametri.set("autore", autore);
+  if (id) parametri.set("id", String(id));
+
+  return request(`/api/simili/animeclick?${parametri.toString()}`);
+}
+
 export const login = async (username, password) => {
   const data = await request("/api/manga/login", {
     method: "POST",

@@ -81,6 +81,12 @@ export function normalizzaSerie(riga) {
     edizione: riga.Edizione || null,
     operaId: numero(riga.OperaId),
 
+    // L'aggancio alla scheda AnimeClick, verificato a mano quando è
+    // stato scritto (sql/006_animeclick.sql). Nato per contare i volumi
+    // usciti in Italia, serve anche a chiedere i consigli dei lettori
+    // italiani senza dover ricercare il titolo.
+    animeClickId: numero(riga.AnimeClickID),
+
     // La riga originale resta a disposizione per la pagina Gestione,
     // che deve poter salvare i campi con i nomi che il server si aspetta.
     grezzo: riga

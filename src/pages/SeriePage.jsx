@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Copertina from "../ui/Copertina";
 import Progresso from "../ui/Progresso";
-import CartaSerie from "../ui/CartaSerie";
+import TitoliSimili from "../ui/TitoliSimili";
+import OpereAutore from "../ui/OpereAutore";
 import { Bottone } from "../ui/Controlli";
 import { Errore, Vuoto } from "../ui/Stati";
 import { Sezione } from "../ui/Pagina";
@@ -16,9 +17,8 @@ import {
   updateManga,
   urlCopertina
 } from "../services/api";
-import { cercaFuori, scegliCorrispondenza, similiFuoriPerId } from "../bibliotecario/esterni";
-import { costruisciCercaPosseduto } from "../dati/consigli";
 import { generiDiSerie, idDa } from "../dati/generi";
+import { nomiAutori } from "../dati/autore";
 import useRisorsa from "../dati/useRisorsa";
 import {
   ETICHETTE_STATO,
@@ -43,6 +43,10 @@ export default function SeriePage() {
   const navigate = useNavigate();
 
   const { serie, inCorso, errore } = useSerie(id);
+
+  // Quale autore si sta guardando nel pannello delle opere: `null`
+  // quando è chiuso.
+  const [autoreAperto, setAutoreAperto] = useState(null);
 
   // Quali volumi hai già finito. Lo storico è raggruppato per serie,
   // quindi basta pescare la riga di questa: è una sola richiesta e
@@ -182,11 +186,7 @@ export default function SeriePage() {
                   />
                 </div>
 
-                <p className="text-ink-muted">
-                  {[serie.autore, serie.disegnatore !== serie.autore && serie.disegnatore]
-                    .filter(Boolean)
-                    .join(" · ") || "Autore non registrato"}
-                </p>
+                <Autori serie={serie} onScegli={setAutoreAperto} />
 
                 <VotoStelle
                   serie={serie}
@@ -318,8 +318,16 @@ export default function SeriePage() {
 
         <QuotazioneMercato serie={serie} sorelle={sorelle} />
 
-        <Simili serie={serie} tutte={tutte} />
+        {/* La chiave rimonta la sezione quando si passa da una serie a
+            un'altra senza uscire dalla pagina (i titoli simili portano
+            proprio lì): senza, resterebbero appesi i consigli della
+            scheda precedente. */}
+        <TitoliSimili key={serie.id} serie={serie} />
       </div>
+
+      {autoreAperto && (
+        <OpereAutore nome={autoreAperto} onChiudere={() => setAutoreAperto(null)} />
+      )}
     </article>
   );
 }
@@ -327,6 +335,41 @@ export default function SeriePage() {
 /* ==================================================
    PEZZI DELLA PAGINA
    ================================================== */
+
+/**
+ * Chi l'ha fatta, un nome alla volta e cliccabile.
+ *
+ * Sono bottoni e non link: aprono un pannello sulla stessa pagina,
+ * senza portare via da quello che si stava guardando. Il sottolineato
+ * tratteggiato è il modo di dire che c'è dell'altro sotto senza fare la
+ * figura di un link che porta fuori.
+ */
+function Autori({ serie, onScegli }) {
+  const nomi = nomiAutori(serie.autore, serie.disegnatore);
+
+  if (!nomi.length) {
+    return <p className="text-ink-muted">Autore non registrato</p>;
+  }
+
+  return (
+    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-muted">
+      {nomi.map((nome, i) => (
+        <span key={nome} className="flex items-center gap-2">
+          {i > 0 && <span aria-hidden="true">·</span>}
+
+          <button
+            type="button"
+            onClick={() => onScegli(nome)}
+            title={`Tutte le opere di ${nome}`}
+            className="underline decoration-dotted decoration-ink-faint underline-offset-4 transition-colors duration-quick hover:text-ink-bright hover:decoration-brass-400"
+          >
+            {nome}
+          </button>
+        </span>
+      ))}
+    </p>
+  );
+}
 
 function Etichetta({ tono = "neutro", children }) {
   const toni = {
@@ -530,76 +573,6 @@ function QuotazioneMercato({ serie, sorelle }) {
             {stato === "caricamento" ? "Cerco…" : stato === "fatto" ? "Aggiorna" : "Cerca"}
           </Bottone>
         )}
-      </div>
-    </Sezione>
-  );
-}
-
-/**
- * Le raccomandazioni vere di AniList (chi ha letto questa serie e ha
- * segnalato "prova anche quest'altra"), filtrate su cosa possiedi già.
- *
- * Prima erano le altre serie con un genere in comune: sembrava un
- * criterio ragionevole ma accostava titoli senza relazione reale (es.
- * un thriller psicologico e uno shonen d'azione, uniti solo dal tag
- * "Drama"). Stessa correzione già fatta per `DesiderioPage`.
- */
-function Simili({ serie, tutte }) {
-  const { titolo, autore, id } = serie;
-
-  const [raccomandati, setRaccomandati] = useState([]);
-
-  useEffect(() => {
-    let annullato = false;
-
-    (async () => {
-      try {
-        const risultati = await cercaFuori(titolo, 3);
-        const corrispondenza = scegliCorrispondenza(risultati, { autore });
-
-        if (!corrispondenza) {
-          if (!annullato) setRaccomandati([]);
-          return;
-        }
-
-        const esterni = await similiFuoriPerId(corrispondenza.manga.idEsterno);
-        if (!annullato) setRaccomandati(esterni);
-      } catch {
-        if (!annullato) setRaccomandati([]);
-      }
-    })();
-
-    return () => {
-      annullato = true;
-    };
-  }, [titolo, autore]);
-
-  const simili = useMemo(() => {
-    if (!raccomandati.length) return [];
-
-    const cercaPosseduto = costruisciCercaPosseduto(tutte);
-    const viste = new Set([id]);
-    const trovate = [];
-
-    for (const r of raccomandati) {
-      const posseduta = cercaPosseduto(r);
-      if (posseduta && !viste.has(posseduta.id)) {
-        viste.add(posseduta.id);
-        trovate.push(posseduta);
-      }
-    }
-
-    return trovate.slice(0, 6);
-  }, [raccomandati, tutte, id]);
-
-  if (!simili.length) return null;
-
-  return (
-    <Sezione titolo="Dallo stesso scaffale">
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-x-5 gap-y-8">
-        {simili.map((s) => (
-          <CartaSerie key={s.id} serie={s} />
-        ))}
       </div>
     </Sezione>
   );
