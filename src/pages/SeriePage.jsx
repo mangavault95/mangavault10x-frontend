@@ -154,24 +154,27 @@ export default function SeriePage() {
           </div>
         )}
 
-        <div className="relative mx-auto w-full max-w-[80rem] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
+        <div className="relative mx-auto w-full max-w-[80rem] px-4 py-5 sm:px-8 sm:py-8 lg:px-12 lg:py-12">
           <button
             onClick={() => navigate(-1)}
-            className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-ink-muted transition-colors duration-quick hover:text-ink-bright"
+            className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-ink-muted transition-colors duration-quick hover:text-ink-bright sm:mb-8"
           >
             <Icon nome="back" dimensione={16} />
             Indietro
           </button>
 
-          <div className="grid gap-8 md:grid-cols-[minmax(0,15rem)_1fr] lg:gap-12">
-            <div className="mx-auto w-44 md:mx-0 md:w-full">
+          <div className="grid gap-5 sm:gap-8 md:grid-cols-[minmax(0,15rem)_1fr] lg:gap-12">
+            {/* Sul telefono la copertina è più piccola: a 176 pixel di
+                larghezza è alta 264, e insieme al titolo e alle etichette
+                si mangiava tutta la prima schermata prima della trama. */}
+            <div className="mx-auto w-32 sm:w-44 md:mx-0 md:w-full">
               <Copertina src={serie.copertina} alt={serie.titolo} priorita />
             </div>
 
-            <div className="min-w-0 space-y-6">
+            <div className="min-w-0 space-y-4 sm:space-y-6">
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-4">
-                  <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink-bright sm:text-4xl lg:text-5xl">
+                  <h1 className="font-display text-2xl font-semibold leading-tight tracking-tight text-ink-bright sm:text-4xl lg:text-5xl">
                     {serie.titolo}
                   </h1>
 
@@ -303,7 +306,7 @@ export default function SeriePage() {
       </div>
 
       {/* ---------- Corpo ---------- */}
-      <div className="mx-auto w-full max-w-[80rem] space-y-14 px-5 pb-16 sm:px-8 lg:px-12">
+      <div className="mx-auto w-full max-w-[80rem] space-y-8 px-4 pb-16 sm:space-y-14 sm:px-8 lg:px-12">
         {serie.trama && (
           <Sezione titolo="Trama">
             <p className="max-w-3xl whitespace-pre-line text-[0.95rem] leading-relaxed text-ink">

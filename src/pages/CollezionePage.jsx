@@ -9,6 +9,7 @@ import FiltriCollezione from "../ui/FiltriCollezione";
 import AnalisiCollezione from "../ui/AnalisiCollezione";
 import ConsigliRail from "../ui/ConsigliRail";
 import LibroVetrina from "../ui/LibroVetrina";
+import Piegabile from "../ui/Piegabile";
 import Copertina from "../ui/Copertina";
 import Icon from "../app/Icon";
 import Sovrapposizione from "../ui/Sovrapposizione";
@@ -186,20 +187,27 @@ export default function CollezionePage() {
             )} volumi.`
       }
       azioni={
-        <div className="flex flex-wrap items-center gap-3">
-          <CampoRicerca
-            valore={ricercaTesto}
-            onCambia={(v) => aggiornaParametro("q", v)}
-            segnaposto="Titolo, autore, editore…"
-            risultati={risultati.length}
-          />
+        /* Sul telefono stanno su una riga sola: il campo prende lo spazio
+           che avanza e i due bottoni restano icone. Su due righe erano
+           quasi cento pixel di intestazione, cioè mezza fila di copertine
+           in meno prima di dover scorrere. */
+        <div className="flex w-full items-center gap-2 sm:w-auto sm:flex-wrap sm:gap-3">
+          <div className="min-w-0 flex-1 sm:flex-none">
+            <CampoRicerca
+              valore={ricercaTesto}
+              onCambia={(v) => aggiornaParametro("q", v)}
+              segnaposto="Titolo, autore, editore…"
+              risultati={risultati.length}
+            />
+          </div>
 
           <button
             onClick={() => setFiltriMobileAperti(true)}
-            className="inline-flex items-center gap-2 rounded-card border border-hairline bg-glass-1 px-4 py-2.5 text-sm font-semibold text-ink-bright backdrop-blur-xl transition-colors duration-quick hover:border-soft lg:hidden"
+            aria-label="Filtri"
+            className="inline-flex shrink-0 items-center gap-2 rounded-card border border-hairline bg-glass-1 px-3 py-2.5 text-sm font-semibold text-ink-bright backdrop-blur-xl transition-colors duration-quick hover:border-soft sm:px-4 lg:hidden"
           >
             <Icon nome="settings" dimensione={16} />
-            Filtri
+            <span className="hidden sm:inline">Filtri</span>
             {filtriAttivi > 0 && (
               <span className="rounded-full bg-brass-400 px-1.5 py-0.5 font-numeric text-[0.65rem] text-void">
                 {filtriAttivi}
@@ -207,7 +215,14 @@ export default function CollezionePage() {
             )}
           </button>
 
-          <Bottone onClick={() => setModaleAperto(true)}>Nuova serie</Bottone>
+          <Bottone
+            onClick={() => setModaleAperto(true)}
+            aria-label="Nuova serie"
+            className="shrink-0 px-3 sm:px-4"
+          >
+            <Icon nome="plus" dimensione={16} className="sm:hidden" />
+            <span className="hidden sm:inline">Nuova serie</span>
+          </Bottone>
         </div>
       }
     >
@@ -223,12 +238,17 @@ export default function CollezionePage() {
         <FiltriCollezione {...propsFiltri} variante="sheet" onChiudere={() => setFiltriMobileAperti(false)} />
       )}
 
+      {/* Su schermo largo stanno in cima aperti, come sono sempre stati.
+          Su un telefono sono una riga sola da aprire: il perché, col conto
+          dei pixel che costavano, sta in `ui/Piegabile.jsx`. */}
       {!inCorso && serie.length > 0 && (
-        <div className="mb-8 space-y-6">
-          <LibroVetrina serie={serie} />
-          <AnalisiCollezione serie={risultati} />
-          <ConsigliRail serie={serie} />
-        </div>
+        <Piegabile titolo="Vetrina, numeri e consigli">
+          <div className="mb-4 space-y-5 lg:mb-8 lg:space-y-6">
+            <LibroVetrina serie={serie} />
+            <AnalisiCollezione serie={risultati} />
+            <ConsigliRail serie={serie} />
+          </div>
+        </Piegabile>
       )}
 
       <div className="flex items-start gap-8">

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Icon from "../app/Icon";
+import useTocco from "../ui/tocco";
 import { useBibliotecario } from "./contesto";
 
 /**
@@ -30,6 +31,13 @@ import { useBibliotecario } from "./contesto";
  * Al banco (`/banco`) non c'è per una ragione più semplice: lì si sta
  * già parlando con lui, e un bottone che apre un cassetto per parlargli
  * di nuovo è la stessa conversazione in due finestre.
+ *
+ * **Col dito non c'è mai.** Su un telefono quel bottone galleggia sopra
+ * ogni schermata, copre l'angolo in basso a destra — cioè proprio dove
+ * finisce la griglia — e chiede spazio a uno schermo che ne ha poco. Col
+ * mouse costa niente e sta in un angolo morto; col dito è ingombro. Il
+ * banco resta dov'è sempre stato: dentro la stanza, cliccando il bancone,
+ * e all'indirizzo `/banco`.
  */
 const Pannello = lazy(() => import("./Banco"));
 
@@ -39,6 +47,7 @@ const IN_PERSONA = ["/", "/banco"];
 export default function Bibliotecario() {
   const { aperto, apri, chiudi, alterna } = useBibliotecario();
   const { pathname } = useLocation();
+  const alTocco = useTocco();
 
   const nellaStanza = IN_PERSONA.includes(pathname);
 
@@ -64,7 +73,7 @@ export default function Bibliotecario() {
 
   return (
     <>
-      {!aperto && !nellaStanza && <BottoneBanco onApri={apri} />}
+      {!aperto && !nellaStanza && !alTocco && <BottoneBanco onApri={apri} />}
 
       {aperto && (
         <Suspense fallback={null}>

@@ -100,13 +100,13 @@ export default function CartaSerie({ serie, priorita = false, riempi = false }) 
         )}
       </div>
 
-      <div className="mt-3 space-y-1.5 px-0.5">
+      <div className="mt-2 space-y-1 px-0.5 sm:mt-3 sm:space-y-1.5">
         {/* Altezza riservata per due righe sempre, non solo quante ne
             usa il titolo: un titolo corto su una riga sola altrimenti
             lascia la barra di completamento più in alto di quella della
             scheda accanto con un titolo lungo, e la griglia sembra
             storta anche se ogni riga, tecnicamente, è allineata. */}
-        <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-snug text-ink-bright transition-colors duration-quick group-hover:text-brass-300">
+        <h3 className="line-clamp-2 min-h-[2.2rem] text-[0.8rem] font-medium leading-snug text-ink-bright transition-colors duration-quick group-hover:text-brass-300 sm:min-h-[2.5rem] sm:text-sm">
           {serie.titolo}
         </h3>
 
@@ -136,12 +136,22 @@ export default function CartaSerie({ serie, priorita = false, riempi = false }) 
  * La griglia che contiene le carte.
  *
  * Le colonne le decide `auto-fill` sulla larghezza minima di una
- * copertina leggibile: la stessa griglia va da due colonne sul
- * telefono a sette su un monitor largo senza breakpoint scritti a mano.
+ * copertina leggibile: la stessa griglia va da tre colonne sul telefono
+ * a sette su un monitor largo senza breakpoint scritti a mano.
+ *
+ * La misura minima però non è una sola. Su un monitor una copertina
+ * sotto i 9rem è un francobollo in mezzo allo spazio che avanza; su un
+ * telefono largo 430 pixel quella stessa misura dà **due** colonne, cioè
+ * quattro serie per schermata su una collezione di duecento. Sotto `sm`
+ * scende a 6.5rem: tre colonne, copertine da 127 pixel — la larghezza a
+ * cui un titolo si legge ancora e se ne vedono nove per schermata.
  */
 export function GrigliaSerie({ serie, riempi = false, children }) {
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-x-5 gap-y-8">
+    <div
+      className="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-x-3 gap-y-5
+                 sm:grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] sm:gap-x-5 sm:gap-y-8"
+    >
       {serie
         ? serie.map((s, i) => (
             <CartaSerie key={s.id} serie={s} priorita={i < 12} riempi={riempi} />

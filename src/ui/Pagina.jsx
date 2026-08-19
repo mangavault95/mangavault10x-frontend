@@ -8,21 +8,21 @@
  */
 export default function Pagina({ titolo, occhiello, sommario, azioni, children }) {
   return (
-    <div className="mx-auto w-full max-w-[110rem] px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
-      <header className="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+    <div className="mx-auto w-full max-w-[110rem] px-3 py-5 sm:px-8 sm:py-8 lg:px-12 lg:py-12">
+      <header className="mb-5 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 sm:mb-8 sm:gap-y-4">
         <div className="min-w-0">
           {occhiello && (
-            <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-brass-500/80">
+            <p className="mb-2 hidden text-xs font-medium uppercase tracking-[0.18em] text-brass-500/80 sm:block">
               {occhiello}
             </p>
           )}
 
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-ink-bright sm:text-4xl">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-ink-bright sm:text-4xl">
             {titolo}
           </h1>
 
           {sommario && (
-            <p className="mt-2 max-w-2xl text-sm text-ink-muted">{sommario}</p>
+            <p className="mt-1 max-w-2xl text-xs text-ink-muted sm:mt-2 sm:text-sm">{sommario}</p>
           )}
         </div>
 

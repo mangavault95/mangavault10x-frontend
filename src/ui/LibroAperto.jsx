@@ -140,9 +140,18 @@ export default function LibroAperto({
       {/* La luce della lampada da lettura, in alto a sinistra */}
       <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-brass-400/[0.07] blur-3xl transition-opacity duration-slow group-hover:opacity-160" />
 
-      <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:gap-7">
+      {/*
+        Sul telefono non è una colonna. Impilate — copertina sopra, dati
+        in mezzo, comandi sotto — queste schede erano alte 590 pixel
+        l'una: più di mezzo schermo per una serie sola, e otto letture
+        aperte facevano cinque schermate di scorrimento. Andando a capo
+        da sole, copertina e dati stanno affiancati e i comandi passano
+        sotto in riga invece che in colonna. Da sm in su non cambia
+        niente: lì lo spazio per tenere tutt'e tre su una riga c'è.
+      */}
+      <div className="relative flex flex-wrap items-start gap-4 p-4 sm:flex-nowrap sm:items-center sm:gap-7 sm:p-5">
         {/* ---------- La copertina, dritta ---------- */}
-        <div className="relative mx-auto w-[7rem] shrink-0 sm:mx-0">
+        <div className="relative w-20 shrink-0 sm:w-[7rem]">
           <div className="relative aspect-cover overflow-hidden rounded-card shadow-raised transition-transform duration-base ease-settle group-hover:scale-[1.03]">
             {statoCopertina === "pronta" ? (
               <img
@@ -160,7 +169,7 @@ export default function LibroAperto({
         </div>
 
         {/* ---------- I dati ---------- */}
-        <div className="min-w-0 flex-1 space-y-3">
+        <div className="min-w-0 flex-1 space-y-2.5 sm:space-y-3">
           <div className="space-y-1">
             {inCollezione ? (
               <Link
@@ -233,8 +242,9 @@ export default function LibroAperto({
         </div>
 
         {/* ---------- Comandi ---------- */}
-        <div className="flex shrink-0 flex-col gap-2.5 sm:w-40">
-          <div className="flex items-center justify-between rounded-card border border-hairline bg-glass-2 p-1">
+        <div className="flex w-full shrink-0 flex-col gap-2 sm:w-40 sm:gap-2.5">
+          <div className="flex items-center gap-2 sm:flex-col sm:items-stretch sm:gap-2.5">
+            <div className="flex flex-1 items-center justify-between rounded-card border border-hairline bg-glass-2 p-1 sm:w-full sm:flex-none">
             <Passo
               etichetta="Volume precedente"
               onClick={onIndietro}
@@ -256,10 +266,12 @@ export default function LibroAperto({
             </Passo>
           </div>
 
-          <Bottone onClick={onLetto}>
-            {alLimite ? "Finito" : "Finito, avanti"}
-          </Bottone>
+            <Bottone onClick={onLetto} className="flex-1 sm:w-full sm:flex-none">
+              {alLimite ? "Finito" : "Finito, avanti"}
+            </Bottone>
+          </div>
 
+          <div className="flex items-center gap-2 sm:flex-col sm:gap-2.5">
           <button
             onClick={onChiudi}
             className="rounded-card px-3 py-1.5 text-xs text-ink-faint transition-colors duration-quick hover:text-ember focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
@@ -273,6 +285,7 @@ export default function LibroAperto({
           >
             Droppa la lettura
           </button>
+          </div>
         </div>
       </div>
     </article>
