@@ -499,20 +499,23 @@ export async function costruisciBancone({
      con sopra un elenco stilizzato. Non è un elenco da leggere, è
      un'insegna che dice "qui si scrive cosa manca".
 
-     Appesa alla quota delle locandine, e non è un dettaglio da poco.
-     Cassa di noce, filetto d'ottone, un metro e ventiquattro per
-     novantaquattro: rifinita come loro e grande come loro, sulla stessa
-     parete — cioè, per chi guarda, il quinto quadro della fila. Stava
-     ventisette centimetri più in alto, e l'unica cosa che quello scarto
-     riusciva a raccontare era che chi l'ha appesa non aveva la livella;
-     è esattamente il difetto che le quattro locandine evitano stando
-     tutte sulla stessa linea, per la ragione scritta più su.
+     Quindici centimetri sopra la quota delle locandine, ed è una misura
+     scelta, non lasciata lì.
 
-     Fra l'altro due metri e cinque non sono «all'altezza degli occhi»,
-     che era quello che questa bacheca voleva essere: uno e settantotto
-     sì. E siccome è alta quanto la locandina più grande, allineare i
-     centri allinea anche i bordi. */
-  const bachecaY = locandinaY;
+     Stava ventisette più su, e quello era troppo: cassa di noce,
+     filetto d'ottone, un metro e ventiquattro per novantaquattro —
+     rifinita come loro e grande come loro — a quell'altezza non
+     sembrava un'altra cosa, sembrava la stessa cosa appesa male, da
+     qualcuno senza livella. Portata esattamente in riga sembrava invece
+     la quinta locandina, e la bacheca dei desideri non è una locandina:
+     è il posto dove si scrive cosa manca.
+
+     Quindici centimetri bastano a dirlo. Sono un dislivello che si
+     legge come una scelta — sta più in alto perché conta di più — e non
+     come un errore di misura: il bordo basso resta comunque sopra a
+     tutti gli altri di poco, e i quattro poster restano fra loro una
+     fila perfetta. */
+  const bachecaY = locandinaY + metri(0.15);
   const bachecaLarghezza = metri(0.86);
   const bachecaAltezza = metri(1.16);
 
