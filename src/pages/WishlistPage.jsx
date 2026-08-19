@@ -42,6 +42,12 @@ export default function WishlistPage() {
   const [ricercaTesto, setRicerca] = useState("");
   const [problema, setProblema] = useState(null);
 
+  // La serie di cui si sta dicendo quanti volumi si sono presi, e la
+  // riga di spiegazione che resta dopo (per esempio quando l'edizione
+  // in collezione c'era già).
+  const [daComprare, setDaComprare] = useState(null);
+  const [nota, setNota] = useState(null);
+
   // `dati || []` sta dentro il useMemo: fuori creerebbe un array nuovo
   // a ogni render, e il filtro si rifarebbe da capo anche quando non
   // è cambiato niente.
@@ -96,11 +102,22 @@ export default function WishlistPage() {
     }
   }
 
-  async function comprato(elemento) {
+  async function comprato(elemento, dettagli) {
     setProblema(null);
+    setNota(null);
 
     try {
-      await purchaseWishlistItem(elemento.id);
+      const esito = await purchaseWishlistItem(elemento.id, dettagli);
+
+      setDaComprare(null);
+
+      // Il server risponde così quando quell'edizione in collezione c'era
+      // già: la voce sparisce comunque dalla wishlist, ed è bene dire
+      // perché invece di lasciar credere di averla appena aggiunta.
+      if (esito?.duplicated) {
+        setNota(`«${elemento.titolo}» era già in collezione: ho tolto solo il desiderio.`);
+      }
+
       ricarica();
     } catch (errore) {
       console.error("Spostamento in collezione fallito:", errore);
@@ -144,11 +161,28 @@ export default function WishlistPage() {
           </p>
         )}
 
+        {nota && (
+          <p
+            role="status"
+            className="rounded-card border border-lapis/25 bg-lapis/10 px-4 py-3 text-sm text-lapis"
+          >
+            {nota}
+          </p>
+        )}
+
         {modulo && (
           <ModuloDesiderio
             valori={modulo}
             onSalva={salva}
             onAnnulla={() => setModulo(null)}
+          />
+        )}
+
+        {daComprare && (
+          <ModuloComprato
+            elemento={daComprare}
+            onConferma={(dettagli) => comprato(daComprare, dettagli)}
+            onAnnulla={() => setDaComprare(null)}
           />
         )}
 
@@ -170,7 +204,11 @@ export default function WishlistPage() {
                     })
                   }
                   onElimina={() => elimina(e)}
-                  onComprato={() => comprato(e)}
+                  onComprato={() => {
+                    setNota(null);
+                    setProblema(null);
+                    setDaComprare(e);
+                  }}
                 />
               </li>
             ))}
@@ -253,6 +291,125 @@ function RigaDesiderio({ elemento, onModifica, onElimina, onComprato }) {
         </Bottone>
       </div>
     </Link>
+  );
+}
+
+/* ==================================================
+   MODULO — L'HO PRESO
+   ================================================== */
+
+/**
+ * Cosa si chiede a chi ha appena comprato una serie.
+ *
+ * Prima "Comprato" spostava e basta, e la serie arrivava in collezione
+ * con zero volumi in casa e nessuna edizione: due cose da correggere
+ * subito dopo, a mano, sulla scheda. Sono le uniche due che il desiderio
+ * non può sapere da solo — e l'edizione conta più di quanto sembri,
+ * perché "Berserk" sono 42 volumi nella serie rossa e 14 nella Deluxe,
+ * cioè due scaffali diversi con lo stesso titolo.
+ *
+ * Il numero parte già scritto sul totale che il desiderio conosce: chi
+ * compra una serie finita la compra quasi sempre tutta, e a chi ne ha
+ * presi tre resta un campo da correggere invece che uno da riempire.
+ */
+function ModuloComprato({ elemento, onConferma, onAnnulla }) {
+  const totaliNoti = Number(elemento.volumitotali) || 0;
+
+  const [campi, setCampi] = useState({
+    volumiPosseduti: totaliNoti ? String(totaliNoti) : "1",
+    volumiTotali: totaliNoti ? String(totaliNoti) : "",
+    edizione: ""
+  });
+
+  const [inCorso, setInCorso] = useState(false);
+
+  const cambia = (chiave) => (e) =>
+    setCampi((precedenti) => ({ ...precedenti, [chiave]: e.target.value }));
+
+  async function invia(e) {
+    e.preventDefault();
+
+    if (inCorso) return;
+
+    setInCorso(true);
+
+    try {
+      await onConferma({
+        volumiPosseduti: Number(campi.volumiPosseduti) || 0,
+        volumiTotali: Number(campi.volumiTotali) || 0,
+        edizione: campi.edizione.trim()
+      });
+    } finally {
+      setInCorso(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={invia}
+      className="rounded-panel border border-brass-400/25 bg-glass-2 p-4 backdrop-blur-xl sm:p-6"
+    >
+      <div className="flex items-start gap-4">
+        <div className="w-16 shrink-0 sm:w-20">
+          <Copertina src={elemento.coverurl} alt={elemento.titolo} inclina={false} />
+        </div>
+
+        <div className="min-w-0 flex-1 space-y-4">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-brass-500/90">
+              L'hai preso
+            </p>
+
+            <h2 className="truncate font-display text-lg font-semibold text-ink-bright sm:text-xl">
+              {elemento.titolo}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Campo
+              etichetta="Volumi che hai"
+              tipo="number"
+              min="0"
+              valore={campi.volumiPosseduti}
+              onChange={cambia("volumiPosseduti")}
+              required
+              autoFocus
+            />
+
+            <Campo
+              etichetta="Volumi in tutto"
+              tipo="number"
+              min="0"
+              valore={campi.volumiTotali}
+              onChange={cambia("volumiTotali")}
+            />
+
+            <Campo
+              etichetta="Edizione"
+              valore={campi.edizione}
+              onChange={cambia("edizione")}
+              placeholder="es. Serie rossa, Deluxe, Maximum"
+              className="col-span-2"
+            />
+          </div>
+
+          <p className="text-xs text-ink-faint">
+            L'edizione tiene separate due versioni della stessa serie: senza, la
+            seconda che compri sembrerebbe quella che hai già.
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Bottone type="submit" disabled={inCorso}>
+              {inCorso ? "Sposto…" : "Sposta in collezione"}
+            </Bottone>
+
+            <Bottone type="button" variante="fantasma" onClick={onAnnulla}>
+              Annulla
+            </Bottone>
+          </div>
+        </div>
+      </div>
+    </form>
   );
 }
 

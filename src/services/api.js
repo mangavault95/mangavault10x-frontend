@@ -217,8 +217,16 @@ export const updateWishlistItem = (id, item) =>
 export const deleteWishlistItem = (id) =>
   request(`/api/wishlist/${id}`, { method: "DELETE" });
 
-export const purchaseWishlistItem = (id) =>
-  request(`/api/wishlist-actions/purchase/${id}`, { method: "POST" });
+/**
+ * Sposta un desiderio in collezione.
+ *
+ * I dettagli li dà chi ha comprato: quanti volumi ha preso e di quale
+ * edizione. Il desiderio non può saperlo — "Berserk" sono 42 volumi
+ * nella serie rossa e 14 nella Deluxe — e senza sarebbe una serie in
+ * collezione con zero volumi in casa.
+ */
+export const purchaseWishlistItem = (id, dettagli) =>
+  request(`/api/wishlist-actions/purchase/${id}`, { method: "POST", body: dettagli ?? {} });
 
 /* ==================================================
    LETTURA
