@@ -495,11 +495,24 @@ export async function costruisciBancone({
   });
 
   /* ---------- La bacheca dei desideri ----------
-     Nel tratto di parete fra il pilastro e le locandine, all'altezza
-     degli occhi: una pergamena con sopra un elenco stilizzato. Non è un
-     elenco da leggere, è un'insegna che dice "qui si scrive cosa
-     manca". */
-  const bachecaY = pavimentoY + metri(2.05);
+     Nel tratto di parete fra il pilastro e le locandine: una pergamena
+     con sopra un elenco stilizzato. Non è un elenco da leggere, è
+     un'insegna che dice "qui si scrive cosa manca".
+
+     Appesa alla quota delle locandine, e non è un dettaglio da poco.
+     Cassa di noce, filetto d'ottone, un metro e ventiquattro per
+     novantaquattro: rifinita come loro e grande come loro, sulla stessa
+     parete — cioè, per chi guarda, il quinto quadro della fila. Stava
+     ventisette centimetri più in alto, e l'unica cosa che quello scarto
+     riusciva a raccontare era che chi l'ha appesa non aveva la livella;
+     è esattamente il difetto che le quattro locandine evitano stando
+     tutte sulla stessa linea, per la ragione scritta più su.
+
+     Fra l'altro due metri e cinque non sono «all'altezza degli occhi»,
+     che era quello che questa bacheca voleva essere: uno e settantotto
+     sì. E siccome è alta quanto la locandina più grande, allineare i
+     centri allinea anche i bordi. */
+  const bachecaY = locandinaY;
   const bachecaLarghezza = metri(0.86);
   const bachecaAltezza = metri(1.16);
 
