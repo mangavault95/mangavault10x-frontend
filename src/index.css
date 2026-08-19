@@ -694,9 +694,63 @@ body {
 
 /* Il lampo grigio che il browser accende su ogni tocco è una cosa da
    pagina web. In un'app non esiste, e gli stati :active che le voci
-   hanno già dicono la stessa cosa meglio. */
+   hanno già dicono la stessa cosa meglio.
+
+   `touch-action: manipulation` toglie il doppio tocco per ingrandire —
+   che oltre a ingrandire tiene ferma ogni pressione per trecento
+   millesimi, aspettando di sapere se ne arriva una seconda. È il motivo
+   per cui i bottoni di un sito rispondono sempre un po' dopo quelli di
+   un'app: qui non aspettano più.
+
+   `text-size-adjust` impedisce a iOS di gonfiare da solo i caratteri
+   quando decide che una colonna è stretta: le misure sono già scelte per
+   uno schermo di telefono, e ritoccate dal sistema si sfasano dal resto. */
 html {
   -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+/* =========================================================
+   COL DITO: UN'APP, NON UNA PAGINA
+   =========================================================
+   Sono i gesti che tradiscono il browser anche quando la barra degli
+   indirizzi non c'è. Restano tutti su un monitor — lì sono comodi e non
+   danno fastidio a nessuno — e spariscono dove si tocca lo schermo. */
+@media (hover: none) {
+  /* Trascinare di lato. Non c'è niente da vedere a destra o a sinistra:
+     ogni schermata sta nella larghezza del telefono, e il fatto che la
+     pagina si sposti lo stesso è solo il browser che si vede.
+
+     `clip` e non `hidden`: `hidden` fa del documento un contenitore che
+     scorre, e le cose appiccicate in alto (i filtri della Collezione,
+     su schermo largo) smettono di appiccicarsi. */
+  html,
+  body {
+    overflow-x: clip;
+    overscroll-behavior-x: none;
+  }
+
+  /* Tenere premuto un titolo o una copertina apre il menu «Copia
+     link / Apri in una nuova scheda» e ci accende sopra la selezione
+     blu: due cose che in un'app non esistono. Il testo che si legge —
+     una trama, una scheda — resta selezionabile; sono i comandi a non
+     esserlo. */
+  a,
+  button,
+  nav,
+  label,
+  summary {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  img,
+  canvas {
+    -webkit-touch-callout: none;
+  }
 }
 
 @media (display-mode: standalone) {

@@ -30,7 +30,25 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="MangaVault" />
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Niente pizzicare per ingrandire.
+
+      È il gesto che più di tutti fa sembrare un'app una pagina: si
+      ingrandisce per sbaglio scorrendo con due dita, e da lì in poi si
+      naviga di traverso, con metà interfaccia fuori dallo schermo e la
+      pagina che scorre anche di lato. Le misure qui dentro sono già
+      quelle giuste per lo schermo che le mostra — non c'è niente da
+      avvicinare.
+
+      Vale nell'app installata sulla schermata Home, che è dove conta:
+      dentro Safari, da iOS 10, Apple ignora `user-scalable=no` apposta,
+      perché lì una pagina che vieta lo zoom è una pagina che si può solo
+      subire.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
 
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
