@@ -102,8 +102,17 @@ export default function WishlistPage() {
     try {
       await purchaseWishlistItem(elemento.id);
       ricarica();
-    } catch {
-      setProblema("Non sono riuscito a spostare la serie in collezione.");
+    } catch (errore) {
+      console.error("Spostamento in collezione fallito:", errore);
+
+      // Col solo "non ci sono riuscito" un vincolo del database sembra
+      // un problema di quella serie lì. Dirlo cambia la domanda che ci
+      // si fa davanti all'avviso.
+      setProblema(
+        errore?.dettagli
+          ? `Non sono riuscito a spostare la serie in collezione: ${errore.dettagli}`
+          : "Non sono riuscito a spostare la serie in collezione."
+      );
     }
   }
 

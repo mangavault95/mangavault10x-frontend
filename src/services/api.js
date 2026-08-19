@@ -44,10 +44,15 @@ export function clearToken() {
    ================================================== */
 
 export class ApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, dettagli) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    // Quello che il server sa e il messaggio generico non dice: il nome
+    // del vincolo violato, la colonna che dà fastidio. Senza, davanti a
+    // un "Errore server" tocca rifare a mano la stessa richiesta per
+    // scoprire cosa non è andato.
+    this.dettagli = dettagli;
   }
 }
 
@@ -84,7 +89,7 @@ async function request(path, { method = "GET", body, auth = false } = {}) {
   const payload = isJson ? await res.json().catch(() => null) : null;
 
   if (!res.ok) {
-    throw new ApiError(payload?.error || `Errore ${res.status}`, res.status);
+    throw new ApiError(payload?.error || `Errore ${res.status}`, res.status, payload?.details);
   }
 
   return payload;
