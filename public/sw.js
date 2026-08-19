@@ -110,6 +110,43 @@ async function primaLaCopia(richiesta, nome) {
   return risposta;
 }
 
+/**
+ * Le copertine, che vanno prese in un modo tutto loro.
+ *
+ * Arrivano da un `<img>` senza attributo `crossorigin`, quindi il
+ * browser le chiede in modalità `no-cors` e la risposta torna **opaca**:
+ * stato 0, `ok` falso, corpo illeggibile. Non c'è modo di distinguere
+ * una copertina da un 404, e Safari le conta nella quota con un peso
+ * forfettario di megabyte l'una — poche centinaia di copertine e
+ * l'archiviazione dell'app è piena.
+ *
+ * Rifarla da qui in modalità `cors` risolve tutt'e due: il ponte del
+ * backend l'origine del sito la accetta, e quello che torna è una
+ * risposta vera, con uno stato da guardare e il peso che ha davvero.
+ * Se il permesso mancasse — un dominio di anteprima non ancora in
+ * elenco — si torna alla richiesta originale senza tenerne copia:
+ * meglio una copertina non conservata che una copertina che non appare.
+ */
+async function copertina(richiesta) {
+  const cache = await caches.open(COPERTINE);
+  const copia = await trova(cache, richiesta);
+
+  if (copia) return copia;
+
+  try {
+    const risposta = await fetch(richiesta.url, { mode: "cors", credentials: "omit" });
+
+    if (risposta.ok) {
+      await cache.put(richiesta, risposta.clone());
+      sfoltisci(COPERTINE);
+    }
+
+    return risposta;
+  } catch {
+    return fetch(richiesta);
+  }
+}
+
 async function primaLaRete(richiesta, nome) {
   const cache = await caches.open(nome);
 
@@ -158,7 +195,7 @@ self.addEventListener("fetch", (e) => {
     url.pathname.startsWith("/copertine/") ||
     (API && richiesta.url.startsWith(`${API}/api/cover`))
   ) {
-    e.respondWith(primaLaCopia(richiesta, COPERTINE));
+    e.respondWith(copertina(richiesta));
     return;
   }
 
