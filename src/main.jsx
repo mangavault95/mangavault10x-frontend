@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 import AppRoutes from "./app/routes";
+import { agganciaServizio } from "./app/servizio";
 import { anticipaCollezione } from "./dati/anticipo";
 import { anticipaModelli } from "./tre/indirizzi";
 
@@ -31,6 +32,10 @@ anticipaCollezione();
 // I modelli della stanza no: chi apre la Collezione o i Numeri non li
 // vedrà mai, e chiederglieli sarebbe un megabyte buttato.
 if (window.location.pathname === "/") anticipaModelli();
+
+// Il guscio offline, per chi il sito se l'è messo sulla schermata Home
+// del telefono. Aspetta il carico da sé, quindi non ruba niente a qui.
+agganciaServizio();
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>

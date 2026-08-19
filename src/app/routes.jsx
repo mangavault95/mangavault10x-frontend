@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Shell from "./Shell";
 import RouteFallback from "./RouteFallback";
+import RouteErrore from "./RouteErrore";
 import { CollezioneProvider } from "../dati/CollezioneContext";
 import { AccessoProvider } from "../dati/AccessoProvider";
 import { BibliotecarioProvider } from "../bibliotecario/BibliotecarioProvider";
@@ -54,45 +55,50 @@ export default function AppRoutes() {
             stesso pannello. */}
         <BibliotecarioProvider>
           <Shell>
-            <Suspense fallback={<RouteFallback />}>
-              {/* La location come key fa ripartire l'animazione di entrata
-                  a ogni cambio pagina, dando continuità spaziale. */}
-              <Routes location={location} key={location.pathname}>
-                <Route path="/" element={<Home />} />
-                <Route path="/collezione" element={<Collezione />} />
-                {/* La biblioteca non è più una pagina a sé: è lo scaffale
-                    della stanza d'ingresso. Il vecchio indirizzo resta
-                    valido, ma porta alla home. */}
-                <Route path="/biblioteca" element={<Navigate to="/" replace />} />
-                <Route path="/serie/:id" element={<Serie />} />
-                <Route path="/wishlist" element={<Wishlist />} />
-                <Route path="/desiderio/:id" element={<Desiderio />} />
-                <Route path="/lettura" element={<Lettura />} />
-                <Route path="/statistiche" element={<Statistiche />} />
-                <Route path="/admin" element={<Admin />} />
+            {/* La chiave rimette in piedi il muro a ogni cambio di
+                pagina: una sezione caduta non deve tenersi il posto
+                quando si prova ad andare altrove. */}
+            <RouteErrore key={location.pathname}>
+              <Suspense fallback={<RouteFallback />}>
+                {/* La location come key fa ripartire l'animazione di entrata
+                    a ogni cambio pagina, dando continuità spaziale. */}
+                <Routes location={location} key={location.pathname}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/collezione" element={<Collezione />} />
+                  {/* La biblioteca non è più una pagina a sé: è lo scaffale
+                      della stanza d'ingresso. Il vecchio indirizzo resta
+                      valido, ma porta alla home. */}
+                  <Route path="/biblioteca" element={<Navigate to="/" replace />} />
+                  <Route path="/serie/:id" element={<Serie />} />
+                  <Route path="/wishlist" element={<Wishlist />} />
+                  <Route path="/desiderio/:id" element={<Desiderio />} />
+                  <Route path="/lettura" element={<Lettura />} />
+                  <Route path="/statistiche" element={<Statistiche />} />
+                  <Route path="/admin" element={<Admin />} />
 
-                {/* Le porte della stanza. Non stanno nella barra
-                    laterale apposta: ci si arriva camminandoci, e una
-                    voce di menu che porta allo stesso posto toglierebbe
-                    la ragione per cui esistono. Restano indirizzi veri —
-                    condivisibili, salvabili, aggiornabili — e chi ci
-                    arriva senza essere passato dalla stanza trova il
-                    collegamento alla veste normale in alto a destra. */}
-                <Route path="/cassa" element={<Cassa />} />
-                <Route path="/bacheca" element={<Bacheca />} />
-                <Route path="/tavolino" element={<Tavolino />} />
-                <Route path="/banco" element={<Banco />} />
+                  {/* Le porte della stanza. Non stanno nella barra
+                      laterale apposta: ci si arriva camminandoci, e una
+                      voce di menu che porta allo stesso posto toglierebbe
+                      la ragione per cui esistono. Restano indirizzi veri —
+                      condivisibili, salvabili, aggiornabili — e chi ci
+                      arriva senza essere passato dalla stanza trova il
+                      collegamento alla veste normale in alto a destra. */}
+                  <Route path="/cassa" element={<Cassa />} />
+                  <Route path="/bacheca" element={<Bacheca />} />
+                  <Route path="/tavolino" element={<Tavolino />} />
+                  <Route path="/banco" element={<Banco />} />
 
-                {/* Vecchi indirizzi mantenuti funzionanti */}
-                <Route path="/records" element={<Navigate to="/statistiche" replace />} />
-                <Route
-                  path="/preferiti"
-                  element={<Navigate to="/collezione?filtro=preferiti" replace />}
-                />
+                  {/* Vecchi indirizzi mantenuti funzionanti */}
+                  <Route path="/records" element={<Navigate to="/statistiche" replace />} />
+                  <Route
+                    path="/preferiti"
+                    element={<Navigate to="/collezione?filtro=preferiti" replace />}
+                  />
 
-                <Route path="*" element={<NonTrovata />} />
-              </Routes>
-            </Suspense>
+                  <Route path="*" element={<NonTrovata />} />
+                </Routes>
+              </Suspense>
+            </RouteErrore>
           </Shell>
         </BibliotecarioProvider>
       </AccessoProvider>

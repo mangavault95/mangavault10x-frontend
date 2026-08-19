@@ -679,3 +679,30 @@
 .animate-mobile-slide-in {
   animation: mobile-slide-in 0.24s ease-out;
 }
+
+/* =========================================================
+   QUANDO È UN'APP SULLA SCHERMATA HOME
+   ========================================================= */
+
+/* Il colore va messo anche sul documento, non solo sul guscio React:
+   nel rimbalzo dello scorrimento e nelle bande che iOS lascia ai lati
+   in orizzontale si vede il body, e un body senza colore è bianco. */
+html,
+body {
+  background-color: #0b0d14; /* shelf */
+}
+
+/* Il lampo grigio che il browser accende su ogni tocco è una cosa da
+   pagina web. In un'app non esiste, e gli stati :active che le voci
+   hanno già dicono la stessa cosa meglio. */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (display-mode: standalone) {
+  /* Senza barra degli indirizzi non c'è niente da tirare giù: il
+     rimbalzo elastico scoprirebbe solo il vuoto sopra il contenuto. */
+  body {
+    overscroll-behavior-y: none;
+  }
+}

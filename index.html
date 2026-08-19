@@ -1,10 +1,41 @@
 <!doctype html>
-<html lang="en">
+<html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>MangaVault</title>
+    <meta name="description" content="La collezione, sempre in tasca: volumi posseduti, mancanti, letture e desideri." />
+
+    <!-- La barra di stato di iOS e la barra degli indirizzi di Android
+         prendono questo colore: senza, il telefono ci mette il bianco e
+         l'app comincia con una riga di luce sopra una stanza scura. -->
+    <meta name="theme-color" content="#0b0d14" />
+
+    <!--
+      QUANDO E` UN'APP E NON UNA PAGINA
+
+      Aggiungendola alla Home, iOS apre il sito a schermo intero, senza
+      barre di Safari. Le tre righe qui sotto sono quelle che iOS legge
+      (il manifest da solo non gli basta ancora): schermo intero, nome
+      sotto l'icona, e la barra di stato nera.
+
+      La barra di stato e` `black` e non `black-translucent` apposta: la
+      translucida fa passare il contenuto *sotto* l'orologio, e in un
+      sito che misura mezze schermate in `dvh` (la stanza e` alta
+      `calc(100dvh - 6rem)`) vorrebbe dire rifare i conti a ogni pagina
+      per guadagnare quaranta pixel. Nero su un fondo #0b0d14 non si
+      distingue comunque.
+    -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="MangaVault" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>manga-webapp</title>
+
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- iOS ignora l'SVG del favicon: l'icona sulla Home e` questa. -->
+    <link rel="apple-touch-icon" href="/icona-180.png" />
   </head>
   <body>
     <div id="root"></div>

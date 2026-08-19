@@ -1,3 +1,5 @@
+import { readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -89,6 +91,57 @@ function preconnessione(indirizzo) {
   };
 }
 
+/**
+ * L'elenco di file che il guardiano offline si mette da parte appena
+ * installato (`public/sw.js`).
+ *
+ * Deve stare qui e non lì dentro perché i nomi dei file li decide Vite:
+ * contengono l'impronta del contenuto, cambiano a ogni build, e un
+ * service worker scritto a mano non ha modo di indovinarli.
+ *
+ * Cosa si mette da parte: tutto il codice, e solo il codice. I modelli
+ * e le texture della stanza sono megabyte, e non sono il motivo per cui
+ * uno si installa l'app sul telefono: se li prende il guardiano la
+ * prima volta che si entra davvero nella stanza, e da lì in poi restano.
+ *
+ * Escludere anche Three.js sarebbe stato inutile: la Collezione monta
+ * il libro in vetrina, quindi Three.js lo scarica comunque alla prima
+ * schermata. Un pezzo che arriva sempre tanto vale averlo da parte.
+ */
+function guscioOffline() {
+  const MARCATORE = "/*__CODICE__*/";
+
+  let cartella = "dist";
+  let elenco = [];
+
+  return {
+    name: "guscio-offline",
+    apply: "build",
+
+    configResolved(configurazione) {
+      cartella = configurazione.build.outDir;
+    },
+
+    generateBundle(opzioni, pacchetto) {
+      elenco = Object.keys(pacchetto)
+        .filter((f) => f.endsWith(".js") || f.endsWith(".css"))
+        .map((f) => `/${f}`);
+    },
+
+    closeBundle() {
+      const file = resolve(cartella, "sw.js");
+      const testo = readFileSync(file, "utf8");
+
+      if (!testo.includes(MARCATORE)) {
+        this.warn(`${MARCATORE} non trovato in sw.js: l'app non funzionerà offline`);
+        return;
+      }
+
+      writeFileSync(file, testo.replace(MARCATORE, elenco.map((f) => JSON.stringify(f)).join(",")));
+    }
+  };
+}
+
 export default defineConfig(({ mode }) => {
   // La cartella è quella da cui si lancia Vite, cioè questa: scriverlo
   // così invece che con `process.cwd()` tiene il file leggibile anche a
@@ -96,7 +149,7 @@ export default defineConfig(({ mode }) => {
   const ambiente = loadEnv(mode, ".", "");
 
   return {
-    plugins: [react(), preconnessione(ambiente.VITE_API_URL)],
+    plugins: [react(), preconnessione(ambiente.VITE_API_URL), guscioOffline()],
     server: {
       port: Number(process.env.PORT) || 5173,
       proxy: inoltri
