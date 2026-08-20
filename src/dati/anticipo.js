@@ -37,7 +37,14 @@ import { normalizzaElenco } from "./serie";
  */
 
 const CHIAVE = "mangavault:collezione";
-const VERSIONE = 1;
+
+// 2 = i voti sono diventati una lista di persone (`voti`) invece di un
+// numero solo (`valutazione`). Una copia vecchia riportata su con la
+// forma di prima mostrerebbe tutte le serie come non votate.
+//
+// La copia non dipende da chi guarda ed è giusto così: dentro ci sono i
+// voti di tutti, ed è il sito a pescarne uno.
+const VERSIONE = 2;
 
 // Oltre una giornata la copia non si usa più nemmeno come primo
 // disegno: meglio la barra di caricamento di una collezione di ieri

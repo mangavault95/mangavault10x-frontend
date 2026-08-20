@@ -7,9 +7,11 @@ import OpereAutore from "../ui/OpereAutore";
 import { Bottone } from "../ui/Controlli";
 import { Errore, Vuoto } from "../ui/Stati";
 import { Sezione } from "../ui/Pagina";
-import { BottonePreferito, ContaVolumi, VotoStelle } from "../ui/AzioniSerie";
+import { BottonePreferito, ContaVolumi } from "../ui/AzioniSerie";
+import VotiPersone from "../ui/VotiPersone";
 import Icon from "../app/Icon";
 import { edizioniSorelle, useCollezione, useSerie } from "../dati/collezione";
+import { useAccessoProtetto } from "../dati/accesso";
 import {
   getMarketPrice,
   getStoricoPerSerie,
@@ -27,7 +29,8 @@ import {
   euro,
   totaleDisponibile,
   valoreSerie,
-  volumiMancanti
+  volumiMancanti,
+  votoIt
 } from "../dati/serie";
 
 /**
@@ -61,6 +64,10 @@ export default function SeriePage() {
     return (riga?.volumi || []).map(Number);
   }, [storico.dati, id]);
   const { serie: tutte, ricarica, aggiornaLocale } = useCollezione();
+
+  // Riprendere una serie droppata scrive due cose sul server: da quando
+  // i lettori sono due, scrivere vuol dire dire chi sei.
+  const eseguiProtetto = useAccessoProtetto();
 
   if (errore) {
     return (
@@ -114,17 +121,19 @@ export default function SeriePage() {
   // ripulisce il flag e riapre la lettura esattamente lì.
   async function riprendi(numero) {
     try {
-      await Promise.all([
-        updateManga(serie.id, { droppato: false }),
-        saveReadingSession({
-          manga_id: serie.id,
-          titolo: serie.titolo,
-          autore: serie.autore || "",
-          coverurl: serie.copertina || "",
-          volume: numero,
-          volumitotali: serie.totali ?? null
-        })
-      ]);
+      await eseguiProtetto(() =>
+        Promise.all([
+          updateManga(serie.id, { droppato: false }),
+          saveReadingSession({
+            manga_id: serie.id,
+            titolo: serie.titolo,
+            autore: serie.autore || "",
+            coverurl: serie.copertina || "",
+            volume: numero,
+            volumitotali: serie.totali ?? null
+          })
+        ])
+      );
 
       aggiornaLocale(serie.id, { droppato: false });
       navigate("/letture");
@@ -191,10 +200,10 @@ export default function SeriePage() {
 
                 <Autori serie={serie} onScegli={setAutoreAperto} />
 
-                <VotoStelle
-                  serie={serie}
-                  onCambiato={(nuovo) => aggiornaLocale(serie.id, { valutazione: nuovo })}
-                />
+                {/* Un voto per persona, con il nome accanto: sulla
+                    stessa serie ci sono due giudizi e nessuno dei due
+                    è "il" voto. Il proprio si tocca, l'altro si legge. */}
+                <VotiPersone serie={serie} />
 
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   {serie.stato && (
@@ -286,9 +295,21 @@ export default function SeriePage() {
               {/* ---------- I dati secchi ---------- */}
               <dl className="grid grid-cols-2 gap-x-8 gap-y-4 border-t border-hairline pt-6 sm:grid-cols-4">
                 <Dato etichetta="Editore" valore={serie.editore} />
+                {/* Le stelle qui sopra dicono chi ha dato cosa; questo
+                    numero dice come sta messa la serie in casa. Con un
+                    voto solo sarebbe la stessa cosa scritta due volte,
+                    e infatti compare solo quando i giudizi sono due. */}
                 <Dato
-                  etichetta="Voto"
-                  valore={serie.valutazione ? `${serie.valutazione} / 5` : null}
+                  etichetta="Voto medio"
+                  valore={
+                    serie.voti?.length > 1
+                      ? `${votoIt(
+                          Math.round(
+                            (serie.voti.reduce((t, v) => t + v.voto, 0) / serie.voti.length) * 10
+                          ) / 10
+                        )} / 5`
+                      : null
+                  }
                 />
                 <Dato
                   etichetta="Prezzo al volume"

@@ -5,6 +5,8 @@ import RouteFallback from "./RouteFallback";
 import RouteErrore from "./RouteErrore";
 import { CollezioneProvider } from "../dati/CollezioneContext";
 import { AccessoProvider } from "../dati/AccessoProvider";
+import { SessioneProvider } from "../dati/SessioneProvider";
+import { useSessione } from "../dati/sessione";
 import { BibliotecarioProvider } from "../bibliotecario/BibliotecarioProvider";
 
 // Ogni pagina è un chunk separato: la prima apertura scarica solo
@@ -39,13 +41,16 @@ const Banco = lazy(() => import("../pages/BancoPage"));
  * Con rotte vere tutto questo funziona senza codice aggiuntivo.
  */
 export default function AppRoutes() {
-  const location = useLocation();
-
   return (
-    // La collezione sta sopra le rotte, non dentro una pagina: così
-    // le 188 schede si scaricano una volta per visita invece che a
-    // ogni passaggio fra Scaffale, Collezione e Numeri.
-    <CollezioneProvider>
+    // Chi sei sta sopra a tutto, collezione compresa: da quando i
+    // lettori sono due, l'identità non decide solo cosa puoi salvare ma
+    // quali voti e quali letture stai guardando. La collezione, che di
+    // quei voti è piena, deve poterla leggere.
+    <SessioneProvider>
+      {/* La collezione sta sopra le rotte, non dentro una pagina: così
+          le 188 schede si scaricano una volta per visita invece che a
+          ogni passaggio fra Scaffale, Collezione e Numeri. */}
+      <CollezioneProvider>
       {/* L'accesso protetto sta sopra le rotte quanto la collezione:
           un preferito segnato dallo Scaffale e uno dalla Collezione
           devono aprire lo stesso modulo, non uno per pagina. */}
@@ -55,14 +60,40 @@ export default function AppRoutes() {
             stesso pannello. */}
         <BibliotecarioProvider>
           <Shell>
-            {/* La chiave rimette in piedi il muro a ogni cambio di
-                pagina: una sezione caduta non deve tenersi il posto
-                quando si prova ad andare altrove. */}
+            <Contenuto />
+          </Shell>
+          </BibliotecarioProvider>
+        </AccessoProvider>
+      </CollezioneProvider>
+    </SessioneProvider>
+  );
+}
+
+/**
+ * Le pagine.
+ *
+ * Sta in un componente a parte per una ragione sola: `useSessione` si
+ * può chiamare solo sotto il provider, e il provider lo apre il
+ * componente qui sopra. Chi sei serve alla chiave delle rotte.
+ */
+function Contenuto() {
+  const location = useLocation();
+  const { idVisto } = useSessione();
+
+  // La chiave rimette in piedi il muro a ogni cambio di pagina: una
+  // sezione caduta non deve tenersi il posto quando si prova ad andare
+  // altrove.
+  return (
             <RouteErrore key={location.pathname}>
               <Suspense fallback={<RouteFallback />}>
                 {/* La location come key fa ripartire l'animazione di entrata
-                    a ogni cambio pagina, dando continuità spaziale. */}
-                <Routes location={location} key={location.pathname}>
+                    a ogni cambio pagina, dando continuità spaziale.
+                    Nella chiave c'è anche CHI GUARDA: entrare o uscire non
+                    cambia il filtro di una pagina, cambia di chi sono le
+                    letture che ci stanno dentro. Rimontarle è il modo più
+                    corto di richiederle, e l'unico che non lascia in giro
+                    pezzi della persona precedente. */}
+                <Routes location={location} key={`${location.pathname}|${idVisto ?? "ospite"}`}>
                   <Route path="/" element={<Home />} />
                   <Route path="/collezione" element={<Collezione />} />
                   {/* La biblioteca non è più una pagina a sé: è lo scaffale
@@ -99,9 +130,5 @@ export default function AppRoutes() {
                 </Routes>
               </Suspense>
             </RouteErrore>
-          </Shell>
-        </BibliotecarioProvider>
-      </AccessoProvider>
-    </CollezioneProvider>
   );
 }

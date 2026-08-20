@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useRisorsa from "./useRisorsa";
 import { collezione, copiaLocale, salvaCopiaLocale } from "./anticipo";
 import { ContestoCollezione } from "./collezione";
+import { useSessione } from "./sessione";
+import { votoDi } from "./serie";
 
 /**
  * La collezione, caricata una volta per visita.
@@ -28,11 +30,41 @@ export function CollezioneProvider({ children }) {
 
   const { dati, errore, inCorso, ricarica, setDati } = useRisorsa(collezione);
 
-  const serie = useMemo(() => dati || copia || [], [dati, copia]);
+  const { idVisto } = useSessione();
+
+  // Il voto non è della serie, è di una persona: la scheda porta i voti
+  // di tutti, e `valutazione` — quello che il resto del sito legge da
+  // sempre — è quello di chi sta guardando. Si calcola qui e non nella
+  // normalizzazione perché la collezione si normalizza una volta sola,
+  // mentre chi guarda può cambiare senza ricaricare niente: basta un
+  // accesso, e tutte le stelle del sito devono passare a dire l'altra
+  // cosa.
+  const serie = useMemo(() => {
+    const elenco = dati || copia || [];
+
+    return elenco.map((s) => ({ ...s, valutazione: votoDi(s, idVisto) }));
+  }, [dati, copia, idVisto]);
 
   useEffect(() => {
     if (dati?.length) salvaCopiaLocale(dati);
   }, [dati]);
+
+  // Cambiare persona non è un filtro: entrare o uscire cambia di chi
+  // sono i voti che si stanno guardando, e la copia in memoria è stata
+  // scaricata prima. Senza questa richiesta, il voto appena dato dalla
+  // persona sbagliata resterebbe disegnato dov'era finché non si
+  // ricarica la pagina.
+  //
+  // Il primo valore non conta: è il caricamento normale, la richiesta è
+  // già partita da sola (vedi `anticipo.js`).
+  const primaIdentita = useRef(idVisto);
+
+  useEffect(() => {
+    if (primaIdentita.current === idVisto) return;
+
+    primaIdentita.current = idVisto;
+    ricarica();
+  }, [idVisto, ricarica]);
 
   // Dopo un salvataggio la scheda modificata si aggiorna subito, senza
   // aspettare il giro completo al server: la modifica si vede appena
@@ -48,6 +80,49 @@ export function CollezioneProvider({ children }) {
       );
     },
     [setDati, copia]
+  );
+
+  /**
+   * Il voto appena dato, prima che il server risponda.
+   *
+   * Non passa da `aggiornaLocale` perché `valutazione` non è un campo
+   * che si può scrivere: è il voto di chi guarda, ricavato ogni volta
+   * dalla lista. Scriverlo lì verrebbe cancellato al primo ricalcolo.
+   * Quello che si aggiorna è la riga della persona dentro `voti`.
+   *
+   * `voto` a null toglie il voto: un giudizio dato per sbaglio deve
+   * potersi ritirare, e "non votato" non è lo zero.
+   */
+  const aggiornaVoto = useCallback(
+    (id, voto) => {
+      if (!idVisto) return;
+
+      setDati((precedenti) =>
+        (precedenti ?? copia ?? []).map((s) => {
+          if (s.id !== id) return s;
+
+          const altri = (s.voti || []).filter((v) => v.utenteId !== idVisto);
+
+          if (!voto) return { ...s, voti: altri };
+
+          const mio = (s.voti || []).find((v) => v.utenteId === idVisto);
+
+          return {
+            ...s,
+            voti: [
+              ...altri,
+              {
+                utenteId: idVisto,
+                nickname: mio?.nickname ?? "",
+                proprietario: mio?.proprietario ?? false,
+                voto
+              }
+            ]
+          };
+        })
+      );
+    },
+    [setDati, copia, idVisto]
   );
 
   // Dopo un'eliminazione la scheda deve sparire subito: aspettare il
@@ -71,9 +146,10 @@ export function CollezioneProvider({ children }) {
       inCorso: inCorso && !serie.length,
       ricarica,
       aggiornaLocale,
+      aggiornaVoto,
       rimuoviLocale
     }),
-    [serie, errore, inCorso, ricarica, aggiornaLocale, rimuoviLocale]
+    [serie, errore, inCorso, ricarica, aggiornaLocale, aggiornaVoto, rimuoviLocale]
   );
 
   return (

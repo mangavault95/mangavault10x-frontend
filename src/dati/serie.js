@@ -39,6 +39,39 @@ function numero(valore) {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * I voti dati a una serie, uno per persona.
+ *
+ * Arrivano dal server già in ordine — prima il proprietario, poi gli
+ * altri in ordine di iscrizione — e l'ordine conta: è quello in cui
+ * compaiono sulla scheda, e non deve ballare da una serie all'altra.
+ */
+function normalizzaVoti(grezzo) {
+  if (!Array.isArray(grezzo)) return [];
+
+  return grezzo
+    .map((v) => ({
+      utenteId: numero(v.utenteId ?? v.utente_id),
+      nickname: v.nickname || "?",
+      proprietario: Boolean(v.proprietario),
+      voto: numero(v.voto)
+    }))
+    .filter((v) => v.utenteId && v.voto);
+}
+
+/** Il voto di una persona, o quello del proprietario se non si sa chi guarda. */
+export function votoDi(serie, utenteId) {
+  const voti = serie?.voti || [];
+
+  if (utenteId) {
+    return voti.find((v) => v.utenteId === Number(utenteId))?.voto ?? null;
+  }
+
+  // Nessuno è entrato: la biblioteca è di chi ce l'ha, e il voto che
+  // si vede in giro per il sito è il suo — come è sempre stato.
+  return voti.find((v) => v.proprietario)?.voto ?? null;
+}
+
 export function normalizzaSerie(riga) {
   if (!riga) return null;
 
@@ -60,7 +93,18 @@ export function normalizzaSerie(riga) {
     totali,
     volumiItalia,
 
-    valutazione: numero(riga.Valutazione),
+    // I VOTI SONO DI QUALCUNO
+    //
+    // Era una colonna della serie (`Valutazione`), un numero solo.
+    // Adesso i lettori sono due e i giudizi anche: qui arriva la lista
+    // di chi ha votato, e `valutazione` — il campo che il resto del
+    // sito legge da sempre — viene riempito più tardi con il voto di
+    // chi sta guardando (vedi `CollezioneProvider`). Non si può fare
+    // qui perché la collezione si normalizza una volta sola, mentre
+    // chi guarda può cambiare senza ricaricare niente.
+    voti: normalizzaVoti(riga.Voti),
+    valutazione: null,
+
     costo: numero(riga.Costo),
     prezzoStimato: numero(riga.PrezzoStimato),
     valoreMercato: numero(riga.MarketValue),
@@ -178,6 +222,19 @@ export const euro = (valore) => EURO.format(Number(valore) || 0);
 
 export const numeroIt = (valore) =>
   new Intl.NumberFormat("it-IT").format(Number(valore) || 0);
+
+/**
+ * Un voto come si scrive in italiano: 2.5 diventa «2,5».
+ *
+ * Gli interi restano interi — «4», non «4,0»: metà dei voti non ha
+ * mezza stella, e uno zero decimale su ognuno farebbe sembrare la
+ * pagina un foglio di calcolo.
+ */
+export function votoIt(voto) {
+  if (voto === null || voto === undefined) return "";
+
+  return String(voto).replace(".", ",");
+}
 
 export function dataIt(valore) {
   if (!valore) return null;

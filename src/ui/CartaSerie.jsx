@@ -3,7 +3,7 @@ import Copertina from "./Copertina";
 import Progresso from "./Progresso";
 import { BottonePreferito } from "./AzioniSerie";
 import { useCollezione } from "../dati/collezione";
-import { completamento, totaleDisponibile, volumiMancanti } from "../dati/serie";
+import { completamento, totaleDisponibile, volumiMancanti, votoIt } from "../dati/serie";
 import { generiDiSerie } from "../dati/generi";
 
 /**
@@ -62,7 +62,7 @@ export default function CartaSerie({ serie, priorita = false, riempi = false }) 
             ancora votato", e un "0.0" in bella vista sembra una stroncatura. */}
         {serie.valutazione > 0 && (
           <span className="absolute left-2 top-2 rounded-full bg-void/70 px-2 py-0.5 font-numeric text-xs font-medium text-brass-300 backdrop-blur-sm">
-            {serie.valutazione}★
+            {votoIt(serie.valutazione)}★
           </span>
         )}
 

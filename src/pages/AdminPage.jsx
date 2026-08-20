@@ -5,8 +5,10 @@ import Icon from "../app/Icon";
 import { Bottone, CampoRicerca } from "../ui/Controlli";
 import { Errore } from "../ui/Stati";
 import { useCollezione } from "../dati/collezione";
+import { useSessione } from "../dati/sessione";
+import { ModuloAccesso } from "../dati/AccessoProvider";
+import RichiesteAccesso from "../ui/RichiesteAccesso";
 import {
-  clearToken,
   eliminaManga,
   enrichManga,
   getToken,
@@ -41,10 +43,12 @@ export default function AdminPage() {
    ================================================== */
 
 function Accesso({ onEntrato }) {
+  const { entra } = useSessione();
   const [utente, setUtente] = useState("");
   const [password, setPassword] = useState("");
   const [errore, setErrore] = useState(null);
   const [inCorso, setInCorso] = useState(false);
+  const [registrazioneAperta, setRegistrazioneAperta] = useState(false);
 
   async function invia(e) {
     e.preventDefault();
@@ -56,13 +60,21 @@ function Accesso({ onEntrato }) {
       const esito = await accedi(utente, password);
 
       if (esito?.token) {
+        entra(esito.utente);
         onEntrato();
       } else {
         setErrore("Credenziali non valide.");
       }
     } catch (e2) {
+      // Il 403 con un messaggio suo è "la password è giusta ma non sei
+      // ancora stato accettato": mandarlo a ricontrollare le
+      // credenziali sarebbe mandarlo a sbattere contro un muro.
       setErrore(
-        e2?.status === 401 ? "Credenziali non valide." : "Il server non risponde."
+        e2?.status === 401
+          ? "Credenziali non valide."
+          : e2?.status === 403
+            ? e2.message
+            : "Il server non risponde."
       );
     } finally {
       setInCorso(false);
@@ -121,7 +133,33 @@ function Accesso({ onEntrato }) {
         <Bottone type="submit" disabled={inCorso} className="w-full">
           {inCorso ? "Verifico…" : "Entra"}
         </Bottone>
+
+        {/* La porta di servizio: chi arriva qui senza un accesso lo
+            può chiedere da qui, invece di restare davanti a un modulo
+            che gli domanda una password che non ha. La richiesta non
+            fa entrare — la deve accettare il proprietario. */}
+        <p className="border-t border-hairline pt-4 text-center text-sm text-ink-muted">
+          Non hai un accesso?{" "}
+          <button
+            type="button"
+            onClick={() => setRegistrazioneAperta(true)}
+            className="font-medium text-brass-400 underline decoration-brass-400/30 underline-offset-2 hover:decoration-brass-400"
+          >
+            Chiedilo
+          </button>
+        </p>
       </form>
+
+      {registrazioneAperta && (
+        <ModuloAccesso
+          modoIniziale="registrazione"
+          onRiuscito={() => {
+            setRegistrazioneAperta(false);
+            onEntrato();
+          }}
+          onAnnulla={() => setRegistrazioneAperta(false)}
+        />
+      )}
     </div>
   );
 }
@@ -132,6 +170,7 @@ function Accesso({ onEntrato }) {
 
 function Redazione({ onEsci }) {
   const { serie, inCorso, errore, ricarica, aggiornaLocale, rimuoviLocale } = useCollezione();
+  const { utente, esci: chiudiSessione } = useSessione();
 
   const [selezionataId, setSelezionataId] = useState(null);
   const [ricercaTesto, setRicerca] = useState("");
@@ -157,7 +196,10 @@ function Redazione({ onEsci }) {
   const selezionata = serie.find((s) => s.id === selezionataId) || null;
 
   function esci() {
-    clearToken();
+    // Non basta più buttare il token: uscire vuol dire anche smettere
+    // di essere qualcuno, e le stelle accese in giro per il sito
+    // devono tornare a essere quelle del padrone di casa.
+    chiudiSessione();
     onEsci();
   }
 
@@ -175,11 +217,29 @@ function Redazione({ onEsci }) {
       titolo="Gestione"
       sommario="Correggi le schede della collezione."
       azioni={
-        <Bottone variante="fantasma" onClick={esci}>
-          Esci
-        </Bottone>
+        <div className="flex items-center gap-3">
+          {/* Chi sei, scritto. Sul telefono questa è l'unica pagina che
+              lo dice: la barra in basso è già piena di sezioni, e non
+              c'è posto per l'iniziale che sta nella barra laterale.
+              Sapere per chi si sta votando non è un dettaglio quando in
+              due si usa lo stesso sito dallo stesso divano. */}
+          {utente && (
+            <span className="hidden text-sm text-ink-muted sm:inline">
+              Sei <span className="font-medium text-ink-bright">{utente.nickname}</span>
+            </span>
+          )}
+
+          <Bottone variante="fantasma" onClick={esci}>
+            Esci
+          </Bottone>
+        </div>
       }
     >
+      {/* Chi ha chiesto di entrare, se c'è qualcuno. Sta in cima e non
+          in fondo: è l'unica cosa in questa pagina che sta aspettando
+          una risposta da una persona vera. */}
+      <RichiesteAccesso />
+
       <div className="grid gap-8 lg:grid-cols-[22rem_1fr]">
         {/* ---------- Elenco ----------
             Su schermo largo l'elenco e la scheda stanno affiancati, e
@@ -307,7 +367,9 @@ function corpoDaCampi(campi) {
     costo: campi.costo === "" ? null : Number(campi.costo),
     volumiposseduti: campi.volumiposseduti === "" ? null : Number(campi.volumiposseduti),
     volumitotali: campi.volumitotali === "" ? null : Number(campi.volumitotali),
-    valutazione: campi.valutazione === "" ? null : Number(campi.valutazione),
+    // Il voto non è più un campo della scheda: è di una persona, e si
+    // dà dalle stelle della serie. Qui non ha più senso — quale dei due
+    // voti sarebbe?
     statoSerie: campi.statoSerie || null,
     preferito: campi.preferito
   };
@@ -349,7 +411,6 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
     costo: serie.costo ?? "",
     volumiposseduti: serie.posseduti ?? "",
     volumitotali: serie.totali ?? "",
-    valutazione: serie.valutazione ?? "",
     statoSerie: serie.stato || "",
     preferito: serie.preferito,
     collegamento: sorellaIniziale ? String(sorellaIniziale.id) : ""
@@ -499,15 +560,6 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
           min="0"
           valore={campi.costo}
           onChange={cambia("costo")}
-        />
-        <CampoTesto
-          etichetta="Voto"
-          tipo="number"
-          step="0.1"
-          min="0"
-          max="10"
-          valore={campi.valutazione}
-          onChange={cambia("valutazione")}
         />
       </div>
 

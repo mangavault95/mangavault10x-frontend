@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
-import { getToken, login as accedi } from "../services/api";
+import { getToken, login as accedi, registrazione as chiediAccount } from "../services/api";
 import { ContestoAccesso } from "./accesso";
+import { useSessione } from "./sessione";
 import useChiusuraVelo from "../ui/useChiusuraVelo";
 
 /**
@@ -81,8 +82,27 @@ export function AccessoProvider({ children }) {
    IL MODULO
    ================================================== */
 
-function ModuloAccesso({ onRiuscito, onAnnulla }) {
+const CAMPO =
+  "w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60";
+
+const ETICHETTA =
+  "mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted";
+
+export function ModuloAccesso({
+  onRiuscito,
+  onAnnulla,
+  motivo = "Per salvare questa modifica.",
+  modoIniziale = "accesso"
+}) {
+  // Tre schermate nello stesso riquadro: entra, chiedi di entrare, e
+  // "ho chiesto, adesso aspetta". La terza non è un dettaglio: senza,
+  // chi si registra resta davanti a un modulo che sembra non aver
+  // fatto niente, e riprova.
+  const [modo, setModo] = useState(modoIniziale);
+
+  const { entra } = useSessione();
   const [utente, setUtente] = useState("");
+  const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
   const [errore, setErrore] = useState(null);
   const [inCorso, setInCorso] = useState(false);
@@ -95,19 +115,57 @@ function ModuloAccesso({ onRiuscito, onAnnulla }) {
     setErrore(null);
 
     try {
+      if (modo === "registrazione") {
+        await chiediAccount({ username: utente, nickname, password });
+        setModo("inviata");
+        return;
+      }
+
       const esito = await accedi(utente, password);
 
       if (esito?.token) {
+        entra(esito.utente);
         onRiuscito();
       } else {
         setErrore("Credenziali non valide.");
       }
     } catch (e2) {
-      setErrore(e2?.status === 401 ? "Credenziali non valide." : "Il server non risponde.");
+      setErrore(messaggioDi(e2, modo));
     } finally {
       setInCorso(false);
     }
   }
+
+  if (modo === "inviata") {
+    return (
+      <div
+        className="fixed inset-0 z-toast grid place-items-center bg-void/70 p-5 backdrop-blur-sm animate-rise-in"
+        {...velo}
+      >
+        <div className="w-full max-w-sm space-y-4 rounded-panel border border-hairline bg-glass-3 p-6 shadow-float backdrop-blur-2xl">
+          <h2 className="font-display text-lg font-semibold text-ink-bright">
+            Richiesta inviata
+          </h2>
+
+          <p className="text-sm text-ink-muted">
+            Adesso tocca al proprietario della biblioteca accettarti. Quando
+            l'avrà fatto potrai entrare con lo stesso nome e la stessa
+            password — e avrai i tuoi voti e le tue letture, separate dalle sue.
+          </p>
+
+          <button
+            type="button"
+            onClick={onAnnulla}
+            className="w-full rounded-card bg-brass-400 px-4 py-2.5 text-sm font-semibold text-void transition-all duration-quick ease-settle hover:brightness-110 active:scale-95"
+          >
+            Ho capito
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const registrazione = modo === "registrazione";
 
   return (
     <div
@@ -120,15 +178,18 @@ function ModuloAccesso({ onRiuscito, onAnnulla }) {
       >
         <div>
           <h2 className="font-display text-lg font-semibold text-ink-bright">
-            Serve l'accesso
+            {registrazione ? "Chiedi di entrare" : "Serve l'accesso"}
           </h2>
-          <p className="mt-1 text-sm text-ink-muted">Per salvare questa modifica.</p>
+
+          <p className="mt-1 text-sm text-ink-muted">
+            {registrazione
+              ? "Scegli un nome e un soprannome: il soprannome è quello che comparirà accanto ai tuoi voti."
+              : motivo}
+          </p>
         </div>
 
         <label className="block">
-          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted">
-            Utente
-          </span>
+          <span className={ETICHETTA}>Utente</span>
 
           <input
             value={utente}
@@ -136,22 +197,37 @@ function ModuloAccesso({ onRiuscito, onAnnulla }) {
             autoComplete="username"
             required
             autoFocus
-            className="w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
+            className={CAMPO}
           />
         </label>
 
+        {registrazione && (
+          <label className="block">
+            <span className={ETICHETTA}>Soprannome</span>
+
+            <input
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              autoComplete="nickname"
+              required
+              maxLength={20}
+              placeholder="Come vuoi essere chiamata"
+              className={CAMPO}
+            />
+          </label>
+        )}
+
         <label className="block">
-          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted">
-            Password
-          </span>
+          <span className={ETICHETTA}>Password</span>
 
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
+            autoComplete={registrazione ? "new-password" : "current-password"}
             required
-            className="w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
+            minLength={registrazione ? 8 : undefined}
+            className={CAMPO}
           />
         </label>
 
@@ -167,7 +243,7 @@ function ModuloAccesso({ onRiuscito, onAnnulla }) {
             disabled={inCorso}
             className="flex-1 rounded-card bg-brass-400 px-4 py-2.5 text-sm font-semibold text-void transition-all duration-quick ease-settle hover:brightness-110 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
           >
-            {inCorso ? "Verifico…" : "Entra"}
+            {inCorso ? "Un attimo…" : registrazione ? "Invia la richiesta" : "Entra"}
           </button>
 
           <button
@@ -178,7 +254,44 @@ function ModuloAccesso({ onRiuscito, onAnnulla }) {
             Annulla
           </button>
         </div>
+
+        {/* La seconda porta. Sta qui e non altrove perché è qui che
+            uno scopre di non avere un account: davanti al modulo che
+            gli chiede una password che non ha. */}
+        <p className="border-t border-hairline pt-3 text-center text-sm text-ink-muted">
+          {registrazione ? "Hai già un accesso?" : "Non hai un accesso?"}{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setErrore(null);
+              setModo(registrazione ? "accesso" : "registrazione");
+            }}
+            className="font-medium text-brass-400 underline decoration-brass-400/30 underline-offset-2 hover:decoration-brass-400"
+          >
+            {registrazione ? "Entra" : "Registrati"}
+          </button>
+        </p>
       </form>
     </div>
   );
+}
+
+/**
+ * Perché non sei entrato, detto a chi legge.
+ *
+ * Il caso che conta è il 403 con `motivo: in_attesa`: la password è
+ * giusta, manca solo il permesso. Confonderlo con "credenziali errate"
+ * manderebbe qualcuno a riscrivere all'infinito una password che va
+ * benissimo.
+ */
+function messaggioDi(errore, modo) {
+  if (errore?.status === 401) return "Credenziali non valide.";
+
+  if (errore?.status === 403 || errore?.status === 400 || errore?.status === 429) {
+    return errore.message || "Non è stato possibile.";
+  }
+
+  return modo === "registrazione"
+    ? "Non sono riuscito a mandare la richiesta."
+    : "Il server non risponde.";
 }

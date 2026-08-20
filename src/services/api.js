@@ -1,3 +1,5 @@
+import { ricordaUtente, utenteDalToken, utenteRicordato } from "../dati/sessione";
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 if (!API_URL) {
@@ -79,14 +81,23 @@ async function request(path, { method = "GET", body, auth = false } = {}) {
     throw new ApiError("Impossibile contattare il server", 0);
   }
 
-  // Il token è scaduto o non è valido: lo butto via, così la UI
-  // può rimandare al login invece di riprovare all'infinito.
-  if (res.status === 401 || res.status === 403) {
-    clearToken();
-  }
-
   const isJson = res.headers.get("content-type")?.includes("application/json");
   const payload = isJson ? await res.json().catch(() => null) : null;
+
+  // Il token è scaduto o non è valido: lo butto via, così la UI
+  // può rimandare al login invece di riprovare all'infinito.
+  //
+  // Non ogni 403 è un token morto, però: "riservato al proprietario" e
+  // "in attesa di approvazione" arrivano con lo stesso stato e sono
+  // risposte legittime a chi è entrato benissimo. Buttare la sessione
+  // lì significherebbe sloggiare qualcuno per avergli detto di no.
+  const sessioneCaduta =
+    res.status === 401 || (res.status === 403 && /token/i.test(payload?.error || ""));
+
+  if (sessioneCaduta) {
+    clearToken();
+    ricordaUtente(null);
+  }
 
   if (!res.ok) {
     throw new ApiError(payload?.error || `Errore ${res.status}`, res.status, payload?.details);
@@ -122,6 +133,25 @@ export function urlCopertina(originale) {
    ================================================== */
 
 export const getManga = () => request("/api/manga");
+
+/**
+ * Il pezzo di indirizzo che dice di chi sono i dati che si chiedono.
+ *
+ * Vale solo per le letture personali — cronologia e segnalibri. Chi
+ * guarda senza essere entrato non lo manda, e il server risponde con
+ * quelle del proprietario: da fuori la biblioteca è la sua, come è
+ * sempre stata.
+ *
+ * In scrittura non serve e non conta: là chi sei lo dice il token, e
+ * un numero nell'indirizzo non deve poter cambiare la risposta.
+ */
+function diChi(extra = "") {
+  const utente = utenteRicordato();
+
+  if (!utente?.id) return extra ? `?${extra}` : "";
+
+  return `?utente=${utente.id}${extra ? `&${extra}` : ""}`;
+}
 
 // La vista di riepilogo calcola completamento, spesa e volumi
 // mancanti direttamente in SQL: meglio che rifare i conti in ogni
@@ -191,16 +221,56 @@ export function getSimiliAnimeClick({ titolo, autore, id }) {
   return request(`/api/simili/animeclick?${parametri.toString()}`);
 }
 
+/* ==================================================
+   PERSONE
+   ================================================== */
+
 export const login = async (username, password) => {
-  const data = await request("/api/manga/login", {
+  const data = await request("/api/utenti/login", {
     method: "POST",
     body: { username, password }
   });
 
-  if (data?.token) setToken(data.token);
+  if (data?.token) {
+    setToken(data.token);
+
+    // Chi sei viene messo da parte insieme al token: `anticipo.js`
+    // chiede la collezione prima che React esista e non può
+    // decodificare niente, gli serve già pronto.
+    ricordaUtente(data.utente ?? utenteDalToken(data.token));
+  }
 
   return data;
 };
+
+export function esci() {
+  clearToken();
+  ricordaUtente(null);
+}
+
+/**
+ * Chiede di entrare. Non fa entrare: crea una richiesta che il
+ * proprietario vedrà in Gestione e potrà accettare.
+ */
+export const registrazione = ({ username, nickname, password }) =>
+  request("/api/utenti/registrazione", {
+    method: "POST",
+    body: { username, nickname, password }
+  });
+
+/** I soprannomi di chi può votare, per scrivere "Voto Nicer". */
+export const getLettori = () => request("/api/utenti/pubblici");
+
+/** Le richieste di accesso ancora in sospeso (solo il proprietario). */
+export const getRichiesteAccesso = () => request("/api/utenti/richieste", { auth: true });
+
+export const getUtenti = () => request("/api/utenti", { auth: true });
+
+export const decidiAccesso = (id, approva) =>
+  request(`/api/utenti/${id}/${approva ? "approva" : "rifiuta"}`, {
+    method: "POST",
+    auth: true
+  });
 
 /* ==================================================
    WISHLIST
@@ -232,34 +302,37 @@ export const purchaseWishlistItem = (id, dettagli) =>
    LETTURA
    ================================================== */
 
+// Le letture sono di chi le ha fatte: in lettura si dice di chi
+// (`diChi`), in scrittura lo dice il token e basta.
 export const getReadingHistory = (limite = 60) =>
-  request(`/api/reading-history?limit=${limite}`);
+  request(`/api/reading-history${diChi(`limit=${limite}`)}`);
 
 // La cronologia vista per scaffale: una riga per serie, con dentro
 // i volumi letti. Il raggruppamento lo fa il database.
-export const getStoricoPerSerie = () => request("/api/reading-history/per-serie");
+export const getStoricoPerSerie = () => request(`/api/reading-history/per-serie${diChi()}`);
 
 export const addReadingHistory = (entry) =>
-  request("/api/reading-history", { method: "POST", body: entry });
+  request("/api/reading-history", { method: "POST", body: entry, auth: true });
 
 // Serve a correggere un volume segnato per sbaglio: senza questo
 // lo storico accumula errori e si smette di fidarsene.
 export const deleteReadingHistory = (id) =>
-  request(`/api/reading-history/${id}`, { method: "DELETE" });
+  request(`/api/reading-history/${id}`, { method: "DELETE", auth: true });
 
-export const getReadingSessions = () => request("/api/reading-sessions");
+export const getReadingSessions = () => request(`/api/reading-sessions${diChi()}`);
 
 export const saveReadingSession = (session) =>
-  request("/api/reading-sessions", { method: "POST", body: session });
+  request("/api/reading-sessions", { method: "POST", body: session, auth: true });
 
 export const updateReadingSession = (mangaId, volume) =>
   request(`/api/reading-sessions/${mangaId}`, {
     method: "PUT",
-    body: { volume }
+    body: { volume },
+    auth: true
   });
 
 export const deleteReadingSession = (mangaId) =>
-  request(`/api/reading-sessions/${mangaId}`, { method: "DELETE" });
+  request(`/api/reading-sessions/${mangaId}`, { method: "DELETE", auth: true });
 
 /* ==================================================
    MERCATO

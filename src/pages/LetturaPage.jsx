@@ -13,6 +13,7 @@ import useChiusuraVelo from "../ui/useChiusuraVelo";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
 import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
+import { useAccessoProtetto } from "../dati/accesso";
 import { dataIt, plurale, tettoLettura } from "../dati/serie";
 import {
   addReadingHistory,
@@ -47,7 +48,13 @@ const CRONOLOGIA_VISIBILE = 20;
 // «13 di 12».
 
 export default function LetturaPage() {
-  const { serie, aggiornaLocale } = useCollezione();
+  const { serie, aggiornaLocale, aggiornaVoto } = useCollezione();
+
+  // Segnare un volume come letto adesso richiede di sapere CHI l'ha
+  // letto: da quando i lettori sono due, una lettura senza nome non si
+  // può registrare. Il modulo d'accesso si apre qui dove si sta
+  // lavorando e l'azione riparte da sola — vedi `dati/accesso.js`.
+  const eseguiProtetto = useAccessoProtetto();
 
   const sessioni = useRisorsa(getReadingSessions);
   const perSerie = useRisorsa(getStoricoPerSerie);
@@ -77,13 +84,13 @@ export default function LetturaPage() {
 
     for (const [mangaId, volume] of coda) {
       try {
-        await updateReadingSession(mangaId, volume);
-      } catch {
-        setProblema("Non sono riuscito a salvare il segnalibro.");
+        await eseguiProtetto(() => updateReadingSession(mangaId, volume));
+      } catch (e) {
+        if (!e?.annullato) setProblema("Non sono riuscito a salvare il segnalibro.");
         sessioni.ricarica();
       }
     }
-  }, [sessioni]);
+  }, [sessioni, eseguiProtetto]);
 
   // Se la pagina viene lasciata con un salvataggio in sospeso, lo
   // mando comunque: un segnalibro perso perché hai cambiato pagina
@@ -216,18 +223,20 @@ export default function LetturaPage() {
     setSceltaAperta(false);
 
     try {
-      await saveReadingSession({
-        manga_id: m.id,
-        titolo: m.titolo,
-        autore: m.autore || "",
-        coverurl: m.copertina || "",
-        volume: 1,
-        volumitotali: m.totali ?? null
-      });
+      await eseguiProtetto(() =>
+        saveReadingSession({
+          manga_id: m.id,
+          titolo: m.titolo,
+          autore: m.autore || "",
+          coverurl: m.copertina || "",
+          volume: 1,
+          volumitotali: m.totali ?? null
+        })
+      );
 
       sessioni.ricarica();
-    } catch {
-      segnalaErrore(`Non sono riuscito ad aprire la lettura di ${m.titolo}.`);
+    } catch (e) {
+      if (!e?.annullato) segnalaErrore(`Non sono riuscito ad aprire la lettura di ${m.titolo}.`);
     }
   }
 
@@ -297,13 +306,15 @@ export default function LetturaPage() {
     const eUltimo = lettura.massimo ? lettura.volume >= lettura.massimo : false;
 
     try {
-      await addReadingHistory({
-        manga_id: lettura.mangaId,
-        titolo: lettura.titolo,
-        autore: lettura.autore,
-        coverurl: lettura.copertina,
-        volume: lettura.volume
-      });
+      await eseguiProtetto(() =>
+        addReadingHistory({
+          manga_id: lettura.mangaId,
+          titolo: lettura.titolo,
+          autore: lettura.autore,
+          coverurl: lettura.copertina,
+          volume: lettura.volume
+        })
+      );
 
       if (!eUltimo) {
         impostaVolume(lettura, { delta: 1 });
@@ -317,8 +328,8 @@ export default function LetturaPage() {
         // solo una riga di testo che si perde nello schermo.
         setCompletata(lettura);
       }
-    } catch {
-      segnalaErrore("Il volume non è stato registrato nello storico.");
+    } catch (e) {
+      if (!e?.annullato) segnalaErrore("Il volume non è stato registrato nello storico.");
     }
   }
 
@@ -330,10 +341,10 @@ export default function LetturaPage() {
     );
 
     try {
-      await deleteReadingSession(lettura.mangaId);
+      await eseguiProtetto(() => deleteReadingSession(lettura.mangaId));
       perSerie.ricarica();
-    } catch {
-      segnalaErrore("Non sono riuscito a chiudere la lettura.");
+    } catch (e) {
+      if (!e?.annullato) segnalaErrore("Non sono riuscito a chiudere la lettura.");
       sessioni.ricarica();
     }
   }
@@ -352,13 +363,15 @@ export default function LetturaPage() {
     aggiornaLocale(lettura.mangaId, { droppato: true });
 
     try {
-      await Promise.all([
-        deleteReadingSession(lettura.mangaId),
-        updateManga(lettura.mangaId, { droppato: true })
-      ]);
+      await eseguiProtetto(() =>
+        Promise.all([
+          deleteReadingSession(lettura.mangaId),
+          updateManga(lettura.mangaId, { droppato: true })
+        ])
+      );
       perSerie.ricarica();
-    } catch {
-      segnalaErrore("Non sono riuscito a droppare la lettura.");
+    } catch (e) {
+      if (!e?.annullato) segnalaErrore("Non sono riuscito a droppare la lettura.");
       sessioni.ricarica();
       aggiornaLocale(lettura.mangaId, { droppato: false });
     }
@@ -372,10 +385,10 @@ export default function LetturaPage() {
     );
 
     try {
-      await deleteReadingHistory(voce.id);
+      await eseguiProtetto(() => deleteReadingHistory(voce.id));
       perSerie.ricarica();
-    } catch {
-      segnalaErrore("Non sono riuscito a togliere il volume dallo storico.");
+    } catch (e) {
+      if (!e?.annullato) segnalaErrore("Non sono riuscito a togliere il volume dallo storico.");
       storico.ricarica();
     }
   }
@@ -432,7 +445,7 @@ export default function LetturaPage() {
           <ModaleCompletamento
             lettura={completata}
             serie={serie.find((m) => String(m.id) === String(completata.mangaId))}
-            onVotoCambiato={(nuovo) => aggiornaLocale(completata.mangaId, { valutazione: nuovo })}
+            onVotoCambiato={(nuovo) => aggiornaVoto(completata.mangaId, nuovo)}
             onChiudi={() => setCompletata(null)}
           />
         )}

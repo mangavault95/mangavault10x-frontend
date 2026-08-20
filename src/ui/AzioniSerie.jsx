@@ -2,6 +2,8 @@ import { useState } from "react";
 import Icon from "../app/Icon";
 import { useAccessoProtetto } from "../dati/accesso";
 import { updateManga, updateRating } from "../services/api";
+import useTocco from "./tocco";
+import { votoIt } from "../dati/serie";
 
 /**
  * I tre gesti che prima costringevano ad aprire Gestione: segnare un
@@ -82,35 +84,81 @@ export function BottonePreferito({ serie, onCambiato, dimensione = 18, className
 }
 
 /* ==================================================
-   VOTO — cinque stelle intere
+   VOTO — cinque stelle, a mezze stelle
    ================================================== */
 
 /**
- * Un voto da 1 a 5, una stella intera per punto. Prima erano decimi
- * con mezze stelle (`8.5 su 10`): nessuno pensa davvero in decimi
- * guardando delle stelle, e la mezza stella complicava il click senza
- * aggiungere precisione utile. Cliccare la stella N imposta il voto a N.
+ * Una stella vuota, mezza o piena.
+ *
+ * La mezza non è un'icona a parte: è la stella piena messa sopra
+ * quella vuota e tagliata a metà da un contenitore che nasconde quello
+ * che esce. Così le due metà combaciano per costruzione — un disegno
+ * separato per la mezza stella prima o poi si scosta di un pixel, e si
+ * vede.
+ */
+export function Stella({ riempimento, dimensione }) {
+  return (
+    <span
+      className="relative grid place-items-center"
+      style={{ width: dimensione, height: dimensione }}
+    >
+      <Icon nome="star" dimensione={dimensione} className="text-ink-faint" />
+
+      {riempimento > 0 && (
+        <span
+          className="pointer-events-none absolute inset-y-0 left-0 overflow-hidden"
+          style={{ width: riempimento >= 1 ? "100%" : "50%" }}
+        >
+          <Icon nome="star" dimensione={dimensione} piena className="text-brass-400" />
+        </span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * Un voto da 0,5 a 5, a mezze stelle.
+ *
+ * Le mezze stelle c'erano già state e furono tolte: allora però il voto
+ * era in decimi (`8.5 su 10`) e la mezza stella era un modo storto di
+ * mostrare un numero che nessuno pensava in quei termini. Adesso la
+ * scala è quella giusta — cinque — e la mezza è l'unica cosa che
+ * mancava per distinguere un 3 da un 3 e mezzo.
+ *
+ * Ogni stella ha due bersagli, sinistra e destra: la metà e l'intero.
+ * Col dito i bersagli sono grandi il doppio, perché il polpastrello
+ * copre quello che sta premendo (vedi `useTocco`).
+ *
+ * Ricliccare il voto che si è già dato lo TOGLIE. Un voto messo per
+ * sbaglio deve potersi ritirare, e "non votato" non è lo zero: è
+ * l'assenza di una riga.
  */
 export function VotoStelle({ serie, onCambiato, dimensione = 20, sospeso = false }) {
   const eseguiProtetto = useAccessoProtetto();
+  const tocco = useTocco();
   const [inCorso, setInCorso] = useState(false);
   const [anteprima, setAnteprima] = useState(null);
 
+  const misura = tocco ? Math.round(dimensione * 1.5) : dimensione;
   const valoreVisibile = anteprima ?? serie.valutazione ?? 0;
 
   async function salva(nuovo, e) {
     e?.preventDefault();
     e?.stopPropagation();
 
-    if (inCorso || nuovo === serie.valutazione) return;
+    if (inCorso) return;
 
-    const precedente = serie.valutazione;
+    const precedente = serie.valutazione ?? null;
+
+    // Lo stesso voto due volte vuol dire "toglilo".
+    const finale = nuovo === precedente ? null : nuovo;
 
     setInCorso(true);
-    onCambiato?.(nuovo);
+    setAnteprima(null);
+    onCambiato?.(finale);
 
     try {
-      await eseguiProtetto(() => updateRating(serie.id, nuovo));
+      await eseguiProtetto(() => updateRating(serie.id, finale));
     } catch (err) {
       if (!err?.annullato) onCambiato?.(precedente);
     } finally {
@@ -122,25 +170,41 @@ export function VotoStelle({ serie, onCambiato, dimensione = 20, sospeso = false
     <div
       className={`inline-flex items-center gap-0.5 ${sospeso ? "opacity-60" : ""}`}
       onMouseLeave={() => setAnteprima(null)}
-      role="radiogroup"
-      aria-label={`Voto: ${valoreVisibile} su 5`}
+      role="group"
+      aria-label={
+        serie.valutazione ? `Voto: ${votoIt(serie.valutazione)} su 5` : "Non votato"
+      }
     >
       {[1, 2, 3, 4, 5].map((numero) => (
-        <button
+        <span
           key={numero}
-          type="button"
-          disabled={inCorso}
-          className="relative grid place-items-center p-0.5 text-ink-faint transition-transform duration-quick ease-spring hover:scale-110 disabled:pointer-events-none [@media(hover:none)]:p-1.5"
-          onMouseEnter={() => setAnteprima(numero)}
-          onClick={(e) => salva(numero, e)}
+          className="relative inline-grid transition-transform duration-quick ease-spring hover:scale-110"
         >
-          <Icon
-            nome="star"
-            dimensione={dimensione}
-            piena={numero <= valoreVisibile}
-            className={numero <= valoreVisibile ? "text-brass-400" : ""}
+          <Stella
+            riempimento={Math.min(1, Math.max(0, valoreVisibile - numero + 1))}
+            dimensione={misura}
           />
-        </button>
+
+          {[numero - 0.5, numero].map((valore, meta) => (
+            <button
+              key={valore}
+              type="button"
+              disabled={inCorso}
+              title={
+                valore === serie.valutazione
+                  ? "Togli il voto"
+                  : `Dai ${votoIt(valore)} su 5`
+              }
+              aria-label={`${votoIt(valore)} su 5`}
+              aria-pressed={serie.valutazione === valore}
+              onMouseEnter={() => setAnteprima(valore)}
+              onClick={(e) => salva(valore, e)}
+              className={`absolute inset-y-0 w-1/2 disabled:pointer-events-none
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
+                          ${meta === 0 ? "left-0" : "right-0"}`}
+            />
+          ))}
+        </span>
       ))}
     </div>
   );

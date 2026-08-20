@@ -4,7 +4,7 @@ import Icon from "../app/Icon";
 import Copertina from "./Copertina";
 import Sovrapposizione from "./Sovrapposizione";
 import useChiusuraVelo from "./useChiusuraVelo";
-import { numeroIt } from "../dati/serie";
+import { numeroIt, votoIt } from "../dati/serie";
 
 /**
  * Il dettaglio dietro «Voto medio»: chi alza la media e chi la abbassa.
@@ -94,7 +94,7 @@ export default function VotiSerie({ serie, media, onChiudere }) {
                             alza ? "text-jade" : abbassa ? "text-ember" : "text-ink-muted"
                           }`}
                         >
-                          {s.valutazione.toFixed(1)}
+                          {votoIt(s.valutazione)}
                         </p>
                       </Link>
                     </li>

@@ -3,6 +3,8 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { SEZIONI, SEZIONE_ADMIN, eAttiva, titoloPer } from "./navigation";
 import Icon from "./Icon";
 import Bibliotecario from "../bibliotecario/Bibliotecario";
+import Identita from "../ui/Identita";
+import { useSessione } from "../dati/sessione";
 
 /**
  * La cornice fissa attorno a ogni pagina.
@@ -16,6 +18,7 @@ export default function Shell({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const contenutoRef = useRef(null);
+  const { richieste } = useSessione();
 
   // Il titolo della scheda dice dove sei: serve a chi tiene molte
   // schede aperte e a chi salva un indirizzo nei preferiti.
@@ -115,10 +118,19 @@ export default function Shell({ children }) {
           />
         ))}
 
-        <div className="mt-auto">
+        <div className="mt-auto flex flex-col items-center gap-3">
+          {/* Chi sei. Sopra Gestione perché è la stessa famiglia di
+              cose — non è navigazione, è amministrazione di sé. */}
+          <Identita />
+
           <VoceMenu
             sezione={SEZIONE_ADMIN}
             attiva={eAttiva(SEZIONE_ADMIN.percorso, location.pathname)}
+            // La pallina è la notifica: qualcuno ha chiesto di entrare
+            // e aspetta una risposta. Non è un avviso da schermo intero
+            // perché non è urgente — ma deve essere impossibile aprire
+            // il sito e non accorgersene.
+            pallina={richieste.length}
           />
         </div>
       </nav>
@@ -149,6 +161,7 @@ export default function Shell({ children }) {
             non esiste più, sostituita dalla scena del bancone). */}
         {[...SEZIONI, SEZIONE_ADMIN].map((sezione) => {
           const attiva = eAttiva(sezione.percorso, location.pathname);
+          const inAttesa = sezione.id === "admin" ? richieste.length : 0;
 
           return (
             <NavLink
@@ -163,7 +176,19 @@ export default function Shell({ children }) {
               {attiva && (
                 <span className="absolute top-0 h-0.5 w-8 rounded-full bg-brass-400" />
               )}
-              <Icon nome={sezione.icona} dimensione={20} />
+
+              <span className="relative">
+                <Icon nome={sezione.icona} dimensione={20} />
+
+                {inAttesa > 0 && (
+                  <span
+                    aria-label={`${inAttesa} in attesa`}
+                    className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 font-numeric text-[0.6rem] font-bold text-void"
+                  >
+                    {inAttesa}
+                  </span>
+                )}
+              </span>
               <span className="text-[0.65rem] font-medium tracking-wide">
                 {sezione.etichetta}
               </span>
@@ -183,7 +208,7 @@ export default function Shell({ children }) {
  * costringe a indovinare. Qui il nome resta comunque disponibile
  * ai lettori di schermo tramite aria-label.
  */
-function VoceMenu({ sezione, attiva }) {
+function VoceMenu({ sezione, attiva, pallina = 0 }) {
   return (
     <NavLink
       to={sezione.percorso}
@@ -207,6 +232,15 @@ function VoceMenu({ sezione, attiva }) {
       />
 
       <Icon nome={sezione.icona} dimensione={20} />
+
+      {pallina > 0 && (
+        <span
+          aria-label={`${pallina} in attesa`}
+          className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 font-numeric text-[0.6rem] font-bold text-void"
+        >
+          {pallina}
+        </span>
+      )}
 
       {/* Etichetta a comparsa */}
       <span
