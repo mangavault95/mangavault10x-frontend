@@ -328,6 +328,20 @@ export const deleteReadingHistoryVolume = (mangaId, volume) =>
     auth: true
   });
 
+// "Questa l'avevo già letta tutta": segna in un colpo i volumi da 1 a
+// N che mancano. Una serie da venticinque letta prima di iscriversi
+// erano venticinque click e venticinque richieste per dire una cosa
+// sola.
+export const segnaLettiFinoA = (mangaId, volume) =>
+  request(`/api/reading-history/serie/${mangaId}/fino-a/${volume}`, {
+    method: "POST",
+    auth: true
+  });
+
+// E il contrario: togliere un'intera serie da quelle lette.
+export const deleteReadingHistorySerie = (mangaId) =>
+  request(`/api/reading-history/serie/${mangaId}`, { method: "DELETE", auth: true });
+
 export const getReadingSessions = () => request(`/api/reading-sessions${diChi()}`);
 
 export const saveReadingSession = (session) =>

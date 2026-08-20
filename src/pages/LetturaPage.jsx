@@ -27,12 +27,14 @@ import {
 } from "../dati/serie";
 import {
   addReadingHistory,
+  deleteReadingHistorySerie,
   deleteReadingHistoryVolume,
   deleteReadingSession,
   droppaSerie,
   getReadingSessions,
   getStoricoPerSerie,
   saveReadingSession,
+  segnaLettiFinoA,
   updateReadingSession
 } from "../services/api";
 
@@ -400,19 +402,65 @@ export default function LetturaPage() {
     }
   }
 
-  async function chiudi(lettura) {
+  /**
+   * "Letti tutti fino al N": recupera in un colpo i volumi indietro.
+   *
+   * È il caso di una serie letta prima di iscriversi al sito: si
+   * sposta il segnalibro sull'ultimo volume e si segna tutto, invece
+   * di premere "Finito, avanti" venticinque volte — venticinque click
+   * e venticinque richieste per registrare una cosa sola.
+   *
+   * Se così la serie arriva in fondo, vale come averla finita: stessa
+   * festa e stessa chiusura del percorso normale.
+   */
+  async function segnaFinoA(lettura) {
     setProblema(null);
 
+    const fino = lettura.volume;
+    const eUltimo = lettura.massimo ? fino >= lettura.massimo : false;
+
+    try {
+      await eseguiProtetto(() => segnaLettiFinoA(lettura.mangaId, fino));
+
+      perSerie.ricarica();
+      aggiornaLettura(
+        lettura.mangaId,
+        new Set([
+          ...lettura.volumiLetti.map(Number),
+          ...Array.from({ length: fino }, (_, i) => i + 1)
+        ]).size
+      );
+
+      if (eUltimo) setCompletata(lettura);
+    } catch (e) {
+      if (!e?.annullato) segnalaErrore("Non sono riuscito a segnare i volumi arretrati.");
+      perSerie.ricarica();
+    }
+  }
+
+  /**
+   * La lettura finita si chiude da sola.
+   *
+   * Il tasto "Chiudi la lettura" non c'è più: chiudeva qualcosa di
+   * indefinito accanto a un tasto che invece chiudeva per davvero
+   * (droppa), e i due si somigliavano troppo. Adesso l'unica uscita
+   * normale è arrivare in fondo — e quando ci si arriva la scheda si
+   * toglie dal tavolo da sé, dopo i coriandoli e il voto.
+   *
+   * Se il voto non lo dai, si chiude lo stesso: la serie l'hai finita,
+   * e resta in classifica sotto "lette, ma non ancora votate".
+   */
+  async function chiudiPerchéFinita(lettura) {
     sessioni.setDati((precedenti) =>
       (precedenti || []).filter((s) => s.id !== lettura.idSessione)
     );
 
     try {
       await eseguiProtetto(() => deleteReadingSession(lettura.mangaId));
-      perSerie.ricarica();
     } catch (e) {
-      if (!e?.annullato) segnalaErrore("Non sono riuscito a chiudere la lettura.");
-      sessioni.ricarica();
+      // Fallire qui non merita un avviso: la serie è finita comunque,
+      // e la scheda ricompare da sola al prossimo caricamento.
+      if (!e?.annullato) sessioni.ricarica();
     }
   }
 
@@ -496,6 +544,33 @@ export default function LetturaPage() {
     }
   }
 
+  /**
+   * Togliere un'intera serie da quelle lette.
+   *
+   * Volume per volume, su una serie da trenta, sarebbe un lavoro — e
+   * il ripensamento è sulla serie, non sui singoli numeri. Il tasto
+   * chiede conferma da solo (vedi `RigaClassifica`): qui sparisce roba
+   * che a rimetterla ci vorrebbe un pomeriggio.
+   */
+  async function togliDalleLette(s) {
+    setProblema(null);
+
+    const quantiErano = volumiLettiDa(s, idVisto);
+
+    // Sparisce subito dalla classifica: è il senso del gesto.
+    aggiornaLettura(s.id, 0);
+
+    try {
+      await eseguiProtetto(() => deleteReadingHistorySerie(s.id));
+      perSerie.ricarica();
+    } catch (e) {
+      if (!e?.annullato) {
+        segnalaErrore(`Non sono riuscito a togliere ${s.titolo} dalle lette.`);
+      }
+      aggiornaLettura(s.id, quantiErano);
+    }
+  }
+
   /* -------------------- Vista -------------------- */
 
   const inCaricamento = sessioni.inCorso && !sessioni.dati;
@@ -505,10 +580,15 @@ export default function LetturaPage() {
       occhiello="Letture"
       titolo="Il tavolo di lettura"
       sommario="Dove sei arrivato, e cosa ti è piaciuto."
-      // Nessun pulsante qui in alto: ce n'era anche uno al centro
-      // della sezione "Adesso", e due comandi identici a mezzo schermo
-      // di distanza fanno solo esitare. Resta quello centrale, che ora
-      // compare sempre — prima appariva solo a elenco vuoto.
+      // Il comando sta qui in alto, e solo qui. Prima era sotto le
+      // letture aperte: con otto libri sul tavolo finiva a metà pagina,
+      // cioè in un posto che si raggiunge scorrendo — mentre aprire una
+      // lettura è la prima cosa che si viene a fare.
+      azioni={
+        <Bottone onClick={() => setSceltaAperta(true)}>
+          Inizia una lettura
+        </Bottone>
+      }
     >
       <div className="space-y-16">
         {problema && (
@@ -534,7 +614,10 @@ export default function LetturaPage() {
             lettura={completata}
             serie={serie.find((m) => String(m.id) === String(completata.mangaId))}
             onVotoCambiato={(nuovo) => aggiornaVoto(completata.mangaId, nuovo)}
-            onChiudi={() => setCompletata(null)}
+            onChiudi={() => {
+              chiudiPerchéFinita(completata);
+              setCompletata(null);
+            }}
           />
         )}
 
@@ -554,7 +637,6 @@ export default function LetturaPage() {
           ) : inCaricamento ? (
             <CaricamentoElenco quante={2} />
           ) : attive.length ? (
-            <>
             <ul className="space-y-4">
               {attive.map((lettura) => (
                 <li key={lettura.idSessione}>
@@ -564,31 +646,17 @@ export default function LetturaPage() {
                     onIndietro={() => impostaVolume(lettura, { delta: -1 })}
                     onVaiAVolume={(n) => impostaVolume(lettura, { assoluto: n })}
                     onLetto={() => segnaLetto(lettura)}
+                    onLettiFinoAQui={() => segnaFinoA(lettura)}
                     onAnnullaLetto={() => annullaLetto(lettura)}
-                    onChiudi={() => chiudi(lettura)}
                     onDroppa={() => droppa(lettura)}
                   />
                 </li>
               ))}
             </ul>
-
-            {/* Lo stesso comando che compare a elenco vuoto, così è
-                sempre nello stesso posto: sotto le letture aperte. */}
-            <div className="flex justify-center pt-2">
-              <Bottone variante="secondario" onClick={() => setSceltaAperta(true)}>
-                Inizia un'altra lettura
-              </Bottone>
-            </div>
-            </>
           ) : (
             <Vuoto
               titolo="Nessun libro aperto"
-              testo="Apri una serie e il segnalibro ti aspetterà qui, al volume dove ti sei fermato."
-              azione={
-                <Bottone onClick={() => setSceltaAperta(true)}>
-                  Inizia una lettura
-                </Bottone>
-              }
+              testo="Con «Inizia una lettura», qui in alto, apri una serie: il segnalibro ti aspetterà qui, al volume dove ti sei fermato."
             />
           )}
         </Sezione>
@@ -623,6 +691,7 @@ export default function LetturaPage() {
                       posizione={posizione + 1}
                       lettore={lettoreScelto}
                       mio={mioTurno}
+                      onTogli={() => togliDalleLette(s)}
                     />
                   ))}
                 </ol>
@@ -709,9 +778,15 @@ function SceltaLettore({ lettori, scelto, onScegli }) {
    UNA RIGA DI CLASSIFICA
    ================================================== */
 
-function RigaClassifica({ serie, posizione, lettore, mio }) {
+function RigaClassifica({ serie, posizione, lettore, mio, onTogli }) {
   const { aggiornaVoto } = useCollezione();
   const voto = votoDi(serie, lettore);
+
+  // Togliere una serie dalle lette cancella tutti i volumi segnati:
+  // un click solo, e a rimetterli ci vorrebbe un pomeriggio. Quindi il
+  // tasto si spiega prima di agire, invece di aprire una finestra —
+  // che per una riga di elenco sarebbe una cerimonia.
+  const [confermo, setConfermo] = useState(false);
 
   return (
     <li className="group flex items-center gap-3.5 rounded-card px-3 py-2 transition-colors duration-quick hover:bg-glass-1">
@@ -756,6 +831,48 @@ function RigaClassifica({ serie, posizione, lettore, mio }) {
       <span className="w-8 shrink-0 text-right font-numeric text-sm text-ink-bright">
         {voto ? votoIt(voto) : "—"}
       </span>
+
+      {/* Solo sulla propria classifica: le letture di un altro non si
+          correggono. Come il cestino della cronologia di prima, appare
+          al passaggio del mouse e col dito resta acceso a mezza voce. */}
+      {mio && typeof onTogli === "function" && (
+        <span className="w-28 shrink-0 text-right">
+          {confermo ? (
+            <span className="inline-flex items-center gap-1">
+              <button
+                onClick={() => {
+                  setConfermo(false);
+                  onTogli();
+                }}
+                className="rounded-lg bg-ember/15 px-2 py-1 text-xs font-medium text-ember transition-colors duration-quick
+                           hover:bg-ember/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
+              >
+                Confermi?
+              </button>
+
+              <button
+                onClick={() => setConfermo(false)}
+                aria-label="Lascia la serie fra quelle lette"
+                className="rounded-lg px-1.5 py-1 text-xs text-ink-faint transition-colors duration-quick hover:text-ink-bright"
+              >
+                no
+              </button>
+            </span>
+          ) : (
+            <button
+              onClick={() => setConfermo(true)}
+              aria-label={`Togli ${serie.titolo} dalle serie lette`}
+              title="Togli dalle lette"
+              className="rounded-lg px-2 py-1 text-xs text-ink-faint opacity-0 transition-all duration-quick
+                         hover:text-ember group-hover:opacity-100
+                         [@media(hover:none)]:px-3 [@media(hover:none)]:py-2 [@media(hover:none)]:opacity-70
+                         focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
+            >
+              Togli
+            </button>
+          )}
+        </span>
+      )}
     </li>
   );
 }

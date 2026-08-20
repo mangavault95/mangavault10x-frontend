@@ -96,7 +96,17 @@ export function utenteDalToken(token) {
     if (dati.exp && dati.exp * 1000 < Date.now()) return null;
 
     return {
-      id: dati.id ?? null,
+      // Numero, sempre.
+      //
+      // Postgres consegna i `bigint` come stringhe, e da lì
+      // l'identificativo finiva nel token così com'era: `"1"`. Tutto il
+      // sito però confronta con `===` — il voto di chi guarda, il tasto
+      // "Togli" sulla propria nota — e `"1" === 1` è falso. Effetto:
+      // una stella appena cliccata che non si riaccende, e note proprie
+      // che sembrano di un altro. Va convertito qui e non solo dove il
+      // token si firma, perché i token durano trenta giorni: quelli già
+      // in giro portano ancora la stringa.
+      id: dati.id == null ? null : Number(dati.id),
       username: dati.user ?? null,
       nickname: dati.nickname || dati.user || "Tu",
       ruolo: dati.role ?? "lettore",

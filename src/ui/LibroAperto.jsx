@@ -106,8 +106,8 @@ export default function LibroAperto({
   onAvanti,
   onIndietro,
   onLetto,
+  onLettiFinoAQui,
   onAnnullaLetto,
-  onChiudi,
   onDroppa,
   onVaiAVolume
 }) {
@@ -134,6 +134,23 @@ export default function LibroAperto({
   const correnteLetto = (lettura.volumiLetti || []).some(
     (n) => Number(n) === volume
   );
+
+  // Quanti volumi resterebbero da segnare arrivando fino a qui.
+  //
+  // Serve al caso di una serie letta prima di iscriversi al sito:
+  // sposti il segnalibro sull'ultimo volume e li segni tutti in un
+  // colpo, invece di premere "Finito, avanti" venticinque volte. Il
+  // comando compare solo se c'è davvero qualcosa da recuperare
+  // indietro — a lettura normale non serve, e sarebbe un tasto in più
+  // vicino a quello che si usa ogni giorno.
+  const letti = new Set((lettura.volumiLetti || []).map(Number));
+  const daRecuperare = [];
+
+  for (let n = 1; n <= volume; n++) {
+    if (!letti.has(n)) daRecuperare.push(n);
+  }
+
+  const arretratiDaSegnare = daRecuperare.length;
 
   // Una serie in corso di cui possiedi meno volumi di quelli usciti:
   // il tetto è quello che hai, e conviene dirlo invece di lasciar
@@ -293,6 +310,21 @@ export default function LibroAperto({
               mezzo a loro: quelli chiudono la lettura, questo la
               corregge, e le due cose non vanno confuse a colpo di
               pollice. */}
+          {/* "L'avevo già letta tutta": un tasto solo per i volumi
+              indietro, che sparisce appena non c'è più niente da
+              recuperare. */}
+          {arretratiDaSegnare > 1 && typeof onLettiFinoAQui === "function" && (
+            <button
+              onClick={onLettiFinoAQui}
+              aria-label={`Segna come letti i primi ${volume} volumi di ${titolo}`}
+              className="rounded-card border border-brass-400/30 bg-brass-400/10 px-3 py-2 text-xs font-medium text-brass-300 transition-colors duration-quick
+                         hover:bg-brass-400/20
+                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+            >
+              Letti tutti fino al {volume}
+            </button>
+          )}
+
           {correnteLetto && typeof onAnnullaLetto === "function" && (
             <button
               onClick={onAnnullaLetto}
@@ -306,13 +338,10 @@ export default function LibroAperto({
           )}
 
           <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:gap-2.5">
-          <button
-            onClick={onChiudi}
-            className="rounded-card px-3 py-1.5 text-xs text-ink-faint transition-colors duration-quick hover:text-ember focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
-          >
-            Chiudi la lettura
-          </button>
-
+          {/* "Chiudi la lettura" non c'è più: una serie finita si chiude
+              da sola quando segni l'ultimo volume. Restava un tasto che
+              non chiudeva niente di preciso, accanto a uno che invece sì
+              (droppa) — e i due si somigliavano troppo. */}
           <button
             onClick={onDroppa}
             className="rounded-card px-3 py-1.5 text-xs text-ink-faint transition-colors duration-quick hover:text-ember focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
