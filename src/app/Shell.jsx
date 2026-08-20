@@ -34,7 +34,7 @@ export default function Shell({ children }) {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [location.pathname]);
 
-  // Scorciatoie: i tasti 1-5 saltano alle sezioni.
+  // Scorciatoie: i tasti 1-6 saltano alle sezioni.
   useEffect(() => {
     function alTasto(e) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;

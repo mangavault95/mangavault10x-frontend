@@ -23,6 +23,7 @@ import { generiDiSerie, idDa } from "../dati/generi";
 import { nomiAutori } from "../dati/autore";
 import useRisorsa from "../dati/useRisorsa";
 import {
+  CATEGORIE,
   ETICHETTE_STATO,
   completamento,
   dataIt,
@@ -213,6 +214,22 @@ export default function SeriePage() {
                   )}
 
                   {serie.edizione && <Etichetta tono="brass">{serie.edizione}</Etichetta>}
+
+                  {/* Il pubblico dell'opera. Sta prima dei generi e non
+                      in mezzo a loro perché è una cosa diversa: i
+                      generi dicono di cosa parla, questo per chi è
+                      stata scritta. Porta al suo filtro come i generi,
+                      ma sta di là in una tendina: di categoria ce n'è
+                      una sola per serie, di generi tante. */}
+                  {serie.categoria && CATEGORIE[serie.categoria] && (
+                    <Link
+                      to={`/collezione?categoria=${serie.categoria}`}
+                      title={CATEGORIE[serie.categoria].descrizione}
+                      className="rounded-full border border-hairline bg-glass-1 px-3 py-1 text-xs text-ink-muted transition-colors duration-quick hover:border-soft hover:text-ink-bright"
+                    >
+                      {CATEGORIE[serie.categoria].etichetta}
+                    </Link>
+                  )}
 
                   {pct === 100 && <Etichetta tono="jade">Serie completa</Etichetta>}
 

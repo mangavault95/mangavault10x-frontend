@@ -55,6 +55,17 @@ export const SEZIONI = [
     descrizione: "Valore, spesa e primati della collezione",
     icona: "chart",
     tasto: "5"
+  },
+  {
+    id: "kachinuki",
+    percorso: "/kachinuki",
+    // Il nome giapponese e non "Torneo": è come si chiama il gioco, e
+    // una voce di menu deve chiamarsi come la chiama chi la clicca. Che
+    // cosa sia lo dice la descrizione, e lo dice la pagina.
+    etichetta: "Kachinuki",
+    descrizione: "Il torneo a eliminazione fra le serie in collezione",
+    icona: "torneo",
+    tasto: "6"
   }
 ];
 
@@ -89,6 +100,10 @@ const PORTE = {
 export function titoloPer(percorso) {
   if (percorso.startsWith("/serie/")) return "Scheda serie · MangaVault";
 
+  // Una partita ha un indirizzo suo, ed è il tipo di cosa che si manda
+  // a qualcuno: la scheda deve dire di cosa si tratta.
+  if (/^\/kachinuki\/\d+/.test(percorso)) return "Una partita · Kachinuki-sen";
+
   if (PORTE[percorso]) return `${PORTE[percorso]} · MangaVault`;
 
   const sezione = [...SEZIONI, SEZIONE_ADMIN].find((s) => s.percorso === percorso);
@@ -111,5 +126,7 @@ export function eAttiva(percorsoVoce, percorsoCorrente) {
     );
   }
 
+  // Le altre combaciano anche sulle sotto-pagine: è la regola che tiene
+  // acceso "Kachinuki" mentre si guarda il tabellone di una partita.
   return percorsoCorrente.startsWith(percorsoVoce);
 }

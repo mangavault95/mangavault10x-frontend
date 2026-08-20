@@ -48,6 +48,7 @@ export default function CollezionePage() {
   const filtroAttivo = filtroPerId(parametri.get("filtro")).id;
   const ordineAttivo = ordinamentoPerId(parametri.get("ordine")).id;
   const editoreAttivo = parametri.get("editore") || null;
+  const categoriaAttiva = parametri.get("categoria") || null;
 
   const generiSelezionati = useMemo(
     () => (parametri.get("generi") || "").split(",").filter(Boolean),
@@ -130,12 +131,28 @@ export default function CollezionePage() {
       filtrate = filtrate.filter((s) => idDa(editoreCanonico(s.editore) || "") === editoreAttivo);
     }
 
+    // La categoria è già un codice chiuso in tabella: nessuna
+    // normalizzazione da fare, al contrario dell'editore digitato a
+    // mano in momenti diversi.
+    if (categoriaAttiva) {
+      filtrate = filtrate.filter((s) => s.categoria === categoriaAttiva);
+    }
+
     // Con una ricerca attiva l'ordine di rilevanza di Fuse è più utile
     // dell'ordinamento scelto: il risultato migliore deve stare in cima.
     if (testo && ordineAttivo === "titolo") return filtrate;
 
     return [...filtrate].sort(ordinamentoPerId(ordineAttivo).confronta);
-  }, [ricercaTesto, indice, serie, filtroAttivo, ordineAttivo, generiSelezionati, editoreAttivo]);
+  }, [
+    ricercaTesto,
+    indice,
+    serie,
+    filtroAttivo,
+    ordineAttivo,
+    generiSelezionati,
+    editoreAttivo,
+    categoriaAttiva
+  ]);
 
   // Il numero accanto a ogni filtro si calcola sulla collezione intera,
   // non sui risultati: deve dire quante serie troverei premendolo.
@@ -150,11 +167,18 @@ export default function CollezionePage() {
   }, [serie]);
 
   const filtroPulito =
-    !ricercaTesto && filtroAttivo === "tutte" && !generiSelezionati.length && !editoreAttivo;
+    !ricercaTesto &&
+    filtroAttivo === "tutte" &&
+    !generiSelezionati.length &&
+    !editoreAttivo &&
+    !categoriaAttiva;
 
-  const filtriAttivi = [filtroAttivo !== "tutte", generiSelezionati.length > 0, Boolean(editoreAttivo)].filter(
-    Boolean
-  ).length;
+  const filtriAttivi = [
+    filtroAttivo !== "tutte",
+    generiSelezionati.length > 0,
+    Boolean(editoreAttivo),
+    Boolean(categoriaAttiva)
+  ].filter(Boolean).length;
 
   if (errore) {
     return (
@@ -172,7 +196,9 @@ export default function CollezionePage() {
     generiSelezionati,
     onCambiaGeneri: aggiornaGeneri,
     editoreAttivo,
-    onCambiaEditore: (v) => aggiornaParametro("editore", v)
+    onCambiaEditore: (v) => aggiornaParametro("editore", v),
+    categoriaAttiva,
+    onCambiaCategoria: (v) => aggiornaParametro("categoria", v)
   };
 
   return (

@@ -86,8 +86,18 @@ export function normalizzaSerie(riga) {
     disegnatore: riga.Disegnatore || null,
     editore: riga.Editore || null,
     generi: separaGeneri(riga.Genere),
+    // Il pubblico a cui l'opera è stata scritta: shonen, seinen,
+    // shojo... Non è un genere e non sta con loro — "Drama" dice di
+    // cosa parla, "seinen" per chi è stato scritto — e finché la
+    // colonna non sarà riempita per tutte (`scripts/categorie.js` sul
+    // backend) è normale trovarla vuota.
+    categoria: riga.Categoria || null,
     copertina: riga.CoverURL || null,
     trama: riga.Trama || null,
+    // L'anno in cui la serie è cominciata. C'era in tabella da sempre e
+    // non lo leggeva nessuno: serve a distinguere un classico da una
+    // novità, cosa che il Kachinuki-sen chiede per sorteggiare i temi.
+    anno: numero(riga.AnnoInizio),
 
     posseduti,
     totali,
@@ -260,6 +270,61 @@ export const ETICHETTE_STATO = {
   sospesa: "Sospesa",
   annullata: "Annullata"
 };
+
+/**
+ * Le categorie, cioè il pubblico per cui l'opera è stata scritta.
+ *
+ * Nel database sono codici in minuscolo senza accenti (il vincolo
+ * `categoria_nota` in sql/010_kachinuki.sql); qui c'è come si leggono e
+ * cosa vogliono dire, perché "josei" da solo non dice niente a chi non
+ * frequenta il vocabolario.
+ *
+ * `adulto` è il ripiego di AnimeClick — "Pubblico Adulto" — quando una
+ * scheda non dichiara nessun pubblico vero, non un sesto pubblico.
+ */
+export const CATEGORIE = {
+  kodomo: { etichetta: "Kodomo", descrizione: "Scritto per i bambini" },
+  shonen: { etichetta: "Shonen", descrizione: "Scritto per i ragazzi" },
+  shojo: { etichetta: "Shojo", descrizione: "Scritto per le ragazze" },
+  seinen: { etichetta: "Seinen", descrizione: "Scritto per un pubblico adulto maschile" },
+  josei: { etichetta: "Josei", descrizione: "Scritto per un pubblico adulto femminile" },
+  adulto: { etichetta: "Pubblico adulto", descrizione: "Non adatto ai ragazzi" }
+};
+
+export const etichettaCategoria = (categoria) =>
+  CATEGORIE[categoria]?.etichetta || null;
+
+/**
+ * Le categorie presenti in collezione, contate.
+ *
+ * L'ordine è quello di `CATEGORIE` — dal pubblico più giovane al più
+ * adulto — e non quello per frequenza come per generi ed editori: qui
+ * l'elenco è chiuso e ha un ordine suo che vuol dire qualcosa, mentre
+ * "Drama" prima di "Comedy" non direbbe niente se non quale delle due
+ * è più numerosa.
+ *
+ * Le categorie senza nessuna serie restano fuori: finché
+ * `scripts/categorie.js` non è stato eseguito non c'è nulla dentro, e
+ * una tendina di sei voci tutte a zero è peggio di nessuna tendina.
+ */
+export function elencoCategorie(serie) {
+  const conteggi = new Map();
+
+  for (const s of serie || []) {
+    if (!s?.categoria) continue;
+
+    conteggi.set(s.categoria, (conteggi.get(s.categoria) || 0) + 1);
+  }
+
+  return Object.entries(CATEGORIE)
+    .filter(([id]) => conteggi.has(id))
+    .map(([id, { etichetta, descrizione }]) => ({
+      id,
+      etichetta,
+      descrizione,
+      quante: conteggi.get(id)
+    }));
+}
 
 /* ==================================================
    FILTRI

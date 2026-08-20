@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import Icon from "../app/Icon";
 import { Pastiglie, Tendina } from "./Controlli";
-import { FILTRI } from "../dati/serie";
+import { FILTRI, elencoCategorie } from "../dati/serie";
 import { elencoGeneri, elencoEditori } from "../dati/generi";
 import Sovrapposizione from "./Sovrapposizione";
 import useChiusuraVelo from "./useChiusuraVelo";
@@ -26,11 +26,14 @@ export default function FiltriCollezione({
   onCambiaGeneri,
   editoreAttivo,
   onCambiaEditore,
+  categoriaAttiva,
+  onCambiaCategoria,
   variante = "sidebar",
   onChiudere
 }) {
   const generi = useMemo(() => elencoGeneri(serie), [serie]);
   const editori = useMemo(() => elencoEditori(serie), [serie]);
+  const categorie = useMemo(() => elencoCategorie(serie), [serie]);
   const velo = useChiusuraVelo(onChiudere);
 
   // Un filtro con zero risultati (oggi "Sospese" e "Annullate" non
@@ -44,6 +47,16 @@ export default function FiltriCollezione({
   const opzioniEditore = [
     { id: "tutti", etichetta: "Tutti gli editori" },
     ...editori.map((e) => ({ id: e.id, etichetta: `${e.etichetta} · ${e.quante}` }))
+  ];
+
+  // Una tendina e non delle pastiglie come i generi, per la stessa
+  // ragione dell'editore: si sceglie **una** categoria alla volta —
+  // un manga è scritto per un pubblico solo — e sei bottoni sempre
+  // aperti per una scelta singola sono sei bottoni che occupano posto
+  // anche quando non servono.
+  const opzioniCategoria = [
+    { id: "tutte", etichetta: "Tutte le categorie" },
+    ...categorie.map((c) => ({ id: c.id, etichetta: `${c.etichetta} · ${c.quante}` }))
   ];
 
   function alternaGenere(id) {
@@ -67,6 +80,26 @@ export default function FiltriCollezione({
           conteggi={conteggiFiltro}
         />
       </div>
+
+      {/* La categoria sta prima dell'editore perché parla dell'opera,
+          come i generi qui sotto; l'editore parla di chi l'ha stampata.
+          Sparisce finché la colonna non è stata riempita
+          (`scripts/categorie.js` sul backend): un filtro che non
+          filtra niente è solo una tendina vuota da aprire. */}
+      {categorie.length > 1 && (
+        <div>
+          <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-ink-muted">
+            Categoria
+          </h3>
+          <Tendina
+            etichetta="Categoria"
+            mostraEtichetta={false}
+            valore={categoriaAttiva || "tutte"}
+            opzioni={opzioniCategoria}
+            onCambia={(v) => onCambiaCategoria(v === "tutte" ? null : v)}
+          />
+        </div>
+      )}
 
       {editori.length > 1 && (
         <div>

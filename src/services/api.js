@@ -335,6 +335,28 @@ export const deleteReadingSession = (mangaId) =>
   request(`/api/reading-sessions/${mangaId}`, { method: "DELETE", auth: true });
 
 /* ==================================================
+   KACHINUKI-SEN
+   ================================================== */
+
+/**
+ * Le partite giocate, dalla più recente.
+ *
+ * Si vedono tutte, di chiunque abbia giocato, e senza essere entrati:
+ * la cronologia è un albo appeso al muro, non un diario. Salvare
+ * invece vuole il token — una partita è di chi l'ha giocata, e chi
+ * l'ha giocata lo dice la firma, non l'indirizzo.
+ */
+export const getTornei = (limite = 40) => request(`/api/tornei?limite=${limite}`);
+
+export const getTorneo = (id) => request(`/api/tornei/${id}`);
+
+export const salvaTorneo = (partita) =>
+  request("/api/tornei", { method: "POST", body: partita, auth: true });
+
+export const eliminaTorneo = (id) =>
+  request(`/api/tornei/${id}`, { method: "DELETE", auth: true });
+
+/* ==================================================
    MERCATO
    ================================================== */
 

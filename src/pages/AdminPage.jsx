@@ -15,7 +15,7 @@ import {
   login as accedi,
   updateManga
 } from "../services/api";
-import { ETICHETTE_STATO } from "../dati/serie";
+import { CATEGORIE, ETICHETTE_STATO } from "../dati/serie";
 
 /**
  * Gestione: dove si correggono le schede.
@@ -361,6 +361,9 @@ function corpoDaCampi(campi) {
     disegnatore: campi.disegnatore,
     editore: campi.editore,
     genere: campi.genere,
+    // Vuota significa «non lo so», non «nessuna»: il server traduce la
+    // stringa vuota in NULL, che è quello che il vincolo si aspetta.
+    categoria: campi.categoria,
     coverurl: campi.coverurl,
     edizione: campi.edizione,
     trama: campi.trama,
@@ -405,6 +408,7 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
     disegnatore: serie.disegnatore || "",
     editore: serie.editore || "",
     genere: serie.generi.join(", "),
+    categoria: serie.categoria || "",
     coverurl: serie.copertina || "",
     edizione: serie.edizione || "",
     trama: serie.trama || "",
@@ -576,6 +580,29 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
           >
             <option value="" className="bg-alcove">Non impostato</option>
             {Object.entries(ETICHETTE_STATO).map(([valore, etichetta]) => (
+              <option key={valore} value={valore} className="bg-alcove">
+                {etichetta}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {/* La categoria è il PUBBLICO dell'opera, non il genere: la
+            riempie `scripts/categorie.js` sul backend leggendola da
+            AnimeClick, e qui si corregge quando la scheda altrui
+            sbaglia o quando manca del tutto. */}
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted">
+            Categoria
+          </span>
+
+          <select
+            value={campi.categoria}
+            onChange={cambia("categoria")}
+            className="rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
+          >
+            <option value="" className="bg-alcove">Non impostata</option>
+            {Object.entries(CATEGORIE).map(([valore, { etichetta }]) => (
               <option key={valore} value={valore} className="bg-alcove">
                 {etichetta}
               </option>

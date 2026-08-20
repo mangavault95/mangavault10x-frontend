@@ -21,6 +21,8 @@ const Desiderio = lazy(() => import("../pages/DesiderioPage"));
 const Lettura = lazy(() => import("../pages/LetturaPage"));
 const Statistiche = lazy(() => import("../pages/StatistichePage"));
 const Admin = lazy(() => import("../pages/AdminPage"));
+const Kachinuki = lazy(() => import("../pages/KachinukiPage"));
+const Partita = lazy(() => import("../pages/PartitaPage"));
 const NonTrovata = lazy(() => import("../pages/NonTrovataPage"));
 
 // Le quattro vesti che si raggiungono dalla stanza. Stessi dati delle
@@ -106,6 +108,14 @@ function Contenuto() {
                   <Route path="/lettura" element={<Lettura />} />
                   <Route path="/statistiche" element={<Statistiche />} />
                   <Route path="/admin" element={<Admin />} />
+
+                  {/* Il gioco e le partite già giocate. Una partita ha
+                      un indirizzo suo perché è una cosa che si manda a
+                      qualcuno — «guarda chi ha vinto» — e un tabellone
+                      raggiungibile solo cliccando in cronologia non si
+                      potrebbe mandare. */}
+                  <Route path="/kachinuki" element={<Kachinuki />} />
+                  <Route path="/kachinuki/:id" element={<Partita />} />
 
                   {/* Le porte della stanza. Non stanno nella barra
                       laterale apposta: ci si arriva camminandoci, e una

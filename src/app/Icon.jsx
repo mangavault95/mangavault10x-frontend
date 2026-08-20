@@ -66,6 +66,16 @@ const TRACCIATI = {
    * distingue questa forma da una lettera greca.
    */
   portale: "M2.6 6.5Q12 4.4 21.4 6.5M5.4 9.9h13.2M7.7 6.8V20M16.3 6.8V20M4.4 20h15.2",
+  /**
+   * Un tabellone a eliminazione: quattro rami che diventano uno.
+   *
+   * Non una coppa, che direbbe "classifica" — il Kachinuki-sen non ha
+   * punteggi né primati, ha degli scontri — e nemmeno due spade
+   * incrociate, che a ventiquattro pixel sono una X. La forma del
+   * tabellone si riconosce anche da chi non ha mai visto il gioco: due
+   * cose entrano, una esce.
+   */
+  torneo: "M3 5h5v6H3M8 8h5M3 13h5v6H3M8 16h5M13 8v8M13 12h8",
   // Un cartellino prezzo: i desideri sono da comprare, non da segnare
   // come preferiti — per questo non riusa "star".
   cartellino: "M20.6 12.3 12.7 20.2a2 2 0 0 1-2.8 0l-6.1-6.1a2 2 0 0 1 0-2.8L11.7 3.3a2 2 0 0 1 1.4-.6H19a2 2 0 0 1 2 2v5.3a2 2 0 0 1-.4 1.3ZM16.5 7.5h.01"
