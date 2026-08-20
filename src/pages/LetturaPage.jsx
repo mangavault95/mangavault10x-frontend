@@ -4,37 +4,56 @@ import confetti from "canvas-confetti";
 import Pagina, { Sezione } from "../ui/Pagina";
 import Copertina from "../ui/Copertina";
 import LibroAperto from "../ui/LibroAperto";
-import ScaffaleVolumi from "../ui/ScaffaleVolumi";
 import ScaffaleCoste from "../ui/ScaffaleCoste";
 import { Bottone, CampoRicerca } from "../ui/Controlli";
-import { VotoStelle } from "../ui/AzioniSerie";
+import { Stella, VotoStelle } from "../ui/AzioniSerie";
 import Sovrapposizione from "../ui/Sovrapposizione";
 import useChiusuraVelo from "../ui/useChiusuraVelo";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
 import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
+import { useSessione } from "../dati/sessione";
 import { useAccessoProtetto } from "../dati/accesso";
-import { dataIt, plurale, tettoLettura } from "../dati/serie";
+import { coloreLettore, nomeDi } from "../dati/lettori";
+import {
+  droppataDa,
+  lettaDa,
+  numeroIt,
+  plurale,
+  tettoLettura,
+  volumiLettiDa,
+  votoDi,
+  votoIt
+} from "../dati/serie";
 import {
   addReadingHistory,
-  deleteReadingHistory,
+  deleteReadingHistoryVolume,
   deleteReadingSession,
-  getReadingHistory,
+  droppaSerie,
   getReadingSessions,
   getStoricoPerSerie,
   saveReadingSession,
-  updateManga,
   updateReadingSession
 } from "../services/api";
 
-const CRONOLOGIA_VISIBILE = 20;
+// Quante serie mostrare nella finestra "Cosa apriamo?" prima di
+// rimandare alla ricerca. Erano 24, cioè sei righe su schermo largo:
+// abbastanza per scorrere un po', troppo poche perché l'elenco sembri
+// la collezione.
+const MASSIME_IN_SCELTA = 60;
 
 /**
- * Le letture, in tre tempi.
+ * Le letture, in due tempi.
  *
- *   Adesso    — i libri aperti sul tavolo, con il segnalibro
- *   Scaffali  — le serie già lette, volume per volume
- *   Cronologia— l'ordine in cui li hai finiti
+ *   Adesso      — i libri aperti sul tavolo, con il segnalibro
+ *   Classifica  — quello che hai letto, dal voto più alto al più basso
+ *
+ * Ce n'erano quattro: in mezzo stavano un elenco di schede per serie e
+ * la cronologia volume per volume. Dicevano cose vere e nessuno le
+ * guardava — la domanda che ci si fa tornando qui è "dove sono
+ * arrivato" e "cosa mi è piaciuto", non "in che ordine ho finito i
+ * volumi nel 2024". Correggere un volume segnato per sbaglio, che era
+ * l'unica cosa per cui serviva la cronologia, si fa dal libro aperto.
  *
  * I comandi aggiornano il numero sullo schermo prima di scrivere sul
  * server: aspettare Render per veder salire un contatore da 3 a 4
@@ -48,7 +67,8 @@ const CRONOLOGIA_VISIBILE = 20;
 // «13 di 12».
 
 export default function LetturaPage() {
-  const { serie, aggiornaLocale, aggiornaVoto } = useCollezione();
+  const { serie, aggiornaDroppato, aggiornaLettura, aggiornaVoto } = useCollezione();
+  const { lettori, idVisto } = useSessione();
 
   // Segnare un volume come letto adesso richiede di sapere CHI l'ha
   // letto: da quando i lettori sono due, una lettura senza nome non si
@@ -58,12 +78,20 @@ export default function LetturaPage() {
 
   const sessioni = useRisorsa(getReadingSessions);
   const perSerie = useRisorsa(getStoricoPerSerie);
-  const storico = useRisorsa(() => getReadingHistory(200));
 
   const [problema, setProblema] = useState(null);
   const [sceltaAperta, setSceltaAperta] = useState(false);
   const [completata, setCompletata] = useState(null);
-  const [cercaStorico, setCercaStorico] = useState("");
+
+  // Di chi è la classifica che si sta guardando. `null` vuol dire "la
+  // mia": non si scrive `idVisto` qui dentro perché all'inizio non si
+  // sa ancora chi guarda — l'elenco dei lettori arriva dopo il primo
+  // disegno — e uno stato inizializzato con un valore che non c'è
+  // ancora resterebbe sbagliato per sempre.
+  const [sceltaLettore, setSceltaLettore] = useState(null);
+  const lettoreScelto = sceltaLettore ?? idVisto;
+  const mioTurno = lettoreScelto === idVisto;
+  const nomeLettore = nomeDi(lettori, lettoreScelto) ?? "questo lettore";
 
   // Il salvataggio del segnalibro va rimandato di poco.
   //
@@ -136,7 +164,12 @@ export default function LetturaPage() {
         volume: Number(s.volume) || 1,
         volumiLetti: letti?.volumi || [],
         aggiornata: s.updated_at,
-        inCollezione: Boolean(collegata)
+        inCollezione: Boolean(collegata),
+        // La scheda intera, non solo i campi copiati qui sopra: le note
+        // si scrivono da qui e vivono sulla serie, non sulla sessione
+        // di lettura. Una serie cancellata dalla collezione non ne ha,
+        // ed è giusto — la nota parla di un'opera che non c'è più.
+        serie: collegata ?? null
       };
     });
   }, [sessioni.dati, perSerie.dati, serie]);
@@ -180,36 +213,63 @@ export default function LetturaPage() {
     [idInLettura, idFinite, idDroppate]
   );
 
-  /* -------------------- Scaffali -------------------- */
+  /* -------------------- La classifica -------------------- */
 
-  // Sullo scaffale vanno le serie di cui hai letto qualcosa ma che
-  // non stai leggendo adesso: quelle aperte hanno già il loro posto
-  // in cima e mostrarle due volte confonderebbe.
-  const scaffali = useMemo(
+  // Non passa dalla cronologia ma dalla collezione: ogni scheda si
+  // porta dietro chi l'ha letta e quanti volumi (`lettori`) e i voti di
+  // tutti (`voti`). È per questo che passare da un lettore all'altro è
+  // istantaneo invece di essere un'altra richiesta a un server che
+  // dorme.
+  const lette = useMemo(
+    () => serie.filter((s) => lettaDa(s, lettoreScelto)),
+    [serie, lettoreScelto]
+  );
+
+  // Le votate in classifica, le altre sotto una riga. Non sparire non
+  // è un dettaglio: quell'elenco è anche il posto dove ci si accorge
+  // che a una serie il voto non gliel'hai mai dato.
+  const { votate, senzaVoto } = useMemo(() => {
+    const conVoto = [];
+    const senza = [];
+
+    for (const s of lette) {
+      (votoDi(s, lettoreScelto) != null ? conVoto : senza).push(s);
+    }
+
+    // A parità di voto decide il titolo: senza, due serie da 5 stelle
+    // si scambierebbero di posto a ogni ricaricamento, e una
+    // classifica che balla non è una classifica.
+    const perTitolo = (a, b) => a.titolo.localeCompare(b.titolo, "it");
+
+    conVoto.sort(
+      (a, b) => votoDi(b, lettoreScelto) - votoDi(a, lettoreScelto) || perTitolo(a, b)
+    );
+    senza.sort(perTitolo);
+
+    return { votate: conVoto, senzaVoto: senza };
+  }, [lette, lettoreScelto]);
+
+  // Le coste, nello stesso ordine dell'elenco: lo scaffale non è una
+  // decorazione accanto alla classifica, è la classifica.
+  const coste = useMemo(
     () =>
-      (perSerie.dati || [])
-        .filter((s) => !idInLettura.has(String(s.manga_id)))
-        .map((s) => {
-          const collegata = serie.find((m) => String(m.id) === String(s.manga_id));
-          const posseduti = Number(collegata?.posseduti) || 0;
-          const totali = collegata?.totali ?? (Number(s.volumitotali) || null);
-          const tetto = tettoLettura(posseduti, totali);
-          const letti = Number(s.volumi_letti) || 0;
+      [...votate, ...senzaVoto].map((s) => {
+        const letti = volumiLettiDa(s, lettoreScelto);
+        const tetto = tettoLettura(s.posseduti, s.totali);
 
-          return {
-            ...s,
-            volumi: (s.volumi || []).map(Number),
-            totali,
-            posseduti,
-            // "Completa" rispetto a quello che hai in mano, non
-            // rispetto ai volumi usciti: una serie in corso di cui
-            // hai letto tutti i tuoi 7 volumi è a posto, non a metà.
-            completa: Boolean(tetto) && letti >= tetto,
-            mancanti: tetto ? Math.max(0, tetto - letti) : 0,
-            droppato: Boolean(collegata?.droppato)
-          };
-        }),
-    [perSerie.dati, idInLettura, serie]
+        return {
+          manga_id: s.id,
+          titolo: s.titolo,
+          coverurl: s.copertina,
+          editore: s.editore,
+          volumi_letti: letti,
+          mancanti: tetto ? Math.max(0, tetto - letti) : 0,
+          // Droppata da CHI sta guardando la classifica, non da me:
+          // la X sulla costa parla della sua lettura.
+          droppato: droppataDa(s, lettoreScelto)
+        };
+      }),
+    [votate, senzaVoto, lettoreScelto]
   );
 
   /* -------------------- Azioni -------------------- */
@@ -320,8 +380,15 @@ export default function LetturaPage() {
         impostaVolume(lettura, { delta: 1 });
       }
 
-      storico.ricarica();
       perSerie.ricarica();
+
+      // La classifica legge la collezione, non la cronologia: senza
+      // questa riga una serie appena cominciata non comparirebbe fra
+      // le lette finché non si ricarica la pagina.
+      aggiornaLettura(
+        lettura.mangaId,
+        new Set([...lettura.volumiLetti.map(Number), lettura.volume]).size
+      );
 
       if (eUltimo) {
         // La lettura è finita per davvero: coriandoli e voto, non
@@ -353,6 +420,11 @@ export default function LetturaPage() {
    * Droppare non è chiudere e basta: resta il segno che questa serie
    * l'hai mollata, così non ricompare fra le scelte per aprirne una
    * nuova finché non clicchi tu stesso un volume per riprenderla.
+   *
+   * Il segno è tuo, non della serie. Finché è stato una colonna di
+   * "Manga" bastava che uno dei due lettori mollasse una serie perché
+   * sparisse dall'elenco di quelle da aprire anche all'altro — ed è
+   * esattamente il motivo per cui Nisekoi non si trovava.
    */
   async function droppa(lettura) {
     setProblema(null);
@@ -360,53 +432,69 @@ export default function LetturaPage() {
     sessioni.setDati((precedenti) =>
       (precedenti || []).filter((s) => s.id !== lettura.idSessione)
     );
-    aggiornaLocale(lettura.mangaId, { droppato: true });
+    aggiornaDroppato(lettura.mangaId, true);
 
     try {
       await eseguiProtetto(() =>
         Promise.all([
           deleteReadingSession(lettura.mangaId),
-          updateManga(lettura.mangaId, { droppato: true })
+          droppaSerie(lettura.mangaId)
         ])
       );
       perSerie.ricarica();
     } catch (e) {
       if (!e?.annullato) segnalaErrore("Non sono riuscito a droppare la lettura.");
       sessioni.ricarica();
-      aggiornaLocale(lettura.mangaId, { droppato: false });
+      aggiornaDroppato(lettura.mangaId, false);
     }
   }
 
-  async function rimuoviDaStorico(voce) {
+  /**
+   * "Questo non l'ho letto": toglie dallo storico il volume su cui sta
+   * il segnalibro.
+   *
+   * Andare indietro col segnalibro non bastava — il quadratino restava
+   * pieno e il volume contato — e l'unico rimedio era ritrovare la riga
+   * in fondo alla cronologia. Qui il ripensamento si dice dove è nato,
+   * sul libro aperto: torni sul volume e lo spegni.
+   */
+  async function annullaLetto(lettura) {
     setProblema(null);
 
-    storico.setDati((precedenti) =>
-      (precedenti || []).filter((v) => v.id !== voce.id)
+    const numero = lettura.volume;
+
+    // Il quadratino si spegne subito: aspettare Render per vedere
+    // sparire un segno messo per sbaglio fa premere di nuovo.
+    perSerie.setDati((precedenti) =>
+      (precedenti || []).map((s) => {
+        if (String(s.manga_id) !== String(lettura.mangaId)) return s;
+
+        const volumi = (s.volumi || []).filter((v) => Number(v) !== numero);
+
+        return { ...s, volumi, volumi_letti: volumi.length };
+      })
     );
 
     try {
-      await eseguiProtetto(() => deleteReadingHistory(voce.id));
+      await eseguiProtetto(() =>
+        deleteReadingHistoryVolume(lettura.mangaId, numero)
+      );
+
       perSerie.ricarica();
+
+      // Anche qui la collezione va tenuta al passo: tolto l'unico
+      // volume letto, la serie deve uscire dalla classifica.
+      aggiornaLettura(
+        lettura.mangaId,
+        lettura.volumiLetti.map(Number).filter((v) => v !== numero).length
+      );
     } catch (e) {
-      if (!e?.annullato) segnalaErrore("Non sono riuscito a togliere il volume dallo storico.");
-      storico.ricarica();
+      if (!e?.annullato) {
+        segnalaErrore(`Non sono riuscito a togliere il volume ${numero} dai letti.`);
+      }
+      perSerie.ricarica();
     }
   }
-
-  /* -------------------- Cronologia -------------------- */
-
-  // Di default solo le ultime 20: è la parte che si guarda davvero
-  // ogni giorno. Chi cerca un titolo più vecchio ha la barra sotto,
-  // che scorre l'intero lotto già scaricato invece di interrogare
-  // di nuovo il server per ogni lettera digitata.
-  const storicoFiltrato = useMemo(() => {
-    const q = cercaStorico.trim().toLowerCase();
-    const tutti = storico.dati || [];
-
-    return q
-      ? tutti.filter((v) => v.titolo.toLowerCase().includes(q))
-      : tutti.slice(0, CRONOLOGIA_VISIBILE);
-  }, [storico.dati, cercaStorico]);
 
   /* -------------------- Vista -------------------- */
 
@@ -416,7 +504,7 @@ export default function LetturaPage() {
     <Pagina
       occhiello="Letture"
       titolo="Il tavolo di lettura"
-      sommario="Dove sei arrivato, cosa hai già letto, e in che ordine."
+      sommario="Dove sei arrivato, e cosa ti è piaciuto."
       // Nessun pulsante qui in alto: ce n'era anche uno al centro
       // della sezione "Adesso", e due comandi identici a mezzo schermo
       // di distanza fanno solo esitare. Resta quello centrale, che ora
@@ -476,6 +564,7 @@ export default function LetturaPage() {
                     onIndietro={() => impostaVolume(lettura, { delta: -1 })}
                     onVaiAVolume={(n) => impostaVolume(lettura, { assoluto: n })}
                     onLetto={() => segnaLetto(lettura)}
+                    onAnnullaLetto={() => annullaLetto(lettura)}
                     onChiudi={() => chiudi(lettura)}
                     onDroppa={() => droppa(lettura)}
                   />
@@ -504,87 +593,66 @@ export default function LetturaPage() {
           )}
         </Sezione>
 
-        {/* ═══════════ SCAFFALI ═══════════ */}
+        {/* ═══════════ LA CLASSIFICA ═══════════ */}
         <Sezione
-          titolo="Gli scaffali"
+          titolo="La classifica"
           extra={
-            scaffali.length ? (
-              <span className="font-numeric text-sm text-ink-muted">
-                {plurale(scaffali.length, "serie", "serie")}
-              </span>
-            ) : null
+            <SceltaLettore
+              lettori={lettori}
+              scelto={lettoreScelto}
+              onScegli={setSceltaLettore}
+            />
           }
         >
-          {perSerie.errore ? (
-            <Errore errore={perSerie.errore} riprova={perSerie.ricarica} />
-          ) : perSerie.inCorso && !perSerie.dati ? (
-            <CaricamentoElenco quante={3} />
-          ) : scaffali.length ? (
+          {lette.length ? (
             <div className="space-y-10">
-              {/* Le coste in fila: la vista d'insieme */}
-              <ScaffaleCoste serie={scaffali} />
+              {/* Lo scaffale È la classifica: le coste in fila dal voto
+                  più alto al più basso. Prima erano ordinate per data
+                  di lettura e sotto c'era un elenco che diceva le
+                  stesse cose in un altro modo — due letture della
+                  stessa roba. Guardi lo scaffale e vedi la tua
+                  classifica; leggi sotto e vedi i numeri. */}
+              <ScaffaleCoste serie={coste} />
 
-              {/* Sotto, il dettaglio volume per volume di ogni serie.
-                  La colonna singola va dichiarata: senza, la griglia si
-                  costruisce una colonna implicita larga quanto il
-                  contenuto — cioè quanto il titolo più lungo — e la
-                  pagina esce dallo schermo di un telefono. */}
-              <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {scaffali.map((s) => (
-                  <li key={s.manga_id}>
-                    <RipianoSerie serie={s} />
-                  </li>
-                ))}
-              </ul>
+              {votate.length > 0 && (
+                <ol className="space-y-0.5">
+                  {votate.map((s, posizione) => (
+                    <RigaClassifica
+                      key={s.id}
+                      serie={s}
+                      posizione={posizione + 1}
+                      lettore={lettoreScelto}
+                      mio={mioTurno}
+                    />
+                  ))}
+                </ol>
+              )}
+
+              {senzaVoto.length > 0 && (
+                <div className="space-y-3 border-t border-hairline pt-6">
+                  <p className="text-sm text-ink-muted">
+                    {mioTurno
+                      ? `Lette, ma non ancora votate: ${numeroIt(senzaVoto.length)}.`
+                      : `${nomeLettore} le ha lette senza votarle: ${numeroIt(senzaVoto.length)}.`}
+                  </p>
+
+                  <ul className="space-y-0.5">
+                    {senzaVoto.map((s) => (
+                      <RigaClassifica
+                        key={s.id}
+                        serie={s}
+                        lettore={lettoreScelto}
+                        mio={mioTurno}
+                      />
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           ) : (
             <Vuoto
-              titolo="Gli scaffali sono vuoti"
-              testo="Ogni volume che segni come finito prende posto qui, accanto agli altri della sua serie."
-            />
-          )}
-        </Sezione>
-
-        {/* ═══════════ CRONOLOGIA ═══════════ */}
-        <Sezione
-          titolo="Ultimi letti"
-          extra={
-            storico.dati?.length ? (
-              <div className="w-full sm:w-64">
-                <CampoRicerca
-                  valore={cercaStorico}
-                  onCambia={setCercaStorico}
-                  segnaposto="Cerca nella cronologia…"
-                  risultati={storicoFiltrato.length}
-                />
-              </div>
-            ) : null
-          }
-        >
-          {storico.errore ? (
-            <Errore errore={storico.errore} riprova={storico.ricarica} />
-          ) : storico.inCorso && !storico.dati ? (
-            <CaricamentoElenco quante={4} />
-          ) : storico.dati?.length ? (
-            storicoFiltrato.length ? (
-              <ol className="space-y-0.5">
-                {storicoFiltrato.map((v) => (
-                  <VoceStorico
-                    key={v.id}
-                    voce={v}
-                    onRimuovi={() => rimuoviDaStorico(v)}
-                  />
-                ))}
-              </ol>
-            ) : (
-              <p className="py-6 text-center text-sm text-ink-muted">
-                Nessun volume con questo titolo.
-              </p>
-            )
-          ) : (
-            <Vuoto
-              titolo="Nessun volume registrato"
-              testo="Qui compare l'ordine in cui hai finito i volumi, con la data."
+              titolo={mioTurno ? "Non hai ancora finito niente" : `${nomeLettore} non ha ancora letto niente`}
+              testo="Ogni volume segnato come finito porta la sua serie qui, al posto che le dà il voto."
             />
           )}
         </Sezione>
@@ -594,28 +662,163 @@ export default function LetturaPage() {
 }
 
 /* ==================================================
+   DI CHI È LA CLASSIFICA
+   ================================================== */
+
+/**
+ * Il tastino per guardare la classifica di un altro.
+ *
+ * Compare solo se i lettori sono almeno due: da solo, "la classifica
+ * di Nicer" e "la classifica" sono la stessa cosa. I colori sono
+ * quelli delle note — due modi diversi di dire "questo è di Nanaki"
+ * sarebbero due cose da imparare invece di una.
+ */
+function SceltaLettore({ lettori, scelto, onScegli }) {
+  if (lettori.length < 2) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {lettori.map((l) => {
+        const attivo = l.id === scelto;
+        const colore = coloreLettore(l.colore);
+
+        return (
+          <button
+            key={l.id}
+            type="button"
+            aria-pressed={attivo}
+            onClick={() => onScegli(l.id)}
+            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all duration-quick ease-settle active:scale-95
+              focus-visible:outline-none focus-visible:ring-2 ${colore.anello}
+              ${
+                attivo
+                  ? `${colore.bordo} ${colore.fondo} ${colore.testo}`
+                  : "border-hairline bg-glass-1 text-ink-muted hover:border-soft hover:text-ink-bright"
+              }`}
+          >
+            <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${colore.pallino}`} />
+            {l.nickname}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ==================================================
+   UNA RIGA DI CLASSIFICA
+   ================================================== */
+
+function RigaClassifica({ serie, posizione, lettore, mio }) {
+  const { aggiornaVoto } = useCollezione();
+  const voto = votoDi(serie, lettore);
+
+  return (
+    <li className="group flex items-center gap-3.5 rounded-card px-3 py-2 transition-colors duration-quick hover:bg-glass-1">
+      {/* Il numero solo dove c'è una posizione: fra le non votate
+          sarebbe una graduatoria inventata. */}
+      <span className="w-6 shrink-0 text-right font-numeric text-sm text-ink-faint">
+        {posizione ?? ""}
+      </span>
+
+      <div className="w-8 shrink-0">
+        <Copertina src={serie.copertina} alt="" inclina={false} />
+      </div>
+
+      <Link
+        to={`/serie/${serie.id}`}
+        className="min-w-0 flex-1 truncate text-sm text-ink-bright transition-colors duration-quick hover:text-brass-300"
+      >
+        {serie.titolo}
+      </Link>
+
+      {/* Le stelle si toccano solo se la classifica è la tua: un voto è
+          di chi lo dà, e guardando quella di un altro sarebbero un modo
+          per scrivere al posto suo. */}
+      {mio ? (
+        <VotoStelle
+          serie={serie}
+          dimensione={16}
+          onCambiato={(nuovo) => aggiornaVoto(serie.id, nuovo)}
+        />
+      ) : (
+        <span className="inline-flex items-center gap-0.5" aria-label={voto ? `Voto ${votoIt(voto)} su 5` : "Non votato"}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Stella
+              key={n}
+              riempimento={Math.min(1, Math.max(0, (voto ?? 0) - n + 1))}
+              dimensione={16}
+            />
+          ))}
+        </span>
+      )}
+
+      <span className="w-8 shrink-0 text-right font-numeric text-sm text-ink-bright">
+        {voto ? votoIt(voto) : "—"}
+      </span>
+    </li>
+  );
+}
+
+/* ==================================================
    SCELTA DELLA SERIE DA APRIRE
    ================================================== */
 
+/**
+ * È una finestra sopra la pagina, non un pannello in cima.
+ *
+ * Da inserto stava in testa alla pagina mentre il pulsante che lo apre
+ * sta sotto le letture aperte: da telefono, con otto libri sul tavolo,
+ * si apriva **duemila pixel più su** dello schermo. Toccavi "Inizia
+ * un'altra lettura" e non succedeva niente — bisognava indovinare che
+ * la risposta era risalire.
+ *
+ * Sopra la pagina il problema non esiste: compare dove sei, la ricerca
+ * ha già il cursore, e si chiude con Escape o toccando fuori.
+ */
 function SceltaSerie({ serie, escludi, onScegli, onAnnulla }) {
   const [cerca, setCerca] = useState("");
+  const velo = useChiusuraVelo(onAnnulla);
 
-  const risultati = useMemo(() => {
+  const disponibili = useMemo(
+    () => serie.filter((m) => !escludi.has(String(m.id))),
+    [serie, escludi]
+  );
+
+  const trovate = useMemo(() => {
     const q = cerca.trim().toLowerCase();
 
-    return serie
-      .filter((m) => !escludi.has(String(m.id)))
-      .filter((m) =>
-        q
-          ? `${m.titolo} ${m.autore || ""}`.toLowerCase().includes(q)
-          : true
-      )
-      .slice(0, 24);
-  }, [serie, escludi, cerca]);
+    return q
+      ? disponibili.filter((m) =>
+          `${m.titolo} ${m.autore || ""}`.toLowerCase().includes(q)
+        )
+      : disponibili;
+  }, [disponibili, cerca]);
+
+  // Duecento copertine in una finestra sono un muro: se ne mostrano
+  // quante bastano a farsi un'idea, e il resto si trova cercando. Il
+  // numero però va detto — un elenco che finisce senza dire quanto ne
+  // resta fuori sembra un elenco completo, e chi non ci trova la
+  // propria serie conclude che non c'è.
+  const risultati = trovate.slice(0, MASSIME_IN_SCELTA);
+  const nascoste = trovate.length - risultati.length;
 
   return (
-    <div className="animate-rise-in rounded-panel border border-brass-400/20 bg-glass-2 p-5 backdrop-blur-xl">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <Sovrapposizione>
+    <div
+      className="fixed inset-0 z-toast grid place-items-center bg-void/70 p-4 backdrop-blur-sm animate-rise-in sm:p-5"
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onAnnulla();
+      }}
+      {...velo}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Scegli la serie da aprire"
+        className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-panel border border-brass-400/20 bg-glass-3 p-5 shadow-float backdrop-blur-2xl"
+      >
+      <div className="mb-4 space-y-3">
         <div>
           <h3 className="font-display text-lg font-semibold text-ink-bright">
             Cosa apriamo?
@@ -625,18 +828,18 @@ function SceltaSerie({ serie, escludi, onScegli, onAnnulla }) {
           </p>
         </div>
 
-        <div className="w-full sm:w-64">
-          <CampoRicerca
-            valore={cerca}
-            onCambia={setCerca}
-            segnaposto="Cerca fra le tue serie…"
-            risultati={risultati.length}
-          />
-        </div>
+        <CampoRicerca
+          valore={cerca}
+          onCambia={setCerca}
+          segnaposto="Cerca fra le tue serie…"
+          risultati={trovate.length}
+          fuocoSubito
+          larghezzaPiena
+        />
       </div>
 
       {risultati.length ? (
-        <ul className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4">
+        <ul className="-mr-1 grid min-h-0 flex-1 grid-cols-2 content-start gap-2 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4">
           {risultati.map((m) => (
             <li key={m.id}>
               <button
@@ -676,103 +879,20 @@ function SceltaSerie({ serie, escludi, onScegli, onAnnulla }) {
         </p>
       )}
 
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <p className="font-numeric text-xs text-ink-faint">
+          {nascoste > 0
+            ? `altre ${nascoste} non in elenco: cercale per nome`
+            : " "}
+        </p>
+
         <Bottone variante="fantasma" onClick={onAnnulla}>
           Annulla
         </Bottone>
       </div>
-    </div>
-  );
-}
-
-/* ==================================================
-   UN RIPIANO: UNA SERIE GIÀ LETTA
-   ================================================== */
-
-function RipianoSerie({ serie: s }) {
-  return (
-    <div className="group h-full rounded-panel border border-hairline bg-glass-1 p-4 backdrop-blur-xl transition-all duration-base ease-settle hover:border-soft hover:bg-glass-2">
-      <div className="flex items-start gap-3.5">
-        <div className="w-12 shrink-0">
-          <Copertina src={s.coverurl} alt="" />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <Link
-              to={`/serie/${s.manga_id}`}
-              className="min-w-0 flex-1 truncate font-medium text-ink-bright transition-colors duration-quick hover:text-brass-300"
-            >
-              {s.titolo}
-            </Link>
-
-            {s.droppato ? (
-              <span className="shrink-0 rounded-full border border-ember/25 bg-ember/10 px-2 py-0.5 text-[0.65rem] font-medium text-ember">
-                droppato
-              </span>
-            ) : (
-              s.completa && (
-                <span className="shrink-0 rounded-full border border-jade/25 bg-jade/10 px-2 py-0.5 text-[0.65rem] font-medium text-jade">
-                  completata
-                </span>
-              )
-            )}
-          </div>
-
-          {s.autore && (
-            <p className="truncate text-xs text-ink-faint">{s.autore}</p>
-          )}
-
-          <p className="mt-1 text-xs text-ink-muted">
-            ultimo il <time dateTime={s.ultimo}>{dataIt(s.ultimo)}</time>
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <ScaffaleVolumi totali={s.totali} letti={s.volumi} />
       </div>
     </div>
-  );
-}
-
-/* ==================================================
-   UNA RIGA DI CRONOLOGIA
-   ================================================== */
-
-function VoceStorico({ voce, onRimuovi }) {
-  return (
-    <li className="group flex items-center gap-4 rounded-card px-3 py-2.5 transition-colors duration-quick hover:bg-glass-1">
-      <div className="w-8 shrink-0">
-        <Copertina src={voce.coverurl} alt="" inclina={false} />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm text-ink-bright">{voce.titolo}</p>
-        <p className="font-numeric text-xs text-ink-faint">Volume {voce.volume}</p>
-      </div>
-
-      <time dateTime={voce.read_at} className="shrink-0 text-xs text-ink-muted">
-        {dataIt(voce.read_at)}
-      </time>
-
-      {/* Compare solo al passaggio del mouse: correggere è raro,
-          e un cestino sempre visibile su ogni riga fa rumore.
-          Resta però raggiungibile da tastiera — e col dito, dove il
-          passaggio del mouse non esiste, sta acceso a mezza voce: fa
-          meno rumore di un elenco che non si può correggere. */}
-      <button
-        onClick={onRimuovi}
-        aria-label={`Togli il volume ${voce.volume} di ${voce.titolo} dallo storico`}
-        title="Togli dallo storico"
-        className="shrink-0 rounded-lg px-2 py-1 text-xs text-ink-faint opacity-0 transition-all duration-quick
-                   hover:text-ember group-hover:opacity-100
-                   [@media(hover:none)]:px-3 [@media(hover:none)]:py-2 [@media(hover:none)]:opacity-70
-                   focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
-      >
-        Togli
-      </button>
-    </li>
+    </Sovrapposizione>
   );
 }
 

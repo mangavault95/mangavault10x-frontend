@@ -49,6 +49,23 @@ export default {
         ember: "#fb7185", // mancante, distruttivo
         lapis: "#818cf8", // in corso, informativo
 
+        // ---- I lettori ----
+        // Chi ha scritto una nota si riconosce dal colore, non dal nome
+        // letto ogni volta. Sono tenuti volutamente FUORI dai semantici
+        // qui sopra: se il colore di una persona fosse anche quello di
+        // "completato", la sua nota sembrerebbe una conferma. L'unico in
+        // comune è l'ottone, che è il proprietario e il colore del sito
+        // da sempre. I nomi combaciano con `COLORI_LETTORE` nel backend
+        // (`services/utenti.js`), che è chi li assegna.
+        lettore: {
+          ottone: "#facc15", // = brass-400, il proprietario
+          lilla: "#c084fc",
+          menta: "#5eead4",
+          corallo: "#fb923c",
+          cielo: "#7dd3fc",
+          rosa: "#f472b6"
+        },
+
         // ---- Materiali ----
         // Le pagine che si raggiungono dalla stanza non sono pannelli di
         // vetro su fondo scuro: sono oggetti. Uno scontrino è di carta

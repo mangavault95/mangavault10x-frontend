@@ -12,8 +12,22 @@ import Icon from "../app/Icon";
  * Ricerca con scorciatoia: "/" porta il cursore qui da qualunque
  * punto della pagina, Esc svuota e restituisce il fuoco al contenuto.
  */
-export function CampoRicerca({ valore, onCambia, segnaposto = "Cerca…", risultati }) {
+export function CampoRicerca({
+  valore,
+  onCambia,
+  segnaposto = "Cerca…",
+  risultati,
+  // Dentro una finestra che si è appena aperta apposta per cercare:
+  // lì il cursore va messo, non aspettato. Fuori resta spento, o ogni
+  // pagina aprirebbe la tastiera del telefono da sola.
+  fuocoSubito = false,
+  larghezzaPiena = false
+}) {
   const campo = useRef(null);
+
+  useEffect(() => {
+    if (fuocoSubito) campo.current?.focus();
+  }, [fuocoSubito]);
 
   useEffect(() => {
     function alTasto(e) {
@@ -32,7 +46,7 @@ export function CampoRicerca({ valore, onCambia, segnaposto = "Cerca…", risult
   }, []);
 
   return (
-    <div className="relative w-full sm:w-72">
+    <div className={`relative w-full ${larghezzaPiena ? "" : "sm:w-72"}`}>
       <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint">
         <Icon nome="search" dimensione={16} />
       </span>

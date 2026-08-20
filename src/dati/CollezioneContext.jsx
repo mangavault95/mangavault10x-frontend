@@ -3,7 +3,7 @@ import useRisorsa from "./useRisorsa";
 import { collezione, copiaLocale, salvaCopiaLocale } from "./anticipo";
 import { ContestoCollezione } from "./collezione";
 import { useSessione } from "./sessione";
-import { votoDi } from "./serie";
+import { droppataDa, votoDi } from "./serie";
 
 /**
  * La collezione, caricata una volta per visita.
@@ -39,10 +39,18 @@ export function CollezioneProvider({ children }) {
   // mentre chi guarda può cambiare senza ricaricare niente: basta un
   // accesso, e tutte le stelle del sito devono passare a dire l'altra
   // cosa.
+  //
+  // Vale parola per parola anche per `droppato`, che fino al 011 era
+  // una colonna in comune: una serie mollata da uno restava fuori
+  // dall'elenco di quelle da aprire anche per l'altra.
   const serie = useMemo(() => {
     const elenco = dati || copia || [];
 
-    return elenco.map((s) => ({ ...s, valutazione: votoDi(s, idVisto) }));
+    return elenco.map((s) => ({
+      ...s,
+      valutazione: votoDi(s, idVisto),
+      droppato: droppataDa(s, idVisto)
+    }));
   }, [dati, copia, idVisto]);
 
   useEffect(() => {
@@ -125,6 +133,90 @@ export function CollezioneProvider({ children }) {
     [setDati, copia, idVisto]
   );
 
+  /**
+   * Mollata o ripresa in mano, prima che il server risponda.
+   *
+   * Come `aggiornaVoto` e per lo stesso motivo: `droppato` non è un
+   * campo che si può scrivere, è la risposta per chi guarda ricavata
+   * ogni volta dalla lista. Quello che si aggiorna è la lista.
+   */
+  const aggiornaDroppato = useCallback(
+    (id, droppato) => {
+      if (!idVisto) return;
+
+      setDati((precedenti) =>
+        (precedenti ?? copia ?? []).map((s) => {
+          if (s.id !== id) return s;
+
+          const altri = (s.droppate || []).filter((d) => d.utenteId !== idVisto);
+
+          if (!droppato) return { ...s, droppate: altri };
+
+          const mia = (s.droppate || []).find((d) => d.utenteId === idVisto);
+
+          return {
+            ...s,
+            droppate: [
+              ...altri,
+              { utenteId: idVisto, proprietario: mia?.proprietario ?? false }
+            ]
+          };
+        })
+      );
+    },
+    [setDati, copia, idVisto]
+  );
+
+  /**
+   * Quanti volumi di una serie ha letto chi guarda, appena segnati.
+   *
+   * La classifica in "in lettura" non passa dalla cronologia: legge
+   * `lettori` sulle schede, che è quello che permette di disegnare la
+   * classifica di chiunque senza chiedere niente al server. Il prezzo è
+   * questa riga — senza, una serie appena cominciata non comparirebbe
+   * fra le lette finché non si ricarica la pagina.
+   *
+   * A zero volumi la persona esce dall'elenco: "non l'ha letta" è
+   * l'assenza della riga, non uno zero, come per i voti.
+   */
+  const aggiornaLettura = useCallback(
+    (id, volumi) => {
+      if (!idVisto) return;
+
+      setDati((precedenti) =>
+        (precedenti ?? copia ?? []).map((s) => {
+          if (s.id !== id) return s;
+
+          const altri = (s.lettori || []).filter((l) => l.utenteId !== idVisto);
+
+          return {
+            ...s,
+            lettori: volumi > 0 ? [...altri, { utenteId: idVisto, volumi }] : altri
+          };
+        })
+      );
+    },
+    [setDati, copia, idVisto]
+  );
+
+  /**
+   * Le note di una serie, riscritte in blocco.
+   *
+   * Una funzione sola invece di tre (aggiungi/modifica/togli): chi
+   * chiama ha già in mano l'elenco nuovo — glielo restituisce il
+   * server, o lo calcola lui per far comparire la nota prima della
+   * risposta — e tre funzioni che scrivono lo stesso campo sono tre
+   * modi di sbagliarlo.
+   */
+  const aggiornaNote = useCallback(
+    (id, note) => {
+      setDati((precedenti) =>
+        (precedenti ?? copia ?? []).map((s) => (s.id === id ? { ...s, note } : s))
+      );
+    },
+    [setDati, copia]
+  );
+
   // Dopo un'eliminazione la scheda deve sparire subito: aspettare il
   // ricarica() lascerebbe in elenco una riga che sul server non c'è
   // più, e cliccarla darebbe una pagina vuota.
@@ -147,9 +239,23 @@ export function CollezioneProvider({ children }) {
       ricarica,
       aggiornaLocale,
       aggiornaVoto,
+      aggiornaDroppato,
+      aggiornaLettura,
+      aggiornaNote,
       rimuoviLocale
     }),
-    [serie, errore, inCorso, ricarica, aggiornaLocale, aggiornaVoto, rimuoviLocale]
+    [
+      serie,
+      errore,
+      inCorso,
+      ricarica,
+      aggiornaLocale,
+      aggiornaVoto,
+      aggiornaDroppato,
+      aggiornaLettura,
+      aggiornaNote,
+      rimuoviLocale
+    ]
   );
 
   return (

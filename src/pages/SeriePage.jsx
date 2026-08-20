@@ -9,14 +9,15 @@ import { Errore, Vuoto } from "../ui/Stati";
 import { Sezione } from "../ui/Pagina";
 import { BottonePreferito, ContaVolumi } from "../ui/AzioniSerie";
 import VotiPersone from "../ui/VotiPersone";
+import NoteSerie from "../ui/NoteSerie";
 import Icon from "../app/Icon";
 import { edizioniSorelle, useCollezione, useSerie } from "../dati/collezione";
 import { useAccessoProtetto } from "../dati/accesso";
 import {
   getMarketPrice,
   getStoricoPerSerie,
+  riprendiSerie,
   saveReadingSession,
-  updateManga,
   urlCopertina
 } from "../services/api";
 import { generiDiSerie, idDa } from "../dati/generi";
@@ -28,6 +29,7 @@ import {
   completamento,
   dataIt,
   euro,
+  plurale,
   totaleDisponibile,
   valoreSerie,
   volumiMancanti,
@@ -64,7 +66,7 @@ export default function SeriePage() {
 
     return (riga?.volumi || []).map(Number);
   }, [storico.dati, id]);
-  const { serie: tutte, ricarica, aggiornaLocale } = useCollezione();
+  const { serie: tutte, ricarica, aggiornaLocale, aggiornaDroppato } = useCollezione();
 
   // Riprendere una serie droppata scrive due cose sul server: da quando
   // i lettori sono due, scrivere vuol dire dire chi sei.
@@ -118,13 +120,15 @@ export default function SeriePage() {
     non_letto: { testo: "Non letto", tono: "neutro" }
   };
 
-  // Riprendere in mano una serie droppata: click su un volume,
-  // ripulisce il flag e riapre la lettura esattamente lì.
+  // Riprendere in mano una serie droppata: click su un volume, togli
+  // la tua riga fra le droppate e riapri la lettura esattamente lì.
+  // "La tua": dal 011 mollare è di chi legge, quindi riprendere
+  // riguarda te e non rimette la serie in mano anche all'altra persona.
   async function riprendi(numero) {
     try {
       await eseguiProtetto(() =>
         Promise.all([
-          updateManga(serie.id, { droppato: false }),
+          riprendiSerie(serie.id),
           saveReadingSession({
             manga_id: serie.id,
             titolo: serie.titolo,
@@ -136,8 +140,11 @@ export default function SeriePage() {
         ])
       );
 
-      aggiornaLocale(serie.id, { droppato: false });
-      navigate("/letture");
+      aggiornaDroppato(serie.id, false);
+      // `/letture` non è mai esistito: la rotta è `/lettura`, e il
+      // plurale finiva sulla pagina "non trovata" proprio nel momento
+      // in cui si stava riprendendo una serie.
+      navigate("/lettura");
     } catch {
       // Un tentativo fallito qui non è grave: si può sempre riaprire
       // la lettura dalla pagina Letture. Non serve un banner d'errore
@@ -356,6 +363,24 @@ export default function SeriePage() {
         {serie.totali > 0 && (
           <Volumi serie={serie} letti={volumiLetti} onRiprendi={riprendi} />
         )}
+
+        {/* Le note si scrivono dal tavolo di lettura, ma è qui che
+            restano: finita o mollata una serie, il libro aperto non
+            c'è più e questo diventa l'unico posto dove rileggerle. */}
+        <Sezione
+          titolo="Note"
+          extra={
+            serie.note?.length ? (
+              <span className="font-numeric text-sm text-ink-muted">
+                {plurale(serie.note.length, "nota", "note")}
+              </span>
+            ) : null
+          }
+        >
+          <div className="max-w-3xl">
+            <NoteSerie serie={serie} />
+          </div>
+        </Sezione>
 
         <QuotazioneMercato serie={serie} sorelle={sorelle} />
 

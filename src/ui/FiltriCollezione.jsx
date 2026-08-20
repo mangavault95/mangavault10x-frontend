@@ -3,6 +3,8 @@ import Icon from "../app/Icon";
 import { Pastiglie, Tendina } from "./Controlli";
 import { FILTRI, elencoCategorie } from "../dati/serie";
 import { elencoGeneri, elencoEditori } from "../dati/generi";
+import { coloreLettore } from "../dati/lettori";
+import { useSessione } from "../dati/sessione";
 import Sovrapposizione from "./Sovrapposizione";
 import useChiusuraVelo from "./useChiusuraVelo";
 
@@ -28,9 +30,13 @@ export default function FiltriCollezione({
   onCambiaEditore,
   categoriaAttiva,
   onCambiaCategoria,
+  lettoreAttivo,
+  onCambiaLettore,
+  conteggiLettore,
   variante = "sidebar",
   onChiudere
 }) {
+  const { lettori } = useSessione();
   const generi = useMemo(() => elencoGeneri(serie), [serie]);
   const editori = useMemo(() => elencoEditori(serie), [serie]);
   const categorie = useMemo(() => elencoCategorie(serie), [serie]);
@@ -80,6 +86,54 @@ export default function FiltriCollezione({
           conteggi={conteggiFiltro}
         />
       </div>
+
+      {/* Chi l'ha letta.
+          Compare solo se i lettori sono almeno due: con un lettore solo
+          "lette da lui" e "lette" sono la stessa domanda, e il filtro
+          sarebbe un bottone che non toglie niente.
+          Colorato col colore della persona, lo stesso delle sue note:
+          due modi diversi di dire "questo è di Nanaki" sarebbero due
+          cose da imparare invece di una. */}
+      {lettori.length > 1 && (
+        <div>
+          <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-ink-muted">
+            Chi l'ha letta
+          </h3>
+
+          <div className="flex flex-wrap gap-1.5">
+            {lettori.map((l) => {
+              const attivo = String(lettoreAttivo) === String(l.id);
+              const colore = coloreLettore(l.colore);
+              const quante = conteggiLettore?.[l.id] ?? 0;
+
+              return (
+                <button
+                  key={l.id}
+                  type="button"
+                  aria-pressed={attivo}
+                  onClick={() => onCambiaLettore(attivo ? null : String(l.id))}
+                  className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all duration-quick ease-settle active:scale-95
+                    focus-visible:outline-none focus-visible:ring-2 ${colore.anello}
+                    ${
+                      attivo
+                        ? `${colore.bordo} ${colore.fondo} ${colore.testo}`
+                        : "border-hairline bg-glass-1 text-ink-muted hover:border-soft hover:text-ink-bright"
+                    }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`h-1.5 w-1.5 rounded-full ${colore.pallino}`}
+                  />
+                  {l.nickname}
+                  <span className="font-numeric text-[0.65rem] text-ink-faint">
+                    {quante}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* La categoria sta prima dell'editore perché parla dell'opera,
           come i generi qui sotto; l'editore parla di chi l'ha stampata.

@@ -44,7 +44,14 @@ const CHIAVE = "mangavault:collezione";
 //
 // La copia non dipende da chi guarda ed è giusto così: dentro ci sono i
 // voti di tutti, ed è il sito a pescarne uno.
-const VERSIONE = 2;
+//
+// 3 = stessa cosa per le droppate (`droppate`, prima il booleano
+// `droppato`). Una copia vecchia le darebbe tutte non droppate.
+//
+// 4 = sono arrivate le note e l'elenco di chi ha letto cosa
+// (`note`, `lettori`). Una copia vecchia mostrerebbe ogni scheda senza
+// note e il filtro "lette da" non selezionerebbe niente.
+const VERSIONE = 4;
 
 // Oltre una giornata la copia non si usa più nemmeno come primo
 // disegno: meglio la barra di caricamento di una collezione di ieri

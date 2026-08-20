@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ScaffaleVolumi from "./ScaffaleVolumi";
+import NoteSerie from "./NoteSerie";
 import { Bottone } from "./Controlli";
+import { coloreLettore } from "../dati/lettori";
 import { dataIt } from "../dati/serie";
 import { urlCopertina } from "../services/api";
 
@@ -104,6 +106,7 @@ export default function LibroAperto({
   onAvanti,
   onIndietro,
   onLetto,
+  onAnnullaLetto,
   onChiudi,
   onDroppa,
   onVaiAVolume
@@ -124,6 +127,14 @@ export default function LibroAperto({
 
   const alLimite = Boolean(massimo) && volume >= massimo;
 
+  // Il volume sotto il segnalibro risulta già finito. Succede tornando
+  // indietro su uno segnato per sbaglio — ed è l'unico momento in cui
+  // "non l'ho letto" vuol dire qualcosa, quindi è l'unico in cui il
+  // comando compare.
+  const correnteLetto = (lettura.volumiLetti || []).some(
+    (n) => Number(n) === volume
+  );
+
   // Una serie in corso di cui possiedi meno volumi di quelli usciti:
   // il tetto è quello che hai, e conviene dirlo invece di lasciar
   // credere che i comandi siano rotti.
@@ -131,6 +142,13 @@ export default function LibroAperto({
     Boolean(massimo) && posseduti > 0 && (!totali || posseduti < totali);
 
   const statoCopertina = useCopertina(copertina);
+
+  // Le note stanno chiuse finché non si chiedono: sul tavolo di
+  // lettura si viene per spostare il segnalibro, non per leggere. Il
+  // numero però si vede sempre, o una nota scritta ieri sarebbe una
+  // cosa che esiste solo se ti ricordi di andarla a cercare.
+  const [noteAperte, setNoteAperte] = useState(false);
+  const note = lettura.serie?.note || [];
 
   return (
     <article
@@ -271,7 +289,23 @@ export default function LibroAperto({
             </Bottone>
           </div>
 
-          <div className="flex items-center gap-2 sm:flex-col sm:gap-2.5">
+          {/* Il ripensamento sta sopra gli altri due comandi e non in
+              mezzo a loro: quelli chiudono la lettura, questo la
+              corregge, e le due cose non vanno confuse a colpo di
+              pollice. */}
+          {correnteLetto && typeof onAnnullaLetto === "function" && (
+            <button
+              onClick={onAnnullaLetto}
+              aria-label={`Segna il volume ${volume} di ${titolo} come non letto`}
+              className="rounded-card border border-hairline bg-glass-2 px-3 py-2 text-xs text-ink-muted transition-colors duration-quick
+                         hover:border-ember/40 hover:text-ember
+                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
+            >
+              Il {volume} non l'ho letto
+            </button>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:gap-2.5">
           <button
             onClick={onChiudi}
             className="rounded-card px-3 py-1.5 text-xs text-ink-faint transition-colors duration-quick hover:text-ember focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
@@ -288,6 +322,49 @@ export default function LibroAperto({
           </div>
         </div>
       </div>
+
+      {/* ---------- Le note ---------- */}
+      {/* Fuori dalla riga dei comandi e larghe quanto la scheda: una
+          nota è testo, e il testo su una colonna da 160 pixel non si
+          legge. Solo per le serie ancora in collezione — una nota si
+          attacca a un'opera, e se l'opera non c'è più non ha dove
+          stare. */}
+      {lettura.serie && (
+        <div className="border-t border-hairline px-4 pb-4 pt-3 sm:px-5">
+          <button
+            onClick={() => setNoteAperte((aperte) => !aperte)}
+            aria-expanded={noteAperte}
+            className="flex w-full items-center gap-2 rounded-card text-left text-xs text-ink-muted transition-colors duration-quick
+                       hover:text-ink-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+          >
+            <span className="font-semibold">
+              {note.length ? `Note (${note.length})` : "Note"}
+            </span>
+
+            {/* I pallini dicono CHI ha scritto prima ancora di aprire:
+                è metà del motivo per cui i lettori hanno un colore. */}
+            <span className="flex gap-1">
+              {note.map((n) => (
+                <span
+                  key={n.id}
+                  aria-hidden="true"
+                  className={`h-1.5 w-1.5 rounded-full ${coloreLettore(n.colore).pallino}`}
+                />
+              ))}
+            </span>
+
+            <span aria-hidden="true" className="ml-auto text-ink-faint">
+              {noteAperte ? "chiudi" : "apri"}
+            </span>
+          </button>
+
+          {noteAperte && (
+            <div className="mt-3">
+              <NoteSerie serie={lettura.serie} compatto />
+            </div>
+          )}
+        </div>
+      )}
     </article>
   );
 }

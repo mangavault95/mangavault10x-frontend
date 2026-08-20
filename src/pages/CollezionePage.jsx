@@ -22,6 +22,7 @@ import {
   FILTRI,
   ORDINAMENTI,
   filtroPerId,
+  lettaDa,
   numeroIt,
   ordinamentoPerId,
   plurale
@@ -49,6 +50,7 @@ export default function CollezionePage() {
   const ordineAttivo = ordinamentoPerId(parametri.get("ordine")).id;
   const editoreAttivo = parametri.get("editore") || null;
   const categoriaAttiva = parametri.get("categoria") || null;
+  const lettoreAttivo = parametri.get("lettore") || null;
 
   const generiSelezionati = useMemo(
     () => (parametri.get("generi") || "").split(",").filter(Boolean),
@@ -138,6 +140,13 @@ export default function CollezionePage() {
       filtrate = filtrate.filter((s) => s.categoria === categoriaAttiva);
     }
 
+    // "Letta" vuol dire almeno un volume, non finita: è la domanda che
+    // ci si fa davvero davanti allo scaffale — questa l'hai letta tu? —
+    // e una serie in corso non si finisce mai per definizione.
+    if (lettoreAttivo) {
+      filtrate = filtrate.filter((s) => lettaDa(s, lettoreAttivo));
+    }
+
     // Con una ricerca attiva l'ordine di rilevanza di Fuse è più utile
     // dell'ordinamento scelto: il risultato migliore deve stare in cima.
     if (testo && ordineAttivo === "titolo") return filtrate;
@@ -151,7 +160,8 @@ export default function CollezionePage() {
     ordineAttivo,
     generiSelezionati,
     editoreAttivo,
-    categoriaAttiva
+    categoriaAttiva,
+    lettoreAttivo
   ]);
 
   // Il numero accanto a ogni filtro si calcola sulla collezione intera,
@@ -166,18 +176,35 @@ export default function CollezionePage() {
     return mappa;
   }, [serie]);
 
+  // Quante serie ha letto ciascuno, sull'intera collezione: come per i
+  // filtri qui sopra, il numero deve dire cosa troverei premendo, non
+  // quante ne restano dopo gli altri filtri.
+  const conteggiLettore = useMemo(() => {
+    const mappa = {};
+
+    for (const s of serie) {
+      for (const l of s.lettori || []) {
+        mappa[l.utenteId] = (mappa[l.utenteId] || 0) + 1;
+      }
+    }
+
+    return mappa;
+  }, [serie]);
+
   const filtroPulito =
     !ricercaTesto &&
     filtroAttivo === "tutte" &&
     !generiSelezionati.length &&
     !editoreAttivo &&
-    !categoriaAttiva;
+    !categoriaAttiva &&
+    !lettoreAttivo;
 
   const filtriAttivi = [
     filtroAttivo !== "tutte",
     generiSelezionati.length > 0,
     Boolean(editoreAttivo),
-    Boolean(categoriaAttiva)
+    Boolean(categoriaAttiva),
+    Boolean(lettoreAttivo)
   ].filter(Boolean).length;
 
   if (errore) {
@@ -198,7 +225,10 @@ export default function CollezionePage() {
     editoreAttivo,
     onCambiaEditore: (v) => aggiornaParametro("editore", v),
     categoriaAttiva,
-    onCambiaCategoria: (v) => aggiornaParametro("categoria", v)
+    onCambiaCategoria: (v) => aggiornaParametro("categoria", v),
+    lettoreAttivo,
+    onCambiaLettore: (v) => aggiornaParametro("lettore", v),
+    conteggiLettore
   };
 
   return (

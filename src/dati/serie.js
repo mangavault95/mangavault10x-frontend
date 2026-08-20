@@ -72,6 +72,99 @@ export function votoDi(serie, utenteId) {
   return voti.find((v) => v.proprietario)?.voto ?? null;
 }
 
+/**
+ * Chi ha mollato questa serie, normalizzato come i voti.
+ *
+ * Droppare è un giudizio su una lettura, non una proprietà dell'opera:
+ * finché è stato una colonna di "Manga", la serie che uno mollava
+ * spariva anche dall'elenco dell'altra.
+ */
+function normalizzaDroppate(grezzo) {
+  if (!Array.isArray(grezzo)) return [];
+
+  return grezzo
+    .map((d) => ({
+      utenteId: numero(d.utenteId ?? d.utente_id),
+      proprietario: Boolean(d.proprietario)
+    }))
+    .filter((d) => d.utenteId);
+}
+
+/**
+ * Le note attaccate a una serie, in ordine di scrittura.
+ *
+ * Si portano dietro il colore di chi le ha scritte, non solo il nome:
+ * è quello a dire chi parla prima ancora di leggere. Vengono dal
+ * server già ordinate dalla più vecchia — che è l'ordine in cui si
+ * legge un margine annotato.
+ */
+function normalizzaNote(grezzo) {
+  if (!Array.isArray(grezzo)) return [];
+
+  return grezzo
+    .map((n) => ({
+      id: numero(n.id),
+      utenteId: numero(n.utenteId ?? n.utente_id),
+      nickname: n.nickname || "?",
+      colore: n.colore || null,
+      testo: String(n.testo ?? ""),
+      creataIl: n.creataIl ?? n.creata_il ?? null,
+      aggiornataIl: n.aggiornataIl ?? n.aggiornata_il ?? null
+    }))
+    .filter((n) => n.id && n.testo);
+}
+
+/**
+ * Chi ne ha letto almeno un volume, e quanti.
+ *
+ * Il conteggio viaggia con la scheda apposta: è quello che permette di
+ * disegnare la classifica di chiunque senza chiedere niente al server.
+ */
+function normalizzaLettori(grezzo) {
+  if (!Array.isArray(grezzo)) return [];
+
+  return grezzo
+    .map((l) => ({
+      utenteId: numero(l.utenteId ?? l.utente_id),
+      volumi: numero(l.volumi) ?? 0
+    }))
+    .filter((l) => l.utenteId);
+}
+
+/**
+ * L'ha letta, questa persona?
+ *
+ * "Letta" vuol dire **almeno un volume**, non "finita": è quello che
+ * il sito sa con certezza, e risponde alla domanda vera — questa
+ * l'abbiamo letta io o tu — anche per una serie in corso che nessuno
+ * dei due potrà mai finire.
+ */
+export function lettaDa(serie, utenteId) {
+  if (!utenteId) return false;
+
+  return (serie?.lettori || []).some((l) => l.utenteId === Number(utenteId));
+}
+
+/** Quanti volumi ne ha letto questa persona. */
+export function volumiLettiDa(serie, utenteId) {
+  if (!utenteId) return 0;
+
+  return (
+    (serie?.lettori || []).find((l) => l.utenteId === Number(utenteId))?.volumi ?? 0
+  );
+}
+
+/** L'ha mollata, questa persona? Stessa regola di `votoDi`. */
+export function droppataDa(serie, utenteId) {
+  const droppate = serie?.droppate || [];
+
+  if (utenteId) {
+    return droppate.some((d) => d.utenteId === Number(utenteId));
+  }
+
+  return droppate.some((d) => d.proprietario);
+}
+
 export function normalizzaSerie(riga) {
   if (!riga) return null;
 
@@ -126,7 +219,24 @@ export function normalizzaSerie(riga) {
       (riga.Concluso === true ? "conclusa" : riga.Concluso === false ? "in_corso" : null),
 
     preferito: Boolean(riga.Preferito),
-    droppato: Boolean(riga.Droppato),
+
+    // DROPPARE È DI CHI LEGGE
+    //
+    // Era la colonna `Droppato`, cioè un fatto della serie. Adesso qui
+    // arriva chi l'ha mollata, e `droppato` — quello che il resto del
+    // sito legge — viene riempito con la risposta per chi sta
+    // guardando, insieme a `valutazione` e per lo stesso motivo.
+    droppate: normalizzaDroppate(riga.Droppate),
+    droppato: false,
+
+    // Le note si vedono in due, quindi arrivano tutte: è il colore a
+    // dire di chi sono, non il fatto di essere state filtrate.
+    note: normalizzaNote(riga.Note),
+
+    // Chi ne ha letto almeno un volume. Serve al filtro "lette da" in
+    // collezione e alla classifica in "in lettura".
+    lettori: normalizzaLettori(riga.Lettori),
+
     dataAggiunta: riga.DataAggiunta || null,
 
     // Edizioni collegate: `operaId` punta alla riga "capogruppo",

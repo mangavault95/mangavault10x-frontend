@@ -319,6 +319,15 @@ export const addReadingHistory = (entry) =>
 export const deleteReadingHistory = (id) =>
   request(`/api/reading-history/${id}`, { method: "DELETE", auth: true });
 
+// La stessa correzione, ma detta come la si pensa stando sul libro
+// aperto: "il 5 non l'ho letto". Senza, tornare indietro di un volume
+// vuol dire ritrovarlo in fondo alla cronologia.
+export const deleteReadingHistoryVolume = (mangaId, volume) =>
+  request(`/api/reading-history/serie/${mangaId}/volume/${volume}`, {
+    method: "DELETE",
+    auth: true
+  });
+
 export const getReadingSessions = () => request(`/api/reading-sessions${diChi()}`);
 
 export const saveReadingSession = (session) =>
@@ -333,6 +342,36 @@ export const updateReadingSession = (mangaId, volume) =>
 
 export const deleteReadingSession = (mangaId) =>
   request(`/api/reading-sessions/${mangaId}`, { method: "DELETE", auth: true });
+
+// Mollare una serie non è un fatto della serie ma di chi la stava
+// leggendo: era una colonna di "Manga", ed è per questo che una serie
+// droppata da uno spariva anche dall'elenco dell'altra. Le droppate si
+// leggono dalle schede (campo `Droppate`), qui si scrivono.
+export const droppaSerie = (mangaId) =>
+  request(`/api/letture-droppate/${mangaId}`, { method: "POST", auth: true });
+
+export const riprendiSerie = (mangaId) =>
+  request(`/api/letture-droppate/${mangaId}`, { method: "DELETE", auth: true });
+
+/* ==================================================
+   NOTE
+   ================================================== */
+
+// Non c'è una lettura: le note arrivano attaccate alle schede
+// (`Note` in /api/manga), perché sono una cosa che si sa dell'opera e
+// non un elenco a sé. Qui si scrive soltanto — e solo le proprie.
+export const creaNota = (mangaId, testo) =>
+  request("/api/note", {
+    method: "POST",
+    body: { manga_id: mangaId, testo },
+    auth: true
+  });
+
+export const modificaNota = (id, testo) =>
+  request(`/api/note/${id}`, { method: "PUT", body: { testo }, auth: true });
+
+export const eliminaNota = (id) =>
+  request(`/api/note/${id}`, { method: "DELETE", auth: true });
 
 /* ==================================================
    KACHINUKI-SEN
