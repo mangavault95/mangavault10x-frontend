@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import Copertina from "../ui/Copertina";
 import Progresso from "../ui/Progresso";
+import ScaffaleVolumi from "../ui/ScaffaleVolumi";
 import TitoliSimili from "../ui/TitoliSimili";
 import OpereAutore from "../ui/OpereAutore";
 import { Bottone } from "../ui/Controlli";
@@ -13,6 +14,8 @@ import NoteSerie from "../ui/NoteSerie";
 import Icon from "../app/Icon";
 import { edizioniSorelle, useCollezione, useSerie } from "../dati/collezione";
 import { useAccessoProtetto } from "../dati/accesso";
+import { useSessione } from "../dati/sessione";
+import { coloreDi, nomeDi } from "../dati/lettori";
 import {
   getMarketPrice,
   getStoricoPerSerie,
@@ -28,6 +31,7 @@ import {
   ETICHETTE_STATO,
   completamento,
   dataIt,
+  droppataDa,
   euro,
   plurale,
   totaleDisponibile,
@@ -47,17 +51,55 @@ import {
 export default function SeriePage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [parametri, setParametri] = useSearchParams();
 
   const { serie, inCorso, errore } = useSerie(id);
+  const { lettori, idVisto } = useSessione();
 
   // Quale autore si sta guardando nel pannello delle opere: `null`
   // quando è chiuso.
   const [autoreAperto, setAutoreAperto] = useState(null);
 
-  // Quali volumi hai già finito. Lo storico è raggruppato per serie,
+  /* -------------------- Di chi sono queste letture --------------------
+   *
+   * QUESTA PAGINA LEGGEVA SOLO LE PROPRIE, e da quando i lettori sono
+   * due era un errore che si vedeva: filtrando la collezione per «lette
+   * da Nanaki» e aprendo una delle sue serie, i volumi comparivano
+   * tutti spenti e l'etichetta diceva «Non letto». Non era un caso
+   * limite — era esattamente quello che succedeva ogni volta che si
+   * guardava la collezione dell'altra persona, cioè il motivo per cui
+   * quel filtro esiste.
+   *
+   * La regola è la stessa del resto del sito: in lettura chi guarda lo
+   * può dire l'indirizzo (`?lettore=3`), in scrittura lo dice solo il
+   * token. Per questo, quando si stanno guardando le letture di un
+   * altro, i volumi diventano un disegno e non un comando.
+   */
+  const lettoreChiesto = Number(parametri.get("lettore")) || null;
+  const lettoreVisto = lettoreChiesto ?? idVisto;
+  const diUnAltro = Boolean(lettoreChiesto) && lettoreChiesto !== idVisto;
+  const nomeLettore = nomeDi(lettori, lettoreVisto);
+
+  // Quali volumi ha già finito. Lo storico è raggruppato per serie,
   // quindi basta pescare la riga di questa: è una sola richiesta e
   // vale anche per le sezioni sotto.
-  const storico = useRisorsa(getStoricoPerSerie);
+  const storico = useRisorsa(() => getStoricoPerSerie(lettoreVisto));
+
+  // `useRisorsa` tiene la funzione di caricamento in un ref apposta —
+  // altrimenti una arrow inline farebbe ripartire la richiesta a ogni
+  // render — e quindi non si accorge da sola che è cambiato DI CHI
+  // sono i dati da chiedere. Stesso rimedio e stesso motivo di
+  // `CollezioneProvider`: il primo valore non conta, è il caricamento
+  // normale già in corso.
+  const ricaricaStorico = storico.ricarica;
+  const primoLettore = useRef(lettoreVisto);
+
+  useEffect(() => {
+    if (primoLettore.current === lettoreVisto) return;
+
+    primoLettore.current = lettoreVisto;
+    ricaricaStorico();
+  }, [lettoreVisto, ricaricaStorico]);
 
   const volumiLetti = useMemo(() => {
     const riga = (storico.dati || []).find(
@@ -105,8 +147,9 @@ export default function SeriePage() {
   const totaleAttuale = totaleDisponibile(serie);
   const sorelle = edizioniSorelle(serie, tutte);
 
-  // Letto/in lettura/non letto guarda cosa hai davvero finito, non
-  // quanti volumi possiedi: sono due domande diverse (vedi Volumi).
+  // Letto/in lettura/non letto guarda cosa ha davvero finito chi
+  // stiamo guardando, non quanti volumi ci sono in casa: sono due
+  // domande diverse (vedi Volumi).
   const statoLettura =
     volumiLetti.length === 0
       ? "non_letto"
@@ -114,11 +157,21 @@ export default function SeriePage() {
         ? "letto"
         : "in_lettura";
 
+  // Guardando le letture di un altro l'etichetta porta il suo nome:
+  // «Non letto» senza dire da chi, su una scheda aperta apposta per
+  // vedere cos'ha letto lei, è la frase che faceva sembrare tutto rotto.
+  const chi = diUnAltro && nomeLettore ? ` da ${nomeLettore}` : "";
+
   const ETICHETTE_LETTURA = {
-    letto: { testo: "Letto", tono: "jade" },
-    in_lettura: { testo: "In lettura", tono: "lapis" },
-    non_letto: { testo: "Non letto", tono: "neutro" }
+    letto: { testo: `Letto${chi}`, tono: "jade" },
+    in_lettura: { testo: diUnAltro ? `In lettura${chi}` : "In lettura", tono: "lapis" },
+    non_letto: { testo: `Non letto${chi}`, tono: "neutro" }
   };
+
+  // Mollata da CHI si sta guardando: `serie.droppato` è ricavato per
+  // chi ha fatto l'accesso, e sulla scheda di un'altra persona
+  // direbbe la cosa sbagliata.
+  const droppata = diUnAltro ? droppataDa(serie, lettoreVisto) : serie.droppato;
 
   // Riprendere in mano una serie droppata: click su un volume, togli
   // la tua riga fra le droppate e riapri la lettura esattamente lì.
@@ -180,6 +233,33 @@ export default function SeriePage() {
             Indietro
           </button>
 
+          {/* Chi stai guardando, scritto una volta in cima. Senza,
+              questa scheda e la propria sono identiche a vedersi ma
+              dicono cose diverse — ed è come si finiva per credere che
+              i volumi fossero spenti per un errore. */}
+          {diUnAltro && (
+            <p className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-card border border-hairline bg-glass-1 px-3.5 py-2 text-sm text-ink-muted sm:mb-8">
+              <span
+                aria-hidden="true"
+                className={`h-2 w-2 rounded-full ${coloreDi(lettori, lettoreVisto).pallino}`}
+              />
+              Letture di{" "}
+              <span className={`font-semibold ${coloreDi(lettori, lettoreVisto).testo}`}>
+                {nomeLettore || "un altro lettore"}
+              </span>
+              <button
+                onClick={() => {
+                  const nuovi = new URLSearchParams(parametri);
+                  nuovi.delete("lettore");
+                  setParametri(nuovi, { replace: true });
+                }}
+                className="ml-auto rounded-lg px-2 py-1 text-xs text-ink-faint transition-colors duration-quick hover:text-ink-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+              >
+                mostra le mie
+              </button>
+            </p>
+          )}
+
           <div className="grid gap-5 sm:gap-8 md:grid-cols-[minmax(0,15rem)_1fr] lg:gap-12">
             {/* Sul telefono la copertina è più piccola: a 176 pixel di
                 larghezza è alta 264, e insieme al titolo e alle etichette
@@ -240,8 +320,8 @@ export default function SeriePage() {
 
                   {pct === 100 && <Etichetta tono="jade">Serie completa</Etichetta>}
 
-                  {serie.droppato ? (
-                    <Etichetta tono="ember">Droppato</Etichetta>
+                  {droppata ? (
+                    <Etichetta tono="ember">Droppato{chi}</Etichetta>
                   ) : (
                     <Etichetta tono={ETICHETTE_LETTURA[statoLettura].tono}>
                       {ETICHETTE_LETTURA[statoLettura].testo}
@@ -361,7 +441,16 @@ export default function SeriePage() {
         )}
 
         {serie.totali > 0 && (
-          <Volumi serie={serie} letti={volumiLetti} onRiprendi={riprendi} />
+          <Volumi
+            serie={serie}
+            letti={volumiLetti}
+            droppata={droppata}
+            // Le letture di un altro si guardano e basta: un click qui
+            // riaprirebbe la lettura a NOME DI CHI HA IL TOKEN, cioè
+            // rimetterebbe in mano a te una serie di lei.
+            onRiprendi={diUnAltro ? undefined : riprendi}
+            di={diUnAltro ? nomeLettore : null}
+          />
         )}
 
         {/* Le note si scrivono dal tavolo di lettura, ma è qui che
@@ -470,23 +559,25 @@ function Dato({ etichetta, valore }) {
 }
 
 /**
- * I volumi come quadratini, con tre stati distinti:
+ * I volumi della serie.
  *
- *   letto      — pieno, in ottone: l'hai finito
- *   posseduto  — contorno pieno ma fondo tenue: ce l'hai, non l'hai letto
- *   mancante   — contorno tratteggiato: non ce l'hai
+ * Il disegno vero sta in `ui/ScaffaleVolumi`, che è lo stesso usato
+ * dal tavolo di lettura: qui c'era una seconda copia — quadratini
+ * numerati, tre stati, gli stessi colori — scritta a mano e divergente
+ * di qualche pixel da quella di là. Due implementazioni della stessa
+ * cosa vogliono dire due posti in cui correggere ogni volta, e un
+ * giorno in cui una delle due si dimentica.
  *
- * Servono tre stati e non due perché "avere" e "aver letto" sono cose
- * diverse, ed è proprio la differenza fra le due che dice cosa
- * leggere stasera.
+ * Quello che resta qui è il contorno: il titolo della sezione, il
+ * conto, e la frase che spiega quando i volumi si possono premere.
  */
-function Volumi({ serie, letti = [], onRiprendi }) {
+function Volumi({ serie, letti = [], droppata = false, onRiprendi, di = null }) {
   const insiemeLetti = new Set(letti.map(Number));
 
   // Cliccabili solo se la serie è droppata: altrimenti sarebbe un
   // quadratino che sembra un bottone ma non fa niente in nessun altro
   // stato, e cliccarlo per sbaglio riaprirebbe una lettura non voluta.
-  const riprendibile = Boolean(serie.droppato) && typeof onRiprendi === "function";
+  const riprendibile = Boolean(droppata) && typeof onRiprendi === "function";
 
   return (
     <Sezione
@@ -494,7 +585,9 @@ function Volumi({ serie, letti = [], onRiprendi }) {
       extra={
         <span className="font-numeric text-sm text-ink-muted">
           {insiemeLetti.size > 0 && (
-            <span className="text-brass-400">{insiemeLetti.size} letti · </span>
+            <span className="text-brass-400">
+              {insiemeLetti.size} letti{di ? ` da ${di}` : ""} ·{" "}
+            </span>
           )}
           {serie.posseduti} di {serie.totali}
         </span>
@@ -506,52 +599,12 @@ function Volumi({ serie, letti = [], onRiprendi }) {
         </p>
       )}
 
-      <div className="flex flex-wrap gap-1.5">
-        {Array.from({ length: serie.totali }).map((_, i) => {
-          const numero = i + 1;
-
-          // Senza l'elenco dei volumi singoli si assume la sequenza da
-          // 1: è vero per quasi tutte le collezioni, e comunque il
-          // conteggio totale resta quello registrato.
-          const posseduto = numero <= serie.posseduti;
-          const letto = insiemeLetti.has(numero);
-
-          const stato = letto
-            ? "letto"
-            : posseduto
-              ? "posseduto"
-              : "mancante";
-
-          const aspetto = {
-            letto:
-              "border-brass-400 bg-brass-400 font-semibold text-void shadow-brass",
-            posseduto: "border-brass-400/30 bg-brass-400/12 text-brass-300",
-            mancante: "border-dashed border-soft text-ink-faint"
-          }[stato];
-
-          const descrizione = {
-            letto: `Volume ${numero}: letto`,
-            posseduto: `Volume ${numero}: in collezione, non ancora letto`,
-            mancante: `Volume ${numero}: manca`
-          }[stato] + (riprendibile ? ", clicca per riprendere la lettura da qui" : "");
-
-          const Elemento = riprendibile ? "button" : "span";
-
-          return (
-            <Elemento
-              key={numero}
-              type={riprendibile ? "button" : undefined}
-              onClick={riprendibile ? () => onRiprendi(numero) : undefined}
-              title={descrizione}
-              aria-label={descrizione}
-              className={`grid h-9 w-9 place-items-center rounded-lg border font-numeric text-xs transition-transform duration-quick ease-spring hover:scale-110 ${aspetto}
-                ${riprendibile ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400" : ""}`}
-            >
-              {numero}
-            </Elemento>
-          );
-        })}
-      </div>
+      <ScaffaleVolumi
+        totali={serie.totali}
+        letti={letti}
+        posseduti={serie.posseduti}
+        onSelezionaVolume={riprendibile ? onRiprendi : undefined}
+      />
     </Sezione>
   );
 }

@@ -331,7 +331,11 @@ export default function CollezionePage() {
           {inCorso && !serie.length ? (
             <CaricamentoGriglia />
           ) : risultati.length ? (
-            <GrigliaSerie serie={risultati} riempi />
+            /* Il lettore attivo non filtra soltanto: dice anche di chi
+               sono il voto e le letture da disegnare sulle copertine.
+               Senza, la selezione era la sua e i dati sopra erano di
+               chi guardava. */
+            <GrigliaSerie serie={risultati} riempi lettore={lettoreAttivo} />
           ) : (
             <Vuoto
               titolo="Nessuna serie corrisponde"

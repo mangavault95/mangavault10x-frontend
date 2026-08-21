@@ -76,6 +76,19 @@ const TRACCIATI = {
    * cose entrano, una esce.
    */
   torneo: "M3 5h5v6H3M8 8h5M3 13h5v6H3M8 16h5M13 8v8M13 12h8",
+  /**
+   * I tre puntini: «qui c'è dell'altro».
+   *
+   * Sono cerchi chiusi e non tre trattini da un centesimo di unità
+   * (`M12 6h.01`): a spessore 1,6 quel trattino esce come un punto da
+   * un pixel e mezzo, che a sedici pixel di icona sparisce. Vanno
+   * disegnati con `piena`, altrimenti restano tre anellini.
+   *
+   * In verticale e non in orizzontale, perché il menu si apre sotto: i
+   * puntini indicano la direzione in cui sta la roba che nascondono.
+   */
+  puntini:
+    "M12 5.1a1.35 1.35 0 1 0 0 2.7 1.35 1.35 0 1 0 0-2.7zM12 10.65a1.35 1.35 0 1 0 0 2.7 1.35 1.35 0 1 0 0-2.7zM12 16.2a1.35 1.35 0 1 0 0 2.7 1.35 1.35 0 1 0 0-2.7z",
   // Un cartellino prezzo: i desideri sono da comprare, non da segnare
   // come preferiti — per questo non riusa "star".
   cartellino: "M20.6 12.3 12.7 20.2a2 2 0 0 1-2.8 0l-6.1-6.1a2 2 0 0 1 0-2.8L11.7 3.3a2 2 0 0 1 1.4-.6H19a2 2 0 0 1 2 2v5.3a2 2 0 0 1-.4 1.3ZM16.5 7.5h.01"

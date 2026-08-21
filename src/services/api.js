@@ -145,12 +145,16 @@ export const getManga = () => request("/api/manga");
  * In scrittura non serve e non conta: là chi sei lo dice il token, e
  * un numero nell'indirizzo non deve poter cambiare la risposta.
  */
-function diChi(extra = "") {
-  const utente = utenteRicordato();
+function diChi(extra = "", utenteId = null) {
+  // Chiesto esplicitamente: è il caso della collezione filtrata per
+  // «lette da Nanaki» e della scheda che si apre da lì. Vale solo in
+  // lettura, e solo perché il server lo consente in lettura — provare
+  // a scrivere con un numero nell'indirizzo non porta da nessuna parte.
+  const id = utenteId ?? utenteRicordato()?.id;
 
-  if (!utente?.id) return extra ? `?${extra}` : "";
+  if (!id) return extra ? `?${extra}` : "";
 
-  return `?utente=${utente.id}${extra ? `&${extra}` : ""}`;
+  return `?utente=${id}${extra ? `&${extra}` : ""}`;
 }
 
 // La vista di riepilogo calcola completamento, spesa e volumi
@@ -309,7 +313,13 @@ export const getReadingHistory = (limite = 60) =>
 
 // La cronologia vista per scaffale: una riga per serie, con dentro
 // i volumi letti. Il raggruppamento lo fa il database.
-export const getStoricoPerSerie = () => request(`/api/reading-history/per-serie${diChi()}`);
+//
+// `utenteId` serve a guardare quella di un altro: senza, la scheda di
+// una serie aperta dalla collezione di Nanaki mostrava i volumi letti
+// da CHI GUARDA — cioè tutti spenti, come se lei non l'avesse mai
+// aperta.
+export const getStoricoPerSerie = (utenteId = null) =>
+  request(`/api/reading-history/per-serie${diChi("", utenteId)}`);
 
 export const addReadingHistory = (entry) =>
   request("/api/reading-history", { method: "POST", body: entry, auth: true });

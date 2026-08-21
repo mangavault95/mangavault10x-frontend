@@ -7,6 +7,8 @@ import LibroAperto from "../ui/LibroAperto";
 import ScaffaleCoste from "../ui/ScaffaleCoste";
 import { Bottone, CampoRicerca } from "../ui/Controlli";
 import { Stella, VotoStelle } from "../ui/AzioniSerie";
+import Menu from "../ui/Menu";
+import NoteSerie from "../ui/NoteSerie";
 import Sovrapposizione from "../ui/Sovrapposizione";
 import useChiusuraVelo from "../ui/useChiusuraVelo";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
@@ -33,8 +35,10 @@ import {
   droppaSerie,
   getReadingSessions,
   getStoricoPerSerie,
+  riprendiSerie,
   saveReadingSession,
   segnaLettiFinoA,
+  updateRating,
   updateReadingSession
 } from "../services/api";
 
@@ -84,6 +88,18 @@ export default function LetturaPage() {
   const [problema, setProblema] = useState(null);
   const [sceltaAperta, setSceltaAperta] = useState(false);
   const [completata, setCompletata] = useState(null);
+
+  // Il riquadro aperto dal menu di una riga di classifica:
+  // `{ id, cosa: "voto" | "note" }`, oppure niente.
+  //
+  // Lo stato sta qui e non nella riga perché il riquadro esce dalla
+  // riga: è una finestra sopra la pagina, e una riga alta trenta pixel
+  // non è il posto da cui aprire una cosa che ne occupa quattrocento.
+  // Si tiene l'IDENTIFICATIVO e non la scheda: la scheda dentro il
+  // riquadro cambia mentre lo si guarda — è lì che si vota e si
+  // scrivono le note — e una copia catturata all'apertura resterebbe
+  // ferma a com'era prima.
+  const [inPrimoPiano, setInPrimoPiano] = useState(null);
 
   // Di chi è la classifica che si sta guardando. `null` vuol dire "la
   // mia": non si scrive `idVisto` qui dentro perché all'inizio non si
@@ -465,6 +481,80 @@ export default function LetturaPage() {
   }
 
   /**
+   * Togliere dal tavolo una lettura che non è finita.
+   *
+   * Il tasto "Chiudi la lettura" era stato tolto perché stava accanto
+   * a "Droppa" e i due si somigliavano troppo: nessuno dei due diceva
+   * cosa lasciava indietro. Il risultato però era che una lettura
+   * aperta per sbaglio — o una serie ripresa e poi lasciata lì — non
+   * si poteva più togliere dal tavolo se non mollandola per finta.
+   *
+   * Adesso i due comandi stanno nel menu, uno sotto l'altro, e ognuno
+   * ha scritta la propria conseguenza: qui i volumi letti restano e la
+   * serie torna fra quelle da aprire, di là resta segnata come
+   * mollata. Detta la differenza, i due comandi possono convivere.
+   */
+  async function togliDalTavolo(lettura) {
+    setProblema(null);
+
+    sessioni.setDati((precedenti) =>
+      (precedenti || []).filter((s) => s.id !== lettura.idSessione)
+    );
+
+    try {
+      await eseguiProtetto(() => deleteReadingSession(lettura.mangaId));
+    } catch (e) {
+      if (!e?.annullato) {
+        segnalaErrore(`Non sono riuscito a chiudere la lettura di ${lettura.titolo}.`);
+      }
+      sessioni.ricarica();
+    }
+  }
+
+  /**
+   * Azzerare i volumi letti di una serie ancora aperta.
+   *
+   * È il caso della serie segnata sbagliata: volumi spuntati a
+   * memoria, o su un'edizione diversa da quella che si sta leggendo.
+   * Correggerli uno per uno da "il N non l'ho letto" vuol dire tornare
+   * indietro con il segnalibro venti volte; qui si ricomincia da capo
+   * in un gesto, e il segnalibro torna al volume 1 con loro — lasciarlo
+   * al 20 con zero volumi letti sarebbe uno stato che non vuol dire
+   * niente.
+   *
+   * La lettura resta aperta: azzerare è ricominciare, non smettere.
+   */
+  async function azzeraLetti(lettura) {
+    setProblema(null);
+
+    const quantiErano = lettura.volumiLetti.map(Number);
+
+    // Si spegne tutto subito: è un gesto che si fa guardando i
+    // quadretti, e il riscontro deve stare lì.
+    perSerie.setDati((precedenti) =>
+      (precedenti || []).map((s) =>
+        String(s.manga_id) === String(lettura.mangaId)
+          ? { ...s, volumi: [], volumi_letti: 0 }
+          : s
+      )
+    );
+
+    aggiornaLettura(lettura.mangaId, 0);
+    impostaVolume(lettura, { assoluto: 1 });
+
+    try {
+      await eseguiProtetto(() => deleteReadingHistorySerie(lettura.mangaId));
+      perSerie.ricarica();
+    } catch (e) {
+      if (!e?.annullato) {
+        segnalaErrore(`Non sono riuscito ad azzerare i volumi di ${lettura.titolo}.`);
+      }
+      perSerie.ricarica();
+      aggiornaLettura(lettura.mangaId, quantiErano.length);
+    }
+  }
+
+  /**
    * Droppare non è chiudere e basta: resta il segno che questa serie
    * l'hai mollata, così non ricompare fra le scelte per aprirne una
    * nuova finché non clicchi tu stesso un volume per riprenderla.
@@ -571,6 +661,56 @@ export default function LetturaPage() {
     }
   }
 
+  /**
+   * Rimettere sul tavolo una serie che sta in classifica.
+   *
+   * Il segnalibro non riparte da 1 e nemmeno da dove l'avevi lasciato
+   * l'ultima volta: riparte dal PRIMO VOLUME NON LETTO, che è la
+   * risposta alla domanda vera — "e adesso dove riprendo?". Su una
+   * serie finita non c'è un volume dopo, e allora riparte dall'ultimo:
+   * è il caso della rilettura.
+   *
+   * Toglie anche la serie dalle droppate: rimetterla in mano e
+   * lasciarla segnata come mollata sarebbero due cose che si
+   * contraddicono, e la seconda la terrebbe fuori dalle proposte.
+   */
+  async function rimettiInLettura(s) {
+    setProblema(null);
+
+    const riga = (perSerie.dati || []).find(
+      (r) => String(r.manga_id) === String(s.id)
+    );
+
+    const letti = new Set((riga?.volumi || []).map(Number));
+    const tetto = tettoLettura(s.posseduti, s.totali);
+
+    let da = 1;
+    while (letti.has(da) && (!tetto || da < tetto)) da += 1;
+
+    try {
+      await eseguiProtetto(() =>
+        Promise.all([
+          riprendiSerie(s.id),
+          saveReadingSession({
+            manga_id: s.id,
+            titolo: s.titolo,
+            autore: s.autore || "",
+            coverurl: s.copertina || "",
+            volume: da,
+            volumitotali: s.totali ?? null
+          })
+        ])
+      );
+
+      aggiornaDroppato(s.id, false);
+      sessioni.ricarica();
+    } catch (e) {
+      if (!e?.annullato) {
+        segnalaErrore(`Non sono riuscito a rimettere ${s.titolo} in lettura.`);
+      }
+    }
+  }
+
   /* -------------------- Vista -------------------- */
 
   const inCaricamento = sessioni.inCorso && !sessioni.dati;
@@ -621,6 +761,14 @@ export default function LetturaPage() {
           />
         )}
 
+        {inPrimoPiano && (
+          <RiquadroSerie
+            serie={serie.find((m) => m.id === inPrimoPiano.id)}
+            cosa={inPrimoPiano.cosa}
+            onChiudi={() => setInPrimoPiano(null)}
+          />
+        )}
+
         {/* ═══════════ ADESSO ═══════════ */}
         <Sezione
           titolo="Adesso"
@@ -637,7 +785,20 @@ export default function LetturaPage() {
           ) : inCaricamento ? (
             <CaricamentoElenco quante={2} />
           ) : attive.length ? (
-            <ul className="space-y-4">
+            /* Due colonne da xl in su. Le schede adesso sono alte un
+               terzo di prima, e su un monitor largo una sola colonna
+               vorrebbe dire una striscia di quattrocento pixel in
+               mezzo a un metro di vuoto: sotto xl restano incolonnate,
+               perché a quella larghezza una scheda per riga è già
+               tutto quello che ci sta.
+
+               `grid-cols-1` va scritto, non lasciato all'implicito: una
+               colonna implicita è larga `auto`, cioè quanto il suo
+               contenuto più largo, e le schede uscivano dallo schermo
+               di centoventi pixel sul telefono. `grid-cols-1` è
+               `minmax(0, 1fr)`, che è la stessa cosa con il permesso
+               di stringersi. */
+            <ul className="grid grid-cols-1 gap-3 xl:grid-cols-2">
               {attive.map((lettura) => (
                 <li key={lettura.idSessione}>
                   <LibroAperto
@@ -648,6 +809,8 @@ export default function LetturaPage() {
                     onLetto={() => segnaLetto(lettura)}
                     onLettiFinoAQui={() => segnaFinoA(lettura)}
                     onAnnullaLetto={() => annullaLetto(lettura)}
+                    onAzzera={() => azzeraLetti(lettura)}
+                    onChiudi={() => togliDalTavolo(lettura)}
                     onDroppa={() => droppa(lettura)}
                   />
                 </li>
@@ -691,7 +854,10 @@ export default function LetturaPage() {
                       posizione={posizione + 1}
                       lettore={lettoreScelto}
                       mio={mioTurno}
+                      giaSulTavolo={idInLettura.has(String(s.id))}
                       onTogli={() => togliDalleLette(s)}
+                      onRimetti={() => rimettiInLettura(s)}
+                      onApri={(cosa) => setInPrimoPiano({ id: s.id, cosa })}
                     />
                   ))}
                 </ol>
@@ -712,6 +878,10 @@ export default function LetturaPage() {
                         serie={s}
                         lettore={lettoreScelto}
                         mio={mioTurno}
+                        giaSulTavolo={idInLettura.has(String(s.id))}
+                        onTogli={() => togliDalleLette(s)}
+                        onRimetti={() => rimettiInLettura(s)}
+                        onApri={(cosa) => setInPrimoPiano({ id: s.id, cosa })}
                       />
                     ))}
                   </ul>
@@ -778,27 +948,105 @@ function SceltaLettore({ lettori, scelto, onScegli }) {
    UNA RIGA DI CLASSIFICA
    ================================================== */
 
-function RigaClassifica({ serie, posizione, lettore, mio, onTogli }) {
-  const { aggiornaVoto } = useCollezione();
+/**
+ * Una riga della classifica.
+ *
+ * PRIMA C'ERA UN TASTO SOLO, «Togli», scritto per esteso in fondo a
+ * ogni riga. Occupava una colonna fissa su tutte per un gesto che si
+ * fa due volte l'anno, ed era l'unica cosa che da qui si potesse fare
+ * a una serie: per rimetterla in lettura, per rileggerne le note o per
+ * correggerne il voto senza centrare una stella da sedici pixel,
+ * bisognava andarsene da questa pagina.
+ *
+ * Adesso i comandi stanno sotto i tre puntini e la riga resta una
+ * riga. Sono quattro, e ognuno vale una frase di spiegazione — cosa
+ * che su una fila di tastini non ci sarebbe mai stata.
+ *
+ * LE STELLE QUI NON SI TOCCANO PIÙ, nemmeno sulla propria classifica.
+ * Erano bersagli da otto pixel per mezza stella, incolonnati in un
+ * elenco che sul telefono si scorre col pollice: bastava un tocco di
+ * troppo mentre si scorreva per cambiare un voto senza accorgersene, e
+ * per accorgersene bisognava ricordarsi cosa c'era prima. Il voto si
+ * dà dal riquadro che apre il menu, dove le stelle sono grandi il
+ * doppio e c'è scritto il numero. Qui restano quello che erano: un
+ * dato, come il titolo.
+ */
+function RigaClassifica({
+  serie,
+  posizione,
+  lettore,
+  mio,
+  giaSulTavolo,
+  onTogli,
+  onRimetti,
+  onApri
+}) {
   const voto = votoDi(serie, lettore);
+  const note = serie.note?.length ?? 0;
 
-  // Togliere una serie dalle lette cancella tutti i volumi segnati:
-  // un click solo, e a rimetterli ci vorrebbe un pomeriggio. Quindi il
-  // tasto si spiega prima di agire, invece di aprire una finestra —
-  // che per una riga di elenco sarebbe una cerimonia.
-  const [confermo, setConfermo] = useState(false);
+  const voci = [
+    mio && {
+      chiave: "voto",
+      etichetta: voto ? "Modifica il voto" : "Dai un voto",
+      descrizione: voto ? `Adesso è ${votoIt(voto)} su 5.` : "Cinque stelle, anche a metà.",
+      onClick: () => onApri("voto")
+    },
+
+    {
+      chiave: "note",
+      etichetta: note ? `Note (${note})` : "Scrivi una nota",
+      // Le note si leggono in due: quelle di un'altra persona si
+      // aprono anche stando sulla sua classifica, ed è il motivo per
+      // cui questa voce non sta dietro `mio`.
+      descrizione: note ? "Rileggile o aggiungine una." : "Cosa vuoi ricordarti di questa serie.",
+      onClick: () => onApri("note")
+    },
+
+    mio &&
+      typeof onRimetti === "function" && {
+        chiave: "rimetti",
+        etichetta: "Rimetti in lettura",
+        descrizione: giaSulTavolo
+          ? "È già aperta sul tavolo."
+          : "Torna sul tavolo, dal primo volume che non hai letto.",
+        spenta: giaSulTavolo,
+        onClick: onRimetti
+      },
+
+    mio &&
+      typeof onTogli === "function" && {
+        chiave: "togli",
+        etichetta: "Togli dalle lette",
+        descrizione: "Cancella tutti i volumi segnati: esce dalla classifica.",
+        conferma: "Confermi? Si perde tutto",
+        pericolo: true,
+        onClick: onTogli
+      }
+  ];
 
   return (
-    <li className="group flex items-center gap-3.5 rounded-card px-3 py-2 transition-colors duration-quick hover:bg-glass-1">
+    <li className="group flex items-center gap-3 rounded-card px-2 py-1.5 transition-colors duration-quick hover:bg-glass-1 sm:gap-3.5 sm:px-3 sm:py-2">
       {/* Il numero solo dove c'è una posizione: fra le non votate
           sarebbe una graduatoria inventata. */}
       <span className="w-6 shrink-0 text-right font-numeric text-sm text-ink-faint">
         {posizione ?? ""}
       </span>
 
-      <div className="w-8 shrink-0">
+      {/* La copertina porta alla scheda come il titolo. È l'oggetto più
+          grosso e riconoscibile della riga: chi vuole aprire una serie
+          ci va sopra per istinto, e trovarci un'immagine morta era una
+          piccola smentita a ogni tentativo. Resta fuori dal percorso
+          della tastiera perché il titolo accanto porta esattamente
+          allo stesso posto: due fermate per la stessa destinazione
+          raddoppiano la lunghezza dell'elenco senza aggiungere niente. */}
+      <Link
+        to={`/serie/${serie.id}`}
+        tabIndex={-1}
+        aria-hidden="true"
+        className="w-8 shrink-0 rounded-card transition-transform duration-quick ease-settle hover:scale-105"
+      >
         <Copertina src={serie.copertina} alt="" inclina={false} />
-      </div>
+      </Link>
 
       <Link
         to={`/serie/${serie.id}`}
@@ -807,75 +1055,211 @@ function RigaClassifica({ serie, posizione, lettore, mio, onTogli }) {
         {serie.titolo}
       </Link>
 
-      {/* Le stelle si toccano solo se la classifica è la tua: un voto è
-          di chi lo dà, e guardando quella di un altro sarebbero un modo
-          per scrivere al posto suo. */}
-      {mio ? (
-        <VotoStelle
-          serie={serie}
-          dimensione={16}
-          onCambiato={(nuovo) => aggiornaVoto(serie.id, nuovo)}
-        />
-      ) : (
-        <span className="inline-flex items-center gap-0.5" aria-label={voto ? `Voto ${votoIt(voto)} su 5` : "Non votato"}>
-          {[1, 2, 3, 4, 5].map((n) => (
-            <Stella
-              key={n}
-              riempimento={Math.min(1, Math.max(0, (voto ?? 0) - n + 1))}
-              dimensione={16}
+      {/* Un pallino per nota: la classifica è anche il posto da cui ci
+          si accorge che di una serie si era scritto qualcosa. */}
+      {note > 0 && (
+        <span
+          aria-hidden="true"
+          title={plurale(note, "nota", "note")}
+          className="hidden shrink-0 gap-1 sm:flex"
+        >
+          {serie.note.map((n) => (
+            <span
+              key={n.id}
+              className={`h-1.5 w-1.5 rounded-full ${coloreLettore(n.colore).pallino}`}
             />
           ))}
         </span>
       )}
 
+      <span
+        className="hidden shrink-0 items-center gap-0.5 sm:inline-flex"
+        aria-label={voto ? `Voto ${votoIt(voto)} su 5` : "Non votato"}
+      >
+        {[1, 2, 3, 4, 5].map((n) => (
+          <Stella
+            key={n}
+            riempimento={Math.min(1, Math.max(0, (voto ?? 0) - n + 1))}
+            dimensione={16}
+          />
+        ))}
+      </span>
+
       <span className="w-8 shrink-0 text-right font-numeric text-sm text-ink-bright">
         {voto ? votoIt(voto) : "—"}
       </span>
 
-      {/* Solo sulla propria classifica: le letture di un altro non si
-          correggono. Come il cestino della cronologia di prima, appare
-          al passaggio del mouse e col dito resta acceso a mezza voce. */}
-      {mio && typeof onTogli === "function" && (
-        <span className="w-28 shrink-0 text-right">
-          {confermo ? (
-            <span className="inline-flex items-center gap-1">
-              <button
-                onClick={() => {
-                  setConfermo(false);
-                  onTogli();
-                }}
-                className="rounded-lg bg-ember/15 px-2 py-1 text-xs font-medium text-ember transition-colors duration-quick
-                           hover:bg-ember/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
-              >
-                Confermi?
-              </button>
-
-              <button
-                onClick={() => setConfermo(false)}
-                aria-label="Lascia la serie fra quelle lette"
-                className="rounded-lg px-1.5 py-1 text-xs text-ink-faint transition-colors duration-quick hover:text-ink-bright"
-              >
-                no
-              </button>
-            </span>
-          ) : (
-            <button
-              onClick={() => setConfermo(true)}
-              aria-label={`Togli ${serie.titolo} dalle serie lette`}
-              title="Togli dalle lette"
-              className="rounded-lg px-2 py-1 text-xs text-ink-faint opacity-0 transition-all duration-quick
-                         hover:text-ember group-hover:opacity-100
-                         [@media(hover:none)]:px-3 [@media(hover:none)]:py-2 [@media(hover:none)]:opacity-70
-                         focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
-            >
-              Togli
-            </button>
-          )}
-        </span>
-      )}
+      <Menu etichetta={`Altro su ${serie.titolo}`} voci={voci} larghezza="17rem" />
     </li>
   );
 }
+
+/* ==================================================
+   IL RIQUADRO DI UNA SERIE: VOTO O NOTE
+   ================================================== */
+
+/**
+ * Quello che dalla riga di classifica non ci stava.
+ *
+ * Due contenuti in una cornice sola, e non due finestre: la cornice
+ * dice la stessa cosa — «questa serie, da vicino» — e cambia solo
+ * quello che ci si viene a fare. Con due componenti separati le due
+ * intestazioni avrebbero cominciato a divergere alla prima modifica.
+ */
+function RiquadroSerie({ serie, cosa, onChiudi }) {
+  const velo = useChiusuraVelo(onChiudi);
+
+  // La serie può sparire sotto i piedi: succede togliendola dalle
+  // lette mentre il riquadro è aperto.
+  useEffect(() => {
+    if (!serie) onChiudi();
+  }, [serie, onChiudi]);
+
+  if (!serie) return null;
+
+  return (
+    <Sovrapposizione>
+      <div
+        className="fixed inset-0 z-modal grid place-items-center overflow-y-auto bg-void/70 p-4 py-10 backdrop-blur-sm animate-rise-in"
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onChiudi();
+        }}
+        {...velo}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${cosa === "voto" ? "Voto" : "Note"}: ${serie.titolo}`}
+          className="w-full max-w-md space-y-5 rounded-panel border border-hairline bg-glass-3 p-5 shadow-float backdrop-blur-2xl sm:p-6"
+        >
+          <div className="flex items-start gap-3.5">
+            <div className="w-12 shrink-0 sm:w-14">
+              <Copertina src={serie.copertina} alt="" inclina={false} />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <Link
+                to={`/serie/${serie.id}`}
+                className="block font-display text-lg font-semibold leading-tight text-ink-bright transition-colors duration-quick hover:text-brass-300"
+              >
+                {serie.titolo}
+              </Link>
+
+              {serie.autore && (
+                <p className="mt-0.5 truncate text-sm text-ink-muted">{serie.autore}</p>
+              )}
+            </div>
+
+            <button
+              onClick={onChiudi}
+              aria-label="Chiudi"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+            >
+              ✕
+            </button>
+          </div>
+
+          {cosa === "voto" ? (
+            <ModuloVoto serie={serie} />
+          ) : (
+            <div className="border-t border-hairline pt-5">
+              <NoteSerie serie={serie} compatto />
+            </div>
+          )}
+        </div>
+      </div>
+    </Sovrapposizione>
+  );
+}
+
+/** Le parole accanto al numero: un «3» secco non dice se è poco o tanto. */
+const PAROLE_VOTO = {
+  0.5: "da dimenticare",
+  1: "no",
+  1.5: "quasi no",
+  2: "si legge",
+  2.5: "nella media",
+  3: "buona",
+  3.5: "molto buona",
+  4: "notevole",
+  4.5: "quasi perfetta",
+  5: "capolavoro"
+};
+
+/**
+ * Il voto, con lo spazio che sulla riga non aveva.
+ *
+ * Stelle a trentadue pixel invece che a sedici: la mezza stella
+ * diventa un bersaglio da mezzo centimetro invece che da un quarto, e
+ * col dito `VotoStelle` le ingrandisce ancora di suo. Sotto, il numero
+ * scritto — contare le stelle di un voto già dato è un lavoro che
+ * nessuno dovrebbe fare — e il modo di ritirarlo.
+ */
+function ModuloVoto({ serie }) {
+  const { aggiornaVoto } = useCollezione();
+  const eseguiProtetto = useAccessoProtetto();
+  const [problema, setProblema] = useState(null);
+
+  const voto = serie.valutazione ?? null;
+
+  async function togliIlVoto() {
+    const precedente = voto;
+
+    setProblema(null);
+    aggiornaVoto(serie.id, null);
+
+    try {
+      await eseguiProtetto(() => updateRating(serie.id, null));
+    } catch (e) {
+      if (!e?.annullato) {
+        aggiornaVoto(serie.id, precedente);
+        setProblema("Il voto non è stato tolto.");
+      }
+    }
+  }
+
+  return (
+    <div className="space-y-4 border-t border-hairline pt-5">
+      <div className="flex flex-col items-center gap-3">
+        <VotoStelle
+          serie={serie}
+          dimensione={32}
+          onCambiato={(nuovo) => aggiornaVoto(serie.id, nuovo)}
+        />
+
+        <p className="text-center">
+          <span className="font-numeric text-2xl font-semibold text-ink-bright">
+            {voto ? votoIt(voto) : "—"}
+          </span>
+          <span className="ml-1 text-sm text-ink-faint">/ 5</span>
+
+          <span className="mt-0.5 block text-sm text-ink-muted">
+            {voto ? PAROLE_VOTO[voto] : "non l'hai ancora votata"}
+          </span>
+        </p>
+      </div>
+
+      {problema && (
+        <p role="alert" className="text-center text-sm text-ember">
+          {problema}
+        </p>
+      )}
+
+      <p className="text-center text-xs text-ink-faint">
+        Mezzo voto: la metà sinistra di ogni stella.
+      </p>
+
+      {voto && (
+        <div className="flex justify-center">
+          <Bottone variante="fantasma" onClick={togliIlVoto} className="!text-xs">
+            Togli il voto
+          </Bottone>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 /* ==================================================
    SCELTA DELLA SERIE DA APRIRE

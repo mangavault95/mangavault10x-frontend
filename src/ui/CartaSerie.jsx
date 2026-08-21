@@ -3,7 +3,16 @@ import Copertina from "./Copertina";
 import Progresso from "./Progresso";
 import { BottonePreferito } from "./AzioniSerie";
 import { useCollezione } from "../dati/collezione";
-import { completamento, totaleDisponibile, volumiMancanti, votoIt } from "../dati/serie";
+import { useSessione } from "../dati/sessione";
+import { coloreDi } from "../dati/lettori";
+import {
+  completamento,
+  totaleDisponibile,
+  volumiLettiDa,
+  volumiMancanti,
+  votoDi,
+  votoIt
+} from "../dati/serie";
 import { generiDiSerie } from "../dati/generi";
 
 /**
@@ -16,18 +25,40 @@ import { generiDiSerie } from "../dati/generi";
  *
  * Il titolo e i metadati salgono di un capello al passaggio del mouse
  * insieme alla copertina: l'oggetto si muove tutto insieme, non a pezzi.
+ *
+ * `lettore` è di chi si sta guardando la collezione. Non cambia le
+ * serie — quelle sono in comune — ma cambia tutto ciò che è di
+ * qualcuno: il voto sulla copertina e quanti volumi ne ha letti. Senza,
+ * filtrando per «lette da Nanaki» si otteneva la sua selezione con i
+ * dati di chi guardava sopra: schede senza voto e senza letture, cioè
+ * l'aria di una griglia rotta.
  */
-export default function CartaSerie({ serie, priorita = false, riempi = false }) {
+export default function CartaSerie({
+  serie,
+  priorita = false,
+  riempi = false,
+  lettore = null
+}) {
   const { aggiornaLocale } = useCollezione();
+  const { lettori } = useSessione();
 
   const pct = completamento(serie);
   const mancanti = volumiMancanti(serie);
   const totale = totaleDisponibile(serie);
   const generi = generiDiSerie(serie).slice(0, 3);
 
+  // `serie.valutazione` è già il voto di chi guarda: si scomoda
+  // `votoDi` solo quando si sta guardando per conto di un altro.
+  const voto = lettore ? votoDi(serie, lettore) : serie.valutazione;
+  const letti = lettore ? volumiLettiDa(serie, lettore) : 0;
+  const colore = lettore ? coloreDi(lettori, lettore) : null;
+
   return (
     <Link
-      to={`/serie/${serie.id}`}
+      // La scheda si apre sapendo di chi sono le letture da mostrare:
+      // è l'indirizzo a portarselo dietro, come per ogni altro filtro
+      // di questa pagina.
+      to={lettore ? `/serie/${serie.id}?lettore=${lettore}` : `/serie/${serie.id}`}
       className="group block rounded-panel outline-none transition-transform duration-base ease-settle
                  hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-brass-400
                  focus-visible:ring-offset-4 focus-visible:ring-offset-shelf active:translate-y-0 active:scale-[0.99]"
@@ -60,9 +91,26 @@ export default function CartaSerie({ serie, priorita = false, riempi = false }) 
             che si cerca scorrendo, e lì non ruba una riga di testo.
             Lo zero non si mostra: in questa collezione significa "non
             ancora votato", e un "0.0" in bella vista sembra una stroncatura. */}
-        {serie.valutazione > 0 && (
-          <span className="absolute left-2 top-2 rounded-full bg-void/70 px-2 py-0.5 font-numeric text-xs font-medium text-brass-300 backdrop-blur-sm">
-            {votoIt(serie.valutazione)}★
+        {voto > 0 && (
+          <span
+            className={`absolute left-2 top-2 rounded-full bg-void/70 px-2 py-0.5 font-numeric text-xs font-medium backdrop-blur-sm ${
+              colore ? colore.testo : "text-brass-300"
+            }`}
+          >
+            {votoIt(voto)}★
+          </span>
+        )}
+
+        {/* Quanti volumi ne ha letti la persona di cui si sta
+            guardando la collezione. Sta in basso a destra, l'unico
+            angolo libero, e porta il suo colore: è la stessa
+            convenzione delle note — a dire chi parla è la tinta. */}
+        {lettore && letti > 0 && (
+          <span
+            title={`${letti} volumi letti`}
+            className={`absolute bottom-2 right-2 rounded-full bg-void/70 px-2 py-0.5 font-numeric text-xs font-medium backdrop-blur-sm ${colore.testo}`}
+          >
+            {letti} letti
           </span>
         )}
 
@@ -146,7 +194,7 @@ export default function CartaSerie({ serie, priorita = false, riempi = false }) 
  * scende a 6.5rem: tre colonne, copertine da 127 pixel — la larghezza a
  * cui un titolo si legge ancora e se ne vedono nove per schermata.
  */
-export function GrigliaSerie({ serie, riempi = false, children }) {
+export function GrigliaSerie({ serie, riempi = false, lettore = null, children }) {
   return (
     <div
       className="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-x-3 gap-y-5
@@ -154,7 +202,13 @@ export function GrigliaSerie({ serie, riempi = false, children }) {
     >
       {serie
         ? serie.map((s, i) => (
-            <CartaSerie key={s.id} serie={s} priorita={i < 12} riempi={riempi} />
+            <CartaSerie
+              key={s.id}
+              serie={s}
+              priorita={i < 12}
+              riempi={riempi}
+              lettore={lettore}
+            />
           ))
         : children}
     </div>
