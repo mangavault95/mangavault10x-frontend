@@ -9,17 +9,50 @@ import { useSessione } from "../dati/sessione";
  * l'accesso compariva solo quando si provava a salvare qualcosa —
  * bastava, perché era l'unica cosa che l'accesso serviva a fare. Ora
  * decide anche COSA VEDI: quali voti sono accesi, quali letture sono le
- * tue. Chi arriva e vuole entrare non deve dover fingere di modificare
- * una scheda per trovare il modulo.
+ * tue, e — da quando la videoteca è di ciascuno — quali serie ci stanno
+ * dentro. Chi arriva e vuole entrare non deve dover fingere di
+ * modificare una scheda per trovare il modulo.
  *
  * È anche l'unico posto dove si legge il proprio soprannome, e serve:
  * con due persone che usano lo stesso sito dallo stesso divano,
  * sapere per chi si sta votando non è un dettaglio.
+ *
+ * Si veste come il mondo in cui sta, per la stessa ragione della
+ * cornice: sulla carta chiara della videoteca, un bottone d'ottone su
+ * vetro scuro sembra un pezzo caduto da un'altra pagina. Le classi
+ * stanno scritte per intero — Tailwind legge i sorgenti alla lettera.
  */
-export default function Identita({ compatto = false }) {
+const VESTI = {
+  biblioteca: {
+    ospite:
+      "border border-hairline text-ink-muted hover:border-soft hover:text-ink-bright",
+    iniziale:
+      "border border-brass-400/40 bg-brass-400/15 text-brass-300 hover:bg-brass-400/25",
+    pannello: "border-hairline bg-glass-3 backdrop-blur-2xl",
+    nome: "font-display text-sm font-semibold text-ink-bright",
+    ruolo: "mt-0.5 text-xs text-ink-muted",
+    esci:
+      "mt-3 w-full rounded-card border border-hairline px-3 py-2 text-sm font-medium text-ink-muted transition-colors duration-quick hover:border-soft hover:text-ink-bright"
+  },
+  videoteca: {
+    ospite:
+      "border border-quaderno-riga text-quaderno-tenue hover:border-quaderno-blu hover:text-quaderno-inchiostro",
+    iniziale:
+      "border border-quaderno-blu/30 bg-quaderno-blu-tenue text-quaderno-blu hover:bg-quaderno-blu hover:text-white",
+    pannello: "border-quaderno-riga bg-quaderno-foglio",
+    nome: "font-display text-sm font-semibold text-quaderno-inchiostro",
+    ruolo: "mt-0.5 text-xs text-quaderno-tenue",
+    esci:
+      "mt-3 w-full rounded-card border border-quaderno-riga px-3 py-2 text-sm font-medium text-quaderno-tenue transition-colors duration-quick hover:text-quaderno-inchiostro"
+  }
+};
+
+export default function Identita({ compatto = false, mondo = "biblioteca" }) {
   const { utente, esci } = useSessione();
   const [aperto, setAperto] = useState(false);
   const [accessoAperto, setAccessoAperto] = useState(false);
+
+  const veste = VESTI[mondo] || VESTI.biblioteca;
 
   if (!utente) {
     return (
@@ -29,16 +62,20 @@ export default function Identita({ compatto = false }) {
           onClick={() => setAccessoAperto(true)}
           title="Entra"
           aria-label="Entra"
-          className={`grid place-items-center rounded-card border border-hairline text-ink-muted transition-all duration-quick
-                      hover:border-soft hover:text-ink-bright active:scale-95
-                      ${compatto ? "h-9 w-9" : "h-11 w-11"}`}
+          className={`grid place-items-center rounded-card transition-all duration-quick active:scale-95
+                      ${veste.ospite} ${compatto ? "h-9 w-9" : "h-11 w-11"}`}
         >
           <Sagoma />
         </button>
 
         {accessoAperto && (
           <ModuloAccesso
-            motivo="Per avere i tuoi voti e le tue letture."
+            mondo={mondo}
+            motivo={
+              mondo === "videoteca"
+                ? "Per avere la tua videoteca: le tue serie, le tue puntate, i tuoi voti."
+                : "Per avere i tuoi voti e le tue letture."
+            }
             onRiuscito={() => setAccessoAperto(false)}
             onAnnulla={() => setAccessoAperto(false)}
           />
@@ -57,9 +94,9 @@ export default function Identita({ compatto = false }) {
         title={utente.nickname}
         aria-expanded={aperto}
         aria-label={`Sei ${utente.nickname}`}
-        className={`grid place-items-center rounded-full border border-brass-400/40 bg-brass-400/15 font-display text-sm font-semibold text-brass-300
-                    transition-all duration-quick hover:bg-brass-400/25 active:scale-95
-                    ${compatto ? "h-9 w-9" : "h-11 w-11"}`}
+        className={`grid place-items-center rounded-full font-display text-sm font-semibold
+                    transition-all duration-quick active:scale-95
+                    ${veste.iniziale} ${compatto ? "h-9 w-9" : "h-11 w-11"}`}
       >
         {iniziale}
       </button>
@@ -75,12 +112,12 @@ export default function Identita({ compatto = false }) {
             className="fixed inset-0 z-sticky cursor-default"
           />
 
-          <div className="absolute bottom-0 left-full z-toast ml-3 w-52 rounded-panel border border-hairline bg-glass-3 p-4 shadow-float backdrop-blur-2xl">
-            <p className="font-display text-sm font-semibold text-ink-bright">
-              {utente.nickname}
-            </p>
+          <div
+            className={`absolute bottom-0 left-full z-toast ml-3 w-52 rounded-panel border p-4 shadow-float ${veste.pannello}`}
+          >
+            <p className={veste.nome}>{utente.nickname}</p>
 
-            <p className="mt-0.5 text-xs text-ink-muted">
+            <p className={veste.ruolo}>
               {utente.proprietario ? "Padrone di casa" : "Lettore"}
             </p>
 
@@ -90,7 +127,7 @@ export default function Identita({ compatto = false }) {
                 setAperto(false);
                 esci();
               }}
-              className="mt-3 w-full rounded-card border border-hairline px-3 py-2 text-sm font-medium text-ink-muted transition-colors duration-quick hover:border-soft hover:text-ink-bright"
+              className={veste.esci}
             >
               Esci
             </button>

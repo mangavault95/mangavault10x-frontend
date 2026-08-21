@@ -429,11 +429,44 @@ export const eliminaTorneo = (id) =>
 
    Qui però non c'è niente in comune: un anime non si possiede, quindi
    progresso, voti e note sono di ciascuno — non esiste l'equivalente
-   dei «volumi posseduti». */
+   dei «volumi posseduti». Nemmeno l'elenco: la videoteca è di chi la
+   guarda, e ogni account ha la sua. */
 
 export const getVideoteca = () => request(`/api/anime${diChi()}`);
 
+/** La serie con tutte le sue stagioni: l'indirizzo ne porta una, torna il gruppo. */
 export const getAnime = (id) => request(`/api/anime/${id}${diChi()}`);
+
+/**
+ * Toglie una serie dalla videoteca di chi ha premuto.
+ *
+ * Non è una cancellazione dal catalogo, se non quando non la guarda
+ * più nessuno: spariscono le tue spunte, il tuo voto e le tue note, e
+ * la scheda resta a chi la sta ancora guardando.
+ */
+export const togliDallaVideoteca = (id) =>
+  request(`/api/anime/${id}`, { method: "DELETE", auth: true });
+
+/* ---- I gruppi: le stagioni della stessa serie ----
+   AnimeClick tiene Frieren in una scheda sola e Isekai Farming in due.
+   Quando la seconda strada non si riconosce da sé, queste tre chiamate
+   la sistemano a mano. */
+
+export const accorpaStagione = (id, conId) =>
+  request(`/api/anime/${id}/gruppo`, { method: "PUT", body: { con: conId }, auth: true });
+
+export const staccaStagione = (id) =>
+  request(`/api/anime/${id}/gruppo`, { method: "PUT", body: { stacca: true }, auth: true });
+
+export const rinominaStagione = (id, { etichetta, ordine }) =>
+  request(`/api/anime/${id}/gruppo`, {
+    method: "PUT",
+    body: { etichetta, ordine },
+    auth: true
+  });
+
+export const rinominaGruppoAnime = (gruppoId, titolo) =>
+  request(`/api/anime/gruppi/${gruppoId}`, { method: "PUT", body: { titolo }, auth: true });
 
 /** Le uscite dei prossimi giorni, già in ora italiana. */
 export const getCalendarioAnime = (giorni = 14) =>

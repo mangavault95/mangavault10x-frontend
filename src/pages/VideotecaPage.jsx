@@ -2,13 +2,24 @@ import { useMemo, useState } from "react";
 import useRisorsa from "../dati/useRisorsa";
 import { getVideoteca } from "../services/api";
 import { useSessione } from "../dati/sessione";
+import { raggruppa } from "../dati/videoteca";
+import { ModuloAccesso } from "../dati/AccessoProvider";
 import PaginaVideoteca, { Bottone, Caricamento, Errore, Vuoto } from "../ui/videoteca/Foglio";
 import { NOMI_STATO } from "../ui/videoteca/formati";
 import CartaAnime from "../ui/videoteca/CartaAnime";
 import AggiungiAnime from "../ui/videoteca/AggiungiAnime";
 
 /**
- * La videoteca: tutti gli anime, con il punto in cui sei.
+ * La videoteca: le tue serie, con il punto in cui sei.
+ *
+ * «Tue» alla lettera: ogni account ha la sua, e chi guarda senza
+ * essere entrato vede quella del padrone di casa — la stessa regola
+ * della biblioteca.
+ *
+ * Un pannello per SERIE, non per scheda di AnimeClick: le stagioni si
+ * accorpano qui (`dati/videoteca.js`), perché AnimeClick a volte le
+ * tiene insieme (Frieren) e a volte no (Isekai Farming), e quella
+ * incoerenza non deve arrivare fino alla griglia.
  *
  * I filtri sono quelli che si usano davvero — lo stato della visione,
  * non il genere. Chi apre questa pagina di solito sta cercando "cosa
@@ -26,28 +37,44 @@ const FILTRI = [
 ];
 
 export default function VideotecaPage() {
-  const { utente } = useSessione();
+  const { utente, lettori, idVisto } = useSessione();
   const [filtro, setFiltro] = useState("tutti");
   const [cerca, setCerca] = useState("");
   const [aggiunta, setAggiunta] = useState(false);
+  const [accesso, setAccesso] = useState(false);
 
   const { dati, errore, inCorso, ricarica } = useRisorsa(getVideoteca);
 
   // Non `dati ?? []` scritto qui: quell'array nuovo a ogni render
   // farebbe ricalcolare i filtri e i conteggi anche quando i dati non
   // sono cambiati di una virgola.
-  const serie = useMemo(() => dati ?? [], [dati]);
+  const serie = useMemo(() => raggruppa(dati ?? []), [dati]);
 
   const visibili = useMemo(() => {
     const testo = cerca.trim().toLowerCase();
 
     return serie.filter((a) => {
       if (filtro !== "tutti" && a.stato_visione !== filtro) return false;
-      if (testo && !a.titolo.toLowerCase().includes(testo)) return false;
+
+      // La ricerca guarda anche i titoli delle singole stagioni:
+      // cercare «Isekai Farming 2» deve trovare la serie, anche se il
+      // pannello si chiama solo «Isekai Farming».
+      if (
+        testo &&
+        !a.titolo.toLowerCase().includes(testo) &&
+        !a.stagioni.some((s) => s.titolo.toLowerCase().includes(testo))
+      ) {
+        return false;
+      }
 
       return true;
     });
   }, [serie, filtro, cerca]);
+
+  // Di chi è la videoteca che si sta guardando. Serve solo a chi non è
+  // entrato: sapere che quelle serie sono di un altro è la differenza
+  // fra «il sito non funziona» e «devo entrare».
+  const padrone = lettori.find((l) => l.id === idVisto);
 
   // I conteggi stanno accanto ai filtri: un filtro che porta a una
   // pagina vuota è una fatica sprecata, e il numero lo dice prima.
@@ -63,19 +90,36 @@ export default function VideotecaPage() {
 
   const episodiVisti = serie.reduce((somma, a) => somma + Number(a.episodi_visti || 0), 0);
 
+  const stagioniInPiu = serie.reduce((somma, a) => somma + (a.quanteStagioni - 1), 0);
+
   return (
     <PaginaVideoteca
       occhiello="Videoteca"
-      titolo="Quello che ho visto"
+      titolo={utente ? "Quello che ho visto" : `La videoteca di ${padrone?.nickname ?? "casa"}`}
       sommario={
         serie.length
-          ? `${serie.length} ${serie.length === 1 ? "titolo" : "titoli"} · ${episodiVisti} episodi spuntati`
+          ? [
+              `${serie.length} serie`,
+              // Le stagioni si dicono solo quando sono più delle serie:
+              // altrimenti è lo stesso numero scritto due volte.
+              stagioniInPiu > 0 ? `${serie.length + stagioniInPiu} stagioni` : null,
+              `${episodiVisti} episodi spuntati`
+            ]
+              .filter(Boolean)
+              .join(" · ")
           : undefined
       }
       azioni={
-        utente && (
+        utente ? (
           <Bottone tono="pieno" onClick={() => setAggiunta(true)}>
             Aggiungi una serie
+          </Bottone>
+        ) : (
+          // La porta d'ingresso sta dove serve: chi arriva qui e vede
+          // le serie di un altro deve poter entrare da questa pagina,
+          // non andarsela a cercare in Gestione.
+          <Bottone tono="pieno" onClick={() => setAccesso(true)}>
+            Entra per avere la tua
           </Bottone>
         )
       }
@@ -86,12 +130,20 @@ export default function VideotecaPage() {
 
       {dati && serie.length === 0 && (
         <Vuoto
-          titolo="Non c'è ancora niente"
-          sommario="Aggiungi la prima serie: la cerco su AnimeClick e mi porto dietro trama, generi, episodi e dove si vede in Italia."
+          titolo={utente ? "Non c'è ancora niente" : "Questa videoteca è vuota"}
+          sommario={
+            utente
+              ? "Aggiungi la prima serie: la cerco su AnimeClick e mi porto dietro trama, generi, episodi e dove si vede in Italia."
+              : "Entra con il tuo account — lo stesso della biblioteca — e comincia la tua: le serie, le puntate spuntate e i voti restano tuoi."
+          }
           azioni={
-            utente && (
+            utente ? (
               <Bottone tono="pieno" onClick={() => setAggiunta(true)}>
                 Aggiungi una serie
+              </Bottone>
+            ) : (
+              <Bottone tono="pieno" onClick={() => setAccesso(true)}>
+                Entra o registrati
               </Bottone>
             )
           }
@@ -156,9 +208,9 @@ export default function VideotecaPage() {
             />
           ) : (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-              {visibili.map((anime) => (
-                <li key={anime.id}>
-                  <CartaAnime anime={anime} />
+              {visibili.map((serieIntera) => (
+                <li key={serieIntera.chiave}>
+                  <CartaAnime anime={serieIntera} />
                 </li>
               ))}
             </ul>
@@ -167,6 +219,15 @@ export default function VideotecaPage() {
       )}
 
       {aggiunta && <AggiungiAnime chiudi={() => setAggiunta(false)} alFatto={ricarica} />}
+
+      {accesso && (
+        <ModuloAccesso
+          mondo="videoteca"
+          motivo="Per avere la tua videoteca: le tue serie, le tue puntate, i tuoi voti."
+          onRiuscito={() => setAccesso(false)}
+          onAnnulla={() => setAccesso(false)}
+        />
+      )}
     </PaginaVideoteca>
   );
 }

@@ -6,6 +6,10 @@ import { NOMI_STATO, formattaVoto, quandoBreve } from "./formati";
 /**
  * Una serie nella griglia della videoteca.
  *
+ * Una SERIE, non una scheda di AnimeClick: quello che arriva qui è già
+ * il gruppo con dentro le sue stagioni (`dati/videoteca.js`), e i
+ * numeri — puntate viste, prossima uscita — sono la somma di tutte.
+ *
  * Mostra tre cose e non una di più: dove sei arrivato, come si chiama,
  * e — se c'è — quando esce il prossimo episodio. Il resto (trama,
  * generi, voti, note) sta nella scheda: una griglia che prova a dire
@@ -17,6 +21,7 @@ import { NOMI_STATO, formattaVoto, quandoBreve } from "./formati";
 export default function CartaAnime({ anime }) {
   const visti = Number(anime.episodi_visti || 0);
   const disponibili = Number(anime.episodi_disponibili || 0);
+  const stagioni = Number(anime.quanteStagioni || 1);
 
   // Il denominatore giusto è quello che esiste davvero, non quello
   // dichiarato: su una serie in corso la scheda dice 24 ma le puntate
@@ -52,6 +57,14 @@ export default function CartaAnime({ anime }) {
         {anime.prossima_uscita && (
           <span className="absolute left-2 top-2 rounded-full bg-quaderno-blu px-2 py-0.5 font-numeric text-[0.65rem] font-semibold text-white">
             ep {anime.prossimo_episodio} · {quandoBreve(anime.prossima_uscita)}
+          </span>
+        )}
+
+        {/* Quante stagioni ci sono là dentro. Senza, un pannello solo
+            al posto di due sembrerebbe una serie sparita. */}
+        {stagioni > 1 && (
+          <span className="absolute bottom-2 right-2 rounded-full bg-quaderno-foglio/90 px-2 py-0.5 font-numeric text-[0.65rem] font-semibold text-quaderno-inchiostro">
+            {stagioni} stagioni
           </span>
         )}
       </div>

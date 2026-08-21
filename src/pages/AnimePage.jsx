@@ -1,11 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import useRisorsa from "../dati/useRisorsa";
 import { useSessione } from "../dati/sessione";
 import {
   getAnime,
   impostaVisione,
   rileggiAnime,
+  togliDallaVideoteca,
   urlCopertina,
   votaAnime,
   togliVotoAnime
@@ -19,13 +20,19 @@ import PaginaVideoteca, {
   Progresso,
   Scheda
 } from "../ui/videoteca/Foglio";
-import ListaEpisodi from "../ui/videoteca/ListaEpisodi";
+import Stagione from "../ui/videoteca/Stagione";
 import NoteAnime from "../ui/videoteca/NoteAnime";
-import Stelle from "../ui/videoteca/Stelle";
-import { NOMI_STATO, NOMI_STATO_SERIE, NOMI_TIPO, formattaVoto } from "../ui/videoteca/formati";
+import { NOMI_STATO_SERIE, NOMI_TIPO, formattaVoto } from "../ui/videoteca/formati";
 
 /**
- * La scheda di un anime.
+ * La scheda di una serie — con tutte le sue stagioni.
+ *
+ * L'indirizzo porta l'id di una scheda di AnimeClick, ma quello che si
+ * apre è la SERIE: se quella scheda appartiene a un gruppo, qui sotto
+ * ci sono tutte le stagioni, una sotto l'altra. È il rimedio al
+ * disordine che si vedeva prima — Isekai Farming occupava due pannelli
+ * distinti in videoteca, con due progressi separati, mentre Frieren ne
+ * occupava uno solo perché AnimeClick per lei tiene una scheda sola.
  *
  * L'ordine risponde alle domande nell'ordine in cui uno se le fa:
  * a che punto sono, quando esce la prossima, cos'è questa roba, e solo
@@ -34,23 +41,51 @@ import { NOMI_STATO, NOMI_STATO_SERIE, NOMI_TIPO, formattaVoto } from "../ui/vid
 export default function AnimePage() {
   const { id } = useParams();
   const { utente } = useSessione();
+  const navigate = useNavigate();
 
   const carica = useCallback(() => getAnime(id), [id]);
   const { dati, errore, inCorso, ricarica, setDati } = useRisorsa(carica);
 
   const [azione, setAzione] = useState(null);
+  const [apertaScelta, setApertaScelta] = useState(null);
+  const [rimozione, setRimozione] = useState(false);
+  const [guaio, setGuaio] = useState(null);
 
-  // Le spunte vivono qui e non dentro la lista: la barra di progresso
-  // in cima e le caselle in basso devono raccontare la stessa cosa nel
-  // momento stesso in cui tocchi.
-  const spuntati = useMemo(
-    () => new Set((dati?.episodi || []).filter((e) => e.visto).map((e) => e.numero)),
-    [dati]
-  );
+  // Una serie senza gruppo è una serie di una stagione sola: il resto
+  // della pagina non deve sapere che esistono due casi.
+  const stagioni = useMemo(() => {
+    if (!dati) return [];
+
+    return dati.stagioni?.length ? dati.stagioni : [dati];
+  }, [dati]);
 
   const puoiScrivere = Boolean(utente);
 
-  function aggiornaSpunte(cambio) {
+  /**
+   * Quale stagione si apre da sola.
+   *
+   * Quella cominciata e non finita, che è dove si torna nove volte su
+   * dieci. Se sono tutte finite o tutte da cominciare, l'ultima: chi
+   * apre una serie conclusa di solito vuole l'ultima puntata, non la
+   * prima di dieci anni fa.
+   */
+  const apertaId = useMemo(() => {
+    if (apertaScelta) return apertaScelta;
+
+    const inCorsoOra = stagioni.find((s) => {
+      const visti = Number(s.episodi_visti || 0);
+      const totale = (s.episodi || []).filter((e) => e.numero > 0).length;
+
+      return visti > 0 && visti < totale;
+    });
+
+    const daCominciare = stagioni.find((s) => Number(s.episodi_visti || 0) === 0);
+
+    return Number((inCorsoOra || daCominciare || stagioni[stagioni.length - 1])?.id) || null;
+  }, [apertaScelta, stagioni]);
+
+  /** Aggiorna le spunte di una stagione senza ricaricare tutta la scheda. */
+  function aggiornaSpunte(stagioneId, cambio) {
     if (cambio.ripristina) {
       ricarica();
       return;
@@ -59,34 +94,66 @@ export default function AnimePage() {
     setDati((precedente) => {
       if (!precedente) return precedente;
 
-      const episodi = precedente.episodi.map((e) => {
-        if (cambio.togli === e.numero) return { ...e, visto: false };
-        if (cambio.aggiungi?.includes(e.numero)) return { ...e, visto: true };
+      const tocca = (lista) =>
+        lista.map((e) => {
+          if (cambio.togli === e.numero) return { ...e, visto: false };
+          if (cambio.aggiungi?.includes(e.numero)) return { ...e, visto: true };
 
-        return e;
-      });
+          return e;
+        });
 
-      return { ...precedente, episodi };
+      const rifai = (s) => {
+        if (Number(s.id) !== Number(stagioneId)) return s;
+
+        const episodi = tocca(s.episodi || []);
+
+        return {
+          ...s,
+          episodi,
+          // Il conteggio va tenuto d'accordo a mano: è quello che decide
+          // la barra in cima e quale stagione si apre da sola.
+          episodi_visti: episodi.filter((e) => e.visto).length
+        };
+      };
+
+      return {
+        ...precedente,
+        episodi: Number(precedente.id) === Number(stagioneId)
+          ? tocca(precedente.episodi || [])
+          : precedente.episodi,
+        stagioni: (precedente.stagioni || []).map(rifai)
+      };
     });
   }
 
-  async function cambiaStato(stato) {
-    setAzione("stato");
+  async function cambiaStato(stagioneId, stato) {
+    setAzione(`stato-${stagioneId}`);
 
     try {
-      await impostaVisione(id, stato);
-      setDati((p) => (p ? { ...p, stato_visione: stato } : p));
+      await impostaVisione(stagioneId, stato);
+
+      setDati((p) =>
+        p
+          ? {
+              ...p,
+              stato_visione: Number(p.id) === Number(stagioneId) ? stato : p.stato_visione,
+              stagioni: (p.stagioni || []).map((s) =>
+                Number(s.id) === Number(stagioneId) ? { ...s, stato_visione: stato } : s
+              )
+            }
+          : p
+      );
     } finally {
       setAzione(null);
     }
   }
 
-  async function cambiaVoto(voto) {
-    setAzione("voto");
+  async function cambiaVoto(stagioneId, voto) {
+    setAzione(`voto-${stagioneId}`);
 
     try {
-      if (voto === null) await togliVotoAnime(id);
-      else await votaAnime(id, voto);
+      if (voto === null) await togliVotoAnime(stagioneId);
+      else await votaAnime(stagioneId, voto);
 
       await ricarica();
     } finally {
@@ -98,9 +165,27 @@ export default function AnimePage() {
     setAzione("rileggi");
 
     try {
-      await rileggiAnime(id);
+      // Tutte le stagioni, non solo quella aperta: sono la stessa serie
+      // per chi guarda, e rileggerne una sola lascerebbe le altre
+      // indietro senza che si capisca perché.
+      for (const s of stagioni) await rileggiAnime(s.id);
+
       await ricarica();
     } finally {
+      setAzione(null);
+    }
+  }
+
+  async function togli() {
+    setAzione("togli");
+    setGuaio(null);
+
+    try {
+      for (const s of stagioni) await togliDallaVideoteca(s.id);
+
+      navigate("/videoteca");
+    } catch (e) {
+      setGuaio(e);
       setAzione(null);
     }
   }
@@ -117,13 +202,39 @@ export default function AnimePage() {
 
   if (!dati) return null;
 
-  const visti = spuntati.size;
-  const disponibili = dati.episodi.filter((e) => e.numero > 0).length;
-  const su = disponibili || Number(dati.episodi_totali) || null;
+  const sola = stagioni.length === 1;
+  const prima = stagioni[0];
 
-  const prossima = dati.episodi.find(
-    (e) => e.uscita_italia && new Date(e.uscita_italia) > new Date()
+  const titolo = dati.gruppo?.titolo || dati.titolo;
+  const copertina = dati.gruppo?.cover_url || prima.cover_url || dati.cover_url;
+
+  // I numeri della serie intera: la barra in cima somma le stagioni,
+  // perché è la domanda che ci si fa aprendo — a che punto sono.
+  const visti = stagioni.reduce(
+    (somma, s) => somma + (s.episodi || []).filter((e) => e.visto).length,
+    0
   );
+
+  const disponibili = stagioni.reduce(
+    (somma, s) => somma + (s.episodi || []).filter((e) => e.numero > 0).length,
+    0
+  );
+
+  const dichiarati = stagioni.reduce((somma, s) => somma + Number(s.episodi_totali || 0), 0);
+  const su = disponibili || dichiarati || null;
+
+  const adesso = new Date();
+
+  const prossima = stagioni
+    .flatMap((s) => (s.episodi || []).map((e) => ({ ...e, stagione: s })))
+    .filter((e) => e.uscita_italia && new Date(e.uscita_italia) > adesso)
+    .sort((a, b) => new Date(a.uscita_italia) - new Date(b.uscita_italia))[0];
+
+  // I commenti sono della serie, non della stagione: si leggono tutti
+  // insieme, e si scrivono sulla stagione aperta — che è quella di cui
+  // si sta parlando.
+  const note = stagioni.flatMap((s) => s.note || []);
+  const anni = [prima.anno_inizio, stagioni[stagioni.length - 1].anno_fine].filter(Boolean);
 
   return (
     <PaginaVideoteca
@@ -132,19 +243,25 @@ export default function AnimePage() {
           ← Videoteca
         </Link>
       }
-      titolo={dati.titolo}
+      titolo={titolo}
       sommario={[
-        dati.titolo_originale,
-        [dati.anno_inizio, dati.anno_fine].filter(Boolean).join("–"),
-        NOMI_STATO_SERIE[dati.stato]
+        sola ? dati.titolo_originale : `${stagioni.length} stagioni`,
+        [...new Set(anni)].join("–"),
+        NOMI_STATO_SERIE[prima.stato]
       ]
         .filter(Boolean)
         .join(" · ")}
       azioni={
         puoiScrivere && (
-          <Bottone onClick={rileggi} disabled={azione === "rileggi"}>
-            {azione === "rileggi" ? "Rileggo…" : "Rileggi da AnimeClick"}
-          </Bottone>
+          <>
+            <Bottone onClick={rileggi} disabled={azione !== null}>
+              {azione === "rileggi" ? "Rileggo…" : "Rileggi da AnimeClick"}
+            </Bottone>
+
+            <Bottone onClick={() => setRimozione(true)} disabled={azione !== null}>
+              Togli dalla videoteca
+            </Bottone>
+          </>
         )
       }
     >
@@ -153,87 +270,59 @@ export default function AnimePage() {
         <div className="space-y-4">
           <Scheda className="overflow-hidden">
             <div className="aspect-[3/4] bg-quaderno-carta">
-              {dati.cover_url && (
-                <img
-                  src={urlCopertina(dati.cover_url)}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
+              {copertina && (
+                <img src={urlCopertina(copertina)} alt="" className="h-full w-full object-cover" />
               )}
             </div>
 
             <div className="space-y-3 p-3">
               <Progresso visti={visti} su={su} />
 
-              {puoiScrivere ? (
-                <Stelle
-                  voto={dati.voto}
-                  alVoto={cambiaVoto}
-                  disabilitato={azione === "voto"}
-                />
-              ) : (
-                dati.voto_medio && (
-                  <p className="font-numeric text-sm text-quaderno-blu">
-                    ★ {formattaVoto(dati.voto_medio)}
-                  </p>
-                )
+              {!puoiScrivere && dati.voto_medio && (
+                <p className="font-numeric text-sm text-quaderno-blu">
+                  ★ {formattaVoto(dati.voto_medio)}
+                </p>
               )}
 
-              {puoiScrivere && (
-                <div className="flex flex-wrap gap-1.5">
-                  {Object.entries(NOMI_STATO).map(([chiave, nome]) => {
-                    const acceso = dati.stato_visione === chiave;
-
-                    return (
-                      <button
-                        key={chiave}
-                        type="button"
-                        onClick={() => cambiaStato(chiave)}
-                        disabled={azione === "stato"}
-                        aria-pressed={acceso}
-                        className={`rounded-full px-2.5 py-1 text-[0.7rem] font-semibold transition-colors duration-quick
-                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu
-                          ${
-                            acceso
-                              ? "bg-quaderno-blu text-white"
-                              : "border border-quaderno-riga text-quaderno-tenue hover:text-quaderno-inchiostro"
-                          }`}
-                      >
-                        {nome}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              {/* Il voto e lo stato stanno dentro ogni stagione, qui
+                  accanto: con più stagioni sono cose diverse, e una
+                  sola coppia in cima direbbe la cosa sbagliata su
+                  tutte tranne una. */}
             </div>
           </Scheda>
 
           <Scheda className="space-y-3 p-3 text-sm">
-            <Fatto etichetta="Tipo" valore={NOMI_TIPO[dati.tipo] || dati.tipo} />
-            <Fatto etichetta="Episodi" valore={dati.episodi_dichiarati} />
-            <Fatto etichetta="Stagioni" valore={dati.stagioni} />
-            <Fatto etichetta="In Italia" valore={dati.stato_italia} />
+            <Fatto etichetta="Tipo" valore={NOMI_TIPO[prima.tipo] || prima.tipo} />
+            <Fatto
+              etichetta="Episodi"
+              valore={sola ? prima.episodi_dichiarati : `${disponibili} in ${stagioni.length} stagioni`}
+            />
+            {/* `periodo` è la frase di AnimeClick — «Autunno (2023)
+                [...] Inverno (2026)» — e non l'elenco delle stagioni,
+                che qui sotto ha un blocco tutto suo. */}
+            <Fatto etichetta="Stagioni" valore={sola ? prima.periodo : null} />
+            <Fatto etichetta="In Italia" valore={prima.stato_italia} />
 
-            {dati.generi?.length > 0 && (
+            {prima.generi?.length > 0 && (
               <div>
                 <p className="mb-1 text-[0.68rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
                   Generi
                 </p>
                 <div className="flex flex-wrap gap-1">
-                  {dati.generi.map((g) => (
+                  {prima.generi.map((g) => (
                     <Pillola key={g}>{g}</Pillola>
                   ))}
                 </div>
               </div>
             )}
 
-            {dati.distributori?.length > 0 && (
+            {prima.distributori?.length > 0 && (
               <div>
                 <p className="mb-1 text-[0.68rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
                   Dove si vede
                 </p>
                 <div className="flex flex-wrap gap-1">
-                  {dati.distributori.map((d) => (
+                  {prima.distributori.map((d) => (
                     <Pillola key={d} tono="contorno">
                       {d}
                     </Pillola>
@@ -244,9 +333,9 @@ export default function AnimePage() {
 
             {/* Il ponte con la carta: il senso di avere le due cose
                 nello stesso sito invece che in due app diverse. */}
-            {dati.manga_id && (
+            {stagioni.find((s) => s.manga_id) && (
               <Link
-                to={`/serie/${dati.manga_id}`}
+                to={`/serie/${stagioni.find((s) => s.manga_id).manga_id}`}
                 className="block pt-1 text-sm font-medium text-quaderno-blu hover:underline"
               >
                 Il manga è in collezione →
@@ -257,6 +346,12 @@ export default function AnimePage() {
 
         {/* ---------- Colonna destra ---------- */}
         <div className="space-y-6">
+          {guaio && (
+            <Scheda className="border-l-[3px] border-l-ember p-4">
+              <p className="text-sm text-quaderno-inchiostro">{guaio.message}</p>
+            </Scheda>
+          )}
+
           {prossima && (
             <Scheda className="flex flex-wrap items-center gap-x-5 gap-y-2 border-l-[3px] border-l-quaderno-blu p-4">
               <span className="font-numeric text-xs font-semibold uppercase tracking-wider text-quaderno-blu">
@@ -279,60 +374,67 @@ export default function AnimePage() {
             </Scheda>
           )}
 
-          {dati.trama && (
+          {prima.trama && (
             <Blocco titolo="Trama">
               <Scheda className="p-4">
                 <p className="max-w-[70ch] whitespace-pre-line text-sm leading-relaxed text-quaderno-inchiostro">
-                  {dati.trama}
+                  {prima.trama}
                 </p>
               </Scheda>
             </Blocco>
           )}
 
           <Blocco
-            titolo="Episodi"
+            titolo={sola ? "Episodi" : "Le stagioni"}
             extra={
               <span className="font-numeric text-xs text-quaderno-tenue">
                 {visti} di {disponibili}
               </span>
             }
           >
-            <Scheda className="px-4 py-1">
-              <ListaEpisodi
-                animeId={id}
-                episodi={dati.episodi}
-                spuntati={spuntati}
-                puoiScrivere={puoiScrivere}
-                alCambio={aggiornaSpunte}
-              />
-            </Scheda>
+            <div className="space-y-2">
+              {stagioni.map((stagione, indice) => (
+                <Stagione
+                  key={stagione.id}
+                  stagione={stagione}
+                  indice={indice}
+                  sola={sola}
+                  aperta={Number(stagione.id) === Number(apertaId)}
+                  apri={() =>
+                    setApertaScelta(
+                      Number(stagione.id) === Number(apertaId) ? -1 : Number(stagione.id)
+                    )
+                  }
+                  puoiScrivere={puoiScrivere}
+                  azione={azione}
+                  alCambio={(cambio) => aggiornaSpunte(stagione.id, cambio)}
+                  alVoto={(voto) => cambiaVoto(stagione.id, voto)}
+                  alStato={(stato) => cambiaStato(stagione.id, stato)}
+                />
+              ))}
+            </div>
           </Blocco>
 
           <Blocco titolo="Commenti">
             <NoteAnime
-              animeId={id}
-              note={dati.note}
+              animeId={apertaId && apertaId > 0 ? apertaId : prima.id}
+              note={note}
               utente={utente}
               alCambio={ricarica}
             />
           </Blocco>
-
-          {dati.voti?.length > 1 && (
-            <Blocco titolo="I voti">
-              <Scheda className="flex flex-wrap gap-4 p-4">
-                {dati.voti.map((v) => (
-                  <span key={v.utente_id} className="text-sm text-quaderno-inchiostro">
-                    {v.nickname}{" "}
-                    <span className="font-numeric font-semibold text-quaderno-blu">
-                      ★ {formattaVoto(v.voto)}
-                    </span>
-                  </span>
-                ))}
-              </Scheda>
-            </Blocco>
-          )}
         </div>
       </div>
+
+      {rimozione && (
+        <ConfermaRimozione
+          titolo={titolo}
+          stagioni={stagioni.length}
+          inCorso={azione === "togli"}
+          conferma={togli}
+          annulla={() => setRimozione(false)}
+        />
+      )}
     </PaginaVideoteca>
   );
 }
@@ -347,6 +449,46 @@ function Fatto({ etichetta, valore }) {
         {etichetta}
       </p>
       <p className="text-sm text-quaderno-inchiostro">{valore}</p>
+    </div>
+  );
+}
+
+/**
+ * «Sicuro?» prima di togliere una serie.
+ *
+ * Non è prudenza di maniera: insieme alla serie se ne vanno le spunte,
+ * il voto e i commenti di chi preme, e sono l'unica cosa in questa
+ * pagina che non si può riprendere da AnimeClick. Il riquadro lo dice
+ * con quelle parole, invece di chiedere una conferma generica.
+ */
+function ConfermaRimozione({ titolo, stagioni, inCorso, conferma, annulla }) {
+  return (
+    <div
+      className="fixed inset-0 z-modal grid place-items-center bg-quaderno-inchiostro/40 p-5"
+      role="dialog"
+      aria-label="Togliere la serie"
+    >
+      <Scheda className="w-full max-w-sm space-y-4 p-6 shadow-float">
+        <h2 className="font-display text-lg font-semibold text-quaderno-inchiostro">
+          Togliere «{titolo}»?
+        </h2>
+
+        <p className="text-sm text-quaderno-tenue">
+          Esce dalla tua videoteca
+          {stagioni > 1 ? ` con tutte e ${stagioni} le stagioni` : ""}, e con lei se ne vanno le
+          tue spunte, il tuo voto e i tuoi commenti. Gli altri lettori tengono i loro.
+        </p>
+
+        <div className="flex gap-2">
+          <Bottone tono="pieno" onClick={conferma} disabled={inCorso} className="flex-1">
+            {inCorso ? "Tolgo…" : "Togli"}
+          </Bottone>
+
+          <Bottone onClick={annulla} disabled={inCorso}>
+            Annulla
+          </Bottone>
+        </div>
+      </Scheda>
     </div>
   );
 }

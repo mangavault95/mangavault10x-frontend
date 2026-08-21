@@ -145,15 +145,33 @@ export const SEZIONI = [
   }
 ];
 
-// Separata dalle altre: è amministrazione, non navigazione quotidiana.
-// Non appartiene a nessun mondo — si vede da tutti e due.
-export const SEZIONE_ADMIN = {
-  id: "admin",
-  percorso: "/admin",
-  etichetta: "Gestione",
-  descrizione: "Modifica le schede della collezione",
-  icona: "settings"
+// Separate dalle altre: è amministrazione, non navigazione quotidiana.
+//
+// Ce n'è una per mondo, e non è un dettaglio di comodo: «Gestione»
+// deve correggere quello che si ha davanti. Premuta dalla videoteca
+// apriva le schede della collezione di carta — le uniche che non
+// c'entravano niente con la pagina da cui si arrivava.
+export const SEZIONI_ADMIN = {
+  biblioteca: {
+    id: "admin",
+    percorso: "/admin",
+    etichetta: "Gestione",
+    descrizione: "Modifica le schede della collezione",
+    icona: "settings"
+  },
+  videoteca: {
+    id: "admin-videoteca",
+    percorso: "/videoteca/gestione",
+    etichetta: "Gestione",
+    descrizione: "Stagioni, collegamenti e serie da togliere",
+    icona: "settings"
+  }
 };
+
+/** La Gestione del mondo acceso. La biblioteca resta il ripiego. */
+export function sezioneAdminDi(mondo) {
+  return SEZIONI_ADMIN[mondo] || SEZIONI_ADMIN.biblioteca;
+}
 
 /**
  * Le quattro porte della stanza.
@@ -227,7 +245,9 @@ export function titoloPer(percorso) {
 
   if (PORTE[percorso]) return `${PORTE[percorso]} · MangaVault`;
 
-  const sezione = [...SEZIONI, SEZIONE_ADMIN].find((s) => s.percorso === percorso);
+  const sezione = [...SEZIONI, ...Object.values(SEZIONI_ADMIN)].find(
+    (s) => s.percorso === percorso
+  );
 
   return sezione ? `${sezione.etichetta} · MangaVault` : "MangaVault";
 }
@@ -244,6 +264,16 @@ export function eAttiva(percorsoVoce, percorsoCorrente) {
     return (
       percorsoCorrente.startsWith("/collezione") ||
       percorsoCorrente.startsWith("/serie/")
+    );
+  }
+
+  // La Gestione della videoteca vive sotto /videoteca, ma è
+  // amministrazione: due voci accese insieme direbbero che si è in due
+  // posti contemporaneamente.
+  if (percorsoVoce === "/videoteca") {
+    return (
+      percorsoCorrente.startsWith("/videoteca") &&
+      !percorsoCorrente.startsWith(SEZIONI_ADMIN.videoteca.percorso)
     );
   }
 

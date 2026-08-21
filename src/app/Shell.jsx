@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   MONDI,
-  SEZIONE_ADMIN,
   eAttiva,
   mondoDi,
   primarieDi,
   secondarieDi,
+  sezioneAdminDi,
   sezioniDi,
   titoloPer
 } from "./navigation";
@@ -82,6 +82,9 @@ export default function Shell({ children }) {
   const mondo = mondoDi(location.pathname);
   const altroAperto = apertoSu === location.pathname;
   const veste = VESTITO[mondo];
+  // «Gestione» cambia porta col mondo: dalla videoteca apre le stagioni
+  // e i collegamenti, non le schede della collezione di carta.
+  const admin = sezioneAdminDi(mondo);
   const primarie = primarieDi(mondo);
   const secondarie = secondarieDi(mondo);
 
@@ -169,12 +172,12 @@ export default function Shell({ children }) {
         <div className="mt-auto flex flex-col items-center gap-3">
           {/* Chi sei. Sopra Gestione perché è la stessa famiglia di
               cose — non è navigazione, è amministrazione di sé. */}
-          <Identita />
+          <Identita mondo={mondo} />
 
           <VoceMenu
-            sezione={SEZIONE_ADMIN}
+            sezione={admin}
             veste={veste}
-            attiva={eAttiva(SEZIONE_ADMIN.percorso, location.pathname)}
+            attiva={eAttiva(admin.percorso, location.pathname)}
             // La pallina è la notifica: qualcuno ha chiesto di entrare
             // e aspetta una risposta. Non è un avviso da schermo intero
             // perché non è urgente — ma deve essere impossibile aprire
@@ -247,6 +250,7 @@ export default function Shell({ children }) {
       {altroAperto && (
         <FoglioAltro
           mondo={mondo}
+          admin={admin}
           veste={veste}
           secondarie={secondarie}
           richieste={richieste.length}
@@ -378,13 +382,21 @@ function Linguetta({ sezione, veste, attiva }) {
 /**
  * Il foglio che si apre da «Altro» sul telefono.
  *
- * In cima il passaggio fra i mondi, sotto le sezioni che non si aprono
- * ogni giorno e Gestione. Gestione sta qui e non fra le linguette per
- * la ragione di sempre: da mobile deve restare raggiungibile senza
- * scrivere l'indirizzo a mano, ma non merita un quinto dello schermo.
+ * In cima il passaggio fra i mondi e chi sei, sotto le sezioni che non
+ * si aprono ogni giorno e Gestione. Gestione sta qui e non fra le
+ * linguette per la ragione di sempre: da mobile deve restare
+ * raggiungibile senza scrivere l'indirizzo a mano, ma non merita un
+ * quinto dello schermo.
+ *
+ * L'identità è finita qui il giorno in cui la videoteca è diventata di
+ * ciascuno. Prima stava solo nella barra laterale, che sul telefono non
+ * esiste: chi apriva il sito dal divano non aveva nessun modo di
+ * entrare — se non fingere di correggere una scheda — e vedeva per
+ * sempre la videoteca del padrone di casa.
  */
-function FoglioAltro({ mondo, veste, secondarie, richieste, chiudi }) {
-  const voci = [...secondarie, SEZIONE_ADMIN];
+function FoglioAltro({ mondo, admin, veste, secondarie, richieste, chiudi }) {
+  const { utente, esci } = useSessione();
+  const voci = [...secondarie, admin];
 
   return (
     <div className="fixed inset-0 z-modal md:hidden" role="dialog" aria-label="Altre sezioni">
@@ -421,6 +433,47 @@ function FoglioAltro({ mondo, veste, secondarie, richieste, chiudi }) {
           })}
         </div>
 
+        {/* Chi sei, e la porta per diventare qualcuno.
+            Da entrati non si riusa `Identita`: il suo pannellino si
+            apre a destra del bottone, che dentro un foglio largo quanto
+            lo schermo vuol dire fuori dallo schermo. Qui il nome e
+            l'uscita stanno già in chiaro, e il pannellino non serve. */}
+        <div
+          className={`mb-3 flex items-center gap-3 rounded-card border px-3 py-2 ${veste.fogliettoBordo}`}
+        >
+          {utente ? (
+            <>
+              <span
+                aria-hidden="true"
+                className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-sm font-semibold ${veste.commutatoreAcceso}`}
+              >
+                {(utente.nickname || "?").trim().charAt(0).toUpperCase()}
+              </span>
+
+              <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                Sei <span className="font-semibold">{utente.nickname}</span>
+              </span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  chiudi();
+                  esci();
+                }}
+                className="shrink-0 rounded-card px-3 py-2 text-sm font-medium opacity-70"
+              >
+                Esci
+              </button>
+            </>
+          ) : (
+            <>
+              <Identita compatto mondo={mondo} />
+
+              <span className="min-w-0 flex-1 text-sm font-medium">Entra o registrati</span>
+            </>
+          )}
+        </div>
+
         <ul className="flex flex-col">
           {voci.map((sezione) => (
             <li key={sezione.id}>
@@ -433,7 +486,7 @@ function FoglioAltro({ mondo, veste, secondarie, richieste, chiudi }) {
 
                 <span className="flex-1 text-sm font-medium">{sezione.etichetta}</span>
 
-                {sezione.id === "admin" && richieste > 0 && (
+                {sezione.id === admin.id && richieste > 0 && (
                   <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ember px-1.5 font-numeric text-[0.7rem] font-bold text-void">
                     {richieste}
                   </span>

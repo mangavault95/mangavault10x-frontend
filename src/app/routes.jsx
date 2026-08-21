@@ -35,6 +35,7 @@ const Videoteca = lazy(() => import("../pages/VideotecaPage"));
 const Anime = lazy(() => import("../pages/AnimePage"));
 const Visione = lazy(() => import("../pages/VisionePage"));
 const Calendario = lazy(() => import("../pages/CalendarioPage"));
+const GestioneVideoteca = lazy(() => import("../pages/GestioneVideotecaPage"));
 
 const Cassa = lazy(() => import("../pages/CassaPage"));
 const Bacheca = lazy(() => import("../pages/BachecaPage"));
@@ -123,6 +124,12 @@ function Contenuto() {
                       (vedi `navigation.js`), ma è lo stesso sito e le
                       stesse persone. */}
                   <Route path="/videoteca" element={<Videoteca />} />
+                  {/* La Gestione della videoteca sta sotto /videoteca e
+                      non accanto a /admin: è la stessa parola, ma
+                      corregge un'altra cosa — stagioni e collegamenti,
+                      non i volumi di carta. Il segmento fisso vince sul
+                      `:id` qui sotto, che è come deve andare. */}
+                  <Route path="/videoteca/gestione" element={<GestioneVideoteca />} />
                   <Route path="/videoteca/:id" element={<Anime />} />
                   <Route path="/visione" element={<Visione />} />
                   <Route path="/calendario" element={<Calendario />} />

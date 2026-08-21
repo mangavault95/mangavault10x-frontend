@@ -1,8 +1,10 @@
 import { useCallback, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { getToken, login as accedi, registrazione as chiediAccount } from "../services/api";
 import { ContestoAccesso } from "./accesso";
 import { useSessione } from "./sessione";
 import useChiusuraVelo from "../ui/useChiusuraVelo";
+import { mondoDi } from "../app/navigation";
 
 /**
  * Rende possibile scrivere sulla collezione da qualunque punto del
@@ -19,6 +21,10 @@ import useChiusuraVelo from "../ui/useChiusuraVelo";
  */
 export function AccessoProvider({ children }) {
   const [richiesta, setRichiesta] = useState(null);
+  // Il modulo si apre dove si stava lavorando, e deve avere i colori
+  // di quel posto: su carta chiara un riquadro di vetro scuro sembra
+  // un pezzo di un altro sito.
+  const { pathname } = useLocation();
 
   // La richiesta di login pendente vive in un ref oltre che nello
   // stato: lo stato serve a disegnare il modulo, il ref a risolverlo
@@ -73,7 +79,13 @@ export function AccessoProvider({ children }) {
     <ContestoAccesso.Provider value={eseguiProtetto}>
       {children}
 
-      {richiesta && <ModuloAccesso onRiuscito={alSuccesso} onAnnulla={() => chiudi()} />}
+      {richiesta && (
+        <ModuloAccesso
+          mondo={mondoDi(pathname)}
+          onRiuscito={alSuccesso}
+          onAnnulla={() => chiudi()}
+        />
+      )}
     </ContestoAccesso.Provider>
   );
 }
@@ -82,18 +94,60 @@ export function AccessoProvider({ children }) {
    IL MODULO
    ================================================== */
 
-const CAMPO =
-  "w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60";
-
-const ETICHETTA =
-  "mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted";
+/**
+ * Il modulo si veste come il mondo in cui compare.
+ *
+ * Da quando la videoteca ha i suoi colori, lo stesso riquadro può
+ * aprirsi su legno scuro o su carta chiara. Le classi stanno scritte
+ * per intero e non composte a pezzi: Tailwind legge i sorgenti alla
+ * lettera, e una classe formata unendo stringhe non finirebbe mai nel
+ * CSS prodotto — è la stessa regola di `app/Shell.jsx`.
+ */
+const VESTI = {
+  biblioteca: {
+    velo: "bg-void/70",
+    riquadro: "border-hairline bg-glass-3 backdrop-blur-2xl",
+    titolo: "font-display text-lg font-semibold text-ink-bright",
+    testo: "text-sm text-ink-muted",
+    campo:
+      "w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60",
+    etichetta: "mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted",
+    principale:
+      "rounded-card bg-brass-400 px-4 py-2.5 text-sm font-semibold text-void transition-all duration-quick ease-settle hover:brightness-110 active:scale-95 disabled:pointer-events-none disabled:opacity-40",
+    secondario:
+      "rounded-card px-4 py-2.5 text-sm font-medium text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright",
+    piede: "border-t border-hairline pt-3 text-center text-sm text-ink-muted",
+    collegamento:
+      "font-medium text-brass-400 underline decoration-brass-400/30 underline-offset-2 hover:decoration-brass-400",
+    errore: "text-sm text-ember"
+  },
+  videoteca: {
+    velo: "bg-quaderno-inchiostro/40",
+    riquadro: "border-quaderno-riga bg-quaderno-foglio",
+    titolo: "font-display text-lg font-semibold text-quaderno-inchiostro",
+    testo: "text-sm text-quaderno-tenue",
+    campo:
+      "w-full rounded-card border border-quaderno-riga bg-quaderno-carta px-3.5 py-2.5 text-sm text-quaderno-inchiostro outline-none transition-colors duration-quick focus:border-quaderno-blu",
+    etichetta: "mb-1.5 block text-xs font-medium uppercase tracking-wider text-quaderno-tenue",
+    principale:
+      "rounded-card bg-quaderno-blu px-4 py-2.5 text-sm font-semibold text-white transition-all duration-quick ease-settle hover:brightness-110 active:scale-95 disabled:pointer-events-none disabled:opacity-40",
+    secondario:
+      "rounded-card px-4 py-2.5 text-sm font-medium text-quaderno-tenue transition-colors duration-quick hover:bg-quaderno-carta hover:text-quaderno-inchiostro",
+    piede: "border-t border-quaderno-riga pt-3 text-center text-sm text-quaderno-tenue",
+    collegamento:
+      "font-medium text-quaderno-blu underline decoration-quaderno-blu/30 underline-offset-2 hover:decoration-quaderno-blu",
+    errore: "text-sm text-ember"
+  }
+};
 
 export function ModuloAccesso({
   onRiuscito,
   onAnnulla,
   motivo = "Per salvare questa modifica.",
-  modoIniziale = "accesso"
+  modoIniziale = "accesso",
+  mondo = "biblioteca"
 }) {
+  const veste = VESTI[mondo] || VESTI.biblioteca;
   // Tre schermate nello stesso riquadro: entra, chiedi di entrare, e
   // "ho chiesto, adesso aspetta". La terza non è un dettaglio: senza,
   // chi si registra resta davanti a un modulo che sembra non aver
@@ -139,15 +193,15 @@ export function ModuloAccesso({
   if (modo === "inviata") {
     return (
       <div
-        className="fixed inset-0 z-toast grid place-items-center bg-void/70 p-5 backdrop-blur-sm animate-rise-in"
+        className={`fixed inset-0 z-toast grid place-items-center p-5 backdrop-blur-sm animate-rise-in ${veste.velo}`}
         {...velo}
       >
-        <div className="w-full max-w-sm space-y-4 rounded-panel border border-hairline bg-glass-3 p-6 shadow-float backdrop-blur-2xl">
-          <h2 className="font-display text-lg font-semibold text-ink-bright">
+        <div className={`w-full max-w-sm space-y-4 rounded-panel border p-6 shadow-float ${veste.riquadro}`}>
+          <h2 className={veste.titolo}>
             Richiesta inviata
           </h2>
 
-          <p className="text-sm text-ink-muted">
+          <p className={veste.testo}>
             Adesso tocca al proprietario della biblioteca accettarti. Quando
             l'avrà fatto potrai entrare con lo stesso nome e la stessa
             password — e avrai i tuoi voti e le tue letture, separate dalle sue.
@@ -156,7 +210,7 @@ export function ModuloAccesso({
           <button
             type="button"
             onClick={onAnnulla}
-            className="w-full rounded-card bg-brass-400 px-4 py-2.5 text-sm font-semibold text-void transition-all duration-quick ease-settle hover:brightness-110 active:scale-95"
+            className={`w-full ${veste.principale}`}
           >
             Ho capito
           </button>
@@ -169,19 +223,19 @@ export function ModuloAccesso({
 
   return (
     <div
-      className="fixed inset-0 z-toast grid place-items-center bg-void/70 p-5 backdrop-blur-sm animate-rise-in"
+      className={`fixed inset-0 z-toast grid place-items-center p-5 backdrop-blur-sm animate-rise-in ${veste.velo}`}
       {...velo}
     >
       <form
         onSubmit={invia}
-        className="w-full max-w-sm space-y-4 rounded-panel border border-hairline bg-glass-3 p-6 shadow-float backdrop-blur-2xl"
+        className={`w-full max-w-sm space-y-4 rounded-panel border p-6 shadow-float ${veste.riquadro}`}
       >
         <div>
-          <h2 className="font-display text-lg font-semibold text-ink-bright">
+          <h2 className={veste.titolo}>
             {registrazione ? "Chiedi di entrare" : "Serve l'accesso"}
           </h2>
 
-          <p className="mt-1 text-sm text-ink-muted">
+          <p className={`mt-1 ${veste.testo}`}>
             {registrazione
               ? "Scegli un nome e un soprannome: il soprannome è quello che comparirà accanto ai tuoi voti."
               : motivo}
@@ -189,7 +243,7 @@ export function ModuloAccesso({
         </div>
 
         <label className="block">
-          <span className={ETICHETTA}>Utente</span>
+          <span className={veste.etichetta}>Utente</span>
 
           <input
             value={utente}
@@ -197,13 +251,13 @@ export function ModuloAccesso({
             autoComplete="username"
             required
             autoFocus
-            className={CAMPO}
+            className={veste.campo}
           />
         </label>
 
         {registrazione && (
           <label className="block">
-            <span className={ETICHETTA}>Soprannome</span>
+            <span className={veste.etichetta}>Soprannome</span>
 
             <input
               value={nickname}
@@ -212,13 +266,13 @@ export function ModuloAccesso({
               required
               maxLength={20}
               placeholder="Come vuoi essere chiamata"
-              className={CAMPO}
+              className={veste.campo}
             />
           </label>
         )}
 
         <label className="block">
-          <span className={ETICHETTA}>Password</span>
+          <span className={veste.etichetta}>Password</span>
 
           <input
             type="password"
@@ -227,12 +281,12 @@ export function ModuloAccesso({
             autoComplete={registrazione ? "new-password" : "current-password"}
             required
             minLength={registrazione ? 8 : undefined}
-            className={CAMPO}
+            className={veste.campo}
           />
         </label>
 
         {errore && (
-          <p role="alert" className="text-sm text-ember">
+          <p role="alert" className={veste.errore}>
             {errore}
           </p>
         )}
@@ -241,7 +295,7 @@ export function ModuloAccesso({
           <button
             type="submit"
             disabled={inCorso}
-            className="flex-1 rounded-card bg-brass-400 px-4 py-2.5 text-sm font-semibold text-void transition-all duration-quick ease-settle hover:brightness-110 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
+            className={`flex-1 ${veste.principale}`}
           >
             {inCorso ? "Un attimo…" : registrazione ? "Invia la richiesta" : "Entra"}
           </button>
@@ -249,7 +303,7 @@ export function ModuloAccesso({
           <button
             type="button"
             onClick={onAnnulla}
-            className="rounded-card px-4 py-2.5 text-sm font-medium text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
+            className={veste.secondario}
           >
             Annulla
           </button>
@@ -258,7 +312,7 @@ export function ModuloAccesso({
         {/* La seconda porta. Sta qui e non altrove perché è qui che
             uno scopre di non avere un account: davanti al modulo che
             gli chiede una password che non ha. */}
-        <p className="border-t border-hairline pt-3 text-center text-sm text-ink-muted">
+        <p className={veste.piede}>
           {registrazione ? "Hai già un accesso?" : "Non hai un accesso?"}{" "}
           <button
             type="button"
@@ -266,7 +320,7 @@ export function ModuloAccesso({
               setErrore(null);
               setModo(registrazione ? "accesso" : "registrazione");
             }}
-            className="font-medium text-brass-400 underline decoration-brass-400/30 underline-offset-2 hover:decoration-brass-400"
+            className={veste.collegamento}
           >
             {registrazione ? "Entra" : "Registrati"}
           </button>
