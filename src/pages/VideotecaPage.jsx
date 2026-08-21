@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import useRisorsa from "../dati/useRisorsa";
 import { getVideoteca } from "../services/api";
 import { useSessione } from "../dati/sessione";
@@ -38,6 +39,7 @@ const FILTRI = [
 
 export default function VideotecaPage() {
   const { utente, lettori, idVisto } = useSessione();
+  const navigate = useNavigate();
   const [filtro, setFiltro] = useState("tutti");
   const [cerca, setCerca] = useState("");
   const [aggiunta, setAggiunta] = useState(false);
@@ -218,7 +220,22 @@ export default function VideotecaPage() {
         </>
       )}
 
-      {aggiunta && <AggiungiAnime chiudi={() => setAggiunta(false)} alFatto={ricarica} />}
+      {aggiunta && (
+        <AggiungiAnime
+          chiudi={() => setAggiunta(false)}
+          // Appena agganciata, si va sulla sua scheda: chi ha appena
+          // aggiunto una serie vuole segnare a che punto è, non
+          // ritrovarsi davanti alla griglia a cercare la copertina
+          // nuova. La griglia si ricarica da sola al ritorno.
+          //
+          // Se l'esito non porta l'id — non dovrebbe succedere, ma il
+          // pannello si chiude comunque — resta il vecchio ricarica,
+          // altrimenti la serie appena aggiunta non comparirebbe.
+          alFatto={(esito) =>
+            esito?.anime?.id ? navigate(`/videoteca/${esito.anime.id}`) : ricarica()
+          }
+        />
+      )}
 
       {accesso && (
         <ModuloAccesso
