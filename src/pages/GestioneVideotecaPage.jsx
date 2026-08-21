@@ -142,7 +142,7 @@ export default function GestioneVideotecaPage() {
               Su schermo stretto si ritira quando una serie è aperta: è
               la stessa colonna che a turno mostra l'una o l'altra cosa,
               come fa un telefono con qualunque elenco. */}
-          <div className={`space-y-3 ${scelta ? "hidden lg:block" : ""}`}>
+          <div className={`min-w-0 space-y-3 ${scelta ? "hidden lg:block" : ""}`}>
             <input
               value={cerca}
               onChange={(e) => setCerca(e.target.value)}
@@ -179,9 +179,15 @@ export default function GestioneVideotecaPage() {
             </Scheda>
           </div>
 
-          {/* ---------- La serie scelta ---------- */}
+          {/* ---------- La serie scelta ----------
+              `min-w-0` su tutt'e due le colonne per la stessa ragione
+              della scheda anime: i titoli sono `truncate`, cioè non
+              vanno a capo, e alla griglia che le chiede quanto spazio
+              serve al minimo rispondono con la loro lunghezza intera.
+              Qui non si vedeva ancora perché nessun titolo di serie è
+              lungo come quelli delle puntate di One Piece. */}
           {scelta ? (
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <button
                 type="button"
                 onClick={() => setSceltaId(null)}

@@ -282,9 +282,26 @@ export default function AnimePage() {
         )
       }
     >
+      {/* Le due colonne portano `min-w-0`, e non è una precauzione a
+          caso: senza, la pagina diventa più larga dello schermo e i
+          comandi sulla destra finiscono fuori.
+
+          Il motivo è che i titoli delle puntate sono `truncate`, cioè
+          `white-space: nowrap`. Troncare vale quando la larghezza è
+          già decisa, ma qui è la griglia a doverla decidere, e per
+          farlo chiede al contenuto quanto gli serve al minimo: una
+          riga che non va a capo risponde con la lunghezza intera del
+          titolo. «Diagnosi d'avventura del dottor Chopper ~L'ultimo
+          messaggio lasciato dal genio~» pretende 507px e la colonna
+          si allarga a 630 dentro una finestra da 375.
+
+          `min-w-0` toglie quella pretesa: la colonna prende la
+          larghezza che c'è e il troncamento torna a fare il suo
+          mestiere. Serve su entrambe perché a telefono la colonna è
+          una sola e le due schede se la dividono. */}
       <div className="grid gap-5 lg:grid-cols-[18rem_1fr]">
         {/* ---------- Colonna sinistra: la copertina e i fatti ---------- */}
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <Scheda className="overflow-hidden">
             <div className="aspect-[3/4] bg-quaderno-carta">
               {copertina && (
@@ -362,7 +379,7 @@ export default function AnimePage() {
         </div>
 
         {/* ---------- Colonna destra ---------- */}
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           {guaio && (
             <Scheda className="border-l-[3px] border-l-ember p-4">
               <p className="text-sm text-quaderno-inchiostro">{guaio.message}</p>
