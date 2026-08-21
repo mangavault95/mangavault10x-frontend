@@ -420,6 +420,99 @@ export const eliminaTorneo = (id) =>
   request(`/api/tornei/${id}`, { method: "DELETE", auth: true });
 
 /* ==================================================
+   VIDEOTECA
+   ==================================================
+
+   Gli anime visti. Vale la stessa regola del resto del sito: in
+   lettura si può guardare la videoteca di un altro (`diChi()`), in
+   scrittura chi sei lo dice il token e nient'altro.
+
+   Qui però non c'è niente in comune: un anime non si possiede, quindi
+   progresso, voti e note sono di ciascuno — non esiste l'equivalente
+   dei «volumi posseduti». */
+
+export const getVideoteca = () => request(`/api/anime${diChi()}`);
+
+export const getAnime = (id) => request(`/api/anime/${id}${diChi()}`);
+
+/** Le uscite dei prossimi giorni, già in ora italiana. */
+export const getCalendarioAnime = (giorni = 14) =>
+  request(`/api/anime/calendario${diChi(`giorni=${giorni}`)}`);
+
+/**
+ * I candidati su AnimeClick per un titolo.
+ *
+ * Restituisce una lista da far scegliere, mai una risposta sola: la
+ * ricerca di AnimeClick ordina per titolo e non per pertinenza, e
+ * "one piece" propone per primo un crossover con Dragon Ball.
+ */
+export const cercaAnime = (titolo) =>
+  request(`/api/anime/cerca?titolo=${encodeURIComponent(titolo)}`, { auth: true });
+
+export const agganciaAnime = (animeclickId) =>
+  request("/api/anime", {
+    method: "POST",
+    body: { animeclick_id: animeclickId },
+    auth: true
+  });
+
+/** Rilegge scheda ed episodi: serve alle serie in corso. */
+export const rileggiAnime = (id) =>
+  request(`/api/anime/${id}/rileggi`, { method: "POST", auth: true });
+
+export const collegaAnimeAlManga = (id, mangaId) =>
+  request(`/api/anime/${id}/manga`, {
+    method: "PUT",
+    body: { manga_id: mangaId },
+    auth: true
+  });
+
+export const impostaVisione = (id, stato) =>
+  request(`/api/anime/${id}/visione`, { method: "PUT", body: { stato }, auth: true });
+
+/**
+ * Spunta un episodio. Con `fino` spunta anche tutti quelli prima —
+ * il gesto di chi torna dopo una serata e non vuole toccare otto
+ * caselle una per una.
+ */
+export const segnaEpisodio = (id, numero, { fino = false } = {}) =>
+  request(`/api/anime/${id}/episodi/${numero}`, {
+    method: "POST",
+    body: { fino },
+    auth: true
+  });
+
+export const togliEpisodio = (id, numero) =>
+  request(`/api/anime/${id}/episodi/${numero}`, { method: "DELETE", auth: true });
+
+export const votaAnime = (id, voto) =>
+  request(`/api/anime/${id}/voto`, { method: "PUT", body: { voto }, auth: true });
+
+export const togliVotoAnime = (id) =>
+  request(`/api/anime/${id}/voto`, { method: "DELETE", auth: true });
+
+/**
+ * Un commento: con `numeroEpisodio` parla di quella puntata, senza
+ * parla della serie intera.
+ */
+export const creaNotaAnime = (id, { testo, numeroEpisodio = null, spoiler = false }) =>
+  request(`/api/anime/${id}/note`, {
+    method: "POST",
+    body: { testo, numero_episodio: numeroEpisodio, spoiler },
+    auth: true
+  });
+
+export const modificaNotaAnime = (noteId, { testo, spoiler }) =>
+  request(`/api/anime/note/${noteId}`, {
+    method: "PUT",
+    body: { testo, spoiler },
+    auth: true
+  });
+
+export const eliminaNotaAnime = (noteId) =>
+  request(`/api/anime/note/${noteId}`, { method: "DELETE", auth: true });
+
+/* ==================================================
    MERCATO
    ================================================== */
 

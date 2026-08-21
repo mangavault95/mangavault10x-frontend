@@ -16,6 +16,17 @@ const TRACCIATI = {
   settings:
     "M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-3-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.2-3l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
   search: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3",
+  /**
+   * Una striscia di pellicola: il marchio della videoteca.
+   *
+   * I fori di trascinamento sono trattini e non quadrati veri —
+   * a venti pixel un quadratino da due unità con il bordo spesso 1,6
+   * diventa una macchia piena, mentre il trattino resta un foro.
+   */
+  pellicola:
+    "M4 5h16v14H4zM7.6 5v14M16.4 5v14M4 8.6h3.6M4 12h3.6M4 15.4h3.6M16.4 8.6H20M16.4 12H20M16.4 15.4H20",
+  // Il calendario delle uscite: il mese, con i due anelli in cima.
+  calendario: "M4 6h16v14H4zM4 10h16M8.5 4v3.6M15.5 4v3.6",
   close: "M6 6l12 12M18 6L6 18",
   back: "M15 19l-7-7 7-7",
   plus: "M12 5v14M5 12h14",

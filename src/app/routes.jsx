@@ -29,6 +29,13 @@ const NonTrovata = lazy(() => import("../pages/NonTrovataPage"));
 // pagine qui sopra, altro racconto: il perché sta in `ui/Approdo.jsx`.
 // Ognuna è un chunk suo — chi non passa mai dalla stanza non le scarica,
 // e chi ci passa ne scarica una alla volta.
+// La videoteca è un mondo a parte anche nel codice scaricato: chi non
+// ci entra mai non porta a casa nemmeno un byte delle sue pagine.
+const Videoteca = lazy(() => import("../pages/VideotecaPage"));
+const Anime = lazy(() => import("../pages/AnimePage"));
+const Visione = lazy(() => import("../pages/VisionePage"));
+const Calendario = lazy(() => import("../pages/CalendarioPage"));
+
 const Cassa = lazy(() => import("../pages/CassaPage"));
 const Bacheca = lazy(() => import("../pages/BachecaPage"));
 const Tavolino = lazy(() => import("../pages/TavolinoPage"));
@@ -108,6 +115,17 @@ function Contenuto() {
                   <Route path="/lettura" element={<Lettura />} />
                   <Route path="/statistiche" element={<Statistiche />} />
                   <Route path="/admin" element={<Admin />} />
+
+                  {/* ---- Videoteca ----
+                      L'altra metà del sito: gli anime visti, il punto in
+                      cui si è arrivati, e quando esce il prossimo
+                      episodio in Italia. Ha i suoi colori e la sua barra
+                      (vedi `navigation.js`), ma è lo stesso sito e le
+                      stesse persone. */}
+                  <Route path="/videoteca" element={<Videoteca />} />
+                  <Route path="/videoteca/:id" element={<Anime />} />
+                  <Route path="/visione" element={<Visione />} />
+                  <Route path="/calendario" element={<Calendario />} />
 
                   {/* Il gioco e le partite già giocate. Una partita ha
                       un indirizzo suo perché è una cosa che si manda a

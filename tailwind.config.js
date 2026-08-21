@@ -76,7 +76,27 @@ export default {
         carta: "#efe6d2", // la pagina di un volume
         scontrino: "#e9e7e0", // la carta termica del registratore
         sughero: "#8b6a45", // il pannello della bacheca
-        inchiostro: "#2a2118" // quello che ci si scrive sopra
+        inchiostro: "#2a2118", // quello che ci si scrive sopra
+
+        // ---- Videoteca: "Quaderno" ----
+        // L'unica sezione del sito che è chiara per tutta la sua
+        // estensione, e non per un oggetto solo come lo scontrino o la
+        // bacheca. È voluto: la videoteca deve sembrare un altro posto
+        // pur restando lo stesso sito, e il modo più netto di dirlo è
+        // ribaltare la luce.
+        //
+        // Freddo dove la biblioteca è calda, blu dove lei è ottone:
+        // è la videoteca vera, quella degli schedari e delle tessere,
+        // non un salotto di legno.
+        quaderno: {
+          carta: "#f2f4f7", // il fondo della sezione
+          foglio: "#ffffff", // le schede appoggiate sopra
+          riga: "#dde2ea", // le righe del quaderno: bordi e divisori
+          inchiostro: "#131a26", // quello che ci si scrive
+          tenue: "#66707f", // metadati, didascalie
+          blu: "#1b3fcc", // l'accento: progressi, ore, numeri
+          "blu-tenue": "#e3e8ff" // il blu quando fa da fondo
+        }
       },
 
       // Vetro a tre livelli: più un pannello è "vicino", più è denso.

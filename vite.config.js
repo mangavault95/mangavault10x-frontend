@@ -152,7 +152,50 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), preconnessione(ambiente.VITE_API_URL), guscioOffline()],
     server: {
       port: Number(process.env.PORT) || 5173,
-      proxy: inoltri
+      proxy: {
+        ...inoltri,
+
+        /**
+         * Il backend, in sviluppo.
+         *
+         * Render accetta solo le origini dichiarate in `ALLOWED_ORIGINS`
+         * — l'indirizzo Vercel — e la deroga per localhost vale solo se
+         * `NODE_ENV` non è `production`, cosa che in produzione non
+         * succede mai. Risultato: `npm run dev` parte, ma ogni chiamata
+         * muore con «No 'Access-Control-Allow-Origin'», che sembra il
+         * server addormentato e non lo è.
+         *
+         * Questo inoltro gira lato server, dove il CORS non esiste: il
+         * browser vede solo localhost. Vale a una condizione — che gli
+         * indirizzi siano relativi, cioè `VITE_API_URL` vuoto in
+         * `.env.local` (che ha la precedenza su `.env` e non finisce su
+         * GitHub). In produzione non cambia niente: là `VITE_API_URL` è
+         * quello vero e questo blocco non esiste nemmeno.
+         */
+        "/api": {
+          target: "https://mangavault10x-api.onrender.com",
+          changeOrigin: true,
+
+          /**
+           * Via l'intestazione `Origin`.
+           *
+           * `changeOrigin` riscrive `Host`, non `Origin`, e il browser
+           * l'`Origin` lo aggiunge da sé a tutto ciò che non è una GET.
+           * Risultato: le letture passavano e le scritture no —
+           * spuntare un episodio in locale rispondeva «Origine non
+           * autorizzata: http://localhost:5173», che sembra un
+           * problema di permessi e invece è questa riga mancante.
+           * Senza quell'intestazione la richiesta arriva a Render come
+           * arriva un curl, e il controllo delle origini la lascia
+           * passare.
+           */
+          configure: (proxy) => {
+            proxy.on("proxyReq", (richiesta) => {
+              richiesta.removeHeader("origin");
+            });
+          }
+        }
+      }
     }
   };
 });
