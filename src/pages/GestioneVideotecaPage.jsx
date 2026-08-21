@@ -7,7 +7,9 @@ import { raggruppa, etichettaStagione } from "../dati/videoteca";
 import { ModuloAccesso } from "../dati/AccessoProvider";
 import {
   accorpaStagione,
+  cercaTagliStagioni,
   collegaAnimeAlManga,
+  impostaTagliStagioni,
   getVideoteca,
   rileggiAnime,
   rinominaGruppoAnime,
@@ -339,8 +341,8 @@ function NomeDellaSerie({ serie, fai, inCorso }) {
           <>
             <p className="text-sm font-semibold text-quaderno-inchiostro">{serie.titolo}</p>
             <p className="text-xs text-quaderno-tenue">
-              Una stagione sola: il nome è quello della scheda di AnimeClick, e si cambia solo
-              lì. Unendola a un'altra stagione nascerà un nome della serie, modificabile.
+              Una scheda sola di AnimeClick: il nome è il suo, e si cambia solo lì. Unendola a
+              un'altra scheda nasce un nome della serie, che si può riscrivere.
             </p>
           </>
         )}
@@ -406,6 +408,18 @@ function RigaStagione({ stagione, indice, sola, fai, inCorso, alTolta }) {
         </div>
       )}
 
+      {/* La chiave rimonta il campo quando i tagli cambiano da fuori:
+          «Chiedi ad AniList» li riscrive, e un campo che continua a
+          mostrare quello che c'era scritto prima farebbe credere che la
+          richiesta non sia servita a niente. */}
+      <Tagli
+        key={(stagione.tagli || []).join(",")}
+        stagione={stagione}
+        chiave={chiave}
+        fai={fai}
+        inCorso={inCorso}
+      />
+
       <div className="flex flex-wrap gap-2">
         <Bottone
           disabled={inCorso !== null}
@@ -429,6 +443,77 @@ function RigaStagione({ stagione, indice, sola, fai, inCorso, alTolta }) {
         )}
       </div>
     </Scheda>
+  );
+}
+
+/**
+ * Le stagioni dentro una scheda sola.
+ *
+ * Frieren è una scheda di AnimeClick con dentro 38 puntate che sono
+ * due stagioni, 28 + 10, numerate di seguito. AnimeClick il confine
+ * non lo scrive da nessuna parte — nella sua tabella degli episodi non
+ * c'è nessun separatore — e il sito lo va a chiedere ad AniList, che
+ * tiene un media per stagione.
+ *
+ * L'automatismo accetta solo abbinamenti che tornano col conto delle
+ * puntate, quindi quando non trova niente lascia l'elenco unico invece
+ * di tagliare a caso. Questo campo è la via d'uscita: si scrivono i
+ * numeri delle puntate da cui comincia una stagione nuova.
+ */
+function Tagli({ stagione, chiave, fai, inCorso }) {
+  const attuali = (stagione.tagli || []).join(", ");
+  const [testo, setTesto] = useState(attuali);
+
+  const puntate = Number(stagione.episodi_disponibili || 0);
+
+  // Sotto le due puntate non c'è niente da tagliare, e il campo
+  // sarebbe solo un'altra cosa da leggere.
+  if (puntate < 2) return null;
+
+  const numeri = testo
+    .split(/[,\s]+/)
+    .map((n) => Number(n))
+    .filter((n) => Number.isInteger(n) && n > 1);
+
+  return (
+    <div className="space-y-2 border-t border-quaderno-riga pt-3">
+      <label className="block text-[0.68rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+        Le stagioni cominciano dalla puntata
+      </label>
+
+      <div className="flex flex-wrap gap-2">
+        <input
+          value={testo}
+          onChange={(e) => setTesto(e.target.value)}
+          inputMode="numeric"
+          placeholder="es. 29"
+          aria-label={`Puntate d'inizio stagione di ${stagione.titolo}`}
+          className="min-w-0 flex-1 rounded-lg border border-quaderno-riga bg-quaderno-carta px-3 py-1.5 font-numeric text-sm text-quaderno-inchiostro placeholder:text-quaderno-tenue focus:outline-none focus:ring-2 focus:ring-quaderno-blu"
+        />
+
+        <Bottone
+          disabled={inCorso !== null || testo.trim() === attuali}
+          onClick={() =>
+            fai(`${chiave}-tagli`, () => impostaTagliStagioni(stagione.id, numeri))
+          }
+        >
+          {inCorso === `${chiave}-tagli` ? "Salvo…" : "Salva"}
+        </Bottone>
+
+        <Bottone
+          disabled={inCorso !== null}
+          onClick={() => fai(`${chiave}-cerca-tagli`, () => cercaTagliStagioni(stagione.id))}
+        >
+          {inCorso === `${chiave}-cerca-tagli` ? "Chiedo…" : "Chiedi ad AniList"}
+        </Bottone>
+      </div>
+
+      <p className="text-xs text-quaderno-tenue">
+        {stagione.tagli?.length
+          ? `${stagione.tagli.length + 1} stagioni in questa scheda di ${puntate} puntate.`
+          : `Un elenco unico di ${puntate} puntate. Se sono più stagioni, scrivi da quale numero comincia ognuna dopo la prima.`}
+      </p>
+    </div>
   );
 }
 

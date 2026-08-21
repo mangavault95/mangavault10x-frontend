@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { agganciaAnime, cercaAnime, urlCopertina } from "../../services/api";
 import { Bottone, Scheda } from "./Foglio";
+import Sovrapposizione from "../Sovrapposizione";
 
 /**
  * Il pannello che mette una serie in videoteca.
@@ -57,98 +58,100 @@ export default function AggiungiAnime({ chiudi, alFatto }) {
   }
 
   return (
-    <div className="fixed inset-0 z-modal grid place-items-center p-3" role="dialog" aria-label="Aggiungi un anime">
-      <button
-        type="button"
-        aria-label="Chiudi"
-        onClick={chiudi}
-        className="absolute inset-0 bg-quaderno-inchiostro/40"
-      />
+    <Sovrapposizione>
+      <div className="fixed inset-0 z-modal grid place-items-center p-3" role="dialog" aria-label="Aggiungi un anime">
+        <button
+          type="button"
+          aria-label="Chiudi"
+          onClick={chiudi}
+          className="absolute inset-0 bg-quaderno-inchiostro/40"
+        />
 
-      <Scheda className="relative flex max-h-[85dvh] w-full max-w-2xl flex-col overflow-hidden shadow-float">
-        <form onSubmit={cerca} className="flex gap-2 border-b border-quaderno-riga p-4">
-          <input
-            autoFocus
-            value={titolo}
-            onChange={(e) => setTitolo(e.target.value)}
-            placeholder="Titolo della serie — anche in italiano"
-            aria-label="Titolo da cercare"
-            className="min-w-0 flex-1 rounded-lg border border-quaderno-riga bg-quaderno-carta px-3 py-2 text-sm text-quaderno-inchiostro placeholder:text-quaderno-tenue
-              focus:outline-none focus:ring-2 focus:ring-quaderno-blu"
-          />
+        <Scheda className="relative flex max-h-[85dvh] w-full max-w-2xl flex-col overflow-hidden shadow-float">
+          <form onSubmit={cerca} className="flex gap-2 border-b border-quaderno-riga p-4">
+            <input
+              autoFocus
+              value={titolo}
+              onChange={(e) => setTitolo(e.target.value)}
+              placeholder="Titolo della serie — anche in italiano"
+              aria-label="Titolo da cercare"
+              className="min-w-0 flex-1 rounded-lg border border-quaderno-riga bg-quaderno-carta px-3 py-2 text-sm text-quaderno-inchiostro placeholder:text-quaderno-tenue
+                focus:outline-none focus:ring-2 focus:ring-quaderno-blu"
+            />
 
-          <Bottone tono="pieno" type="submit" disabled={inCorso || titolo.trim().length < 2}>
-            {inCorso ? "Cerco…" : "Cerca"}
-          </Bottone>
-        </form>
+            <Bottone tono="pieno" type="submit" disabled={inCorso || titolo.trim().length < 2}>
+              {inCorso ? "Cerco…" : "Cerca"}
+            </Bottone>
+          </form>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">
-          {errore && (
-            <p className="mb-3 rounded-lg bg-quaderno-carta px-3 py-2 text-sm text-quaderno-inchiostro">
-              {errore.message}
-            </p>
-          )}
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {errore && (
+              <p className="mb-3 rounded-lg bg-quaderno-carta px-3 py-2 text-sm text-quaderno-inchiostro">
+                {errore.message}
+              </p>
+            )}
 
-          {candidati === null && !inCorso && (
-            <p className="py-8 text-center text-sm text-quaderno-tenue">
-              La ricerca è letterale: cerca come si chiama la serie, senza refusi.
-            </p>
-          )}
+            {candidati === null && !inCorso && (
+              <p className="py-8 text-center text-sm text-quaderno-tenue">
+                La ricerca è letterale: cerca come si chiama la serie, senza refusi.
+              </p>
+            )}
 
-          {candidati?.length === 0 && (
-            <p className="py-8 text-center text-sm text-quaderno-tenue">
-              Nessun titolo. Prova con il nome originale, o con una parola sola.
-            </p>
-          )}
+            {candidati?.length === 0 && (
+              <p className="py-8 text-center text-sm text-quaderno-tenue">
+                Nessun titolo. Prova con il nome originale, o con una parola sola.
+              </p>
+            )}
 
-          <ul className="space-y-2">
-            {candidati?.map((c) => (
-              <li key={c.animeclickId}>
-                <div className="flex items-center gap-3 rounded-card border border-quaderno-riga p-2">
-                  <div className="h-16 w-12 shrink-0 overflow-hidden rounded bg-quaderno-carta">
-                    {c.copertina && (
-                      <img
-                        src={urlCopertina(c.copertina)}
-                        alt=""
-                        loading="lazy"
-                        className="h-full w-full object-cover"
-                      />
+            <ul className="space-y-2">
+              {candidati?.map((c) => (
+                <li key={c.animeclickId}>
+                  <div className="flex items-center gap-3 rounded-card border border-quaderno-riga p-2">
+                    <div className="h-16 w-12 shrink-0 overflow-hidden rounded bg-quaderno-carta">
+                      {c.copertina && (
+                        <img
+                          src={urlCopertina(c.copertina)}
+                          alt=""
+                          loading="lazy"
+                          className="h-full w-full object-cover"
+                        />
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-quaderno-inchiostro">
+                        {c.titolo}
+                      </p>
+                      <p className="font-numeric text-xs text-quaderno-tenue">
+                        {c.anno || "anno ignoto"} · scheda {c.animeclickId}
+                      </p>
+                    </div>
+
+                    {c.giaInVideoteca ? (
+                      <span className="shrink-0 text-xs font-medium text-quaderno-tenue">
+                        già in videoteca
+                      </span>
+                    ) : (
+                      <Bottone
+                        tono="pieno"
+                        onClick={() => aggancia(c)}
+                        disabled={aggancioInCorso !== null}
+                        className="shrink-0"
+                      >
+                        {aggancioInCorso === c.animeclickId ? "Aggiungo…" : "Aggiungi"}
+                      </Bottone>
                     )}
                   </div>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-quaderno-inchiostro">
-                      {c.titolo}
-                    </p>
-                    <p className="font-numeric text-xs text-quaderno-tenue">
-                      {c.anno || "anno ignoto"} · scheda {c.animeclickId}
-                    </p>
-                  </div>
-
-                  {c.giaInVideoteca ? (
-                    <span className="shrink-0 text-xs font-medium text-quaderno-tenue">
-                      già in videoteca
-                    </span>
-                  ) : (
-                    <Bottone
-                      tono="pieno"
-                      onClick={() => aggancia(c)}
-                      disabled={aggancioInCorso !== null}
-                      className="shrink-0"
-                    >
-                      {aggancioInCorso === c.animeclickId ? "Aggiungo…" : "Aggiungi"}
-                    </Bottone>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="flex justify-end border-t border-quaderno-riga p-3">
-          <Bottone onClick={chiudi}>Chiudi</Bottone>
-        </div>
-      </Scheda>
-    </div>
+          <div className="flex justify-end border-t border-quaderno-riga p-3">
+            <Bottone onClick={chiudi}>Chiudi</Bottone>
+          </div>
+        </Scheda>
+      </div>
+    </Sovrapposizione>
   );
 }

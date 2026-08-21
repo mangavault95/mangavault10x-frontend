@@ -37,6 +37,12 @@ export default function Stagione({
   const episodi = stagione.episodi || [];
   const spuntati = new Set(episodi.filter((e) => e.visto).map((e) => e.numero));
 
+  // I comandi stanno solo sul primo blocco di ogni scheda: lo stato
+  // della visione e il voto appartengono alla RIGA, non al pezzo di
+  // elenco — Frieren è una scheda sola con dentro due stagioni, e due
+  // file di stelle che cambiano insieme sarebbero una promessa falsa.
+  const comandi = puoiScrivere && stagione.comandi !== false;
+
   const disponibili = episodi.filter((e) => e.numero > 0).length;
   const su = disponibili || Number(stagione.episodi_totali) || null;
 
@@ -56,7 +62,7 @@ export default function Stagione({
           // Il nome scritto a parte: dentro il bottone ci sono un titolo,
           // una barra e delle percentuali, e messi in fila fanno
           // un'etichetta che nessuno vorrebbe sentirsi leggere.
-          aria-label={sola ? "Gli episodi" : `${nome}: ${stagione.titolo}`}
+          aria-label={sola ? "Gli episodi" : `${nome}: ${stagione.sottotitolo || stagione.titolo}`}
           className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu"
         >
           <span
@@ -79,7 +85,7 @@ export default function Stagione({
                     : "min-w-0 truncate text-xs text-quaderno-tenue"
                 }
               >
-                {sola ? "Episodi" : stagione.titolo}
+                {sola ? "Episodi" : stagione.sottotitolo || stagione.titolo}
               </span>
 
               {stagione.tipo && stagione.tipo !== "serie_tv" && (
@@ -94,13 +100,14 @@ export default function Stagione({
         </button>
 
         <div className="flex flex-wrap items-center gap-2">
-          {puoiScrivere ? (
+          {comandi ? (
             <Stelle
               voto={stagione.voto}
               alVoto={alVoto}
               disabilitato={azione === `voto-${stagione.id}`}
             />
           ) : (
+            !puoiScrivere &&
             stagione.voto_medio && (
               <span className="font-numeric text-sm text-quaderno-blu">
                 ★ {formattaVoto(stagione.voto_medio)}
@@ -108,7 +115,7 @@ export default function Stagione({
             )
           )}
 
-          {altrui.length > 1 && (
+          {stagione.comandi !== false && altrui.length > 1 && (
             <span className="font-numeric text-xs text-quaderno-tenue">
               {altrui.map((v) => `${v.nickname} ★${formattaVoto(v.voto)}`).join(" · ")}
             </span>
@@ -116,7 +123,7 @@ export default function Stagione({
         </div>
       </div>
 
-      {puoiScrivere && (
+      {comandi && (
         <div className="flex flex-wrap gap-1.5 border-t border-quaderno-riga px-3 py-2">
           {Object.entries(NOMI_STATO).map(([chiave, etichetta]) => {
             const acceso = stagione.stato_visione === chiave;

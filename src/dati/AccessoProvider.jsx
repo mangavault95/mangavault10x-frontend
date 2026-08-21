@@ -4,6 +4,7 @@ import { getToken, login as accedi, registrazione as chiediAccount } from "../se
 import { ContestoAccesso } from "./accesso";
 import { useSessione } from "./sessione";
 import useChiusuraVelo from "../ui/useChiusuraVelo";
+import Sovrapposizione from "../ui/Sovrapposizione";
 import { mondoDi } from "../app/navigation";
 
 /**
@@ -192,141 +193,145 @@ export function ModuloAccesso({
 
   if (modo === "inviata") {
     return (
-      <div
-        className={`fixed inset-0 z-toast grid place-items-center p-5 backdrop-blur-sm animate-rise-in ${veste.velo}`}
-        {...velo}
-      >
-        <div className={`w-full max-w-sm space-y-4 rounded-panel border p-6 shadow-float ${veste.riquadro}`}>
-          <h2 className={veste.titolo}>
-            Richiesta inviata
-          </h2>
+      <Sovrapposizione>
+        <div
+          className={`fixed inset-0 z-toast grid place-items-center p-5 backdrop-blur-sm animate-rise-in ${veste.velo}`}
+          {...velo}
+        >
+          <div className={`w-full max-w-sm space-y-4 rounded-panel border p-6 shadow-float ${veste.riquadro}`}>
+            <h2 className={veste.titolo}>
+              Richiesta inviata
+            </h2>
 
-          <p className={veste.testo}>
-            Adesso tocca al proprietario della biblioteca accettarti. Quando
-            l'avrà fatto potrai entrare con lo stesso nome e la stessa
-            password — e avrai i tuoi voti e le tue letture, separate dalle sue.
-          </p>
+            <p className={veste.testo}>
+              Adesso tocca al proprietario della biblioteca accettarti. Quando
+              l'avrà fatto potrai entrare con lo stesso nome e la stessa
+              password — e avrai i tuoi voti e le tue letture, separate dalle sue.
+            </p>
 
-          <button
-            type="button"
-            onClick={onAnnulla}
-            className={`w-full ${veste.principale}`}
-          >
-            Ho capito
-          </button>
+            <button
+              type="button"
+              onClick={onAnnulla}
+              className={`w-full ${veste.principale}`}
+            >
+              Ho capito
+            </button>
+          </div>
         </div>
-      </div>
+      </Sovrapposizione>
     );
   }
 
   const registrazione = modo === "registrazione";
 
   return (
-    <div
-      className={`fixed inset-0 z-toast grid place-items-center p-5 backdrop-blur-sm animate-rise-in ${veste.velo}`}
-      {...velo}
-    >
-      <form
-        onSubmit={invia}
-        className={`w-full max-w-sm space-y-4 rounded-panel border p-6 shadow-float ${veste.riquadro}`}
+    <Sovrapposizione>
+      <div
+        className={`fixed inset-0 z-toast grid place-items-center p-5 backdrop-blur-sm animate-rise-in ${veste.velo}`}
+        {...velo}
       >
-        <div>
-          <h2 className={veste.titolo}>
-            {registrazione ? "Chiedi di entrare" : "Serve l'accesso"}
-          </h2>
+        <form
+          onSubmit={invia}
+          className={`w-full max-w-sm space-y-4 rounded-panel border p-6 shadow-float ${veste.riquadro}`}
+        >
+          <div>
+            <h2 className={veste.titolo}>
+              {registrazione ? "Chiedi di entrare" : "Serve l'accesso"}
+            </h2>
 
-          <p className={`mt-1 ${veste.testo}`}>
-            {registrazione
-              ? "Scegli un nome e un soprannome: il soprannome è quello che comparirà accanto ai tuoi voti."
-              : motivo}
-          </p>
-        </div>
+            <p className={`mt-1 ${veste.testo}`}>
+              {registrazione
+                ? "Scegli un nome e un soprannome: il soprannome è quello che comparirà accanto ai tuoi voti."
+                : motivo}
+            </p>
+          </div>
 
-        <label className="block">
-          <span className={veste.etichetta}>Utente</span>
-
-          <input
-            value={utente}
-            onChange={(e) => setUtente(e.target.value)}
-            autoComplete="username"
-            required
-            autoFocus
-            className={veste.campo}
-          />
-        </label>
-
-        {registrazione && (
           <label className="block">
-            <span className={veste.etichetta}>Soprannome</span>
+            <span className={veste.etichetta}>Utente</span>
 
             <input
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              autoComplete="nickname"
+              value={utente}
+              onChange={(e) => setUtente(e.target.value)}
+              autoComplete="username"
               required
-              maxLength={20}
-              placeholder="Come vuoi essere chiamata"
+              autoFocus
               className={veste.campo}
             />
           </label>
-        )}
 
-        <label className="block">
-          <span className={veste.etichetta}>Password</span>
+          {registrazione && (
+            <label className="block">
+              <span className={veste.etichetta}>Soprannome</span>
 
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete={registrazione ? "new-password" : "current-password"}
-            required
-            minLength={registrazione ? 8 : undefined}
-            className={veste.campo}
-          />
-        </label>
+              <input
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                autoComplete="nickname"
+                required
+                maxLength={20}
+                placeholder="Come vuoi essere chiamata"
+                className={veste.campo}
+              />
+            </label>
+          )}
 
-        {errore && (
-          <p role="alert" className={veste.errore}>
-            {errore}
+          <label className="block">
+            <span className={veste.etichetta}>Password</span>
+
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={registrazione ? "new-password" : "current-password"}
+              required
+              minLength={registrazione ? 8 : undefined}
+              className={veste.campo}
+            />
+          </label>
+
+          {errore && (
+            <p role="alert" className={veste.errore}>
+              {errore}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              disabled={inCorso}
+              className={`flex-1 ${veste.principale}`}
+            >
+              {inCorso ? "Un attimo…" : registrazione ? "Invia la richiesta" : "Entra"}
+            </button>
+
+            <button
+              type="button"
+              onClick={onAnnulla}
+              className={veste.secondario}
+            >
+              Annulla
+            </button>
+          </div>
+
+          {/* La seconda porta. Sta qui e non altrove perché è qui che
+              uno scopre di non avere un account: davanti al modulo che
+              gli chiede una password che non ha. */}
+          <p className={veste.piede}>
+            {registrazione ? "Hai già un accesso?" : "Non hai un accesso?"}{" "}
+            <button
+              type="button"
+              onClick={() => {
+                setErrore(null);
+                setModo(registrazione ? "accesso" : "registrazione");
+              }}
+              className={veste.collegamento}
+            >
+              {registrazione ? "Entra" : "Registrati"}
+            </button>
           </p>
-        )}
-
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={inCorso}
-            className={`flex-1 ${veste.principale}`}
-          >
-            {inCorso ? "Un attimo…" : registrazione ? "Invia la richiesta" : "Entra"}
-          </button>
-
-          <button
-            type="button"
-            onClick={onAnnulla}
-            className={veste.secondario}
-          >
-            Annulla
-          </button>
-        </div>
-
-        {/* La seconda porta. Sta qui e non altrove perché è qui che
-            uno scopre di non avere un account: davanti al modulo che
-            gli chiede una password che non ha. */}
-        <p className={veste.piede}>
-          {registrazione ? "Hai già un accesso?" : "Non hai un accesso?"}{" "}
-          <button
-            type="button"
-            onClick={() => {
-              setErrore(null);
-              setModo(registrazione ? "accesso" : "registrazione");
-            }}
-            className={veste.collegamento}
-          >
-            {registrazione ? "Entra" : "Registrati"}
-          </button>
-        </p>
-      </form>
-    </div>
+        </form>
+      </div>
+    </Sovrapposizione>
   );
 }
 

@@ -32,6 +32,82 @@ export function etichettaStagione(stagione, indice) {
 }
 
 /**
+ * Quante stagioni ci sono dentro una scheda.
+ *
+ * Di solito una. Frieren ne ha due in una scheda sola — 38 puntate
+ * numerate di seguito, 28 + 10 — e `tagli` dice da quale puntata
+ * comincia ognuna dopo la prima.
+ */
+function quanteDentro(scheda) {
+  return (scheda.tagli?.length || 0) + 1;
+}
+
+/**
+ * Le stagioni vere di una serie, da qualunque parte arrivino.
+ *
+ * Sono due problemi diversi con la stessa faccia, e questa funzione li
+ * appiattisce in un elenco solo:
+ *
+ *   - AnimeClick apre una scheda per stagione (Isekai Farming): le
+ *     schede stanno insieme in un gruppo, e ognuna è una stagione.
+ *   - AnimeClick tiene tutto in una scheda (Frieren): una scheda sola,
+ *     e le stagioni si ricavano tagliando l'elenco delle puntate.
+ *
+ * Chi disegna la pagina non deve sapere quale dei due casi ha davanti:
+ * riceve dei blocchi, ognuno col suo pezzo di elenco.
+ *
+ * `comandi` distingue il primo blocco di ogni scheda dagli altri. Non è
+ * un dettaglio grafico: lo stato della visione e il voto stanno sulla
+ * RIGA, non sul blocco — AnimeClick di quella serie tiene una scheda
+ * sola — quindi ripetere le stelle su ogni blocco farebbe credere che
+ * si possa votare una stagione per volta, e cambiarne una le
+ * cambierebbe tutte.
+ */
+export function stagioniDi(schede) {
+  const blocchi = [];
+
+  for (const scheda of schede) {
+    const episodi = scheda.episodi || [];
+
+    const tagli = [...new Set((scheda.tagli || []).map(Number))]
+      .filter((n) => n > 1)
+      .sort((a, b) => a - b);
+
+    const confini = [1, ...tagli];
+
+    confini.forEach((da, posizione) => {
+      const dopo = confini[posizione + 1] ?? Infinity;
+      const primo = posizione === 0;
+
+      // Gli special senza numero (AnimeClick li marca tutti «Ep. 0»)
+      // stanno col primo blocco: non appartengono a nessuna stagione,
+      // e metterli in fondo li allontanerebbe dal loro contesto.
+      const fetta = episodi.filter(
+        (e) => (e.numero === 0 && primo) || (e.numero >= da && e.numero < dopo)
+      );
+
+      const ultimo = fetta.length ? fetta[fetta.length - 1].numero : da;
+
+      blocchi.push({
+        ...scheda,
+        chiave: `${scheda.id}-${da}`,
+        episodi: fetta,
+        comandi: primo,
+        // Una scheda intera si presenta col suo titolo; un pezzo di
+        // scheda col tratto di elenco che è, perché ripetere lo stesso
+        // titolo su tre blocchi non dice a nessuno cosa li distingue.
+        sottotitolo: confini.length === 1 ? scheda.titolo : `puntate ${da}–${ultimo}`,
+        // L'etichetta scritta a mano vale per la scheda: se la scheda
+        // è tagliata in tre, appartiene al primo pezzo.
+        etichetta: primo ? scheda.etichetta : null
+      });
+    });
+  }
+
+  return blocchi;
+}
+
+/**
  * Lo stato della serie quando le sue stagioni non dicono la stessa cosa.
  *
  * Non è una media: è la domanda che si fa chi filtra. Una serie di cui
@@ -91,7 +167,9 @@ function componi(stagioni) {
     manga_id: stagioni.find((s) => s.manga_id)?.manga_id ?? null,
 
     stagioni,
-    quanteStagioni: stagioni.length,
+    // Le stagioni vere, non le schede: Frieren è una scheda sola e due
+    // stagioni, e la griglia deve dire due.
+    quanteStagioni: stagioni.reduce((totale, s) => totale + quanteDentro(s), 0),
 
     episodi_visti: visti,
     episodi_disponibili: disponibili,

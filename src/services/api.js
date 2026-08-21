@@ -468,6 +468,19 @@ export const rinominaStagione = (id, { etichetta, ordine }) =>
 export const rinominaGruppoAnime = (gruppoId, titolo) =>
   request(`/api/anime/gruppi/${gruppoId}`, { method: "PUT", body: { titolo }, auth: true });
 
+/* ---- I tagli: le stagioni dentro una scheda sola ----
+   L'altra faccia del problema. Frieren è UNA scheda con dentro 38
+   puntate che sono due stagioni (28 + 10) numerate di seguito, e
+   AnimeClick non segna il confine da nessuna parte: lo dà AniList, che
+   tiene un media per stagione. `tagli` sono i numeri delle puntate da
+   cui comincia una stagione nuova — per Frieren, [29]. */
+
+export const impostaTagliStagioni = (id, tagli) =>
+  request(`/api/anime/${id}/stagioni`, { method: "PUT", body: { tagli }, auth: true });
+
+export const cercaTagliStagioni = (id) =>
+  request(`/api/anime/${id}/stagioni/cerca`, { method: "POST", auth: true });
+
 /** Le uscite dei prossimi giorni, già in ora italiana. */
 export const getCalendarioAnime = (giorni = 14) =>
   request(`/api/anime/calendario${diChi(`giorni=${giorni}`)}`);

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import useRisorsa from "../dati/useRisorsa";
 import { useSessione } from "../dati/sessione";
+import { stagioniDi } from "../dati/videoteca";
 import {
   getAnime,
   impostaVisione,
@@ -22,6 +23,7 @@ import PaginaVideoteca, {
 } from "../ui/videoteca/Foglio";
 import Stagione from "../ui/videoteca/Stagione";
 import NoteAnime from "../ui/videoteca/NoteAnime";
+import Sovrapposizione from "../ui/Sovrapposizione";
 import { NOMI_STATO_SERIE, NOMI_TIPO, formattaVoto } from "../ui/videoteca/formati";
 
 /**
@@ -51,13 +53,21 @@ export default function AnimePage() {
   const [rimozione, setRimozione] = useState(false);
   const [guaio, setGuaio] = useState(null);
 
-  // Una serie senza gruppo è una serie di una stagione sola: il resto
-  // della pagina non deve sapere che esistono due casi.
-  const stagioni = useMemo(() => {
+  // Le SCHEDE di AnimeClick che compongono questa serie: una sola per
+  // le serie normali, più d'una quando AnimeClick apre una scheda per
+  // stagione (Isekai Farming).
+  const schede = useMemo(() => {
     if (!dati) return [];
 
     return dati.stagioni?.length ? dati.stagioni : [dati];
   }, [dati]);
+
+  // Le stagioni vere. Non coincidono con le schede: Frieren è una
+  // scheda sola con dentro 38 puntate che sono due stagioni, e il
+  // taglio — la 29 — lo dà AniList (vedi `anime.tagli`). Chi disegna
+  // la pagina riceve dei blocchi e non deve sapere da quale dei due
+  // casi arrivano.
+  const stagioni = useMemo(() => stagioniDi(schede), [schede]);
 
   const puoiScrivere = Boolean(utente);
 
@@ -69,19 +79,23 @@ export default function AnimePage() {
    * apre una serie conclusa di solito vuole l'ultima puntata, non la
    * prima di dieci anni fa.
    */
-  const apertaId = useMemo(() => {
+  const apertaChiave = useMemo(() => {
     if (apertaScelta) return apertaScelta;
 
-    const inCorsoOra = stagioni.find((s) => {
-      const visti = Number(s.episodi_visti || 0);
-      const totale = (s.episodi || []).filter((e) => e.numero > 0).length;
+    // Le stagioni si contano a blocchi e non a schede, quindi si
+    // guarda dentro l'elenco di ciascuno: due blocchi della stessa
+    // scheda hanno lo stesso `episodi_visti` complessivo, e fidarsi di
+    // quello aprirebbe sempre il primo.
+    const contaVisti = (s) => (s.episodi || []).filter((e) => e.visto).length;
+    const contaTutti = (s) => (s.episodi || []).filter((e) => e.numero > 0).length;
 
-      return visti > 0 && visti < totale;
-    });
+    const inCorsoOra = stagioni.find(
+      (s) => contaVisti(s) > 0 && contaVisti(s) < contaTutti(s)
+    );
 
-    const daCominciare = stagioni.find((s) => Number(s.episodi_visti || 0) === 0);
+    const daCominciare = stagioni.find((s) => contaVisti(s) === 0);
 
-    return Number((inCorsoOra || daCominciare || stagioni[stagioni.length - 1])?.id) || null;
+    return (inCorsoOra || daCominciare || stagioni[stagioni.length - 1])?.chiave ?? null;
   }, [apertaScelta, stagioni]);
 
   /** Aggiorna le spunte di una stagione senza ricaricare tutta la scheda. */
@@ -168,7 +182,7 @@ export default function AnimePage() {
       // Tutte le stagioni, non solo quella aperta: sono la stessa serie
       // per chi guarda, e rileggerne una sola lascerebbe le altre
       // indietro senza che si capisca perché.
-      for (const s of stagioni) await rileggiAnime(s.id);
+      for (const s of schede) await rileggiAnime(s.id);
 
       await ricarica();
     } finally {
@@ -181,7 +195,7 @@ export default function AnimePage() {
     setGuaio(null);
 
     try {
-      for (const s of stagioni) await togliDallaVideoteca(s.id);
+      for (const s of schede) await togliDallaVideoteca(s.id);
 
       navigate("/videoteca");
     } catch (e) {
@@ -220,7 +234,10 @@ export default function AnimePage() {
     0
   );
 
-  const dichiarati = stagioni.reduce((somma, s) => somma + Number(s.episodi_totali || 0), 0);
+  // Le puntate DICHIARATE si sommano sulle schede: due blocchi della
+  // stessa scheda dichiarano lo stesso numero, e sommarlo due volte
+  // raddoppierebbe il fondoscala della barra.
+  const dichiarati = schede.reduce((somma, s) => somma + Number(s.episodi_totali || 0), 0);
   const su = disponibili || dichiarati || null;
 
   const adesso = new Date();
@@ -233,8 +250,8 @@ export default function AnimePage() {
   // I commenti sono della serie, non della stagione: si leggono tutti
   // insieme, e si scrivono sulla stagione aperta — che è quella di cui
   // si sta parlando.
-  const note = stagioni.flatMap((s) => s.note || []);
-  const anni = [prima.anno_inizio, stagioni[stagioni.length - 1].anno_fine].filter(Boolean);
+  const note = schede.flatMap((s) => s.note || []);
+  const anni = [schede[0].anno_inizio, schede[schede.length - 1].anno_fine].filter(Boolean);
 
   return (
     <PaginaVideoteca
@@ -395,15 +412,13 @@ export default function AnimePage() {
             <div className="space-y-2">
               {stagioni.map((stagione, indice) => (
                 <Stagione
-                  key={stagione.id}
+                  key={stagione.chiave}
                   stagione={stagione}
                   indice={indice}
                   sola={sola}
-                  aperta={Number(stagione.id) === Number(apertaId)}
+                  aperta={stagione.chiave === apertaChiave}
                   apri={() =>
-                    setApertaScelta(
-                      Number(stagione.id) === Number(apertaId) ? -1 : Number(stagione.id)
-                    )
+                    setApertaScelta(stagione.chiave === apertaChiave ? "nessuna" : stagione.chiave)
                   }
                   puoiScrivere={puoiScrivere}
                   azione={azione}
@@ -417,7 +432,10 @@ export default function AnimePage() {
 
           <Blocco titolo="Commenti">
             <NoteAnime
-              animeId={apertaId && apertaId > 0 ? apertaId : prima.id}
+              // Il commento si scrive sulla scheda della stagione
+              // aperta: è quella di cui si sta parlando. Chiuse tutte,
+              // vale la prima.
+              animeId={stagioni.find((s) => s.chiave === apertaChiave)?.id ?? prima.id}
               note={note}
               utente={utente}
               alCambio={ricarica}
@@ -463,32 +481,34 @@ function Fatto({ etichetta, valore }) {
  */
 function ConfermaRimozione({ titolo, stagioni, inCorso, conferma, annulla }) {
   return (
-    <div
-      className="fixed inset-0 z-modal grid place-items-center bg-quaderno-inchiostro/40 p-5"
-      role="dialog"
-      aria-label="Togliere la serie"
-    >
-      <Scheda className="w-full max-w-sm space-y-4 p-6 shadow-float">
-        <h2 className="font-display text-lg font-semibold text-quaderno-inchiostro">
-          Togliere «{titolo}»?
-        </h2>
+    <Sovrapposizione>
+      <div
+        className="fixed inset-0 z-modal grid place-items-center bg-quaderno-inchiostro/40 p-5"
+        role="dialog"
+        aria-label="Togliere la serie"
+      >
+        <Scheda className="w-full max-w-sm space-y-4 p-6 shadow-float">
+          <h2 className="font-display text-lg font-semibold text-quaderno-inchiostro">
+            Togliere «{titolo}»?
+          </h2>
 
-        <p className="text-sm text-quaderno-tenue">
-          Esce dalla tua videoteca
-          {stagioni > 1 ? ` con tutte e ${stagioni} le stagioni` : ""}, e con lei se ne vanno le
-          tue spunte, il tuo voto e i tuoi commenti. Gli altri lettori tengono i loro.
-        </p>
+          <p className="text-sm text-quaderno-tenue">
+            Esce dalla tua videoteca
+            {stagioni > 1 ? ` con tutte e ${stagioni} le stagioni` : ""}, e con lei se ne vanno
+            le tue spunte, il tuo voto e i tuoi commenti. Gli altri lettori tengono i loro.
+          </p>
 
-        <div className="flex gap-2">
-          <Bottone tono="pieno" onClick={conferma} disabled={inCorso} className="flex-1">
-            {inCorso ? "Tolgo…" : "Togli"}
-          </Bottone>
+          <div className="flex gap-2">
+            <Bottone tono="pieno" onClick={conferma} disabled={inCorso} className="flex-1">
+              {inCorso ? "Tolgo…" : "Togli"}
+            </Bottone>
 
-          <Bottone onClick={annulla} disabled={inCorso}>
-            Annulla
-          </Bottone>
-        </div>
-      </Scheda>
-    </div>
+            <Bottone onClick={annulla} disabled={inCorso}>
+              Annulla
+            </Bottone>
+          </div>
+        </Scheda>
+      </div>
+    </Sovrapposizione>
   );
 }

@@ -220,7 +220,23 @@ export default {
       },
 
       animation: {
-        "rise-in": "rise-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        // `backwards` e non `both`, e non è un dettaglio di stile.
+        //
+        // `both` lascia addosso all'elemento l'ultimo fotogramma per
+        // sempre, cioè un `transform` che vale «non spostarti» ma
+        // esiste — e un antenato trasformato diventa il riferimento di
+        // tutti i suoi discendenti `position: fixed`. Effetto: ogni
+        // finestra di conferma aperta dentro `<main>` (che ha questa
+        // animazione) non si centrava nello schermo ma a metà della
+        // PAGINA, cioè lontana, in basso, dove chi ha premuto il
+        // bottone non stava guardando.
+        //
+        // `backwards` tiene il primo fotogramma prima della partenza —
+        // che è ciò che serve a non far lampeggiare l'elemento — e alla
+        // fine restituisce lo stile normale, che è già identico
+        // all'ultimo fotogramma. Stessa animazione, niente transform
+        // residuo.
+        "rise-in": "rise-in 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards",
         "glow-pulse": "glow-pulse 4s ease-in-out infinite",
         shimmer: "shimmer 1.6s linear infinite",
         battuta: "battuta 380ms cubic-bezier(0.16, 1, 0.3, 1) both"
