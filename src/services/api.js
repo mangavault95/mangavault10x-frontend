@@ -58,7 +58,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request(path, { method = "GET", body, auth = false } = {}) {
+async function request(path, { method = "GET", body, auth = false, signal } = {}) {
   const headers = {};
 
   if (body !== undefined) headers["Content-Type"] = "application/json";
@@ -74,9 +74,19 @@ async function request(path, { method = "GET", body, auth = false } = {}) {
     res = await fetch(`${API_URL}${path}`, {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      // Per le ricerche che si aggiornano mentre si scrive: la richiesta
+      // della lettera prima va annullata, o si finisce per mostrare la
+      // risposta più lenta invece della più recente.
+      signal
     });
-  } catch {
+  } catch (e) {
+    // Una richiesta annullata non è un guasto: chi ha annullato sa
+    // perché, e trasformarla in «impossibile contattare il server»
+    // farebbe comparire un errore rosso ogni volta che si scrive una
+    // lettera in più.
+    if (e?.name === "AbortError") throw e;
+
     // fetch fallisce solo se la rete è giù o il server non risponde
     throw new ApiError("Impossibile contattare il server", 0);
   }
@@ -491,16 +501,51 @@ export const getCalendarioAnime = (giorni = 14) =>
  * Restituisce una lista da far scegliere, mai una risposta sola: la
  * ricerca di AnimeClick ordina per titolo e non per pertinenza, e
  * "one piece" propone per primo un crossover con Dragon Ball.
+ *
+ * `segnale` serve alla ricerca che si aggiorna mentre si scrive: la
+ * richiesta della lettera prima si annulla, così l'ultima risposta che
+ * arriva è sempre quella dell'ultima cosa scritta.
  */
-export const cercaAnime = (titolo) =>
-  request(`/api/anime/cerca?titolo=${encodeURIComponent(titolo)}`, { auth: true });
+export const cercaAnime = (titolo, segnale) =>
+  request(`/api/anime/cerca?titolo=${encodeURIComponent(titolo)}`, {
+    auth: true,
+    signal: segnale
+  });
 
-export const agganciaAnime = (animeclickId) =>
+/**
+ * Di quante parti è fatta la serie a cui appartiene questa scheda.
+ *
+ * È la risposta a «cercare il titolo una volta sola»: si sceglie una
+ * scheda e questo dice quali sono le sue stagioni, i suoi film e i
+ * suoi OAV, ognuno con scritto se conviene prenderlo e perché. Non
+ * aggiunge niente — è la proposta che si vede prima di premere.
+ */
+export const getFranchiseAnime = (animeclickId, segnale) =>
+  request(`/api/anime/franchise/${animeclickId}`, { auth: true, signal: segnale });
+
+/**
+ * Aggiunge la serie alla videoteca. Con `parti`, la aggiunge INTERA.
+ *
+ * ⚠️ Può rispondere con `restanti`: le parti che non sono entrate nel
+ * tempo di una richiesta. Non è un errore, è una serie lunga — si
+ * richiama con le stesse parti finché quell'elenco non è vuoto.
+ */
+export const agganciaAnime = (animeclickId, { parti, nome } = {}) =>
   request("/api/anime", {
     method: "POST",
-    body: { animeclick_id: animeclickId },
+    body: { animeclick_id: animeclickId, parti, nome },
     auth: true
   });
+
+/**
+ * Ripassa la videoteca e rimette insieme le stagioni sparse.
+ *
+ * Serve a quello che c'era prima che il riconoscimento migliorasse:
+ * una videoteca riempita una serie per volta si ritrova Shakugan no
+ * Shana in tre copertine. Non aggiunge e non toglie niente.
+ */
+export const riunisciVideoteca = () =>
+  request("/api/anime/riunisci", { method: "POST", auth: true });
 
 /** Rilegge scheda ed episodi: serve alle serie in corso. */
 export const rileggiAnime = (id) =>

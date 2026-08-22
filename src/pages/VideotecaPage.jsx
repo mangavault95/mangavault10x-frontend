@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import useRisorsa from "../dati/useRisorsa";
 import { getVideoteca } from "../services/api";
 import { useSessione } from "../dati/sessione";
-import { raggruppa } from "../dati/videoteca";
+import { corrisponde, raggruppa } from "../dati/videoteca";
 import { ModuloAccesso } from "../dati/AccessoProvider";
 import PaginaVideoteca, { Bottone, Caricamento, Errore, Vuoto } from "../ui/videoteca/Foglio";
 import { NOMI_STATO } from "../ui/videoteca/formati";
@@ -52,26 +52,15 @@ export default function VideotecaPage() {
   // sono cambiati di una virgola.
   const serie = useMemo(() => raggruppa(dati ?? []), [dati]);
 
-  const visibili = useMemo(() => {
-    const testo = cerca.trim().toLowerCase();
+  const visibili = useMemo(
+    () =>
+      serie.filter((a) => {
+        if (filtro !== "tutti" && a.stato_visione !== filtro) return false;
 
-    return serie.filter((a) => {
-      if (filtro !== "tutti" && a.stato_visione !== filtro) return false;
-
-      // La ricerca guarda anche i titoli delle singole stagioni:
-      // cercare «Isekai Farming 2» deve trovare la serie, anche se il
-      // pannello si chiama solo «Isekai Farming».
-      if (
-        testo &&
-        !a.titolo.toLowerCase().includes(testo) &&
-        !a.stagioni.some((s) => s.titolo.toLowerCase().includes(testo))
-      ) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [serie, filtro, cerca]);
+        return corrisponde(a, cerca);
+      }),
+    [serie, filtro, cerca]
+  );
 
   // Di chi è la videoteca che si sta guardando. Serve solo a chi non è
   // entrato: sapere che quelle serie sono di un altro è la differenza
@@ -186,7 +175,7 @@ export default function VideotecaPage() {
             <input
               value={cerca}
               onChange={(e) => setCerca(e.target.value)}
-              placeholder="Cerca fra i tuoi titoli"
+              placeholder="Cerca — anche in originale"
               aria-label="Cerca fra i titoli in videoteca"
               className="ml-auto w-full min-w-0 rounded-lg border border-quaderno-riga bg-quaderno-foglio px-3 py-1.5 text-sm text-quaderno-inchiostro placeholder:text-quaderno-tenue sm:w-56
                 focus:outline-none focus:ring-2 focus:ring-quaderno-blu"

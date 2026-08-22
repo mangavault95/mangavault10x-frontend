@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5173
+    },
+    {
+      "name": "mangavault-backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "../mangavault10x-backend", "start"],
+      "port": 3000
     }
   ]
 }

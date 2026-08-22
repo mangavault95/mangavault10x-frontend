@@ -25,6 +25,11 @@ import Stelle from "./Stelle";
 export default function Stagione({
   stagione,
   indice,
+  // Tutte le stagioni della serie. Serve a dare il nome a questa: la
+  // seconda stagione si chiama così solo dopo aver contato quante
+  // stagioni vere vengono prima, saltando i film — che stagioni non
+  // sono, e che prima si prendevano il numero come tutti gli altri.
+  tutte = null,
   sola = false,
   aperta,
   apri,
@@ -46,7 +51,7 @@ export default function Stagione({
   const disponibili = episodi.filter((e) => e.numero > 0).length;
   const su = disponibili || Number(stagione.episodi_totali) || null;
 
-  const nome = etichettaStagione(stagione, indice);
+  const nome = etichettaStagione(stagione, indice, tutte);
   const altrui = (stagione.voti || []).filter((v) => Number(v.voto) > 0);
 
   return (

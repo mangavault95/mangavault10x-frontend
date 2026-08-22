@@ -19,14 +19,84 @@
  */
 
 /**
+ * A quale famiglia appartiene una parte della serie.
+ *
+ * Serve a numerarle separatamente, che è la cosa che rende leggibile
+ * una scheda alla Bingers: le stagioni si contano fra loro, i film
+ * fra loro. Contarle tutte insieme dava «Stagione 3» al film di
+ * Chainsaw Man, che stagione non è.
+ */
+function famigliaDi(parte) {
+  switch (parte.tipo) {
+    case "film":
+      return "film";
+    case "ova":
+      return "oav";
+    case "special":
+      return "special";
+    // `ona` sta con le stagioni: Cyberpunk: Edgerunners è una serie a
+    // tutti gli effetti, e AnimeClick la chiama così solo perché è
+    // uscita su Netflix invece che in TV.
+    default:
+      return "stagione";
+  }
+}
+
+const NOMI_FAMIGLIA = {
+  stagione: "Stagione",
+  film: "Film",
+  oav: "OAV",
+  special: "Special"
+};
+
+/**
+ * Come si chiamano le parti di una serie, viste tutte insieme.
+ *
+ * Restituisce un nome per ogni parte, nello stesso ordine. Bisogna
+ * guardarle insieme perché il nome di una dipende dalle altre: «Film»
+ * quando ce n'è uno, «Film 1» e «Film 2» quando sono due, e
+ * «Stagione 3» solo dopo aver contato quante stagioni vere vengono
+ * prima — saltando i film, che stagioni non sono.
+ *
+ * L'etichetta scritta a mano dalla Gestione (`anime.etichetta`) vince
+ * sempre: è l'unico posto dove qualcuno ha detto come si chiama.
+ */
+export function etichetteDi(parti) {
+  const contati = {};
+
+  return parti.map((parte) => {
+    const famiglia = famigliaDi(parte);
+
+    contati[famiglia] = (contati[famiglia] || 0) + 1;
+
+    if (parte.etichetta) return parte.etichetta;
+
+    const quante = parti.filter((p) => famigliaDi(p) === famiglia).length;
+    const nome = NOMI_FAMIGLIA[famiglia];
+
+    // Il numero si scrive solo se c'è qualcosa da distinguere: «Film»
+    // da solo si legge meglio di «Film 1», e su una serie con un film
+    // solo quel numero prometterebbe un secondo film che non esiste.
+    return quante > 1 ? `${nome} ${contati[famiglia]}` : nome;
+  });
+}
+
+/**
  * Come si chiama una stagione quando nessuno gliel'ha detto.
  *
- * «Stagione 2» dalla posizione: le serie normali non chiedono nessun
- * lavoro a mano, e chi vuole scrivere «Il film» o «OAV» lo fa dalla
- * Gestione (`anime.etichetta`).
+ * `tutte` è l'elenco in cui questa parte sta: senza, non si può sapere
+ * se è la seconda stagione o il primo film. Chi non ce l'ha ricade
+ * sulla posizione, che è quello che si faceva prima.
  */
-export function etichettaStagione(stagione, indice) {
+export function etichettaStagione(stagione, indice, tutte = null) {
   if (stagione.etichetta) return stagione.etichetta;
+
+  if (tutte?.length) {
+    const nomi = etichetteDi(tutte);
+    const posizione = tutte.indexOf(stagione);
+
+    if (posizione >= 0) return nomi[posizione];
+  }
 
   return `Stagione ${stagione.ordine || indice + 1}`;
 }
@@ -202,4 +272,112 @@ export function raggruppa(serie) {
   }
 
   return [...gruppi.values()].map(componi);
+}
+
+/* ==================================================
+   LA RICERCA
+   ================================================== */
+
+/** Un testo ridotto alle sue lettere: niente accenti, niente segni. */
+function normalizza(testo) {
+  return String(testo || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/**
+ * Questa serie risponde a quello che si sta cercando?
+ *
+ * Tre cose che la ricerca di prima non faceva, e che sono i tre modi
+ * in cui si scrive davvero in una casella:
+ *
+ *   - le parole possono stare in disordine e con qualcosa in mezzo:
+ *     «attacco giganti» trova «L'attacco dei giganti»;
+ *   - gli accenti e gli apostrofi non contano: «pokemon» trova
+ *     «Pokémon», «lattacco» trova «L'attacco»;
+ *   - si può cercare col titolo originale o inglese: «shingeki» e
+ *     «kimetsu» trovano le serie che in videoteca hanno un nome
+ *     italiano, che è il modo in cui uno se le ricorda quando le ha
+ *     conosciute così.
+ *
+ * Si guarda anche dentro le singole stagioni: cercare «Isekai Farming
+ * 2» deve trovare la serie, anche se il pannello si chiama solo
+ * «Isekai Farming».
+ */
+export function corrisponde(serie, testo) {
+  const parole = normalizza(testo).split(" ").filter(Boolean);
+
+  if (parole.length === 0) return true;
+
+  const fieno = normalizza(
+    [
+      serie.titolo,
+      ...serie.stagioni.flatMap((s) => [s.titolo, s.titolo_originale, s.titolo_inglese])
+    ]
+      .filter(Boolean)
+      .join(" ")
+  );
+
+  return parole.every((parola) => fieno.includes(parola));
+}
+
+/**
+ * I risultati della ricerca, una riga per serie invece che una per
+ * scheda.
+ *
+ * Cercando «mushoku tensei» AnimeClick risponde tre volte — I, II e
+ * III — e mostrarle come tre righe distinte è esattamente la fatica da
+ * cui si voleva uscire: sembrano tre cose da aggiungere una per volta,
+ * e sono una sola. Le righe si mettono insieme per `radice`, che è il
+ * titolo senza il pezzo che distingue una stagione dall'altra e che il
+ * server calcola con la stessa regola che poi usa per riconoscerle.
+ *
+ * Non nasconde niente: la riga porta con sé tutte le sue parti, e chi
+ * guarda le vede scritte sotto. E non decide niente — di che parti sia
+ * fatta la serie davvero lo dice `getFranchiseAnime`, che legge la
+ * pagina delle relazioni invece di indovinarlo dal titolo. Questo è
+ * solo il modo di presentare una lista.
+ */
+export function raggruppaCandidati(candidati) {
+  const per = new Map();
+
+  for (const c of candidati) {
+    const chiave = c.radice || c.titolo;
+
+    if (!per.has(chiave)) per.set(chiave, []);
+
+    per.get(chiave).push(c);
+  }
+
+  return [...per.entries()]
+    .map(([radice, parti]) => {
+      const perAnno = [...parti].sort((a, b) => (a.anno || 9999) - (b.anno || 9999));
+
+      // Si apre dalla più vecchia: è la scheda madre, quella da cui la
+      // pagina delle relazioni vede tutta la famiglia.
+      const capo = perAnno[0];
+
+      const anni = parti.map((p) => p.anno).filter(Boolean);
+
+      return {
+        radice,
+        capo,
+        parti: perAnno,
+        titolo: capo.titolo,
+        copertina: capo.copertina,
+        dal: anni.length ? Math.min(...anni) : null,
+        al: anni.length ? Math.max(...anni) : null,
+        // Il punteggio della riga è il migliore fra le sue parti: se
+        // una sola stagione risponde bene a quello che si è scritto,
+        // la serie risponde bene.
+        punteggio: Math.max(...parti.map((p) => p.punteggio || 0)),
+        // Quante di queste schede sono già in videoteca. Serve a dire
+        // «ce l'hai già» invece di riproporla come se fosse nuova.
+        gia: parti.filter((p) => p.giaInVideoteca).length
+      };
+    })
+    .sort((a, b) => b.punteggio - a.punteggio);
 }

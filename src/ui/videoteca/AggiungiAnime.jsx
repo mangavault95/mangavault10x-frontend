@@ -1,65 +1,110 @@
-import { useState } from "react";
-import { agganciaAnime, cercaAnime, urlCopertina } from "../../services/api";
-import { Bottone, Scheda } from "./Foglio";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  agganciaAnime,
+  cercaAnime,
+  getFranchiseAnime,
+  urlCopertina
+} from "../../services/api";
+import { raggruppaCandidati } from "../../dati/videoteca";
+import { NOMI_TIPO } from "./formati";
+import { Bottone, Pillola, Scheda } from "./Foglio";
 import Sovrapposizione from "../Sovrapposizione";
 
 /**
  * Il pannello che mette una serie in videoteca.
  *
- * Mostra i candidati e lascia scegliere: **non** aggancia il primo
- * risultato. Non è prudenza generica — la ricerca di AnimeClick ordina
- * per titolo e non per pertinenza, e su "one piece" il primo risultato
- * è un crossover con Dragon Ball. Agganciare da soli vorrebbe dire
- * riempire la videoteca di schede sbagliate, che poi vanno tolte a
- * mano.
+ * Ha due passi, e i due passi sono la risposta a due fatiche diverse.
  *
- * Per lo stesso motivo ogni candidato porta con sé anno e copertina:
- * fra le sette schede che AnimeClick chiama "Berserk", quelle due cose
- * sono ciò che distingue il 1997 dal 2016.
+ * ① SI CERCA MENTRE SI SCRIVE. Prima c'era una casella e un bottone
+ *    «Cerca»: si scriveva, si premeva, si aspettava, e se il titolo era
+ *    sbagliato si ricominciava. Adesso i risultati arrivano da soli
+ *    dopo una pausa di battitura, e i risultati che sono la stessa
+ *    serie stanno in una riga sola — «mushoku tensei» dà una riga con
+ *    scritto «3 parti», non tre righe che sembrano tre serie.
+ *
+ * ② SI SCEGLIE LA SERIE, NON LA STAGIONE. Toccando una riga il
+ *    pannello va a chiedere ad AnimeClick di che parti è fatta quella
+ *    serie e le mostra tutte, già spuntate quelle che servono: le
+ *    stagioni, i film che continuano la storia, gli OAV. Un bottone
+ *    solo, e in videoteca c'è tutto sotto una copertina.
+ *
+ * Perché la proposta si vede invece di prendere tutto in silenzio: la
+ * pagina delle relazioni di AnimeClick è un sacco. Sotto Demon Slayer
+ * ci sono le quattro stagioni vere, due film veri, tre film che sono
+ * riassunti della prima stagione e una serie di corti comici. Quello
+ * che il sito non sa decidere resta scritto e spento, con accanto il
+ * perché: si accende con un tocco, e non arriva di nascosto.
  */
 export default function AggiungiAnime({ chiudi, alFatto }) {
   const [titolo, setTitolo] = useState("");
-  const [candidati, setCandidati] = useState(null);
-  const [inCorso, setInCorso] = useState(false);
-  const [aggancioInCorso, setAggancioInCorso] = useState(null);
-  const [errore, setErrore] = useState(null);
 
-  async function cerca(e) {
-    e.preventDefault();
+  // L'ultima risposta arrivata, insieme alla domanda che l'ha
+  // prodotta. Le due cose stanno in uno stato solo apposta: è `per`
+  // che permette di sapere se quello che si vede risponde ancora a
+  // quello che c'è scritto nella casella, senza tenere un secondo
+  // stato «sto caricando» da rimettere d'accordo a ogni giro.
+  const [esito, setEsito] = useState(null);
 
-    if (titolo.trim().length < 2) return;
+  // La serie scelta: `null` finché si sta cercando.
+  const [scelta, setScelta] = useState(null);
 
-    setInCorso(true);
-    setErrore(null);
+  const annulla = useRef(null);
 
-    try {
-      setCandidati(await cercaAnime(titolo.trim()));
-    } catch (err) {
-      setErrore(err);
-      setCandidati(null);
-    } finally {
-      setInCorso(false);
-    }
-  }
+  const cercato = titolo.trim();
 
-  async function aggancia(candidato) {
-    setAggancioInCorso(candidato.animeclickId);
-    setErrore(null);
+  // Sotto le due lettere non si cerca; sopra, si tiene in vista
+  // l'ultima lista arrivata anche mentre ne sta arrivando una nuova.
+  // Svuotarla a ogni lettera farebbe lampeggiare il pannello.
+  const righe = cercato.length >= 2 ? (esito?.righe ?? null) : null;
+  const errore = esito?.per === cercato ? esito.errore : null;
+  const inCorso = cercato.length >= 2 && esito?.per !== cercato;
 
-    try {
-      const esito = await agganciaAnime(candidato.animeclickId);
-      alFatto?.(esito);
-      chiudi?.();
-    } catch (err) {
-      setErrore(err);
-    } finally {
-      setAggancioInCorso(null);
-    }
-  }
+  /* ---------- ① la ricerca che si aggiorna mentre si scrive ---------- */
+
+  useEffect(() => {
+    // Aperto il secondo passo, la ricerca si ferma: si sta guardando
+    // una serie, e continuare a interrogare AnimeClick alle sue spalle
+    // sarebbe traffico per una lista che nessuno guarda.
+    if (scelta || cercato.length < 2) return undefined;
+
+    // La pausa di battitura. 300 ms è il punto in cui si smette di
+    // scrivere una parola senza che si senta l'attesa: più corta vuol
+    // dire una richiesta per lettera, più lunga vuol dire una casella
+    // che sembra ferma.
+    const aspetta = setTimeout(async () => {
+      annulla.current?.abort();
+
+      const mio = new AbortController();
+
+      annulla.current = mio;
+
+      try {
+        const trovati = await cercaAnime(cercato, mio.signal);
+
+        setEsito({ per: cercato, righe: raggruppaCandidati(trovati), errore: null });
+      } catch (err) {
+        // Annullata perché è arrivata una lettera in più: non è
+        // successo niente, e la risposta buona sta arrivando.
+        if (err?.name === "AbortError") return;
+
+        setEsito({ per: cercato, righe: null, errore: err });
+      }
+    }, 300);
+
+    return () => clearTimeout(aspetta);
+  }, [cercato, scelta]);
+
+  // Chiudendo il pannello a metà ricerca, la richiesta appesa non
+  // serve più a nessuno.
+  useEffect(() => () => annulla.current?.abort(), []);
 
   return (
     <Sovrapposizione>
-      <div className="fixed inset-0 z-modal grid place-items-center p-3" role="dialog" aria-label="Aggiungi un anime">
+      <div
+        className="fixed inset-0 z-modal grid place-items-center p-3"
+        role="dialog"
+        aria-label="Aggiungi un anime"
+      >
         <button
           type="button"
           aria-label="Chiudi"
@@ -68,90 +113,461 @@ export default function AggiungiAnime({ chiudi, alFatto }) {
         />
 
         <Scheda className="relative flex max-h-[85dvh] w-full max-w-2xl flex-col overflow-hidden shadow-float">
-          <form onSubmit={cerca} className="flex gap-2 border-b border-quaderno-riga p-4">
-            <input
-              autoFocus
-              value={titolo}
-              onChange={(e) => setTitolo(e.target.value)}
-              placeholder="Titolo della serie — anche in italiano"
-              aria-label="Titolo da cercare"
-              className="min-w-0 flex-1 rounded-lg border border-quaderno-riga bg-quaderno-carta px-3 py-2 text-sm text-quaderno-inchiostro placeholder:text-quaderno-tenue
-                focus:outline-none focus:ring-2 focus:ring-quaderno-blu"
+          {scelta ? (
+            <Proposta
+              scelta={scelta}
+              indietro={() => setScelta(null)}
+              chiudi={chiudi}
+              alFatto={alFatto}
             />
-
-            <Bottone tono="pieno" type="submit" disabled={inCorso || titolo.trim().length < 2}>
-              {inCorso ? "Cerco…" : "Cerca"}
-            </Bottone>
-          </form>
-
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">
-            {errore && (
-              <p className="mb-3 rounded-lg bg-quaderno-carta px-3 py-2 text-sm text-quaderno-inchiostro">
-                {errore.message}
-              </p>
-            )}
-
-            {candidati === null && !inCorso && (
-              <p className="py-8 text-center text-sm text-quaderno-tenue">
-                La ricerca è letterale: cerca come si chiama la serie, senza refusi.
-              </p>
-            )}
-
-            {candidati?.length === 0 && (
-              <p className="py-8 text-center text-sm text-quaderno-tenue">
-                Nessun titolo. Prova con il nome originale, o con una parola sola.
-              </p>
-            )}
-
-            <ul className="space-y-2">
-              {candidati?.map((c) => (
-                <li key={c.animeclickId}>
-                  <div className="flex items-center gap-3 rounded-card border border-quaderno-riga p-2">
-                    <div className="h-16 w-12 shrink-0 overflow-hidden rounded bg-quaderno-carta">
-                      {c.copertina && (
-                        <img
-                          src={urlCopertina(c.copertina)}
-                          alt=""
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                        />
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-quaderno-inchiostro">
-                        {c.titolo}
-                      </p>
-                      <p className="font-numeric text-xs text-quaderno-tenue">
-                        {c.anno || "anno ignoto"} · scheda {c.animeclickId}
-                      </p>
-                    </div>
-
-                    {c.giaInVideoteca ? (
-                      <span className="shrink-0 text-xs font-medium text-quaderno-tenue">
-                        già in videoteca
-                      </span>
-                    ) : (
-                      <Bottone
-                        tono="pieno"
-                        onClick={() => aggancia(c)}
-                        disabled={aggancioInCorso !== null}
-                        className="shrink-0"
-                      >
-                        {aggancioInCorso === c.animeclickId ? "Aggiungo…" : "Aggiungi"}
-                      </Bottone>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="flex justify-end border-t border-quaderno-riga p-3">
-            <Bottone onClick={chiudi}>Chiudi</Bottone>
-          </div>
+          ) : (
+            <Ricerca
+              titolo={titolo}
+              setTitolo={setTitolo}
+              righe={righe}
+              // A quale domanda risponde la lista che si sta vedendo:
+              // serve alla riga illuminata dalle frecce, che deve
+              // tornare in cima quando la lista cambia sotto.
+              per={esito?.per ?? null}
+              inCorso={inCorso}
+              errore={errore}
+              scegli={setScelta}
+              chiudi={chiudi}
+            />
+          )}
         </Scheda>
       </div>
     </Sovrapposizione>
+  );
+}
+
+/* ==================================================
+   ① LA RICERCA
+   ================================================== */
+
+function Ricerca({ titolo, setTitolo, righe, per, inCorso, errore, scegli, chiudi }) {
+  // Quale riga è illuminata dalle frecce, e per quale lista.
+  //
+  // La lista a cui si riferisce si porta dietro, invece di azzerarla
+  // quando cambia: si scrive una lettera in più, arrivano altri
+  // risultati, e la terza riga di prima non è più la terza riga di
+  // adesso. Chi premesse Invio in quel momento aggiungerebbe una
+  // serie che non ha visto. Legata alla domanda, la mira torna in
+  // cima da sé appena la risposta è un'altra.
+  const [mirato, setMirato] = useState({ per: null, indice: 0 });
+
+  const mira = mirato.per === per ? mirato.indice : 0;
+
+  const punta = (indice) => setMirato({ per, indice });
+
+  function daTastiera(e) {
+    if (!righe?.length) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      punta(Math.min(mira + 1, righe.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      punta(Math.max(mira - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (righe[mira]) scegli(righe[mira]);
+    }
+  }
+
+  return (
+    <>
+      <div className="border-b border-quaderno-riga p-4">
+        <div className="relative">
+          <input
+            autoFocus
+            value={titolo}
+            onChange={(e) => setTitolo(e.target.value)}
+            onKeyDown={daTastiera}
+            placeholder="Scrivi il titolo — in italiano, in originale o in inglese"
+            aria-label="Titolo da cercare"
+            // La casella si comporta da elenco a comparsa anche per chi
+            // non la vede: senza questi, chi naviga a voce sente una
+            // casella di testo qualunque e non sa che sotto si sta
+            // riempiendo una lista.
+            role="combobox"
+            aria-expanded={Boolean(righe?.length)}
+            aria-controls="risultati-anime"
+            aria-activedescendant={righe?.length ? `risultato-${mira}` : undefined}
+            autoComplete="off"
+            className="w-full rounded-lg border border-quaderno-riga bg-quaderno-carta px-3 py-2 pr-24 text-sm text-quaderno-inchiostro placeholder:text-quaderno-tenue
+              focus:outline-none focus:ring-2 focus:ring-quaderno-blu"
+          />
+
+          <span
+            aria-live="polite"
+            className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-quaderno-tenue"
+          >
+            {inCorso ? "cerco…" : righe?.length ? `${righe.length} serie` : ""}
+          </span>
+        </div>
+
+        <p className="mt-2 text-xs text-quaderno-tenue">
+          Basta il nome della serie: le stagioni e i film te li porto dietro io.
+        </p>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        {errore && (
+          <p className="mb-3 rounded-lg bg-quaderno-carta px-3 py-2 text-sm text-quaderno-inchiostro">
+            {errore.message}
+          </p>
+        )}
+
+        {righe === null && !inCorso && (
+          <p className="py-8 text-center text-sm text-quaderno-tenue">
+            Cerca «shingeki no kyojin» o «l&apos;attacco dei giganti»: rispondono tutte e due.
+          </p>
+        )}
+
+        {righe?.length === 0 && !inCorso && (
+          <p className="py-8 text-center text-sm text-quaderno-tenue">
+            Nessun titolo. Prova con una parola sola, o col nome originale.
+          </p>
+        )}
+
+        <ul id="risultati-anime" role="listbox" className="space-y-2">
+          {righe?.map((riga, indice) => (
+            <li key={riga.radice} id={`risultato-${indice}`} role="option" aria-selected={indice === mira}>
+              <button
+                type="button"
+                onClick={() => scegli(riga)}
+                onMouseEnter={() => punta(indice)}
+                className={`flex w-full items-center gap-3 rounded-card border p-2 text-left transition-colors duration-quick
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu
+                  ${
+                    indice === mira
+                      ? "border-quaderno-blu bg-quaderno-blu-tenue/40"
+                      : "border-quaderno-riga hover:bg-quaderno-carta"
+                  }`}
+              >
+                <div className="h-16 w-12 shrink-0 overflow-hidden rounded bg-quaderno-carta">
+                  {riga.copertina && (
+                    <img
+                      src={urlCopertina(riga.copertina)}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-quaderno-inchiostro">
+                    {riga.titolo}
+                  </p>
+
+                  <p className="font-numeric text-xs text-quaderno-tenue">
+                    {[
+                      riga.dal && (riga.al && riga.al !== riga.dal ? `${riga.dal}–${riga.al}` : riga.dal),
+                      riga.parti.length > 1 ? `${riga.parti.length} parti` : null
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "anno ignoto"}
+                  </p>
+
+                  {/* Le parti scritte sotto: la riga accorpa, ma non
+                      deve nascondere. Chi cercava proprio la seconda
+                      stagione deve vedere che è lì dentro. */}
+                  {riga.parti.length > 1 && (
+                    <p className="mt-0.5 truncate text-[0.7rem] text-quaderno-tenue">
+                      {riga.parti.map((p) => p.titolo).join(" · ")}
+                    </p>
+                  )}
+                </div>
+
+                {riga.gia > 0 && (
+                  <Pillola tono="blu" className="shrink-0">
+                    {riga.gia === riga.parti.length ? "in videoteca" : "in parte"}
+                  </Pillola>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="flex justify-end border-t border-quaderno-riga p-3">
+        <Bottone onClick={chiudi}>Chiudi</Bottone>
+      </div>
+    </>
+  );
+}
+
+/* ==================================================
+   ② LA PROPOSTA: di che parti è fatta la serie
+   ================================================== */
+
+const NOMI_RUOLO = {
+  stagione: "Stagione",
+  film: "Film",
+  oav: "OAV",
+  extra: "Extra",
+  fuori: "Altra opera"
+};
+
+function Proposta({ scelta, indietro, chiudi, alFatto }) {
+  const [dati, setDati] = useState(null);
+  const [errore, setErrore] = useState(null);
+  const [prese, setPrese] = useState(() => new Set());
+  const [aggiungo, setAggiungo] = useState(null);
+
+  const animeclickId = scelta.capo.animeclickId;
+
+  useEffect(() => {
+    let vivo = true;
+    const mio = new AbortController();
+
+    (async () => {
+      try {
+        const esito = await getFranchiseAnime(animeclickId, mio.signal);
+
+        if (!vivo) return;
+
+        setDati(esito);
+        setPrese(
+          new Set(esito.parti.filter((p) => p.consigliato && !p.giaTua).map((p) => p.animeclick_id))
+        );
+      } catch (err) {
+        if (err?.name === "AbortError" || !vivo) return;
+
+        setErrore(err);
+      }
+    })();
+
+    return () => {
+      vivo = false;
+      mio.abort();
+    };
+  }, [animeclickId]);
+
+  // Un elenco nuovo a ogni render farebbe ricalcolare i due gruppi
+  // qui sotto anche quando la proposta non è cambiata di una virgola.
+  const parti = useMemo(() => dati?.parti ?? [], [dati]);
+
+  // Le opere che AnimeClick considera parenti ma che serie non sono —
+  // gli spin-off, i remake, i riassunti. Stanno chiuse in fondo: sono
+  // la minoranza dei casi, e aperte farebbero sembrare Demon Slayer una
+  // serie da dodici stagioni.
+  const [mostraAltro, setMostraAltro] = useState(false);
+
+  const dentro = useMemo(() => parti.filter((p) => p.ruolo !== "fuori"), [parti]);
+  const altro = useMemo(() => parti.filter((p) => p.ruolo === "fuori"), [parti]);
+
+  function spunta(parte) {
+    setPrese((precedenti) => {
+      const nuove = new Set(precedenti);
+
+      if (nuove.has(parte.animeclick_id)) nuove.delete(parte.animeclick_id);
+      else nuove.add(parte.animeclick_id);
+
+      return nuove;
+    });
+  }
+
+  /**
+   * Aggiunge le parti spuntate.
+   *
+   * Il giro si ripete finché il server non dice che non è rimasto
+   * niente: una serie lunga non entra nel tempo di una richiesta, e la
+   * risposta porta `restanti`. Le parti già scritte non si rileggono,
+   * quindi ogni giro dopo il primo è quasi solo un salto.
+   */
+  async function aggiungi() {
+    const scelte = [...prese];
+
+    if (scelte.length === 0) return;
+
+    setErrore(null);
+
+    let esito = null;
+    let giro = 0;
+
+    try {
+      do {
+        setAggiungo({
+          fatte: esito?.aggiunte?.length ?? 0,
+          quante: scelte.length
+        });
+
+        esito = await agganciaAnime(animeclickId, {
+          parti: scelte,
+          nome: dati?.capo?.nome
+        });
+
+        giro++;
+      } while (esito?.restanti?.length > 0 && giro < 8);
+
+      alFatto?.(esito);
+      chiudi?.();
+    } catch (err) {
+      setErrore(err);
+      setAggiungo(null);
+    }
+  }
+
+  const quante = prese.size;
+
+  return (
+    <>
+      <div className="flex items-center gap-3 border-b border-quaderno-riga p-4">
+        <Bottone tono="nudo" onClick={indietro} disabled={aggiungo !== null}>
+          ← Indietro
+        </Bottone>
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-quaderno-inchiostro">
+            {dati?.capo?.nome || scelta.titolo}
+          </p>
+          <p className="text-xs text-quaderno-tenue">
+            {dati
+              ? `${dentro.length} parti trovate su AnimeClick`
+              : "Guardo di che parti è fatta…"}
+          </p>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        {errore && (
+          <p className="mb-3 rounded-lg bg-quaderno-carta px-3 py-2 text-sm text-quaderno-inchiostro">
+            {errore.message}
+          </p>
+        )}
+
+        {!dati && !errore && (
+          <p className="py-8 text-center text-sm text-quaderno-tenue">
+            Sto leggendo le opere legate a questa scheda…
+          </p>
+        )}
+
+        <ul className="space-y-2">
+          {dentro.map((parte) => (
+            <RigaParte
+              key={parte.animeclick_id}
+              parte={parte}
+              presa={prese.has(parte.animeclick_id)}
+              spunta={() => spunta(parte)}
+              bloccata={aggiungo !== null}
+            />
+          ))}
+        </ul>
+
+        {altro.length > 0 && (
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => setMostraAltro((m) => !m)}
+              className="text-xs font-semibold text-quaderno-blu hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu"
+            >
+              {mostraAltro ? "Nascondi" : `Altro materiale dello stesso mondo (${altro.length})`}
+            </button>
+
+            {mostraAltro && (
+              <>
+                <p className="mt-2 text-xs text-quaderno-tenue">
+                  Spin-off, remake e riassunti: AnimeClick li elenca insieme alla serie, ma sono
+                  opere diverse. Si aggiungono solo se li vuoi in videoteca.
+                </p>
+
+                <ul className="mt-2 space-y-2">
+                  {altro.map((parte) => (
+                    <RigaParte
+                      key={parte.animeclick_id}
+                      parte={parte}
+                      presa={prese.has(parte.animeclick_id)}
+                      spunta={() => spunta(parte)}
+                      bloccata={aggiungo !== null}
+                    />
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 border-t border-quaderno-riga p-3">
+        <p className="min-w-0 flex-1 truncate text-xs text-quaderno-tenue" aria-live="polite">
+          {aggiungo
+            ? `Aggiungo… ${aggiungo.fatte} di ${aggiungo.quante}`
+            : quante > 0
+              ? `${quante} ${quante === 1 ? "parte scelta" : "parti scelte"}`
+              : "Non hai scelto niente"}
+        </p>
+
+        <Bottone onClick={chiudi} disabled={aggiungo !== null}>
+          Annulla
+        </Bottone>
+
+        <Bottone tono="pieno" onClick={aggiungi} disabled={quante === 0 || aggiungo !== null}>
+          {aggiungo ? "Aggiungo…" : quante > 1 ? `Aggiungi tutte e ${quante}` : "Aggiungi"}
+        </Bottone>
+      </div>
+    </>
+  );
+}
+
+/** Una parte della serie, da spuntare o no. */
+function RigaParte({ parte, presa, spunta, bloccata }) {
+  const gia = parte.giaTua;
+
+  return (
+    <li>
+      <label
+        className={`flex items-center gap-3 rounded-card border p-2 transition-colors duration-quick
+          ${gia ? "border-quaderno-riga opacity-60" : presa ? "border-quaderno-blu bg-quaderno-blu-tenue/30" : "border-quaderno-riga"}
+          ${gia || bloccata ? "" : "cursor-pointer hover:bg-quaderno-carta"}`}
+      >
+        <input
+          type="checkbox"
+          checked={gia || presa}
+          disabled={gia || bloccata}
+          onChange={spunta}
+          className="h-4 w-4 shrink-0 accent-quaderno-blu"
+        />
+
+        <div className="h-14 w-10 shrink-0 overflow-hidden rounded bg-quaderno-carta">
+          {parte.copertina && (
+            <img
+              src={urlCopertina(parte.copertina)}
+              alt=""
+              loading="lazy"
+              className="h-full w-full object-cover"
+            />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-quaderno-inchiostro">{parte.titolo}</p>
+
+          <p className="font-numeric text-xs text-quaderno-tenue">
+            {[parte.anno || "in arrivo", NOMI_TIPO[parte.tipo] || parte.tipo]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+
+          {/* Il perché di una casella spenta. Senza, una parte non
+              spuntata sembra una dimenticanza invece di una scelta. */}
+          {!parte.consigliato && !gia && (
+            <p className="mt-0.5 text-[0.7rem] text-quaderno-tenue">{parte.motivo}</p>
+          )}
+        </div>
+
+        {gia ? (
+          <Pillola tono="blu" className="shrink-0">
+            ce l&apos;hai
+          </Pillola>
+        ) : (
+          <Pillola tono={parte.consigliato ? "blu" : "contorno"} className="shrink-0">
+            {NOMI_RUOLO[parte.ruolo] || parte.ruolo}
+          </Pillola>
+        )}
+      </label>
+    </li>
   );
 }

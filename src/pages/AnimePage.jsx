@@ -262,7 +262,11 @@ export default function AnimePage() {
       }
       titolo={titolo}
       sommario={[
-        sola ? dati.titolo_originale : `${stagioni.length} stagioni`,
+        // «3 stagioni e 1 film», non «4 stagioni»: da quando una serie
+        // entra intera, i film e gli OAV stanno nella stessa scheda, e
+        // contarli come stagioni direbbe una cosa falsa a colpo
+        // d'occhio.
+        sola ? dati.titolo_originale : composizioneDi(stagioni),
         [...new Set(anni)].join("–"),
         NOMI_STATO_SERIE[prima.stato]
       ]
@@ -329,7 +333,9 @@ export default function AnimePage() {
             <Fatto etichetta="Tipo" valore={NOMI_TIPO[prima.tipo] || prima.tipo} />
             <Fatto
               etichetta="Episodi"
-              valore={sola ? prima.episodi_dichiarati : `${disponibili} in ${stagioni.length} stagioni`}
+              valore={
+                sola ? prima.episodi_dichiarati : `${disponibili} in ${composizioneDi(stagioni)}`
+              }
             />
             {/* `periodo` è la frase di AnimeClick — «Autunno (2023)
                 [...] Inverno (2026)» — e non l'elenco delle stagioni,
@@ -432,6 +438,7 @@ export default function AnimePage() {
                   key={stagione.chiave}
                   stagione={stagione}
                   indice={indice}
+                  tutte={stagioni}
                   sola={sola}
                   aperta={stagione.chiave === apertaChiave}
                   apri={() =>
@@ -472,6 +479,34 @@ export default function AnimePage() {
       )}
     </PaginaVideoteca>
   );
+}
+
+/**
+ * «3 stagioni e 1 film»: di che cosa è fatta questa serie.
+ *
+ * Le parti si contano per famiglia invece che tutte insieme. Un
+ * numero solo — «4 stagioni» per Chainsaw Man — sarebbe sbagliato da
+ * quando la scheda contiene anche il film, ed è proprio il momento in
+ * cui la riga in cima serve a qualcosa: dice in tre parole cosa si
+ * troverà scorrendo.
+ */
+function composizioneDi(stagioni) {
+  const pezzi = [
+    ["stagione", "stagioni", (s) => !["film", "ova", "special"].includes(s.tipo)],
+    ["film", "film", (s) => s.tipo === "film"],
+    ["OAV", "OAV", (s) => s.tipo === "ova"],
+    ["special", "special", (s) => s.tipo === "special"]
+  ]
+    .map(([uno, molti, quali]) => {
+      const quante = stagioni.filter(quali).length;
+
+      return quante > 0 ? `${quante} ${quante === 1 ? uno : molti}` : null;
+    })
+    .filter(Boolean);
+
+  if (pezzi.length <= 1) return pezzi[0] || null;
+
+  return `${pezzi.slice(0, -1).join(", ")} e ${pezzi[pezzi.length - 1]}`;
 }
 
 /** Una riga di anagrafica: sparisce quando non c'è niente da dire. */

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import useRisorsa from "../dati/useRisorsa";
 import { useSessione } from "../dati/sessione";
 import { useCollezione } from "../dati/collezione";
-import { raggruppa, etichettaStagione } from "../dati/videoteca";
+import { corrisponde, raggruppa, etichettaStagione } from "../dati/videoteca";
 import { ModuloAccesso } from "../dati/AccessoProvider";
 import {
   accorpaStagione,
@@ -14,6 +14,7 @@ import {
   rileggiAnime,
   rinominaGruppoAnime,
   rinominaStagione,
+  riunisciVideoteca,
   staccaStagione,
   togliDallaVideoteca,
   urlCopertina
@@ -59,17 +60,7 @@ export default function GestioneVideotecaPage() {
 
   const serie = useMemo(() => raggruppa(dati ?? []), [dati]);
 
-  const visibili = useMemo(() => {
-    const testo = cerca.trim().toLowerCase();
-
-    if (!testo) return serie;
-
-    return serie.filter(
-      (s) =>
-        s.titolo.toLowerCase().includes(testo) ||
-        s.stagioni.some((st) => st.titolo.toLowerCase().includes(testo))
-    );
-  }, [serie, cerca]);
+  const visibili = useMemo(() => serie.filter((s) => corrisponde(s, cerca)), [serie, cerca]);
 
   // La serie scelta si ricorda per ID di una stagione, non per chiave
   // del gruppo: unire o staccare cambia la chiave, e ricordarsi quella
@@ -135,6 +126,8 @@ export default function GestioneVideotecaPage() {
           }
         />
       )}
+
+      {dati && serie.length > 0 && <RiunisciTutto serie={serie} ricarica={ricarica} />}
 
       {dati && serie.length > 0 && (
         <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
@@ -262,6 +255,7 @@ function PannelloSerie({ serie, altre, alFatto, alTolta }) {
               key={stagione.id}
               stagione={stagione}
               indice={indice}
+              tutte={serie.stagioni}
               sola={serie.stagioni.length === 1}
               fai={fai}
               inCorso={inCorso}
@@ -357,8 +351,80 @@ function NomeDellaSerie({ serie, fai, inCorso }) {
   );
 }
 
+/**
+ * Ricontrolla tutta la videoteca e rimette insieme le stagioni sparse.
+ *
+ * Serve a quello che è entrato prima che il sito sapesse riconoscerle.
+ * Una videoteca riempita una serie per volta si ritrova Shakugan no
+ * Shana in tre copertine, Nisekoi in due e Cyberpunk: Edgerunners in
+ * due — non per un errore di chi l'ha riempita, ma perché il
+ * riconoscimento si fidava solo della parola di relazione di
+ * AnimeClick, che manca sulla metà delle stagioni.
+ *
+ * Il giro si ripete finché il server non dice che non è rimasto
+ * niente: una videoteca da ottanta serie sono ottanta pagine da
+ * leggere, e non stanno in una richiesta sola.
+ */
+function RiunisciTutto({ serie, ricarica }) {
+  const [stato, setStato] = useState(null);
+  const [errore, setErrore] = useState(null);
+  const [fatto, setFatto] = useState(null);
+
+  const sparse = serie.length;
+
+  async function riunisci() {
+    setErrore(null);
+    setFatto(null);
+
+    let guardate = 0;
+    let esito;
+    let giro = 0;
+
+    try {
+      do {
+        setStato({ guardate });
+
+        esito = await riunisciVideoteca();
+        guardate += esito.guardate;
+        giro++;
+      } while (esito?.restanti?.length > 0 && giro < 40);
+
+      setFatto({ prima: sparse, dopo: esito.serie, schede: esito.schede });
+      await ricarica();
+    } catch (e) {
+      setErrore(e);
+    } finally {
+      setStato(null);
+    }
+  }
+
+  return (
+    <Scheda className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 p-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-quaderno-inchiostro">Ricontrolla le stagioni</p>
+
+        <p className="mt-0.5 text-xs text-quaderno-tenue" aria-live="polite">
+          {errore
+            ? errore.message
+            : stato
+              ? `Sto guardando… ${stato.guardate} serie su ${sparse}`
+              : fatto
+                ? fatto.dopo < fatto.prima
+                  ? `Fatto: ${fatto.schede} schede in ${fatto.dopo} serie — ${fatto.prima - fatto.dopo} copertine in meno.`
+                  : "Fatto: era già tutto a posto."
+                : "Rilegge le opere legate a ogni serie e mette insieme quelle che sono la stessa. Non aggiunge e non toglie niente."}
+        </p>
+      </div>
+
+      <Bottone onClick={riunisci} disabled={stato !== null}>
+        {stato ? "Ricontrollo…" : "Ricontrolla"}
+      </Bottone>
+    </Scheda>
+  );
+}
+
 /** Una stagione: come si chiama, dove sta in fila, e le due vie d'uscita. */
-function RigaStagione({ stagione, indice, sola, fai, inCorso, alTolta }) {
+function RigaStagione({ stagione, indice, tutte, sola, fai, inCorso, alTolta }) {
   const [etichetta, setEtichetta] = useState(stagione.etichetta || "");
 
   const chiave = `stagione-${stagione.id}`;
@@ -389,7 +455,7 @@ function RigaStagione({ stagione, indice, sola, fai, inCorso, alTolta }) {
           <input
             value={etichetta}
             onChange={(e) => setEtichetta(e.target.value)}
-            placeholder={etichettaStagione(stagione, indice)}
+            placeholder={etichettaStagione(stagione, indice, tutte)}
             aria-label={`Come si chiama: ${stagione.titolo}`}
             className="min-w-0 flex-1 rounded-lg border border-quaderno-riga bg-quaderno-carta px-3 py-1.5 text-sm text-quaderno-inchiostro placeholder:text-quaderno-tenue focus:outline-none focus:ring-2 focus:ring-quaderno-blu"
           />
