@@ -90,7 +90,7 @@ export default function VisionePage() {
           titolo="Non stai guardando niente"
           sommario="Una serie entra qui appena spunti il suo primo episodio."
           azioni={
-            <Link to="/videoteca">
+            <Link to="/videoteca/io">
               <Bottone tono="pieno">Vai alla videoteca</Bottone>
             </Link>
           }

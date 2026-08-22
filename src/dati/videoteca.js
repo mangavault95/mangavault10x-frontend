@@ -234,6 +234,12 @@ function componi(stagioni) {
     tipo: prima.tipo,
     stato: prima.stato,
     anno_inizio: prima.anno_inizio,
+
+    // Il ripiano in vetrina della pagina personale. Basta UNA
+    // stagione segnata perché la serie ci stia: la vetrina è fatta di
+    // serie, e chi ha messo fra i preferiti la seconda stagione di
+    // Frieren ha messo Frieren.
+    preferito: stagioni.some((s) => s.preferito),
     manga_id: stagioni.find((s) => s.manga_id)?.manga_id ?? null,
 
     stagioni,

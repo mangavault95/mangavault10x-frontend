@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import Icon from "../app/Icon";
 import useRisorsa from "../dati/useRisorsa";
 import { useSessione } from "../dati/sessione";
 import { stagioniDi } from "../dati/videoteca";
@@ -10,7 +11,8 @@ import {
   togliDallaVideoteca,
   urlCopertina,
   votaAnime,
-  togliVotoAnime
+  togliVotoAnime,
+  preferisciAnime
 } from "../services/api";
 import PaginaVideoteca, {
   Blocco,
@@ -175,6 +177,41 @@ export default function AnimePage() {
     }
   }
 
+  /**
+   * Il cuoricino: mette la serie in vetrina sulla propria pagina.
+   *
+   * Tocca TUTTE le schede della serie, non quella aperta: la vetrina
+   * è fatta di serie, e segnare solo Isekai Farming II vorrebbe dire
+   * ritrovarsi in vetrina mezza serie. Le schede già nello stato
+   * giusto si saltano, perché la rotta commuta e chiamarla su una già
+   * accesa la spegnerebbe.
+   */
+  async function preferisci() {
+    const acceso = !schede.some((s) => s.preferito);
+
+    setAzione("preferito");
+
+    try {
+      await Promise.all(
+        schede.filter((s) => Boolean(s.preferito) !== acceso).map((s) => preferisciAnime(s.id))
+      );
+
+      setDati((p) =>
+        p
+          ? {
+              ...p,
+              preferito: acceso,
+              stagioni: (p.stagioni || []).map((s) => ({ ...s, preferito: acceso }))
+            }
+          : p
+      );
+    } catch (e) {
+      setGuaio(e);
+    } finally {
+      setAzione(null);
+    }
+  }
+
   async function rileggi() {
     setAzione("rileggi");
 
@@ -197,7 +234,7 @@ export default function AnimePage() {
     try {
       for (const s of schede) await togliDallaVideoteca(s.id);
 
-      navigate("/videoteca");
+      navigate("/videoteca/io");
     } catch (e) {
       setGuaio(e);
       setAzione(null);
@@ -251,13 +288,16 @@ export default function AnimePage() {
   // insieme, e si scrivono sulla stagione aperta — che è quella di cui
   // si sta parlando.
   const note = schede.flatMap((s) => s.note || []);
+
+  // In vetrina basta una scheda: la vetrina e' fatta di serie.
+  const preferito = schede.some((s) => s.preferito);
   const anni = [schede[0].anno_inizio, schede[schede.length - 1].anno_fine].filter(Boolean);
 
   return (
     <PaginaVideoteca
       occhiello={
-        <Link to="/videoteca" className="hover:text-quaderno-inchiostro">
-          ← Videoteca
+        <Link to="/videoteca/io" className="hover:text-quaderno-inchiostro">
+          ← La mia videoteca
         </Link>
       }
       titolo={titolo}
@@ -275,6 +315,19 @@ export default function AnimePage() {
       azioni={
         puoiScrivere && (
           <>
+            {/* La vetrina della propria pagina si riempie da qui: è il
+                posto in cui uno si trova quando decide che una serie
+                lo rappresenta, cioè guardandola. */}
+            <Bottone
+              onClick={preferisci}
+              disabled={azione !== null}
+              tono={preferito ? "pieno" : "quieto"}
+              aria-pressed={preferito}
+            >
+              <Icon nome="cuore" dimensione={16} piena={preferito} />
+              {preferito ? "Nei preferiti" : "Metti fra i preferiti"}
+            </Bottone>
+
             <Bottone onClick={rileggi} disabled={azione !== null}>
               {azione === "rileggi" ? "Rileggo…" : "Rileggi da AnimeClick"}
             </Bottone>

@@ -14,6 +14,19 @@
 
 /** L'intestazione e il margine di ogni schermata della videoteca. */
 export default function PaginaVideoteca({ titolo, occhiello, sommario, azioni, children }) {
+  // Senza titolo l'intestazione non si disegna affatto. Serve alle
+  // pagine che hanno una testata loro — quella di una persona ha
+  // l'esagono e il soprannome — dove un `<h1>` vuoto lascerebbe uno
+  // scalino di margine e un titolo senza testo per i lettori di
+  // schermo.
+  if (!titolo && !occhiello && !azioni) {
+    return (
+      <div className="mx-auto w-full max-w-[110rem] px-3 py-5 sm:px-8 sm:py-8 lg:px-12 lg:py-12">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-[110rem] px-3 py-5 sm:px-8 sm:py-8 lg:px-12 lg:py-12">
       <header className="mb-5 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 sm:mb-8">

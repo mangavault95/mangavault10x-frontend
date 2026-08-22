@@ -1,5 +1,21 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+/*
+ * `Link` e non `NavLink`, ed è una correzione, non una preferenza.
+ *
+ * `NavLink` decide da sé quale voce è quella corrente — combaciando
+ * l'inizio dell'indirizzo — e in base a quella decisione scrive
+ * `aria-current="page"`. Ma qui chi è la voce corrente lo decide
+ * `eAttiva` (`navigation.js`), che segue regole diverse: il Cineforum
+ * occupa la radice `/videoteca` e combacia solo esattamente, mentre
+ * «Videoteca» vale per tutte le pagine delle persone e per le schede.
+ *
+ * Finché le due regole coincidevano non si notava. Da quando non
+ * coincidono più il disaccordo si vede: su `/videoteca/chi/Nanaki` la
+ * linguetta accesa era «Videoteca» ma `aria-current` stava su
+ * «Cineforum» — cioè lo schermo diceva una cosa e un lettore di
+ * schermo ne annunciava un'altra. Con `Link` la decisione è una sola.
+ */
 import {
   MONDI,
   eAttiva,
@@ -283,7 +299,7 @@ function Commutatore({ mondo, veste }) {
         const acceso = m.id === mondo;
 
         return (
-          <NavLink
+          <Link
             key={m.id}
             to={m.casa}
             aria-current={acceso ? "true" : undefined}
@@ -296,7 +312,7 @@ function Commutatore({ mondo, veste }) {
                 sei, e due in più a distinguere due mondi si
                 confonderebbero con le sezioni. */}
             {m.etichetta.slice(0, 3)}
-          </NavLink>
+          </Link>
         );
       })}
     </div>
@@ -313,7 +329,7 @@ function Commutatore({ mondo, veste }) {
  */
 function VoceMenu({ sezione, veste, attiva, pallina = 0 }) {
   return (
-    <NavLink
+    <Link
       to={sezione.percorso}
       aria-label={sezione.etichetta}
       aria-current={attiva ? "page" : undefined}
@@ -353,14 +369,14 @@ function VoceMenu({ sezione, veste, attiva, pallina = 0 }) {
           </kbd>
         )}
       </span>
-    </NavLink>
+    </Link>
   );
 }
 
 /** Una linguetta della barra del telefono. */
 function Linguetta({ sezione, veste, attiva }) {
   return (
-    <NavLink
+    <Link
       to={sezione.percorso}
       aria-current={attiva ? "page" : undefined}
       // 44px minimi di area toccabile, come da linee guida
@@ -375,7 +391,7 @@ function Linguetta({ sezione, veste, attiva }) {
       <Icon nome={sezione.icona} dimensione={20} />
 
       <span className="text-[0.65rem] font-medium tracking-wide">{sezione.etichetta}</span>
-    </NavLink>
+    </Link>
   );
 }
 
@@ -418,7 +434,7 @@ function FoglioAltro({ mondo, admin, veste, secondarie, richieste, chiudi }) {
             const acceso = m.id === mondo;
 
             return (
-              <NavLink
+              <Link
                 key={m.id}
                 to={m.casa}
                 onClick={chiudi}
@@ -428,7 +444,7 @@ function FoglioAltro({ mondo, admin, veste, secondarie, richieste, chiudi }) {
                 }`}
               >
                 {m.etichetta}
-              </NavLink>
+              </Link>
             );
           })}
         </div>
@@ -477,7 +493,7 @@ function FoglioAltro({ mondo, admin, veste, secondarie, richieste, chiudi }) {
         <ul className="flex flex-col">
           {voci.map((sezione) => (
             <li key={sezione.id}>
-              <NavLink
+              <Link
                 to={sezione.percorso}
                 onClick={chiudi}
                 className={`flex items-center gap-3 rounded-card px-3 py-3 ${veste.voceInerte}`}
@@ -491,7 +507,7 @@ function FoglioAltro({ mondo, admin, veste, secondarie, richieste, chiudi }) {
                     {richieste}
                   </span>
                 )}
-              </NavLink>
+              </Link>
             </li>
           ))}
         </ul>

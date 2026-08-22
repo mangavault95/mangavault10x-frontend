@@ -31,7 +31,12 @@ const NonTrovata = lazy(() => import("../pages/NonTrovataPage"));
 // e chi ci passa ne scarica una alla volta.
 // La videoteca è un mondo a parte anche nel codice scaricato: chi non
 // ci entra mai non porta a casa nemmeno un byte delle sue pagine.
-const Videoteca = lazy(() => import("../pages/VideotecaPage"));
+const Cineforum = lazy(() => import("../pages/CineforumPage"));
+const ProfiloVideoteca = lazy(() => import("../pages/ProfiloVideotecaPage"));
+const ElencoVideoteca = lazy(() => import("../pages/ElencoVideotecaPage"));
+const NumeriVideoteca = lazy(() => import("../pages/NumeriVideotecaPage"));
+const CommentiVideoteca = lazy(() => import("../pages/CommentiVideotecaPage"));
+const Confronto = lazy(() => import("../pages/ConfrontoPage"));
 const Anime = lazy(() => import("../pages/AnimePage"));
 const Visione = lazy(() => import("../pages/VisionePage"));
 const Calendario = lazy(() => import("../pages/CalendarioPage"));
@@ -123,7 +128,39 @@ function Contenuto() {
                       episodio in Italia. Ha i suoi colori e la sua barra
                       (vedi `navigation.js`), ma è lo stesso sito e le
                       stesse persone. */}
-                  <Route path="/videoteca" element={<Videoteca />} />
+                  {/* La porta della videoteca è il Cineforum, non più
+                      la griglia delle proprie copertine: si entra in
+                      una piazza, e la propria pagina è una delle
+                      pagine. */}
+                  <Route path="/videoteca" element={<Cineforum />} />
+
+                  {/* ---- Le pagine delle persone ----
+                      `/videoteca/io` è un indirizzo fisso perché la
+                      barra si disegna prima che il server abbia detto
+                      chi sei; `/videoteca/chi/<soprannome>` è
+                      l'indirizzo pubblico di ciascuno, quello che si
+                      manda a qualcuno.
+
+                      «Preferiti» e «Classifica» non hanno una rotta
+                      loro: sono `/tutto` con un filtro e un ordine
+                      nell'indirizzo, perché sono la stessa griglia
+                      guardata da un'altra angolazione. */}
+                  <Route path="/videoteca/io" element={<ProfiloVideoteca />} />
+                  <Route path="/videoteca/io/tutto" element={<ElencoVideoteca />} />
+                  <Route path="/videoteca/io/numeri" element={<NumeriVideoteca />} />
+                  <Route path="/videoteca/io/commenti" element={<CommentiVideoteca />} />
+
+                  <Route path="/videoteca/chi/:nickname" element={<ProfiloVideoteca />} />
+                  <Route path="/videoteca/chi/:nickname/tutto" element={<ElencoVideoteca />} />
+                  <Route path="/videoteca/chi/:nickname/numeri" element={<NumeriVideoteca />} />
+                  <Route path="/videoteca/chi/:nickname/commenti" element={<CommentiVideoteca />} />
+
+                  {/* Due soprannomi nell'indirizzo e non «io contro
+                      lui»: un confronto è la tipica cosa che si manda,
+                      e un indirizzo che dipende da chi lo apre
+                      mostrerebbe a chi lo riceve un'altra pagina. */}
+                  <Route path="/videoteca/confronto/:a/:b" element={<Confronto />} />
+
                   {/* La Gestione della videoteca sta sotto /videoteca e
                       non accanto a /admin: è la stessa parola, ma
                       corregge un'altra cosa — stagioni e collegamenti,

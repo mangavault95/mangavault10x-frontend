@@ -104,7 +104,7 @@ export default function GestioneVideotecaPage() {
       sommario="Stagioni da unire, collegamenti al manga, serie da togliere."
       azioni={
         <Link
-          to="/videoteca"
+          to="/videoteca/io"
           className="text-sm font-medium text-quaderno-blu hover:underline"
         >
           Torna alla videoteca
@@ -120,7 +120,7 @@ export default function GestioneVideotecaPage() {
           titolo="Non c'è niente da gestire"
           sommario="La tua videoteca è vuota: aggiungi una serie e torna qui."
           azioni={
-            <Link to="/videoteca">
+            <Link to="/videoteca/io">
               <Bottone tono="pieno">Vai alla videoteca</Bottone>
             </Link>
           }

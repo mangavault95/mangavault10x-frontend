@@ -113,15 +113,37 @@ export const SEZIONI = [
   // ---- Videoteca ----
   // I numeri ripartono da 1: le scorciatoie valgono dentro il mondo
   // acceso, come i piani di un palazzo che hanno tutti la stanza 1.
+  //
+  // LA PORTA DELLA VIDEOTECA NON È PIÙ LA GRIGLIA. Fino a qui aprendo
+  // questo mondo si arrivava sul proprio scaffale di copertine: una
+  // stanza con dentro una persona sola, in un sito che di persone ne
+  // ha tre. Adesso si entra dal Cineforum — cosa hanno fatto tutti — e
+  // la griglia è diventata la propria pagina, che è una delle pagine
+  // e non più IL posto.
+  {
+    id: "cineforum",
+    mondo: "videoteca",
+    primaria: true,
+    percorso: "/videoteca",
+    etichetta: "Cineforum",
+    descrizione: "Cosa hanno guardato tutti, dal più recente",
+    icona: "cineforum",
+    tasto: "1"
+  },
   {
     id: "videoteca",
     mondo: "videoteca",
     primaria: true,
-    percorso: "/videoteca",
+    // Un indirizzo fisso e non il proprio soprannome: la barra si
+    // disegna prima che il server abbia detto chi sei, e una voce di
+    // menu non può aspettare una richiesta per sapere dove punta.
+    // Chi non è entrato ci trova la pagina del padrone di casa, che è
+    // la regola di lettura di tutto il sito.
+    percorso: "/videoteca/io",
     etichetta: "Videoteca",
-    descrizione: "Tutti gli anime, con il punto in cui sei",
+    descrizione: "La tua pagina: serie, film, numeri, preferiti",
     icona: "pellicola",
-    tasto: "1"
+    tasto: "2"
   },
   {
     id: "visione",
@@ -131,7 +153,7 @@ export const SEZIONI = [
     etichetta: "In visione",
     descrizione: "Cosa stai guardando adesso",
     icona: "bookmark",
-    tasto: "2"
+    tasto: "3"
   },
   {
     id: "calendario",
@@ -141,7 +163,7 @@ export const SEZIONI = [
     etichetta: "Calendario",
     descrizione: "Quando escono i prossimi episodi, in Italia",
     icona: "calendario",
-    tasto: "3"
+    tasto: "4"
   }
 ];
 
@@ -239,6 +261,45 @@ export function titoloPer(percorso) {
   // salvi nei preferiti: deve dire di cosa parla, non solo dove sta.
   if (/^\/videoteca\/\d+/.test(percorso)) return "Scheda anime · Videoteca";
 
+  // Le pagine delle persone. Il soprannome sta nell'indirizzo, quindi
+  // il titolo può dire DI CHI è la pagina senza aspettare il server —
+  // ed è l'unica cosa che serve sapere leggendo una scheda del
+  // browser fra dodici aperte.
+  const chi = percorso.match(/^\/videoteca\/chi\/([^/]+)/);
+
+  if (chi) {
+    const nome = decodeURIComponent(chi[1]);
+    const coda = percorso.split("/")[4];
+
+    const vesti = {
+      tutto: `Tutto di ${nome}`,
+      numeri: `I numeri di ${nome}`,
+      commenti: `I commenti di ${nome}`
+    };
+
+    return `${vesti[coda] ?? `La videoteca di ${nome}`} · MangaVault`;
+  }
+
+  if (percorso.startsWith("/videoteca/confronto")) {
+    const [, , , a, b] = percorso.split("/");
+
+    return a && b
+      ? `${decodeURIComponent(a)} e ${decodeURIComponent(b)} · Confronto`
+      : "Confronto · Videoteca";
+  }
+
+  // La propria pagina non ha un nome nell'indirizzo: chi la apre lo
+  // sa già di chi è.
+  if (percorso.startsWith("/videoteca/io")) {
+    const mie = {
+      tutto: "I miei titoli",
+      numeri: "I miei numeri",
+      commenti: "I miei commenti"
+    };
+
+    return `${mie[percorso.split("/")[3]] ?? "La mia videoteca"} · MangaVault`;
+  }
+
   // Una partita ha un indirizzo suo, ed è il tipo di cosa che si manda
   // a qualcuno: la scheda deve dire di cosa si tratta.
   if (/^\/kachinuki\/\d+/.test(percorso)) return "Una partita · Kachinuki-sen";
@@ -267,12 +328,23 @@ export function eAttiva(percorsoVoce, percorsoCorrente) {
     );
   }
 
-  // La Gestione della videoteca vive sotto /videoteca, ma è
-  // amministrazione: due voci accese insieme direbbero che si è in due
-  // posti contemporaneamente.
-  if (percorsoVoce === "/videoteca") {
+  // Il Cineforum è la porta del mondo videoteca e occupa la radice
+  // /videoteca: combacia solo esattamente, o resterebbe acceso dentro
+  // ogni pagina personale e dentro ogni scheda.
+  if (percorsoVoce === "/videoteca") return percorsoCorrente === "/videoteca";
+
+  // «Videoteca» punta alla propria pagina, ma vale per tutte le pagine
+  // di persone e per le schede delle serie: chi sta guardando Frieren
+  // è dentro una videoteca, e la barra deve dire dov'è invece di
+  // spegnersi tutta.
+  //
+  // Restano fuori la Gestione — è amministrazione, e due voci accese
+  // insieme direbbero che si è in due posti — e il Cineforum, che è la
+  // radice e ha già la sua voce.
+  if (percorsoVoce === "/videoteca/io") {
     return (
       percorsoCorrente.startsWith("/videoteca") &&
+      percorsoCorrente !== "/videoteca" &&
       !percorsoCorrente.startsWith(SEZIONI_ADMIN.videoteca.percorso)
     );
   }

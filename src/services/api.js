@@ -442,7 +442,17 @@ export const eliminaTorneo = (id) =>
    dei «volumi posseduti». Nemmeno l'elenco: la videoteca è di chi la
    guarda, e ogni account ha la sua. */
 
-export const getVideoteca = () => request(`/api/anime${diChi()}`);
+/**
+ * La videoteca di qualcuno.
+ *
+ * Senza argomenti è la propria (o quella del padrone di casa, per chi
+ * guarda senza entrare). Con un identificativo è quella di un altro:
+ * è così che la pagina personale di Nanaki mostra le sue copertine a
+ * chiunque apra `/videoteca/chi/Nanaki`, e non è un permesso nuovo —
+ * il server accetta `?utente=` in lettura da quando i lettori sono
+ * due, e in scrittura continua a non guardarlo.
+ */
+export const getVideoteca = (utenteId = null) => request(`/api/anime${diChi("", utenteId)}`);
 
 /** La serie con tutte le sue stagioni: l'indirizzo ne porta una, torna il gruppo. */
 export const getAnime = (id) => request(`/api/anime/${id}${diChi()}`);
@@ -613,6 +623,93 @@ export const modificaNotaAnime = (noteId, { testo, spoiler }) =>
 
 export const eliminaNotaAnime = (noteId) =>
   request(`/api/anime/note/${noteId}`, { method: "DELETE", auth: true });
+
+/**
+ * Il ripiano in vetrina: mettere e togliere sono lo stesso indirizzo.
+ *
+ * Non è «le ho dato cinque stelle» — quella è la classifica, e si
+ * ricava dai voti. I preferiti sono le poche serie che uno sceglie di
+ * mostrare in fondo alla propria pagina.
+ */
+export const preferisciAnime = (id) =>
+  request(`/api/anime/${id}/preferito`, { method: "POST", auth: true });
+
+/* ==================================================
+   CINEFORUM
+   ==================================================
+
+   La piazza della videoteca: quello che hanno fatto tutti, senza
+   doversi seguire.
+
+   Vale la regola di sempre e conviene ripeterla, perché qui si vede
+   più che altrove: LEGGERE è di tutti, anche di chi non è entrato —
+   è il senso della cosa — e SCRIVERE lo dice solo il token. */
+
+/**
+ * Il feed. `prima` è l'istante da cui riprendere, e arriva dalla
+ * risposta precedente invece di essere ricalcolato qui: due post
+ * possono cadere nello stesso millisecondo, e ripartire da «l'ultimo
+ * che ho visto» ne salterebbe uno.
+ */
+export const getCineforum = ({ prima = null, quanti = null, utente = null } = {}) => {
+  const parametri = new URLSearchParams();
+
+  if (prima) parametri.set("prima", new Date(prima).toISOString());
+  if (quanti) parametri.set("quanti", String(quanti));
+  if (utente) parametri.set("utente", String(utente));
+
+  const coda = parametri.toString();
+
+  return request(`/api/cineforum${coda ? `?${coda}` : ""}`);
+};
+
+export const scriviMessaggio = ({ testo, animeId = null }) =>
+  request("/api/cineforum/messaggi", { method: "POST", body: { testo, animeId }, auth: true });
+
+export const modificaMessaggio = (id, testo) =>
+  request(`/api/cineforum/messaggi/${id}`, { method: "PUT", body: { testo }, auth: true });
+
+export const eliminaMessaggio = (id) =>
+  request(`/api/cineforum/messaggi/${id}`, { method: "DELETE", auth: true });
+
+/** Il cuore commuta: lo stesso bottone lo mette e lo toglie. */
+export const cuoreCineforum = (chiave) =>
+  request("/api/cineforum/cuore", { method: "POST", body: { chiave }, auth: true });
+
+export const rispondiCineforum = (chiave, testo) =>
+  request("/api/cineforum/risposte", { method: "POST", body: { chiave, testo }, auth: true });
+
+export const modificaRisposta = (id, testo) =>
+  request(`/api/cineforum/risposte/${id}`, { method: "PUT", body: { testo }, auth: true });
+
+export const eliminaRisposta = (id) =>
+  request(`/api/cineforum/risposte/${id}`, { method: "DELETE", auth: true });
+
+/* ---- Le pagine delle persone ----
+   Il soprannome è l'indirizzo pubblico di ciascuno: si cerca per
+   nome, non per numero, e l'indirizzo che ne esce si può mandare. */
+
+export const getProfiloVideoteca = (nickname) =>
+  request(`/api/cineforum/profilo/${encodeURIComponent(nickname)}`);
+
+export const getCommentiDi = (nickname) =>
+  request(`/api/cineforum/commenti/${encodeURIComponent(nickname)}`);
+
+export const getConfronto = (a, b) =>
+  request(`/api/cineforum/confronto/${encodeURIComponent(a)}/${encodeURIComponent(b)}`);
+
+/** Chi c'è, con quante serie ha: serve alla ricerca per soprannome. */
+export const getPersone = () => request("/api/cineforum/chi");
+
+/**
+ * Il soprannome di chi guarda.
+ *
+ * La barra punta a `/videoteca/io`, che è un indirizzo fisso perché
+ * si disegna prima di sapere chi sei; questa chiamata è come quella
+ * pagina scopre di chi deve mostrare la videoteca. Chi non è entrato
+ * riceve il padrone di casa, come ovunque nel sito.
+ */
+export const getIoVideoteca = () => request("/api/cineforum/io", { auth: true });
 
 /* ==================================================
    MERCATO

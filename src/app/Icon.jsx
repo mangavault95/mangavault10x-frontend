@@ -102,7 +102,49 @@ const TRACCIATI = {
     "M12 5.1a1.35 1.35 0 1 0 0 2.7 1.35 1.35 0 1 0 0-2.7zM12 10.65a1.35 1.35 0 1 0 0 2.7 1.35 1.35 0 1 0 0-2.7zM12 16.2a1.35 1.35 0 1 0 0 2.7 1.35 1.35 0 1 0 0-2.7z",
   // Un cartellino prezzo: i desideri sono da comprare, non da segnare
   // come preferiti — per questo non riusa "star".
-  cartellino: "M20.6 12.3 12.7 20.2a2 2 0 0 1-2.8 0l-6.1-6.1a2 2 0 0 1 0-2.8L11.7 3.3a2 2 0 0 1 1.4-.6H19a2 2 0 0 1 2 2v5.3a2 2 0 0 1-.4 1.3ZM16.5 7.5h.01"
+  cartellino: "M20.6 12.3 12.7 20.2a2 2 0 0 1-2.8 0l-6.1-6.1a2 2 0 0 1 0-2.8L11.7 3.3a2 2 0 0 1 1.4-.6H19a2 2 0 0 1 2 2v5.3a2 2 0 0 1-.4 1.3ZM16.5 7.5h.01",
+
+  /**
+   * Il Cineforum: due fumetti sovrapposti.
+   *
+   * Non una pellicola — quella è già la videoteca, e due strisce di
+   * pellicola diverse in barra sarebbero indistinguibili a venti
+   * pixel. Non delle teste in fila: dicono «utenti», che è una parola
+   * da pannello di controllo. Due fumetti dicono la cosa giusta, cioè
+   * che lì dentro si parla.
+   *
+   * Quello dietro è tagliato dal davanti invece di essere disegnato
+   * intero: due rettangoli arrotondati completi si leggono come una
+   * finestra con l'ombra.
+   */
+  cineforum:
+    "M8.5 4h9.9a2 2 0 0 1 2 2v6.4a2 2 0 0 1-2 2h-1.1v3.2l-3.4-3.2H8.5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM6.5 8.4H4.6a2 2 0 0 0-2 2v4.9a2 2 0 0 0 2 2h.9V21l3-3.7",
+
+  /**
+   * Il cuore: la sola reazione che c'è.
+   *
+   * Va usato con `piena` quando è già tuo. Il contorno che cambia solo
+   * colore si nota molto meno del passaggio da vuoto a pieno, ed è
+   * l'unico segnale che dice se il gesto è andato a buon fine.
+   */
+  cuore:
+    "M12 20.2s-7.6-4.4-7.6-9.5a4.2 4.2 0 0 1 7.6-2.5 4.2 4.2 0 0 1 7.6 2.5c0 5.1-7.6 9.5-7.6 9.5z",
+
+  /**
+   * Il confronto: due colonne di altezza diversa, con la linea di
+   * mezzo che le separa.
+   *
+   * Non una bilancia — a questa misura il giogo e i due piatti
+   * diventano tre macchie — e non due frecce contrapposte, che dicono
+   * «scambia». Due barre a confronto è il disegno che chiunque abbia
+   * visto un grafico riconosce.
+   */
+  confronto: "M12 3.5v17M5 9.5h3.4V19H5zM15.6 6h3.4v13h-3.4z",
+
+  // Una freccia a destra: «qui c'è il seguito». Serve al riquadro
+  // delle statistiche in cima alla pagina personale, che è
+  // un'anteprima e deve dirlo.
+  avanti: "M5 12h13M13 6.5l5.5 5.5-5.5 5.5"
 };
 
 export default function Icon({ nome, dimensione = 20, className = "", piena = false, ...resto }) {
