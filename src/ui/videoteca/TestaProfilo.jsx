@@ -2,54 +2,149 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Icon from "../../app/Icon";
 import { vaiAlConfronto } from "../../dati/cineforum";
+import { salvaFaccia, salvaStriscione, togliFaccia } from "../../services/api";
 import Sovrapposizione from "../Sovrapposizione";
 import useChiusuraVelo from "../useChiusuraVelo";
-import Esagono from "./Esagono";
+import SceltaImmagine, { TastoModifica } from "./SceltaImmagine";
+import Striscione from "./Striscione";
+import Tondino from "./Tondino";
 
 /**
  * La testata di una pagina personale.
  *
- * Una fascia con dentro l'esagono e il soprannome, e sotto — a destra
- * — il tastino che apre i collegamenti. È il disegno che è stato
- * chiesto, e le due parti fanno due lavori diversi:
+ * ---------------------------------------------------------------
+ * COS'È CAMBIATO, E PERCHÉ
  *
- *   LA FASCIA dice DI CHI è questa pagina. Su un sito dove si guarda
- *   la videoteca degli altri è la prima cosa da sapere, e va detta in
- *   grande: senza, una pagina di copertine sembra sempre la propria.
+ * Prima era una fascia bianca alta duecento pixel con dentro un
+ * esagono, e sotto — su altre due righe — il nome e i numeri. Era
+ * soprattutto vuota: tanta carta per dire un nome.
  *
- *   IL TASTINO tiene le quattro cose che non stanno nella pagina —
- *   preferiti, classifica, commenti, confronto — senza occupare
- *   quattro righe di schermo. Non è una barra di navigazione: sono
- *   modi diversi di guardare la stessa persona, e stanno bene sotto un
- *   gesto solo.
+ * Adesso è UNA cosa sola: lo striscione, con il nome e la faccia
+ * scritti sopra. L'altezza totale è quella della fascia e basta, cioè
+ * meno di prima, e non c'è più niente di bianco — chi non ha ancora
+ * messo un'immagine vede il proprio colore, chi ne ha messe più d'una
+ * le vede alternarsi.
+ *
+ * ---------------------------------------------------------------
+ * IL TASTINO DEI COLLEGAMENTI
+ *
+ * Sta fuori dallo striscione, sotto a destra, e tiene le quattro cose
+ * che non stanno nella pagina — preferiti, classifica, commenti,
+ * confronto. Non è una barra di navigazione: sono modi diversi di
+ * guardare la stessa persona, e stanno bene sotto un gesto solo.
  */
 
-export default function TestaProfilo({ persona, sommario, altrePersone = [], mia = false }) {
+export default function TestaProfilo({
+  persona,
+  sommario,
+  altrePersone = [],
+  mia = false,
+  alCambio
+}) {
   const [menu, setMenu] = useState(false);
+  const [cambiando, setCambiando] = useState(null);
+  const [striscione, setStriscione] = useState(null);
+
+  // Le immagini si mostrano da subito dopo il salvataggio, senza
+  // aspettare che la pagina si ricarichi: cambiare foto e non vederla
+  // cambiare è il modo più sicuro di farlo tre volte.
+  const [faccia, setFaccia] = useState(null);
+
+  const immagini = striscione ?? persona.striscione ?? [];
+  const quandoFaccia = faccia === null ? persona.faccia : faccia;
 
   const base = `/videoteca/chi/${encodeURIComponent(persona.nickname)}`;
 
+  async function scegliFaccia(dataUri) {
+    setCambiando(null);
+
+    const esito = await salvaFaccia(dataUri);
+
+    setFaccia(esito.faccia);
+    alCambio?.();
+  }
+
+  async function scegliImmagine(dataUri) {
+    setCambiando(null);
+
+    // Le immagini già lì si mandano come numeri: il server le tiene
+    // dove sono invece di riceverle indietro e riscriverle.
+    const esito = await salvaStriscione([...immagini, dataUri]);
+
+    setStriscione(esito.striscione);
+    alCambio?.();
+  }
+
+  async function togliImmagine(id) {
+    const esito = await salvaStriscione(immagini.filter((x) => x !== id));
+
+    setStriscione(esito.striscione);
+    alCambio?.();
+  }
+
   return (
     <>
-      <header className="-mx-3 border-y border-quaderno-riga bg-quaderno-foglio px-3 py-7 text-center sm:mx-0 sm:rounded-card sm:border">
-        <Esagono
-          nickname={persona.nickname}
-          colore={persona.colore}
-          dimensione={92}
-          className="mx-auto"
-        />
+      <header className="-mx-3 overflow-hidden border-y border-quaderno-riga sm:mx-0 sm:rounded-card sm:border">
+        <Striscione immagini={immagini} colore={persona.colore}>
+          {/* Sopra l'immagine: la faccia e il nome. In basso a
+              sinistra, dove finisce lo sguardo dopo aver guardato la
+              foto — e dove la velatura è più densa, quindi il bianco
+              si legge. */}
+          <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 p-3 sm:gap-4 sm:p-5">
+            <div className="relative shrink-0">
+              <Tondino
+                utente={{ ...persona, faccia: quandoFaccia }}
+                dimensione={72}
+                anello
+              />
 
-        <h1 className="mt-3 font-display text-2xl font-bold tracking-tight text-quaderno-inchiostro">
-          {persona.nickname}
-        </h1>
+              {mia && (
+                <TastoModifica
+                  etichetta="Cambia la foto"
+                  onClick={() => setCambiando("faccia")}
+                  className="absolute -bottom-1 -right-1"
+                />
+              )}
+            </div>
 
-        {sommario && <p className="mt-1 text-sm text-quaderno-tenue">{sommario}</p>}
+            <div className="min-w-0 flex-1 pb-1">
+              <h1 className="truncate font-display text-2xl font-bold tracking-tight text-white drop-shadow sm:text-3xl">
+                {persona.nickname}
+              </h1>
 
-        {mia && (
-          <p className="mt-1 text-xs text-quaderno-tenue">
-            Questa è la tua pagina — gli altri la vedono così
-          </p>
-        )}
+              {sommario && (
+                <p className="truncate text-sm text-white/80 drop-shadow">{sommario}</p>
+              )}
+            </div>
+          </div>
+
+          {mia && (
+            <div className="absolute right-2 top-2 flex gap-1.5">
+              <TastoModifica
+                etichetta="Aggiungi un'immagine allo striscione"
+                onClick={() => setCambiando("striscione")}
+              />
+
+              {immagini.length > 0 && (
+                <button
+                  type="button"
+                  // Toglie l'ULTIMA e non apre un elenco: le immagini
+                  // sono al massimo sei e si sostituiscono più spesso
+                  // di quanto si riordinino. Un pannello di gestione
+                  // per sei fotografie sarebbe più lavoro da usare che
+                  // da rifare.
+                  onClick={() => togliImmagine(immagini[immagini.length - 1])}
+                  aria-label="Togli l'ultima immagine dello striscione"
+                  title="Togli l'ultima immagine"
+                  className="grid h-8 w-8 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors duration-quick hover:bg-black/65
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  <Icon nome="cestino" dimensione={15} />
+                </button>
+              )}
+            </div>
+          )}
+        </Striscione>
       </header>
 
       {/* Il tastino sporge sotto la fascia, allineato a destra: sta
@@ -72,7 +167,23 @@ export default function TestaProfilo({ persona, sommario, altrePersone = [], mia
           base={base}
           persona={persona}
           altrePersone={altrePersone}
+          mia={mia}
+          haFaccia={Boolean(quandoFaccia)}
+          togliLaFaccia={async () => {
+            await togliFaccia();
+            setFaccia(false);
+            alCambio?.();
+          }}
           chiudi={() => setMenu(false)}
+        />
+      )}
+
+      {cambiando && (
+        <SceltaImmagine
+          misura={cambiando === "faccia" ? "faccia" : "striscione"}
+          titolo={cambiando === "faccia" ? "La tua foto" : "Un'immagine per lo striscione"}
+          chiudi={() => setCambiando(null)}
+          alScelto={cambiando === "faccia" ? scegliFaccia : scegliImmagine}
         />
       )}
     </>
@@ -94,7 +205,7 @@ export default function TestaProfilo({ persona, sommario, altrePersone = [], mia
  * secondo passo si salta: chiedere di scegliere fra un'opzione è una
  * domanda inutile.
  */
-function MenuProfilo({ base, persona, altrePersone, chiudi }) {
+function MenuProfilo({ base, persona, altrePersone, mia, haFaccia, togliLaFaccia, chiudi }) {
   const navigate = useNavigate();
   const velo = useChiusuraVelo(chiudi);
   const [scegliendo, setScegliendo] = useState(false);
@@ -142,6 +253,22 @@ function MenuProfilo({ base, persona, altrePersone, chiudi }) {
     }
   ];
 
+  // Togliere la propria foto sta qui e non accanto alla matita: è una
+  // cosa che si fa una volta ogni tanto, e un secondo tastino sopra
+  // l'immagine avrebbe pesato su ogni apertura della pagina.
+  if (mia && haFaccia) {
+    voci.push({
+      id: "togli-faccia",
+      etichetta: "Togli la foto",
+      spiega: "Si torna all'iniziale sul tuo colore",
+      icona: "cestino",
+      onClick: async () => {
+        chiudi();
+        await togliLaFaccia();
+      }
+    });
+  }
+
   return (
     <Sovrapposizione>
       <div
@@ -167,7 +294,7 @@ function MenuProfilo({ base, persona, altrePersone, chiudi }) {
                       onClick={chiudi}
                       className="flex items-center gap-3 rounded-card px-3 py-3 hover:bg-quaderno-carta"
                     >
-                      <Esagono nickname={p.nickname} colore={p.colore} dimensione={30} />
+                      <Tondino utente={p} dimensione={30} />
 
                       <span className="text-sm font-medium text-quaderno-inchiostro">
                         {p.nickname}

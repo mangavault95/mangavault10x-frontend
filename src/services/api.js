@@ -275,6 +275,51 @@ export const registrazione = ({ username, nickname, password }) =>
 /** I soprannomi di chi può votare, per scrivere "Voto Nicer". */
 export const getLettori = () => request("/api/utenti/pubblici");
 
+/* ---- La faccia e lo striscione ----
+
+   Le immagini di profilo NON viaggiano dentro il JSON: hanno un
+   indirizzo loro. È la scelta che tiene leggero il Cineforum, dove la
+   stessa faccia comparirebbe quindici volte per pagina — così invece
+   il browser la scarica una volta e se la tiene.
+
+   ⚠️ Il `?v=` è obbligatorio e non è un vezzo: quelle immagini si
+   servono con un anno di cache e `immutable`, quindi senza qualcosa
+   che cambi nell'indirizzo chi si cambia la foto continuerebbe a
+   vedere quella di prima — e a rifarlo altre tre volte convinto che
+   il sito non salvi. Il valore è il momento in cui è stata messa. */
+
+export function urlFaccia(utenteId, quando) {
+  if (!utenteId || !quando) return null;
+
+  return `${API_URL}/api/utenti/${utenteId}/faccia?v=${quando}`;
+}
+
+export function urlStriscione(immagineId) {
+  if (!immagineId) return null;
+
+  // Qui il `v` non serve: l'identificativo dell'immagine è già
+  // irripetibile — cambiarla vuol dire un'altra riga, quindi un altro
+  // indirizzo.
+  return `${API_URL}/api/utenti/striscione/${immagineId}`;
+}
+
+export const salvaFaccia = (immagine) =>
+  request("/api/utenti/io/faccia", { method: "PUT", body: { immagine }, auth: true });
+
+export const togliFaccia = () =>
+  request("/api/utenti/io/faccia", { method: "DELETE", auth: true });
+
+/**
+ * Lo striscione si riscrive per intero.
+ *
+ * `immagini` è l'elenco nell'ordine voluto: un numero è un'immagine
+ * già lì che resta, un data URI è una nuova. Un solo indirizzo per
+ * aggiungere, togliere e riordinare — sono la stessa cosa vista da
+ * tre lati.
+ */
+export const salvaStriscione = (immagini) =>
+  request("/api/utenti/io/striscione", { method: "PUT", body: { immagini }, auth: true });
+
 /** Le richieste di accesso ancora in sospeso (solo il proprietario). */
 export const getRichiesteAccesso = () => request("/api/utenti/richieste", { auth: true });
 

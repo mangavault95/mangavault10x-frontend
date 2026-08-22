@@ -45,7 +45,7 @@ export default function Fila({ titolo, quante, tutto, vuoto, children, azione })
       </div>
 
       {children ? (
-        <ul className="-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2 sm:mx-0 sm:px-0">
+        <ul className="-mx-3 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto px-3 pb-2 sm:mx-0 sm:px-0">
           {children}
         </ul>
       ) : (
@@ -58,9 +58,16 @@ export default function Fila({ titolo, quante, tutto, vuoto, children, azione })
   );
 }
 
-/** Una scheda dentro un ripiano: larghezza fissa, o la fila non scorre. */
+/**
+ * Una scheda dentro un ripiano: larghezza fissa, o la fila non scorre.
+ *
+ * `items-stretch` sulla fila e `h-full` qui sono la stessa cosa che
+ * fa la griglia: la scheda col titolo su due righe decide l'altezza e
+ * tutte le altre la seguono, invece di lasciare gradini lungo il
+ * ripiano.
+ */
 export function Posto({ children }) {
-  return <li className="w-[8.5rem] shrink-0 snap-start sm:w-40">{children}</li>;
+  return <li className="h-auto w-[8.5rem] shrink-0 snap-start sm:w-40">{children}</li>;
 }
 
 /** Il caso normale: una serie della videoteca dentro un ripiano. */
@@ -89,8 +96,11 @@ export function PostoAggiungi({ testo, onClick, to }) {
     </>
   );
 
+  // `h-full` e non un rapporto fisso: il riquadro tratteggiato deve
+  // essere alto quanto le copertine che gli stanno accanto, e quanto
+  // sono alte lo decide il titolo più lungo della fila.
   const stile =
-    "flex aspect-[3/4.6] w-full flex-col items-center justify-center gap-2 rounded-card border border-dashed border-quaderno-riga text-center transition-colors duration-quick hover:border-quaderno-blu hover:text-quaderno-inchiostro";
+    "flex h-full min-h-[13rem] w-full flex-col items-center justify-center gap-2 rounded-card border border-dashed border-quaderno-riga text-center transition-colors duration-quick hover:border-quaderno-blu hover:text-quaderno-inchiostro";
 
   return (
     <Posto>

@@ -144,7 +144,29 @@ const TRACCIATI = {
   // Una freccia a destra: «qui c'è il seguito». Serve al riquadro
   // delle statistiche in cima alla pagina personale, che è
   // un'anteprima e deve dirlo.
-  avanti: "M5 12h13M13 6.5l5.5 5.5-5.5 5.5"
+  avanti: "M5 12h13M13 6.5l5.5 5.5-5.5 5.5",
+
+  /**
+   * Una matita: «questo si cambia».
+   *
+   * Sta sopra la faccia e sopra lo striscione, sempre in un tondino
+   * scuro appoggiato sull'immagine. Non un ingranaggio — quello è
+   * «impostazioni», cioè un altro posto dove andare — e non un più,
+   * che vuol dire «aggiungi» e non «sostituisci».
+   *
+   * La punta è un triangolo chiuso e non due trattini: a quindici
+   * pixel due segmenti che convergono diventano una macchia, mentre
+   * la punta piena resta riconoscibile.
+   */
+  matita: "M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3zM14.5 6.5l3 3",
+
+  /**
+   * Un cestino: togliere l'immagine che c'è.
+   *
+   * Solo il coperchio e la vasca, senza le righine dentro: a sedici
+   * pixel quelle diventano tre puntini e il cestino sembra sporco.
+   */
+  cestino: "M4.5 7h15M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7M6.5 7l.8 12a1.5 1.5 0 0 0 1.5 1.4h6.4a1.5 1.5 0 0 0 1.5-1.4L17.5 7"
 };
 
 export default function Icon({ nome, dimensione = 20, className = "", piena = false, ...resto }) {

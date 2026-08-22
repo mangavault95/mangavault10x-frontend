@@ -6,7 +6,7 @@ import { getCineforum, getPersone } from "../services/api";
 import { ModuloAccesso } from "../dati/AccessoProvider";
 import PaginaVideoteca, { Bottone, Caricamento, Errore, Vuoto } from "../ui/videoteca/Foglio";
 import ComponiMessaggio from "../ui/videoteca/ComponiMessaggio";
-import Esagono from "../ui/videoteca/Esagono";
+import Tondino from "../ui/videoteca/Tondino";
 import Post from "../ui/videoteca/Post";
 
 /**
@@ -204,7 +204,7 @@ function Persone({ elenco }) {
               to={`/videoteca/chi/${encodeURIComponent(p.nickname)}`}
               className="flex w-24 flex-col items-center gap-1.5 rounded-card border border-quaderno-riga bg-quaderno-foglio px-2 py-3 transition-colors duration-quick hover:border-quaderno-blu"
             >
-              <Esagono nickname={p.nickname} colore={p.colore} dimensione={42} />
+              <Tondino utente={p} dimensione={42} />
 
               <span className="w-full truncate text-center text-xs font-semibold text-quaderno-inchiostro">
                 {p.nickname}

@@ -3,7 +3,7 @@ import Icon from "../../app/Icon";
 import { useSessione } from "../../dati/sessione";
 import { corrisponde, raggruppa } from "../../dati/videoteca";
 import { getVideoteca, scriviMessaggio, urlCopertina } from "../../services/api";
-import Esagono from "./Esagono";
+import Tondino from "./Tondino";
 import { Bottone, Scheda } from "./Foglio";
 
 /**
@@ -35,7 +35,10 @@ export default function ComponiMessaggio({ alFatto, chiediAccesso }) {
   const [agganciando, setAgganciando] = useState(false);
   const [serie, setSerie] = useState(null);
 
-  const mioColore = lettori.find((l) => l.id === utente?.id)?.colore ?? null;
+  // Il colore e la faccia non stanno nel token — che porta solo chi
+  // sei e cosa puoi fare — ma nell'elenco dei lettori. Senza, la
+  // propria faccia comparirebbe come iniziale finché non si ricarica.
+  const io = lettori.find((l) => l.id === utente?.id) ?? null;
 
   async function manda(e) {
     e.preventDefault();
@@ -80,7 +83,7 @@ export default function ComponiMessaggio({ alFatto, chiediAccesso }) {
     <Scheda className="p-3 sm:p-4">
       <form onSubmit={manda}>
         <div className="flex gap-3">
-          <Esagono nickname={utente.nickname} colore={mioColore} dimensione={38} />
+          <Tondino utente={io} nickname={utente.nickname} dimensione={38} />
 
           <div className="min-w-0 flex-1">
             <TestoCheCresce

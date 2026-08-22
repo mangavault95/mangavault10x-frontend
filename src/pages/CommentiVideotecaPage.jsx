@@ -5,7 +5,7 @@ import { paginaDi, quandoPerEsteso, quandoBreveDa } from "../dati/cineforum";
 import { getCommentiDi, getIoVideoteca, urlCopertina } from "../services/api";
 import Icon from "../app/Icon";
 import PaginaVideoteca, { Bottone, Caricamento, Errore, Scheda, Vuoto } from "../ui/videoteca/Foglio";
-import Esagono from "../ui/videoteca/Esagono";
+import Tondino from "../ui/videoteca/Tondino";
 
 /**
  * TUTTO QUELLO CHE UNA PERSONA HA SCRITTO.
@@ -115,7 +115,7 @@ function Commento({ commento, persona }) {
 
         <p className="mb-1.5 flex items-center gap-1.5 text-xs text-quaderno-tenue">
           {persona && (
-            <Esagono nickname={persona.nickname} colore={persona.colore} dimensione={16} />
+            <Tondino utente={persona} dimensione={16} />
           )}
 
           <span title={quandoPerEsteso(commento.creata_il)}>

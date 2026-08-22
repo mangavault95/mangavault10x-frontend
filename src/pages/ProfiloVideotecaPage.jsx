@@ -118,6 +118,12 @@ export default function ProfiloVideotecaPage() {
             mia={mia}
             altrePersone={persone.dati ?? []}
             sommario={sommarioDi(statistiche)}
+            // Cambiando faccia o striscione la testata si aggiorna da
+            // sola, ma le stesse immagini compaiono anche accanto ai
+            // post e nella fila delle persone: il ricarico rimette
+            // d'accordo il resto del sito con quello che si è appena
+            // scelto.
+            alCambio={() => profilo.ricarica()}
           />
 
           <Numeri statistiche={statistiche} base={base} />

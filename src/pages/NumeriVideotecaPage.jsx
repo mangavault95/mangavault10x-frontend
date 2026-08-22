@@ -6,7 +6,7 @@ import { getIoVideoteca, getPersone, getProfiloVideoteca } from "../services/api
 import Icon from "../app/Icon";
 import PaginaVideoteca, { Bottone, Caricamento, Errore, Scheda } from "../ui/videoteca/Foglio";
 import { NOMI_STATO } from "../ui/videoteca/formati";
-import Esagono from "../ui/videoteca/Esagono";
+import Tondino from "../ui/videoteca/Tondino";
 
 /**
  * I NUMERI DI UNA PERSONA, per esteso.
@@ -145,7 +145,7 @@ export default function NumeriVideotecaPage() {
                       to={vaiAlConfronto(persona.nickname, p.nickname)}
                       className="flex items-center gap-2 rounded-card border border-quaderno-riga bg-quaderno-foglio px-3 py-2 transition-colors duration-quick hover:border-quaderno-blu"
                     >
-                      <Esagono nickname={p.nickname} colore={p.colore} dimensione={26} />
+                      <Tondino utente={p} dimensione={26} />
 
                       <span className="text-sm font-semibold text-quaderno-inchiostro">
                         {p.nickname}

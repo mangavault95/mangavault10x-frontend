@@ -6,7 +6,7 @@ import { getConfronto, urlCopertina } from "../services/api";
 import Icon from "../app/Icon";
 import PaginaVideoteca, { Bottone, Caricamento, Errore, Scheda } from "../ui/videoteca/Foglio";
 import { formattaVoto } from "../ui/videoteca/formati";
-import Esagono from "../ui/videoteca/Esagono";
+import Tondino from "../ui/videoteca/Tondino";
 
 /**
  * VOI DUE, UNO ACCANTO ALL'ALTRO.
@@ -203,7 +203,7 @@ function Testa({ persona, statistiche, riferimento }) {
       to={paginaDi(persona.nickname)}
       className="flex flex-1 flex-col items-center gap-1.5 rounded-card border border-quaderno-riga bg-quaderno-foglio px-2 py-4 transition-colors duration-quick hover:border-quaderno-blu"
     >
-      <Esagono nickname={persona.nickname} colore={persona.colore} dimensione={54} />
+      <Tondino utente={persona} dimensione={54} />
 
       <span className="text-sm font-semibold text-quaderno-inchiostro">{persona.nickname}</span>
 

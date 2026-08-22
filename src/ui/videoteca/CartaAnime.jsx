@@ -35,7 +35,14 @@ export default function CartaAnime({ anime }) {
   return (
     <Link
       to={`/videoteca/${anime.id}`}
-      className="group flex flex-col overflow-hidden rounded-card border border-quaderno-riga bg-quaderno-foglio transition-shadow duration-quick hover:shadow-lift
+      // `h-full`: la scheda riempie la riga della griglia.
+      //
+      // Senza, una copertina con il titolo su due righe rendeva alta
+      // la riga e tutte le altre restavano corte, lasciando fra una
+      // fila e l'altra dei gradini. La griglia allunga la CELLA (è il
+      // comportamento normale di `align-items: stretch`), ma il
+      // riquadro dentro la cella non la riempiva.
+      className="group flex h-full flex-col overflow-hidden rounded-card border border-quaderno-riga bg-quaderno-foglio transition-shadow duration-quick hover:shadow-lift
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu focus-visible:ring-offset-2 focus-visible:ring-offset-quaderno-carta"
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-quaderno-carta">
@@ -70,7 +77,21 @@ export default function CartaAnime({ anime }) {
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-3">
-        <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-quaderno-inchiostro">
+        {/* Il titolo occupa DUE RIGHE sempre, anche quando ne serve
+            una. È la seconda metà del rimedio ai gradini: con
+            `h-full` le schede sono già alte uguale, ma quelle dal
+            titolo corto tenevano il vuoto in mezzo — barra del
+            progresso e stato scendevano più in basso delle vicine, e
+            due schede accanto sembravano disegnate in due momenti
+            diversi. Riservando lo spazio, tutto quello che sta sotto
+            si allinea da una scheda all'altra.
+
+            `min-h` e non `h`: un titolo che a una certa larghezza
+            occupasse tre righe verrebbe tagliato da `line-clamp-2`,
+            ma su un carattere più grande — o su chi ingrandisce il
+            testo dal telefono — l'altezza deve poter crescere invece
+            di far uscire le lettere dal riquadro. */}
+        <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug text-quaderno-inchiostro">
           {anime.titolo}
         </h3>
 

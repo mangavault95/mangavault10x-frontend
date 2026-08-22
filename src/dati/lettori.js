@@ -23,42 +23,48 @@ const TAVOLOZZA = {
     pallino: "bg-lettore-ottone",
     bordo: "border-lettore-ottone/30",
     fondo: "bg-lettore-ottone/10",
-    anello: "focus-visible:ring-lettore-ottone"
+    anello: "focus-visible:ring-lettore-ottone",
+    cerchio: "ring-lettore-ottone"
   },
   lilla: {
     testo: "text-lettore-lilla",
     pallino: "bg-lettore-lilla",
     bordo: "border-lettore-lilla/30",
     fondo: "bg-lettore-lilla/10",
-    anello: "focus-visible:ring-lettore-lilla"
+    anello: "focus-visible:ring-lettore-lilla",
+    cerchio: "ring-lettore-lilla"
   },
   menta: {
     testo: "text-lettore-menta",
     pallino: "bg-lettore-menta",
     bordo: "border-lettore-menta/30",
     fondo: "bg-lettore-menta/10",
-    anello: "focus-visible:ring-lettore-menta"
+    anello: "focus-visible:ring-lettore-menta",
+    cerchio: "ring-lettore-menta"
   },
   corallo: {
     testo: "text-lettore-corallo",
     pallino: "bg-lettore-corallo",
     bordo: "border-lettore-corallo/30",
     fondo: "bg-lettore-corallo/10",
-    anello: "focus-visible:ring-lettore-corallo"
+    anello: "focus-visible:ring-lettore-corallo",
+    cerchio: "ring-lettore-corallo"
   },
   cielo: {
     testo: "text-lettore-cielo",
     pallino: "bg-lettore-cielo",
     bordo: "border-lettore-cielo/30",
     fondo: "bg-lettore-cielo/10",
-    anello: "focus-visible:ring-lettore-cielo"
+    anello: "focus-visible:ring-lettore-cielo",
+    cerchio: "ring-lettore-cielo"
   },
   rosa: {
     testo: "text-lettore-rosa",
     pallino: "bg-lettore-rosa",
     bordo: "border-lettore-rosa/30",
     fondo: "bg-lettore-rosa/10",
-    anello: "focus-visible:ring-lettore-rosa"
+    anello: "focus-visible:ring-lettore-rosa",
+    cerchio: "ring-lettore-rosa"
   }
 };
 
@@ -70,9 +76,14 @@ const SENZA_COLORE = {
   pallino: "bg-ink-muted",
   bordo: "border-soft",
   fondo: "bg-glass-2",
-  anello: "focus-visible:ring-brass-400"
+  anello: "focus-visible:ring-brass-400",
+  cerchio: "ring-soft"
 };
 
+// `cerchio` non è `anello`: il primo è il colore di un contorno
+// sempre visibile — l'anello attorno alla foto profilo — il secondo
+// serve solo quando l'elemento riceve il fuoco da tastiera. Averli
+// separati evita che un giorno il contorno compaia solo cliccando.
 /** Le classi del colore di un lettore, dal nome del colore. */
 export function coloreLettore(nome) {
   return TAVOLOZZA[nome] || SENZA_COLORE;

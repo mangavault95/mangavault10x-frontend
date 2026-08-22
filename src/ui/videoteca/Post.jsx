@@ -16,7 +16,7 @@ import {
   urlCopertina
 } from "../../services/api";
 import { useSessione } from "../../dati/sessione";
-import Esagono from "./Esagono";
+import Tondino from "./Tondino";
 import { Bottone, Scheda } from "./Foglio";
 
 /**
@@ -99,7 +99,7 @@ export default function Post({ post, alCambio }) {
       {/* ---------- Chi, e quando ---------- */}
       <header className="flex items-center gap-3 px-4 pt-4">
         <Link to={`/videoteca/chi/${encodeURIComponent(post.utente.nickname)}`}>
-          <Esagono nickname={post.utente.nickname} colore={post.utente.colore} dimensione={38} />
+          <Tondino utente={post.utente} dimensione={38} />
         </Link>
 
         <div className="min-w-0 flex-1">
@@ -322,11 +322,11 @@ function Filo({ chiave, risposte, setRisposte, aperto, apri }) {
   const [testo, setTesto] = useState("");
   const [inCorso, setInCorso] = useState(false);
 
-  // Il colore non sta nel token — che porta solo chi sei e cosa puoi
-  // fare — ma nell'elenco dei lettori. Senza, la risposta appena
-  // scritta comparirebbe grigia e diventerebbe colorata solo
-  // ricaricando: un lampeggio che sembra un errore.
-  const mioColore = lettori.find((l) => l.id === utente?.id)?.colore ?? null;
+  // Colore e faccia non stanno nel token — che porta solo chi sei e
+  // cosa puoi fare — ma nell'elenco dei lettori. Senza, la risposta
+  // appena scritta comparirebbe grigia e senza ritratto, e si
+  // sistemerebbe solo ricaricando: un lampeggio che sembra un errore.
+  const io = lettori.find((l) => l.id === utente?.id) ?? null;
 
   async function manda(e) {
     e.preventDefault();
@@ -346,7 +346,7 @@ function Filo({ chiave, risposte, setRisposte, aperto, apri }) {
           id: esito.id,
           testo: pulito,
           creata_il: esito.creata_il,
-          utente: { id: utente.id, nickname: utente.nickname, colore: mioColore }
+          utente: { ...io, id: utente.id, nickname: utente.nickname }
         }
       ]);
 
@@ -361,7 +361,7 @@ function Filo({ chiave, risposte, setRisposte, aperto, apri }) {
       <ul className="space-y-3">
         {risposte.map((r) => (
           <li key={r.id} className="flex gap-2.5">
-            <Esagono nickname={r.utente.nickname} colore={r.utente.colore} dimensione={26} />
+            <Tondino utente={r.utente} dimensione={26} />
 
             <div className="min-w-0 flex-1">
               <p className="text-xs text-quaderno-tenue">
