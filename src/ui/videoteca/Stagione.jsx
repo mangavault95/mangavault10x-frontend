@@ -37,7 +37,12 @@ export default function Stagione({
   azione,
   alCambio,
   alVoto,
-  alStato
+  alStato,
+  // Togliere QUESTA parte, non la serie. Arriva solo quando ha senso:
+  // con una parte sola il comando è già in cima alla pagina e vale per
+  // tutto, e ripeterlo qui sotto vorrebbe dire due bottoni che fanno
+  // la stessa cosa a un passo l'uno dall'altro.
+  alTogli = null
 }) {
   const episodi = stagione.episodi || [];
   const spuntati = new Set(episodi.filter((e) => e.visto).map((e) => e.numero));
@@ -152,6 +157,26 @@ export default function Stagione({
               </button>
             );
           })}
+
+          {/* In fondo alla riga, staccato: capita di aggiungere un OAV
+              per sbaglio, e finora l'unico modo di rimediare era
+              togliere la serie intera e rifarla da capo. Sta con gli
+              stati perché è la stessa cosa — cosa ne fai di questa
+              parte — ma dall'altra parte della riga, perché è l'unico
+              comando qui dentro che non si può disfare con un altro
+              tocco. */}
+          {alTogli && (
+            <button
+              type="button"
+              onClick={alTogli}
+              disabled={azione === `togli-${stagione.id}`}
+              className="ml-auto rounded-full px-2.5 py-1 text-[0.7rem] font-semibold text-quaderno-tenue transition-colors duration-quick
+                hover:text-ember focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu
+                disabled:pointer-events-none disabled:opacity-50"
+            >
+              {azione === `togli-${stagione.id}` ? "Tolgo…" : "Togli questa parte"}
+            </button>
+          )}
         </div>
       )}
 

@@ -148,7 +148,14 @@ export function Progresso({ visti = 0, su = null, className = "" }) {
         {completo !== null && <span>{completo}%</span>}
       </div>
 
-      {completo !== null && (
+      {/* Quando il fondo scala non si sa, la barra non si disegna ma il
+          suo POSTO resta: in una griglia di schede è quello che tiene
+          la riga dei numeri alla stessa altezza dappertutto. Prima
+          sparivano tre pixel, e una scheda senza totale noto si
+          alzava rispetto alle vicine. */}
+      {completo === null ? (
+        <div aria-hidden="true" className="h-[3px]" />
+      ) : (
         <div className="h-[3px] overflow-hidden rounded-full bg-quaderno-riga">
           <div className="h-full bg-quaderno-blu" style={{ width: `${completo}%` }} />
         </div>

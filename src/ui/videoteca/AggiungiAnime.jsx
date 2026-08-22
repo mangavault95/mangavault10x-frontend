@@ -711,7 +711,11 @@ function Anteprima({ guardata, presa, spunta, bloccata, chiudi }) {
       </div>
 
       <div className="flex items-center gap-2 border-t border-quaderno-riga p-3">
-        <p className="min-w-0 flex-1 truncate text-xs text-quaderno-tenue">{parte.motivo}</p>
+        {/* Cosa è, e basta: il perché della classificazione stava qui e
+            se n'è andato con quello dell'elenco. */}
+        <p className="min-w-0 flex-1 truncate text-xs text-quaderno-tenue">
+          {[parte.anno, NOMI_TIPO[parte.tipo] || parte.tipo].filter(Boolean).join(" · ")}
+        </p>
 
         {parte.giaTua ? (
           <Pillola tono="blu">ce l&apos;hai già</Pillola>
@@ -844,11 +848,13 @@ function RigaParte({ parte, presa, spunta, bloccata, anteprima }) {
               .join(" · ")}
           </p>
 
-          {/* Il perché di una casella spenta. Senza, una parte non
-              spuntata sembra una dimenticanza invece di una scelta. */}
-          {!parte.consigliato && !gia && (
-            <p className="mt-0.5 text-[0.7rem] text-quaderno-tenue">{parte.motivo}</p>
-          )}
+          {/* Qui c'era il PERCHÉ di una casella spenta («legame vuoto,
+              titolo imparentato, ma è un Film»). Era il ragionamento di
+              chi ha scelto, non un'informazione sull'opera: davanti a
+              undici parti di Demon Slayer diventavano undici righe di
+              spiegazioni da leggere per trovare una riga di dati. Cosa
+              sia lo dicono il tipo qui sopra e la targhetta qui a lato;
+              se prenderla o no lo decide chi guarda. */}
         </div>
 
         {gia ? (

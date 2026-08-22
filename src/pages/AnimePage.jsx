@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import Icon from "../app/Icon";
 import useRisorsa from "../dati/useRisorsa";
 import { useSessione } from "../dati/sessione";
-import { stagioniDi } from "../dati/videoteca";
+import { etichettaStagione, stagioniDi } from "../dati/videoteca";
 import {
   getAnime,
   impostaVisione,
@@ -52,7 +52,10 @@ export default function AnimePage() {
 
   const [azione, setAzione] = useState(null);
   const [apertaScelta, setApertaScelta] = useState(null);
-  const [rimozione, setRimozione] = useState(false);
+  // Cosa si sta per togliere: `null`, la serie intera (`{ tutto: true }`)
+  // o una parte sola (`{ scheda }`). Era un booleano finché toglierne
+  // una sola non era possibile.
+  const [rimozione, setRimozione] = useState(null);
   const [guaio, setGuaio] = useState(null);
 
   // Le SCHEDE di AnimeClick che compongono questa serie: una sola per
@@ -241,6 +244,51 @@ export default function AnimePage() {
     }
   }
 
+  /**
+   * Togliere UNA parte: un OAV messo per sbaglio, un film che non
+   * c'entra, una stagione che non si vuole tenere.
+   *
+   * Fino a qui l'unico rimedio era togliere la serie intera e
+   * rifarla da capo, perdendo le spunte di tutto il resto.
+   *
+   * Due cose da fare bene, e sono la ragione per cui non è una
+   * chiamata sola:
+   *
+   *   - se quella era l'ULTIMA parte, non c'è più una scheda da
+   *     mostrare e si torna in videoteca;
+   *   - se era la parte il cui identificativo sta nell'indirizzo, la
+   *     pagina resta ma l'indirizzo no: va portato su una delle parti
+   *     rimaste, altrimenti ricaricando si chiederebbe una scheda che
+   *     per noi non esiste più.
+   */
+  async function togliParte(scheda) {
+    setAzione(`togli-${scheda.id}`);
+    setGuaio(null);
+
+    try {
+      await togliDallaVideoteca(scheda.id);
+
+      const restano = schede.filter((s) => String(s.id) !== String(scheda.id));
+
+      if (restano.length === 0) {
+        navigate("/videoteca/io");
+        return;
+      }
+
+      if (String(scheda.id) === String(id)) {
+        navigate(`/videoteca/${restano[0].id}`, { replace: true });
+        return;
+      }
+
+      await ricarica();
+    } catch (e) {
+      setGuaio(e);
+    } finally {
+      setAzione(null);
+      setRimozione(null);
+    }
+  }
+
   if (inCorso && !dati) return <Caricamento testo="Apro la scheda…" />;
 
   if (errore) {
@@ -332,7 +380,7 @@ export default function AnimePage() {
               {azione === "rileggi" ? "Rileggo…" : "Rileggi da AnimeClick"}
             </Bottone>
 
-            <Bottone onClick={() => setRimozione(true)} disabled={azione !== null}>
+            <Bottone onClick={() => setRimozione({ tutto: true })} disabled={azione !== null}>
               Togli dalla videoteca
             </Bottone>
           </>
@@ -502,6 +550,14 @@ export default function AnimePage() {
                   alCambio={(cambio) => aggiornaSpunte(stagione.id, cambio)}
                   alVoto={(voto) => cambiaVoto(stagione.id, voto)}
                   alStato={(stato) => cambiaStato(stagione.id, stato)}
+                  // Solo con più di una parte: da sola, «togli questa
+                  // parte» e «togli dalla videoteca» sarebbero lo
+                  // stesso gesto scritto due volte.
+                  alTogli={
+                    schede.length > 1
+                      ? () => setRimozione({ scheda: stagione })
+                      : null
+                  }
                 />
               ))}
             </div>
@@ -521,13 +577,32 @@ export default function AnimePage() {
         </div>
       </div>
 
-      {rimozione && (
+      {rimozione?.tutto && (
         <ConfermaRimozione
           titolo={titolo}
           stagioni={stagioni.length}
           inCorso={azione === "togli"}
           conferma={togli}
-          annulla={() => setRimozione(false)}
+          annulla={() => setRimozione(null)}
+        />
+      )}
+
+      {rimozione?.scheda && (
+        <ConfermaParte
+          parte={rimozione.scheda}
+          nome={etichettaStagione(
+            rimozione.scheda,
+            stagioni.findIndex((s) => s.chiave === rimozione.scheda.chiave),
+            stagioni
+          )}
+          // Frieren è UNA scheda con dentro due stagioni: il taglio lo
+          // dà AniList, la riga del database è una sola. Togliendola se
+          // ne vanno tutt'e due, e va detto prima invece che scoperto
+          // dopo.
+          blocchi={stagioni.filter((s) => String(s.id) === String(rimozione.scheda.id)).length}
+          inCorso={azione === `togli-${rimozione.scheda.id}`}
+          conferma={() => togliParte(rimozione.scheda)}
+          annulla={() => setRimozione(null)}
         />
       )}
     </PaginaVideoteca>
@@ -584,6 +659,53 @@ function Fatto({ etichetta, valore }) {
  * pagina che non si può riprendere da AnimeClick. Il riquadro lo dice
  * con quelle parole, invece di chiedere una conferma generica.
  */
+/**
+ * Togliere una parte sola.
+ *
+ * Dice tre cose e nessuna di più: quale parte, cosa se ne va con lei, e
+ * che la serie resta. È la differenza che conta davanti a questo
+ * bottone — chi lo preme ha aggiunto un OAV per sbaglio, non vuole
+ * perdere le trentotto spunte del resto.
+ */
+function ConfermaParte({ parte, nome, blocchi, inCorso, conferma, annulla }) {
+  const viste = (parte.episodi || []).filter((e) => e.visto).length;
+
+  return (
+    <Sovrapposizione>
+      <div
+        className="fixed inset-0 z-modal grid place-items-center bg-quaderno-inchiostro/40 p-5"
+        role="dialog"
+        aria-label="Togliere questa parte"
+      >
+        <Scheda className="w-full max-w-sm space-y-4 p-6 shadow-float">
+          <h2 className="font-display text-lg font-semibold text-quaderno-inchiostro">
+            Togliere «{nome}»?
+          </h2>
+
+          <p className="text-sm text-quaderno-tenue">
+            {blocchi > 1
+              ? `AnimeClick la tiene in una scheda sola insieme alle altre ${blocchi - 1 === 1 ? "puntate di un'altra stagione" : "puntate delle altre stagioni"}: se ne vanno insieme.`
+              : "Esce dalla tua videoteca; il resto della serie resta dov'è."}{" "}
+            {viste > 0
+              ? `Con lei se ne vanno ${viste === 1 ? "la puntata segnata" : `le ${viste} puntate segnate`}, il voto e i commenti che le avevi messo.`
+              : "Non avevi segnato niente su questa parte."}
+          </p>
+
+          <div className="flex gap-2">
+            <Bottone tono="pieno" onClick={conferma} disabled={inCorso} className="flex-1">
+              {inCorso ? "Tolgo…" : "Togli"}
+            </Bottone>
+
+            <Bottone onClick={annulla} disabled={inCorso}>
+              Annulla
+            </Bottone>
+          </div>
+        </Scheda>
+      </div>
+    </Sovrapposizione>
+  );
+}
+
 function ConfermaRimozione({ titolo, stagioni, inCorso, conferma, annulla }) {
   return (
     <Sovrapposizione>

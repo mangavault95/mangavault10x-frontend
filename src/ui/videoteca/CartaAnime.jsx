@@ -60,11 +60,24 @@ export default function CartaAnime({ anime }) {
         )}
 
         {/* Quello che esce presto si vede senza aprire niente: è la
-            ragione per cui uno torna sulla videoteca il venerdì. */}
-        {anime.prossima_uscita && (
+            ragione per cui uno torna sulla videoteca il venerdì.
+            «In pari» sta nello stesso angolo perché risponde alla
+            stessa domanda — c'è qualcosa da guardare? — e i due casi
+            si escono a vicenda per costruzione: se un episodio è in
+            arrivo, in pari non lo sei per definizione. Stando qui
+            invece che fra i tag, la riga là sotto resta di una riga
+            sola e la barra del progresso non cambia quota da una
+            scheda all'altra. */}
+        {anime.prossima_uscita ? (
           <span className="absolute left-2 top-2 rounded-full bg-quaderno-blu px-2 py-0.5 font-numeric text-[0.65rem] font-semibold text-white">
             ep {anime.prossimo_episodio} · {quandoBreve(anime.prossima_uscita)}
           </span>
+        ) : (
+          inPari && (
+            <span className="absolute left-2 top-2 rounded-full bg-quaderno-foglio/90 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+              in pari
+            </span>
+          )
         )}
 
         {/* Quante stagioni ci sono là dentro. Senza, un pannello solo
@@ -98,17 +111,26 @@ export default function CartaAnime({ anime }) {
         <div className="mt-auto space-y-2">
           <Progresso visti={visti} su={su} />
 
-          <div className="flex flex-wrap items-center gap-1.5">
+          {/* UNA riga, sempre alta uguale, anche quando è vuota.
+              Prima era `flex-wrap` con dentro fino a tre cose: le
+              schede con due tag mandavano il voto a capo, il blocco
+              cresceva verso l'alto (è ancorato in basso da `mt-auto`)
+              e la barra del progresso si alzava di venti pixel
+              rispetto alla scheda accanto. Con l'altezza riservata e
+              niente ritorno a capo, tutte le barre stanno sulla stessa
+              linea qualunque cosa ci sia sotto. */}
+          <div className="flex h-5 items-center gap-1.5 overflow-hidden">
             {stato && (
-              <Pillola tono={stato === "in_visione" ? "blu" : "tenue"}>
+              <Pillola
+                tono={stato === "in_visione" ? "blu" : "tenue"}
+                className="min-w-0 shrink truncate"
+              >
                 {NOMI_STATO[stato]}
               </Pillola>
             )}
 
-            {inPari && !anime.prossima_uscita && <Pillola tono="contorno">in pari</Pillola>}
-
             {anime.voto && (
-              <span className="ml-auto font-numeric text-xs font-semibold text-quaderno-blu">
+              <span className="ml-auto shrink-0 font-numeric text-xs font-semibold text-quaderno-blu">
                 ★ {formattaVoto(anime.voto)}
               </span>
             )}
