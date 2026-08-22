@@ -524,6 +524,17 @@ export const getFranchiseAnime = (animeclickId, segnale) =>
   request(`/api/anime/franchise/${animeclickId}`, { auth: true, signal: segnale });
 
 /**
+ * Cosa racconta una delle parti proposte, prima di aggiungerla.
+ *
+ * La proposta elenca dei titoli, e certi titoli non dicono niente —
+ * «Koyomimonogatari», «Zoku Owarimonogatari». La trama non sta nella
+ * pagina delle relazioni: va chiesta scheda per scheda, quindi si
+ * chiede solo quella che si guarda.
+ */
+export const getAnteprimaAnime = (animeclickId, segnale) =>
+  request(`/api/anime/anteprima/${animeclickId}`, { auth: true, signal: segnale });
+
+/**
  * Aggiunge la serie alla videoteca. Con `parti`, la aggiunge INTERA.
  *
  * ⚠️ Può rispondere con `restanti`: le parti che non sono entrate nel

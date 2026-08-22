@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   agganciaAnime,
   cercaAnime,
+  getAnteprimaAnime,
   getFranchiseAnime,
   urlCopertina
 } from "../../services/api";
@@ -317,7 +318,54 @@ function Proposta({ scelta, indietro, chiudi, alFatto }) {
   const [prese, setPrese] = useState(() => new Set());
   const [aggiungo, setAggiungo] = useState(null);
 
+  // La parte di cui si sta leggendo la trama: `{ parte, dati, errore }`.
+  const [guardata, setGuardata] = useState(null);
+
+  // Le trame già lette. Una trama non cambia mentre il pannello è
+  // aperto, e riaprirla deve essere immediato: senza questa, tornare
+  // su una riga già guardata rifarebbe la richiesta e rimetterebbe
+  // «sto leggendo…» al posto di un testo che avevamo già.
+  const lette = useRef(new Map());
+  const annullaTrama = useRef(null);
+
   const animeclickId = scelta.capo.animeclickId;
+
+  async function apriAnteprima(parte) {
+    annullaTrama.current?.abort();
+
+    const ricordata = lette.current.get(parte.animeclick_id);
+
+    if (ricordata) {
+      setGuardata({ parte, dati: ricordata, errore: null });
+      return;
+    }
+
+    setGuardata({ parte, dati: null, errore: null });
+
+    const mio = new AbortController();
+    annullaTrama.current = mio;
+
+    try {
+      const dati = await getAnteprimaAnime(parte.animeclick_id, mio.signal);
+
+      lette.current.set(parte.animeclick_id, dati);
+      setGuardata((precedente) =>
+        precedente?.parte.animeclick_id === parte.animeclick_id
+          ? { ...precedente, dati }
+          : precedente
+      );
+    } catch (err) {
+      if (err?.name === "AbortError") return;
+
+      setGuardata((precedente) =>
+        precedente?.parte.animeclick_id === parte.animeclick_id
+          ? { ...precedente, errore: err }
+          : precedente
+      );
+    }
+  }
+
+  useEffect(() => () => annullaTrama.current?.abort(), []);
 
   useEffect(() => {
     let vivo = true;
@@ -458,7 +506,7 @@ function Proposta({ scelta, indietro, chiudi, alFatto }) {
           </p>
           <p className="text-xs text-quaderno-tenue">
             {dati
-              ? `${dentro.length} parti trovate su AnimeClick`
+              ? `${dentro.length} parti trovate · tieni premuto su una per la trama`
               : "Guardo di che parti è fatta…"}
           </p>
         </div>
@@ -491,6 +539,7 @@ function Proposta({ scelta, indietro, chiudi, alFatto }) {
               presa={prese.has(parte.animeclick_id)}
               spunta={() => spunta(parte)}
               bloccata={aggiungo !== null}
+              anteprima={apriAnteprima}
             />
           ))}
         </ul>
@@ -520,6 +569,7 @@ function Proposta({ scelta, indietro, chiudi, alFatto }) {
                       presa={prese.has(parte.animeclick_id)}
                       spunta={() => spunta(parte)}
                       bloccata={aggiungo !== null}
+                      anteprima={apriAnteprima}
                     />
                   ))}
                 </ul>
@@ -528,6 +578,16 @@ function Proposta({ scelta, indietro, chiudi, alFatto }) {
           </div>
         )}
       </div>
+
+      {guardata && (
+        <Anteprima
+          guardata={guardata}
+          presa={prese.has(guardata.parte.animeclick_id)}
+          spunta={() => spunta(guardata.parte)}
+          bloccata={aggiungo !== null}
+          chiudi={() => setGuardata(null)}
+        />
+      )}
 
       <div className="flex items-center gap-2 border-t border-quaderno-riga p-3">
         <p className="min-w-0 flex-1 truncate text-xs text-quaderno-tenue" aria-live="polite">
@@ -550,14 +610,209 @@ function Proposta({ scelta, indietro, chiudi, alFatto }) {
   );
 }
 
+/**
+ * Cosa racconta una parte, prima di prendersela.
+ *
+ * Copre il pannello invece di aprirsi accanto: la proposta sta già in
+ * una finestra, e una seconda finestra sopra la prima su un telefono
+ * da 375 punti vuol dire due cornici e niente testo. Così la trama ha
+ * tutta la larghezza che c'è, e il modo di tornare indietro è uno solo.
+ *
+ * Dentro c'è anche la casella: si legge, si decide, si spunta senza
+ * dover ritrovare la riga giusta nell'elenco sotto. È il motivo per
+ * cui si stava leggendo.
+ */
+function Anteprima({ guardata, presa, spunta, bloccata, chiudi }) {
+  const { parte, dati, errore } = guardata;
+
+  return (
+    <div
+      className="absolute inset-0 z-10 flex flex-col bg-quaderno-foglio"
+      role="dialog"
+      aria-label={`Trama: ${parte.titolo}`}
+    >
+      <div className="flex items-start gap-3 border-b border-quaderno-riga p-4">
+        <div className="h-24 w-16 shrink-0 overflow-hidden rounded bg-quaderno-carta">
+          {(dati?.cover_url || parte.copertina) && (
+            <img
+              src={urlCopertina(dati?.cover_url || parte.copertina)}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-quaderno-inchiostro">{parte.titolo}</p>
+
+          {dati?.titolo_originale && dati.titolo_originale !== parte.titolo && (
+            <p className="truncate text-xs text-quaderno-tenue">{dati.titolo_originale}</p>
+          )}
+
+          <p className="mt-1 font-numeric text-xs text-quaderno-tenue">
+            {[
+              parte.anno || "in arrivo",
+              NOMI_TIPO[parte.tipo] || parte.tipo,
+              dati?.episodi_dichiarati ? `${dati.episodi_dichiarati} ep.` : null
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+
+          {dati?.stato_italia && (
+            <p className="mt-1 text-xs text-quaderno-tenue">{dati.stato_italia}</p>
+          )}
+        </div>
+
+        <Bottone tono="nudo" onClick={chiudi} aria-label="Chiudi la trama">
+          ✕
+        </Bottone>
+      </div>
+
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+        {!dati && !errore && (
+          <p className="py-6 text-center text-sm text-quaderno-tenue">Leggo la scheda…</p>
+        )}
+
+        {errore && (
+          <p className="rounded-lg bg-quaderno-carta px-3 py-2 text-sm text-quaderno-inchiostro">
+            {errore.message}
+          </p>
+        )}
+
+        {dati?.generi?.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {dati.generi.map((g) => (
+              <Pillola key={g}>{g}</Pillola>
+            ))}
+          </div>
+        )}
+
+        {dati && (
+          <p className="max-w-[70ch] whitespace-pre-line text-sm leading-relaxed text-quaderno-inchiostro">
+            {dati.trama || "Di questa AnimeClick non scrive la trama."}
+          </p>
+        )}
+
+        {dati?.distributori?.length > 0 && (
+          <div>
+            <p className="mb-1 text-[0.68rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+              Dove si vede
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {dati.distributori.map((d) => (
+                <Pillola key={d} tono="contorno">
+                  {d}
+                </Pillola>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 border-t border-quaderno-riga p-3">
+        <p className="min-w-0 flex-1 truncate text-xs text-quaderno-tenue">{parte.motivo}</p>
+
+        {parte.giaTua ? (
+          <Pillola tono="blu">ce l&apos;hai già</Pillola>
+        ) : (
+          <Bottone
+            tono={presa ? "quieto" : "pieno"}
+            onClick={spunta}
+            disabled={bloccata}
+          >
+            {presa ? "Non prenderla" : "Prendila"}
+          </Bottone>
+        )}
+
+        <Bottone onClick={chiudi}>Indietro</Bottone>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Tenere premuto su una riga.
+ *
+ * Un `pointer` solo per il dito e per il mouse: il gesto è lo stesso —
+ * si preme, si aspetta, si guarda — e scriverlo due volte vorrebbe
+ * dire due comportamenti da tenere d'accordo.
+ *
+ * Le tre cautele che lo rendono usabile invece che fastidioso:
+ *
+ *   - se il dito si sposta, non è una pressione ma uno **scorrimento**:
+ *     l'attesa si annulla, o scorrere l'elenco aprirebbe anteprime a
+ *     caso;
+ *   - il **clic che arriva al rilascio** va soffocato, o dopo aver
+ *     letto la trama si troverebbe anche la casella spuntata da sola;
+ *   - il **menù contestuale** del browser (tasto destro, o pressione
+ *     lunga su Android) va tolto, o comparirebbe sopra l'anteprima.
+ */
+function usePressioneLunga(apri, attesa = 450) {
+  const conto = useRef(null);
+  const partenza = useRef(null);
+  const scattata = useRef(false);
+
+  const ferma = () => {
+    clearTimeout(conto.current);
+    conto.current = null;
+  };
+
+  useEffect(() => ferma, []);
+
+  return {
+    onPointerDown: (e) => {
+      // Solo il tasto principale: col destro si apre il menù, non
+      // l'anteprima.
+      if (e.button) return;
+
+      partenza.current = { x: e.clientX, y: e.clientY };
+      scattata.current = false;
+
+      ferma();
+      conto.current = setTimeout(() => {
+        scattata.current = true;
+        apri();
+      }, attesa);
+    },
+
+    onPointerMove: (e) => {
+      if (!conto.current || !partenza.current) return;
+
+      const scarto =
+        Math.abs(e.clientX - partenza.current.x) + Math.abs(e.clientY - partenza.current.y);
+
+      if (scarto > 10) ferma();
+    },
+
+    onPointerUp: ferma,
+    onPointerLeave: ferma,
+    onPointerCancel: ferma,
+    onContextMenu: (e) => e.preventDefault(),
+
+    onClickCapture: (e) => {
+      if (!scattata.current) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      scattata.current = false;
+    }
+  };
+}
+
 /** Una parte della serie, da spuntare o no. */
-function RigaParte({ parte, presa, spunta, bloccata }) {
+function RigaParte({ parte, presa, spunta, bloccata, anteprima }) {
   const gia = parte.giaTua;
+
+  const pressione = usePressioneLunga(() => anteprima(parte));
 
   return (
     <li>
       <label
-        className={`flex items-center gap-3 rounded-card border p-2 transition-colors duration-quick
+        {...pressione}
+        // `select-none`: tenere premuto col dito, senza, comincia a
+        // selezionare il titolo e ci mette sopra le maniglie blu.
+        className={`flex select-none items-center gap-3 rounded-card border p-2 transition-colors duration-quick
           ${gia ? "border-quaderno-riga opacity-60" : presa ? "border-quaderno-blu bg-quaderno-blu-tenue/30" : "border-quaderno-riga"}
           ${gia || bloccata ? "" : "cursor-pointer hover:bg-quaderno-carta"}`}
       >
@@ -605,6 +860,27 @@ function RigaParte({ parte, presa, spunta, bloccata }) {
             {NOMI_RUOLO[parte.ruolo] || parte.ruolo}
           </Pillola>
         )}
+
+        {/* La stessa anteprima, per chi non può tenere premuto.
+            Una pressione lunga non si vede e non si raggiunge con la
+            tastiera: da sola sarebbe una cosa che esiste solo per chi
+            sa già che c'è. Sta dentro la `label`, quindi il clic va
+            fermato a mano — altrimenti spunterebbe anche la casella. */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            anteprima(parte);
+          }}
+          aria-label={`Cosa racconta: ${parte.titolo}`}
+          title="Tieni premuto sulla riga, o premi qui, per la trama"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-quaderno-riga font-display text-xs font-semibold text-quaderno-tenue
+            transition-colors duration-quick hover:border-quaderno-blu hover:text-quaderno-blu
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu"
+        >
+          i
+        </button>
       </label>
     </li>
   );
