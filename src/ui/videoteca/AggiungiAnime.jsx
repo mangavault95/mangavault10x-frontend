@@ -36,8 +36,14 @@ import Sovrapposizione from "../Sovrapposizione";
  * che il sito non sa decidere resta scritto e spento, con accanto il
  * perché: si accende con un tocco, e non arriva di nascosto.
  */
-export default function AggiungiAnime({ chiudi, alFatto }) {
-  const [titolo, setTitolo] = useState("");
+export default function AggiungiAnime({ chiudi, alFatto, titoloIniziale = "", alTitolo }) {
+  // Il titolo cercato NASCE dall'indirizzo e ci torna dentro a ogni
+  // lettera. Non è pignoleria sull'indirizzo pulito: è quello che
+  // permette di aggiungere tre serie di fila. Scelta una serie si
+  // finisce sulla sua scheda, e il tasto Indietro del browser
+  // riporta QUI, con la stessa ricerca ancora scritta — prima
+  // riportava alla videoteca, cioè da capo.
+  const [titolo, setTitolo] = useState(titoloIniziale);
 
   // L'ultima risposta arrivata, insieme alla domanda che l'ha
   // prodotta. Le due cose stanno in uno stato solo apposta: è `per`
@@ -124,7 +130,10 @@ export default function AggiungiAnime({ chiudi, alFatto }) {
           ) : (
             <Ricerca
               titolo={titolo}
-              setTitolo={setTitolo}
+              setTitolo={(nuovo) => {
+                setTitolo(nuovo);
+                alTitolo?.(nuovo);
+              }}
               righe={righe}
               // A quale domanda risponde la lista che si sta vedendo:
               // serve alla riga illuminata dalle frecce, che deve
@@ -483,8 +492,16 @@ function Proposta({ scelta, indietro, chiudi, alFatto }) {
         giro++;
       } while (esito?.restanti?.length > 0 && giro < 8);
 
+      // Solo «ho finito», e niente «chiudi».
+      //
+      // Chiudere qui voleva dire togliere il pannello dall'indirizzo
+      // SUBITO DOPO che chi ascolta era andato sulla scheda nuova: un
+      // replace sopra una navigazione appena fatta, che se la mangiava
+      // — si premeva «aggiungi» e si restava sulla griglia. Adesso
+      // decide chi ha aperto il pannello: se porta da un'altra parte,
+      // il pannello sparisce perché è cambiata la pagina, e la ricerca
+      // resta indietro di una tappa dove il tasto Indietro la trova.
       alFatto?.(esito);
-      chiudi?.();
     } catch (err) {
       setErrore(err);
       setAggiungo(null);
