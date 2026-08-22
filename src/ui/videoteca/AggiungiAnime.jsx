@@ -370,6 +370,38 @@ function Proposta({ scelta, indietro, chiudi, alFatto }) {
     });
   }
 
+  // Le parti che si possono ancora scegliere: quelle che già si hanno
+  // non contano né da spuntare né da togliere.
+  const scegliibili = dentro.filter((p) => !p.giaTua);
+  const tutteScelte = scegliibili.length > 0 && scegliibili.every((p) => prese.has(p.animeclick_id));
+
+  /**
+   * Prendi tutto, o niente.
+   *
+   * Serve alle serie che la regola automatica non riesce a coprire
+   * tutta. Monogatari è il caso limite: sedici pezzi, ognuno con un
+   * nome suo — Bakemonogatari, Owarimonogatari, Kizumonogatari — e
+   * AnimeClick che non scrive nessun legame. Il sito ne riconosce
+   * sette e mostra gli altri spenti; senza questo bottone, prenderli
+   * tutti vorrebbe dire nove tocchi in fila.
+   *
+   * Tocca solo l'elenco principale: «Altro materiale dello stesso
+   * mondo» sono gli spin-off e i remake, e un «tutte» che si portasse
+   * dietro anche quelli sarebbe una trappola.
+   */
+  function spuntaTutte() {
+    setPrese((precedenti) => {
+      const nuove = new Set(precedenti);
+
+      for (const parte of scegliibili) {
+        if (tutteScelte) nuove.delete(parte.animeclick_id);
+        else nuove.add(parte.animeclick_id);
+      }
+
+      return nuove;
+    });
+  }
+
   /**
    * Aggiunge le parti spuntate.
    *
@@ -430,6 +462,12 @@ function Proposta({ scelta, indietro, chiudi, alFatto }) {
               : "Guardo di che parti è fatta…"}
           </p>
         </div>
+
+        {scegliibili.length > 1 && (
+          <Bottone tono="nudo" onClick={spuntaTutte} disabled={aggiungo !== null}>
+            {tutteScelte ? "Togli tutte" : "Spunta tutte"}
+          </Bottone>
+        )}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
