@@ -40,7 +40,7 @@ export default function CartaSerie({
   lettore = null
 }) {
   const { aggiornaLocale } = useCollezione();
-  const { lettori } = useSessione();
+  const { lettoriBiblioteca: lettori } = useSessione();
 
   const pct = completamento(serie);
   const mancanti = volumiMancanti(serie);

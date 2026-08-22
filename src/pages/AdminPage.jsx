@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import Pagina from "../ui/Pagina";
 import Copertina from "../ui/Copertina";
 import Icon from "../app/Icon";
@@ -8,6 +9,7 @@ import { useCollezione } from "../dati/collezione";
 import { useSessione } from "../dati/sessione";
 import { ModuloAccesso } from "../dati/AccessoProvider";
 import RichiesteAccesso from "../ui/RichiesteAccesso";
+import AccessoBiblioteca from "../ui/AccessoBiblioteca";
 import {
   eliminaManga,
   enrichManga,
@@ -170,7 +172,7 @@ function Accesso({ onEntrato }) {
 
 function Redazione({ onEsci }) {
   const { serie, inCorso, errore, ricarica, aggiornaLocale, rimuoviLocale } = useCollezione();
-  const { utente, esci: chiudiSessione } = useSessione();
+  const { utente, esci: chiudiSessione, bibliotecaSolaLettura } = useSessione();
 
   const [selezionataId, setSelezionataId] = useState(null);
   const [ricercaTesto, setRicerca] = useState("");
@@ -211,6 +213,45 @@ function Redazione({ onEsci }) {
     );
   }
 
+  // Correggere una scheda è la cosa più «di casa» del sito: cambia
+  // quello che tutti vedono. Chi è entrato per la videoteca non trova
+  // qui un modulo spento, ma la porta della SUA gestione — quella
+  // della videoteca, dove le schede sono le sue.
+  if (bibliotecaSolaLettura) {
+    return (
+      <Pagina
+        occhiello="Amministrazione"
+        titolo="Gestione"
+        sommario="Le schede della collezione le corregge la casa."
+        azioni={
+          <Bottone variante="fantasma" onClick={esci}>
+            Esci
+          </Bottone>
+        }
+      >
+        <div className="max-w-2xl space-y-4 rounded-panel border border-hairline bg-glass-1 p-6 backdrop-blur-xl">
+          <p className="text-sm text-ink-muted">
+            La biblioteca è la collezione di carta di casa: le sue schede —
+            titoli, volumi, editori — le correggono {utente?.nickname ? "i due di casa" : "i proprietari"}.
+            Di qua puoi guardarla tutta, com'è sempre stato per chiunque passi.
+          </p>
+
+          <p className="text-sm text-ink-muted">
+            La tua gestione è quella della videoteca: stagioni da unire,
+            etichette, serie da togliere.
+          </p>
+
+          <Link
+            to="/videoteca/gestione"
+            className="inline-flex items-center gap-2 rounded-card bg-brass-400 px-4 py-2.5 text-sm font-semibold text-void transition-all duration-quick hover:brightness-110"
+          >
+            Vai alla gestione della videoteca
+          </Link>
+        </div>
+      </Pagina>
+    );
+  }
+
   return (
     <Pagina
       occhiello="Amministrazione"
@@ -239,6 +280,10 @@ function Redazione({ onEsci }) {
           in fondo: è l'unica cosa in questa pagina che sta aspettando
           una risposta da una persona vera. */}
       <RichiesteAccesso />
+
+      {/* E chi c'è già: iscriversi dà la videoteca, la biblioteca la
+          apre il proprietario a mano, una persona alla volta. */}
+      <AccessoBiblioteca />
 
       <div className="grid gap-8 lg:grid-cols-[22rem_1fr]">
         {/* ---------- Elenco ----------

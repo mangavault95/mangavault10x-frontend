@@ -5,6 +5,8 @@ import Copertina from "../ui/Copertina";
 import { Bottone, CampoRicerca } from "../ui/Controlli";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
 import useRisorsa from "../dati/useRisorsa";
+import { useSessione } from "../dati/sessione";
+import { useAccessoProtetto } from "../dati/accesso";
 import {
   addToWishlist,
   deleteWishlistItem,
@@ -37,6 +39,14 @@ const VUOTO = {
 
 export default function WishlistPage() {
   const { dati, inCorso, errore, ricarica, setDati } = useRisorsa(getWishlist);
+
+  // I desideri sono la lista della spesa della collezione di carta:
+  // si leggono da fuori, li scrive la casa. Da quando le registrazioni
+  // valgono per la videoteca il server rifiuta le scritture di chi in
+  // biblioteca sta solo guardando — e i comandi qui spariscono invece
+  // di restare lì a promettere qualcosa.
+  const { bibliotecaSolaLettura } = useSessione();
+  const eseguiProtetto = useAccessoProtetto();
 
   const [modulo, setModulo] = useState(null); // null = chiuso
   const [ricercaTesto, setRicerca] = useState("");
@@ -76,9 +86,9 @@ export default function WishlistPage() {
 
     try {
       if (valori.id) {
-        await updateWishlistItem(valori.id, corpo);
+        await eseguiProtetto(() => updateWishlistItem(valori.id, corpo));
       } else {
-        await addToWishlist(corpo);
+        await eseguiProtetto(() => addToWishlist(corpo));
       }
 
       setModulo(null);
@@ -95,9 +105,12 @@ export default function WishlistPage() {
     setDati((precedenti) => (precedenti || []).filter((e) => e.id !== elemento.id));
 
     try {
-      await deleteWishlistItem(elemento.id);
-    } catch {
-      setProblema("Non sono riuscito a eliminare la voce.");
+      await eseguiProtetto(() => deleteWishlistItem(elemento.id));
+    } catch (e) {
+      // «Annullato» vuol dire che l'accesso è stato chiuso o che la
+      // biblioteca non è sua: l'ha già detto il riquadro, e un secondo
+      // avviso rosso qui sotto direbbe che si è rotto qualcosa.
+      if (!e?.annullato) setProblema("Non sono riuscito a eliminare la voce.");
       ricarica();
     }
   }
@@ -107,7 +120,9 @@ export default function WishlistPage() {
     setNota(null);
 
     try {
-      const esito = await purchaseWishlistItem(elemento.id, dettagli);
+      const esito = await eseguiProtetto(() =>
+        purchaseWishlistItem(elemento.id, dettagli)
+      );
 
       setDaComprare(null);
 
@@ -147,7 +162,9 @@ export default function WishlistPage() {
             risultati={visibili.length}
           />
 
-          <Bottone onClick={() => setModulo(VUOTO)}>Aggiungi</Bottone>
+          {!bibliotecaSolaLettura && (
+            <Bottone onClick={() => setModulo(VUOTO)}>Aggiungi</Bottone>
+          )}
         </div>
       }
     >
@@ -196,6 +213,7 @@ export default function WishlistPage() {
               <li key={e.id}>
                 <RigaDesiderio
                   elemento={e}
+                  soloLettura={bibliotecaSolaLettura}
                   onModifica={() =>
                     setModulo({
                       ...VUOTO,
@@ -222,7 +240,10 @@ export default function WishlistPage() {
                 : "Aggiungi le serie che vuoi comprare: quando le prendi, un click le sposta in collezione."
             }
             azione={
-              !ricercaTesto && <Bottone onClick={() => setModulo(VUOTO)}>Aggiungi la prima</Bottone>
+              !ricercaTesto &&
+              !bibliotecaSolaLettura && (
+                <Bottone onClick={() => setModulo(VUOTO)}>Aggiungi la prima</Bottone>
+              )
             }
           />
         )}
@@ -235,7 +256,7 @@ export default function WishlistPage() {
    RIGA
    ================================================== */
 
-function RigaDesiderio({ elemento, onModifica, onElimina, onComprato }) {
+function RigaDesiderio({ elemento, onModifica, onElimina, onComprato, soloLettura }) {
   // Fermare la propagazione sui bottoni: la riga intera è un Link,
   // altrimenti "Elimina" aprirebbe anche la scheda del desiderio.
   const fermaEAgisci = (azione) => (e) => {
@@ -277,19 +298,21 @@ function RigaDesiderio({ elemento, onModifica, onElimina, onComprato }) {
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Bottone onClick={fermaEAgisci(onComprato)} title="Sposta in collezione">
-          Comprato
-        </Bottone>
+      {!soloLettura && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Bottone onClick={fermaEAgisci(onComprato)} title="Sposta in collezione">
+            Comprato
+          </Bottone>
 
-        <Bottone variante="secondario" onClick={fermaEAgisci(onModifica)}>
-          Modifica
-        </Bottone>
+          <Bottone variante="secondario" onClick={fermaEAgisci(onModifica)}>
+            Modifica
+          </Bottone>
 
-        <Bottone variante="pericolo" onClick={fermaEAgisci(onElimina)}>
-          Elimina
-        </Bottone>
-      </div>
+          <Bottone variante="pericolo" onClick={fermaEAgisci(onElimina)}>
+            Elimina
+          </Bottone>
+        </div>
+      )}
     </Link>
   );
 }

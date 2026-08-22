@@ -13,11 +13,15 @@ import { dataIt } from "../dati/serie";
  * si entra. Una richiesta di accesso non è urgente; deve solo essere
  * impossibile non vederla.
  *
- * Accettare dà pieni poteri sulla collezione: la persona potrà
- * modificare le schede come il proprietario. Quello che resta suo e
- * solo suo è decidere di chi fidarsi — vedi `requireProprietario` sul
- * server. Per questo il riquadro non compare a chi è stato accettato:
- * non è una schermata che si eredita.
+ * Accettare dà la VIDEOTECA: la propria pagina, le spunte, i voti
+ * agli anime, il Cineforum. Non dà la biblioteca — quella si apre a
+ * mano, qui sotto, in «Chi entra in biblioteca», ed è una decisione
+ * separata perché è di un'altra natura: la videoteca è di chi ce
+ * l'ha, la collezione di carta è di chi la compra.
+ *
+ * Decidere resta del proprietario e solo suo — vedi
+ * `requireProprietario` sul server. Per questo il riquadro non
+ * compare a chi è stato accettato: non è una schermata che si eredita.
  */
 export default function RichiesteAccesso() {
   const { utente, richieste, ricaricaRichieste } = useSessione();
@@ -37,7 +41,7 @@ export default function RichiesteAccesso() {
 
       setEsito(
         approva
-          ? `${richiesta.nickname} adesso può entrare. I suoi voti e le sue letture partono da zero: la collezione, quella, è la stessa.`
+          ? `${richiesta.nickname} adesso può entrare: ha una videoteca sua, che parte da zero. La biblioteca la vede e basta — se la vuoi aprire anche a ${richiesta.nickname}, il posto è qui sotto.`
           : `Richiesta di ${richiesta.nickname} rifiutata.`
       );
 
@@ -79,7 +83,7 @@ export default function RichiesteAccesso() {
               <p className="font-medium text-ink-bright">{r.nickname}</p>
 
               <p className="text-xs text-ink-muted">
-                accesso come <span className="font-numeric">{r.username}</span>
+                videoteca come <span className="font-numeric">{r.username}</span>
                 {r.creatoIl ? ` · ${dataIt(r.creatoIl)}` : ""}
               </p>
             </div>

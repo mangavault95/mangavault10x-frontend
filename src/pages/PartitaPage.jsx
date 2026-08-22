@@ -32,7 +32,7 @@ export default function PartitaPage() {
   const navigate = useNavigate();
 
   const { serie } = useCollezione();
-  const { utente } = useSessione();
+  const { utente, bibliotecaSolaLettura } = useSessione();
   const eseguiProtetto = useAccessoProtetto();
 
   const caricamento = useCallback(() => getTorneo(id), [id]);
@@ -93,7 +93,9 @@ export default function PartitaPage() {
   // casa. La stessa regola vale sul server: qui si decide solo se
   // mostrare il bottone.
   const puoiCancellare =
-    utente && (utente.proprietario || utente.id === partita.giocatore.id);
+    utente &&
+    !bibliotecaSolaLettura &&
+    (utente.proprietario || utente.id === partita.giocatore.id);
 
   return (
     <Pagina

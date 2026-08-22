@@ -74,7 +74,7 @@ const MASSIME_IN_SCELTA = 60;
 
 export default function LetturaPage() {
   const { serie, aggiornaDroppato, aggiornaLettura, aggiornaVoto } = useCollezione();
-  const { lettori, idVisto } = useSessione();
+  const { lettoriBiblioteca: lettori, idVisto, bibliotecaSolaLettura } = useSessione();
 
   // Segnare un volume come letto adesso richiede di sapere CHI l'ha
   // letto: da quando i lettori sono due, una lettura senza nome non si
@@ -108,7 +108,12 @@ export default function LetturaPage() {
   // ancora resterebbe sbagliato per sempre.
   const [sceltaLettore, setSceltaLettore] = useState(null);
   const lettoreScelto = sceltaLettore ?? idVisto;
-  const mioTurno = lettoreScelto === idVisto;
+  // «Mio» vuol dire due cose insieme: che si sta guardando la propria
+  // classifica E che questa biblioteca è la propria. Chi di qua sta
+  // solo guardando non è mai al proprio turno — le letture che vede
+  // sono del proprietario, e chiamarle sue sarebbe la bugia da cui
+  // nascono i bottoni che non funzionano.
+  const mioTurno = lettoreScelto === idVisto && !bibliotecaSolaLettura;
   const nomeLettore = nomeDi(lettori, lettoreScelto) ?? "questo lettore";
 
   // Il salvataggio del segnalibro va rimandato di poco.
@@ -725,12 +730,23 @@ export default function LetturaPage() {
       // cioè in un posto che si raggiunge scorrendo — mentre aprire una
       // lettura è la prima cosa che si viene a fare.
       azioni={
-        <Bottone onClick={() => setSceltaAperta(true)}>
-          Inizia una lettura
-        </Bottone>
+        bibliotecaSolaLettura ? null : (
+          <Bottone onClick={() => setSceltaAperta(true)}>
+            Inizia una lettura
+          </Bottone>
+        )
       }
     >
       <div className="space-y-16">
+        {bibliotecaSolaLettura && (
+          <p className="rounded-card border border-hairline bg-glass-1 px-4 py-3 text-sm text-ink-muted">
+            Questo è il tavolo di{" "}
+            <span className="font-semibold text-ink-bright">{nomeLettore}</span>: di
+            qua puoi guardare dove è arrivato e cosa ha letto. Le tue letture
+            stanno in <Link to="/visione" className="font-medium text-brass-400 underline decoration-brass-400/30 underline-offset-2">videoteca</Link>.
+          </p>
+        )}
+
         {problema && (
           <p
             role="alert"

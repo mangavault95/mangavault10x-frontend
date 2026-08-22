@@ -48,7 +48,7 @@ import {
  */
 export default function KachinukiPage() {
   const { serie, inCorso, errore } = useCollezione();
-  const { utente } = useSessione();
+  const { utente, bibliotecaSolaLettura } = useSessione();
   const eseguiProtetto = useAccessoProtetto();
 
   const { dati: partite, inCorso: caricoPartite, ricarica } = useRisorsa(getTornei);
@@ -80,6 +80,16 @@ export default function KachinukiPage() {
     async (finita_) => {
       if (giaMandata.current) return;
 
+      // Giocare è di tutti: il torneo attraversa la collezione, che si
+      // vede da fuori. Tenerne una in cronologia no — è una partita di
+      // qualcuno, e in biblioteca «qualcuno» sono i due di casa. Si
+      // dice prima invece di lasciare che il colpo di scena finale sia
+      // un rifiuto del server.
+      if (bibliotecaSolaLettura) {
+        setSalvataggio({ stato: "solaLettura" });
+        return;
+      }
+
       giaMandata.current = true;
       setSalvataggio({ stato: "inCorso" });
 
@@ -98,7 +108,7 @@ export default function KachinukiPage() {
         );
       }
     },
-    [eseguiProtetto, ricarica]
+    [eseguiProtetto, ricarica, bibliotecaSolaLettura]
   );
 
   /* ---- Le mosse ---- */
@@ -500,6 +510,19 @@ function Salvataggio({ salvataggio, utente, onSalva }) {
       <p className="text-center text-sm text-ink-faint" aria-live="polite">
         Sto salvando la partita…
       </p>
+    );
+  }
+
+  // Giocata sì, in cronologia no: senza il bottone, che qui sarebbe
+  // solo un modo di far arrivare un «no» un secondo più tardi.
+  if (salvataggio.stato === "solaLettura") {
+    return (
+      <Pannello className="p-4">
+        <p className="text-sm text-ink-muted">
+          La cronologia delle partite è di casa: questa resta qui, fra te e
+          lo schermo.
+        </p>
+      </Pannello>
     );
   }
 

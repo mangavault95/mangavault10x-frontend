@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Icon from "../app/Icon";
 import { useAccessoProtetto } from "../dati/accesso";
+import { useSessione } from "../dati/sessione";
 import { updateManga, updateRating } from "../services/api";
 import useTocco from "./tocco";
 import { votoIt } from "../dati/serie";
@@ -20,6 +21,17 @@ import { votoIt } from "../dati/serie";
  * compatto proprio qui se serve, invece di mandare a `/admin`.
  *
  *
+ * CHI DI QUA STA SOLO GUARDANDO
+ *
+ * Dalla 018 la biblioteca è di casa: chi si è registrato per la
+ * videoteca, di qua, guarda e basta. Per lui questi tre comandi
+ * spariscono — ma il DATO no. Le stelle restano accese (sono il voto
+ * del proprietario, cioè quello che vede chiunque passi) e il numero
+ * dei volumi resta scritto: quello che se ne va è il modo di
+ * cambiarlo. Un bottone che risponde sempre di no è peggio di un
+ * bottone che non c'è.
+ *
+ *
  * QUANTO SONO GRANDI DA TOCCARE
  *
  * Col mouse un bersaglio di ventotto pixel si prende al primo colpo,
@@ -36,6 +48,7 @@ import { votoIt } from "../dati/serie";
 
 export function BottonePreferito({ serie, onCambiato, dimensione = 18, className = "" }) {
   const eseguiProtetto = useAccessoProtetto();
+  const { bibliotecaSolaLettura } = useSessione();
   const [inCorso, setInCorso] = useState(false);
   const [erroreVisibile, setErroreVisibile] = useState(false);
 
@@ -63,6 +76,21 @@ export function BottonePreferito({ serie, onCambiato, dimensione = 18, className
     } finally {
       setInCorso(false);
     }
+  }
+
+  // In sola lettura resta solo il fatto: se è un preferito della casa
+  // si vede, se non lo è non c'è niente da dire.
+  if (bibliotecaSolaLettura) {
+    if (!serie.preferito) return null;
+
+    return (
+      <span
+        title="Un preferito della casa"
+        className={`grid place-items-center text-brass-400 ${className}`}
+      >
+        <Icon nome="star" dimensione={dimensione} piena />
+      </span>
+    );
   }
 
   return (
@@ -135,6 +163,7 @@ export function Stella({ riempimento, dimensione }) {
  */
 export function VotoStelle({ serie, onCambiato, dimensione = 20, sospeso = false }) {
   const eseguiProtetto = useAccessoProtetto();
+  const { bibliotecaSolaLettura } = useSessione();
   const tocco = useTocco();
   const [inCorso, setInCorso] = useState(false);
   const [anteprima, setAnteprima] = useState(null);
@@ -185,7 +214,9 @@ export function VotoStelle({ serie, onCambiato, dimensione = 20, sospeso = false
             dimensione={misura}
           />
 
-          {[numero - 0.5, numero].map((valore, meta) => (
+          {/* I bersagli, cioè l'unica parte che scrive: chi di qua
+              guarda soltanto vede le stelle e non le può muovere. */}
+          {!bibliotecaSolaLettura && [numero - 0.5, numero].map((valore, meta) => (
             <button
               key={valore}
               type="button"
@@ -216,6 +247,7 @@ export function VotoStelle({ serie, onCambiato, dimensione = 20, sospeso = false
 
 export function ContaVolumi({ serie, onCambiato, compatto = false }) {
   const eseguiProtetto = useAccessoProtetto();
+  const { bibliotecaSolaLettura } = useSessione();
   const [inCorso, setInCorso] = useState(false);
 
   async function cambia(delta, e) {
@@ -243,6 +275,20 @@ export function ContaVolumi({ serie, onCambiato, compatto = false }) {
   const misura = compatto
     ? "h-6 w-6 text-xs [@media(hover:none)]:h-8 [@media(hover:none)]:w-8"
     : "h-8 w-8 text-sm [@media(hover:none)]:h-10 [@media(hover:none)]:w-10";
+
+  // Quanti volumi ci sono in casa lo sanno tutti; a comprarli sono in
+  // due. Senza i due bottoni il riquadro non serve più: resta il
+  // numero, scritto come altrove.
+  if (bibliotecaSolaLettura) {
+    return (
+      <span
+        className={`font-numeric font-semibold text-ink-bright ${compatto ? "text-xs" : "text-sm"}`}
+        title={serie.totali ? `${serie.posseduti} volumi su ${serie.totali}` : undefined}
+      >
+        {serie.posseduti}
+      </span>
+    );
+  }
 
   return (
     <div

@@ -23,7 +23,7 @@ import { creaNota, eliminaNota, modificaNota } from "../services/api";
  */
 export default function NoteSerie({ serie, compatto = false }) {
   const { aggiornaNote } = useCollezione();
-  const { utente } = useSessione();
+  const { utente, bibliotecaSolaLettura } = useSessione();
   const eseguiProtetto = useAccessoProtetto();
 
   const [inScrittura, setInScrittura] = useState(false);
@@ -114,7 +114,9 @@ export default function NoteSerie({ serie, compatto = false }) {
 
       {note.length === 0 && !inScrittura && (
         <p className="text-sm text-ink-faint">
-          Nessuna nota su questa serie.
+          {bibliotecaSolaLettura
+            ? "Nessuna nota su questa serie: le note della biblioteca le scrive la casa."
+            : "Nessuna nota su questa serie."}
         </p>
       )}
 
@@ -144,7 +146,7 @@ export default function NoteSerie({ serie, compatto = false }) {
                   </time>
                 )}
 
-                {mia && !inCorrezione && (
+                {mia && !inCorrezione && !bibliotecaSolaLettura && (
                   <span className="ml-auto flex shrink-0 gap-1">
                     <MiniAzione
                       onClick={() => {
@@ -186,7 +188,10 @@ export default function NoteSerie({ serie, compatto = false }) {
         })}
       </ul>
 
-      {inScrittura ? (
+      {/* Le note della biblioteca si leggono in tre e si scrivono in
+          due: chi di qua sta guardando non ha un colore in questa
+          stanza, e un pensiero senza un colore non si sa di chi è. */}
+      {bibliotecaSolaLettura ? null : inScrittura ? (
         <Compositore
           valore={bozza}
           onCambia={setBozza}

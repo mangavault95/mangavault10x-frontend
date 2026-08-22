@@ -54,7 +54,7 @@ export default function SeriePage() {
   const [parametri, setParametri] = useSearchParams();
 
   const { serie, inCorso, errore } = useSerie(id);
-  const { lettori, idVisto } = useSessione();
+  const { lettoriBiblioteca: lettori, idVisto, bibliotecaSolaLettura } = useSessione();
 
   // Quale autore si sta guardando nel pannello delle opere: `null`
   // quando è chiuso.
@@ -448,8 +448,10 @@ export default function SeriePage() {
             // Le letture di un altro si guardano e basta: un click qui
             // riaprirebbe la lettura a NOME DI CHI HA IL TOKEN, cioè
             // rimetterebbe in mano a te una serie di lei.
-            onRiprendi={diUnAltro ? undefined : riprendi}
-            di={diUnAltro ? nomeLettore : null}
+            // …e lo stesso vale per chi in biblioteca sta solo
+            // guardando: quello che vede è già di un altro.
+            onRiprendi={diUnAltro || bibliotecaSolaLettura ? undefined : riprendi}
+            di={diUnAltro ? nomeLettore : bibliotecaSolaLettura ? nomeDi(lettori, lettoreVisto) : null}
           />
         )}
 

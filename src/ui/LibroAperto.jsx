@@ -5,6 +5,7 @@ import NoteSerie from "./NoteSerie";
 import Menu from "./Menu";
 import { Bottone } from "./Controlli";
 import { coloreLettore } from "../dati/lettori";
+import { useSessione } from "../dati/sessione";
 import { dataIt, plurale } from "../dati/serie";
 import { urlCopertina } from "../services/api";
 
@@ -175,8 +176,16 @@ export default function LibroAperto({
   const [noteAperte, setNoteAperte] = useState(false);
   const note = lettura.serie?.note || [];
 
+  // Il tavolo di chi in biblioteca sta solo guardando è quello del
+  // proprietario: si vede dove è arrivato e cosa ha letto, e non si
+  // sposta niente. Del menu resta quello che si LEGGE — le note — e i
+  // comandi spariscono invece di spegnersi: un «+» grigio su ogni
+  // scheda direbbe che il sito è rotto, non che la stanza è di un altro.
+  const { bibliotecaSolaLettura } = useSessione();
+
   const voci = [
-    arretratiDaSegnare > 1 &&
+    !bibliotecaSolaLettura &&
+      arretratiDaSegnare > 1 &&
       typeof onLettiFinoAQui === "function" && {
         chiave: "arretrati",
         etichetta: `Letti tutti fino al ${volume}`,
@@ -184,7 +193,8 @@ export default function LibroAperto({
         onClick: onLettiFinoAQui
       },
 
-    correnteLetto &&
+    !bibliotecaSolaLettura &&
+      correnteLetto &&
       typeof onAnnullaLetto === "function" && {
         chiave: "annulla",
         etichetta: `Il ${volume} non l'ho letto`,
@@ -192,44 +202,51 @@ export default function LibroAperto({
         onClick: onAnnullaLetto
       },
 
-    lettura.serie && {
+    lettura.serie && !(bibliotecaSolaLettura && note.length === 0) && {
       chiave: "note",
       etichetta: note.length ? `Note (${note.length})` : "Scrivi una nota",
-      descrizione: note.length
-        ? "Rileggile o aggiungine una."
-        : "Cosa vuoi ricordarti di questa serie.",
+      descrizione: bibliotecaSolaLettura
+        ? "Quello che la casa si è segnata su questa serie."
+        : note.length
+          ? "Rileggile o aggiungine una."
+          : "Cosa vuoi ricordarti di questa serie.",
       onClick: () => setNoteAperte(true)
     },
 
-    typeof onAzzera === "function" && {
-      chiave: "azzera",
-      etichetta: "Azzera i volumi letti",
-      descrizione: letti.size
-        ? `Cancella ${plurale(letti.size, "volume segnato", "volumi segnati")} e riporta il segnalibro al primo.`
-        : "Non c'è ancora niente da azzerare.",
-      conferma: "Confermi? Si perdono tutti",
-      pericolo: true,
-      spenta: letti.size === 0,
-      onClick: onAzzera
-    },
+    !bibliotecaSolaLettura &&
+      typeof onAzzera === "function" && {
+        chiave: "azzera",
+        etichetta: "Azzera i volumi letti",
+        descrizione: letti.size
+          ? `Cancella ${plurale(letti.size, "volume segnato", "volumi segnati")} e riporta il segnalibro al primo.`
+          : "Non c'è ancora niente da azzerare.",
+        conferma: "Confermi? Si perdono tutti",
+        pericolo: true,
+        spenta: letti.size === 0,
+        onClick: onAzzera
+      },
 
-    typeof onChiudi === "function" && {
-      chiave: "chiudi",
-      etichetta: "Togli dal tavolo",
-      descrizione: "Chiude la lettura. I volumi letti restano, e la serie torna fra quelle da aprire.",
-      onClick: onChiudi
-    },
+    !bibliotecaSolaLettura &&
+      typeof onChiudi === "function" && {
+        chiave: "chiudi",
+        etichetta: "Togli dal tavolo",
+        descrizione:
+          "Chiude la lettura. I volumi letti restano, e la serie torna fra quelle da aprire.",
+        onClick: onChiudi
+      },
 
-    typeof onDroppa === "function" && {
-      chiave: "droppa",
-      etichetta: "Droppa la lettura",
-      // La differenza con quella sopra è tutta qui, e per anni non era
-      // scritta da nessuna parte: i due comandi si somigliavano al
-      // punto che uno dei due era stato tolto invece che spiegato.
-      descrizione: "Come sopra, ma resta segnata come mollata: non ricompare fra quelle da aprire.",
-      pericolo: true,
-      onClick: onDroppa
-    }
+    !bibliotecaSolaLettura &&
+      typeof onDroppa === "function" && {
+        chiave: "droppa",
+        etichetta: "Droppa la lettura",
+        // La differenza con quella sopra è tutta qui, e per anni non era
+        // scritta da nessuna parte: i due comandi si somigliavano al
+        // punto che uno dei due era stato tolto invece che spiegato.
+        descrizione:
+          "Come sopra, ma resta segnata come mollata: non ricompare fra quelle da aprire.",
+        pericolo: true,
+        onClick: onDroppa
+      }
   ];
 
   return (
@@ -308,7 +325,7 @@ export default function LibroAperto({
             totali={massimo || totali}
             letti={lettura.volumiLetti || []}
             corrente={volume}
-            onSelezionaVolume={onVaiAVolume}
+            onSelezionaVolume={bibliotecaSolaLettura ? undefined : onVaiAVolume}
             compatto
             riepilogo={false}
           />
@@ -318,31 +335,40 @@ export default function LibroAperto({
               dicevano lo stesso numero, uno col nastrino e uno con i
               tasti, a mezza scheda di distanza. */}
           <div className="mt-auto flex items-center gap-2 pt-0.5">
-            <div
-              className="flex shrink-0 items-center rounded-card border border-brass-400/25 bg-brass-400/10 p-0.5"
-              title={
-                (limitatoDaiPosseduti
-                  ? `Possiedi ${posseduti}${totali ? ` dei ${totali} usciti` : ""}. `
-                  : "") + (aggiornata ? `Segnato il ${dataIt(aggiornata)}.` : "")
-              }
-            >
-              <Passo etichetta="Volume precedente" onClick={onIndietro} disabled={volume <= 1}>
-                −
-              </Passo>
+            {bibliotecaSolaLettura ? (
+              <p className="font-numeric text-sm text-ink-muted">
+                Segnalibro al volume {volume}
+                {massimo ? <span className="text-ink-faint">/{massimo}</span> : null}
+              </p>
+            ) : (
+              <>
+                <div
+                  className="flex shrink-0 items-center rounded-card border border-brass-400/25 bg-brass-400/10 p-0.5"
+                  title={
+                    (limitatoDaiPosseduti
+                      ? `Possiedi ${posseduti}${totali ? ` dei ${totali} usciti` : ""}. `
+                      : "") + (aggiornata ? `Segnato il ${dataIt(aggiornata)}.` : "")
+                  }
+                >
+                  <Passo etichetta="Volume precedente" onClick={onIndietro} disabled={volume <= 1}>
+                    −
+                  </Passo>
 
-              <span className="px-1 font-numeric text-sm font-semibold text-brass-300">
-                {volume}
-                {massimo ? <span className="text-brass-500/70">/{massimo}</span> : null}
-              </span>
+                  <span className="px-1 font-numeric text-sm font-semibold text-brass-300">
+                    {volume}
+                    {massimo ? <span className="text-brass-500/70">/{massimo}</span> : null}
+                  </span>
 
-              <Passo etichetta="Volume successivo" onClick={onAvanti} disabled={alLimite}>
-                +
-              </Passo>
-            </div>
+                  <Passo etichetta="Volume successivo" onClick={onAvanti} disabled={alLimite}>
+                    +
+                  </Passo>
+                </div>
 
-            <Bottone onClick={onLetto} className="min-w-0 flex-1 !px-3 !py-1.5 !text-xs">
-              {alLimite ? "Finito" : "Finito, avanti"}
-            </Bottone>
+                <Bottone onClick={onLetto} className="min-w-0 flex-1 !px-3 !py-1.5 !text-xs">
+                  {alLimite ? "Finito" : "Finito, avanti"}
+                </Bottone>
+              </>
+            )}
           </div>
         </div>
       </div>

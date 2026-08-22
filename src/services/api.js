@@ -46,10 +46,16 @@ export function clearToken() {
    ================================================== */
 
 export class ApiError extends Error {
-  constructor(message, status, dettagli) {
+  constructor(message, status, dettagli, motivo = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    // Perché è andata male, in una parola sola che il codice possa
+    // confrontare. Serve per i «no» che non sono guasti: `biblioteca`
+    // vuol dire "sei entrato benissimo, ma questa stanza non è tua", e
+    // va trattato in modo opposto a un token scaduto — l'uno si spiega,
+    // l'altro si risolve chiedendo di nuovo la password.
+    this.motivo = motivo;
     // Quello che il server sa e il messaggio generico non dice: il nome
     // del vincolo violato, la colonna che dà fastidio. Senza, davanti a
     // un "Errore server" tocca rifare a mano la stessa richiesta per
@@ -110,7 +116,12 @@ async function request(path, { method = "GET", body, auth = false, signal } = {}
   }
 
   if (!res.ok) {
-    throw new ApiError(payload?.error || `Errore ${res.status}`, res.status, payload?.details);
+    throw new ApiError(
+      payload?.error || `Errore ${res.status}`,
+      res.status,
+      payload?.details,
+      payload?.motivo ?? null
+    );
   }
 
   return payload;
@@ -331,20 +342,40 @@ export const decidiAccesso = (id, approva) =>
     auth: true
   });
 
+/**
+ * Apre o chiude la biblioteca a qualcuno.
+ *
+ * Accettare una richiesta dà la videoteca e basta: questa è l'altra
+ * porta, e la apre solo il proprietario, una persona alla volta, dalla
+ * Gestione. Non esiste un modo di prendersela da soli.
+ */
+export const impostaAccessoBiblioteca = (id, dentro) =>
+  request(`/api/utenti/${id}/biblioteca`, {
+    method: "POST",
+    body: { dentro },
+    auth: true
+  });
+
 /* ==================================================
    WISHLIST
    ================================================== */
 
 export const getWishlist = () => request("/api/wishlist/all");
 
+/* I desideri si leggono da fuori e si scrivono da casa: sono la lista
+   della spesa della collezione di carta, e quello che ci finisce sopra
+   poi entra in biblioteca. Il `auth: true` è arrivato con la 018 —
+   prima queste tre erano le uniche rotte del sito che non chiedevano
+   niente a nessuno. */
+
 export const addToWishlist = (item) =>
-  request("/api/wishlist", { method: "POST", body: item });
+  request("/api/wishlist", { method: "POST", body: item, auth: true });
 
 export const updateWishlistItem = (id, item) =>
-  request(`/api/wishlist/${id}`, { method: "PUT", body: item });
+  request(`/api/wishlist/${id}`, { method: "PUT", body: item, auth: true });
 
 export const deleteWishlistItem = (id) =>
-  request(`/api/wishlist/${id}`, { method: "DELETE" });
+  request(`/api/wishlist/${id}`, { method: "DELETE", auth: true });
 
 /**
  * Sposta un desiderio in collezione.
@@ -355,7 +386,11 @@ export const deleteWishlistItem = (id) =>
  * collezione con zero volumi in casa.
  */
 export const purchaseWishlistItem = (id, dettagli) =>
-  request(`/api/wishlist-actions/purchase/${id}`, { method: "POST", body: dettagli ?? {} });
+  request(`/api/wishlist-actions/purchase/${id}`, {
+    method: "POST",
+    body: dettagli ?? {},
+    auth: true
+  });
 
 /* ==================================================
    LETTURA

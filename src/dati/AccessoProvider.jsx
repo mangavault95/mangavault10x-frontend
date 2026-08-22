@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { getToken, login as accedi, registrazione as chiediAccount } from "../services/api";
 import { ContestoAccesso } from "./accesso";
 import { useSessione } from "./sessione";
@@ -22,6 +22,11 @@ import { mondoDi } from "../app/navigation";
  */
 export function AccessoProvider({ children }) {
   const [richiesta, setRichiesta] = useState(null);
+  // L'altra risposta possibile: non «chi sei» ma «questa stanza non è
+  // tua». Vive qui e non nelle pagine perché ogni scrittura della
+  // biblioteca passa da `eseguiProtetto`: dirlo una volta sola qui
+  // significa che nessun bottone può dimenticarsene.
+  const [soloVideoteca, setSoloVideoteca] = useState(null);
   // Il modulo si apre dove si stava lavorando, e deve avere i colori
   // di quel posto: su carta chiara un riquadro di vetro scuro sembra
   // un pezzo di un altro sito.
@@ -60,6 +65,21 @@ export function AccessoProvider({ children }) {
       try {
         return await azione();
       } catch (e) {
+        // «Sei entrato, ma la biblioteca non è tua.» Non è un accesso
+        // scaduto e non va trattato come tale: chiedere di nuovo la
+        // password vorrebbe dire mandare qualcuno a riscriverla per
+        // ottenere di nuovo lo stesso no.
+        if (e?.motivo === "biblioteca") {
+          setSoloVideoteca({ messaggio: e.message });
+
+          // L'errore risale comunque, e SENZA `annullato`: chi ha
+          // chiamato ha già cambiato lo schermo prima di scrivere (il
+          // volume in più, la stella accesa) e su `annullato` non torna
+          // indietro. Lasciarglielo credere vorrebbe dire un riquadro
+          // che dice «non si scrive» sopra un numero appena cambiato.
+          throw e;
+        }
+
         // Il token c'era ma il server non lo accetta più: quasi
         // sempre è scaduto. Si richiede l'accesso e si riprova UNA
         // sola volta — se fallisce ancora, l'errore risale a chi ha
@@ -87,7 +107,67 @@ export function AccessoProvider({ children }) {
           onAnnulla={() => chiudi()}
         />
       )}
+
+      {soloVideoteca && (
+        <SoloVideoteca
+          messaggio={soloVideoteca.messaggio}
+          onChiudi={() => setSoloVideoteca(null)}
+        />
+      )}
     </ContestoAccesso.Provider>
+  );
+}
+
+/* ==================================================
+   LA STANZA CHE NON È TUA
+   ================================================== */
+
+/**
+ * Quello che si vede provando a scrivere in una biblioteca che è di
+ * casa d'altri.
+ *
+ * Dice due cose, e la seconda conta quanto la prima: qui no, ma di là
+ * sì. Un divieto senza la porta accanto è solo un muro.
+ */
+function SoloVideoteca({ messaggio, onChiudi }) {
+  const velo = useChiusuraVelo(onChiudi);
+  const veste = VESTI.biblioteca;
+
+  return (
+    <Sovrapposizione>
+      <div
+        className={`fixed inset-0 z-toast grid place-items-center p-5 backdrop-blur-sm animate-rise-in ${veste.velo}`}
+        {...velo}
+      >
+        <div
+          role="alertdialog"
+          aria-label="La biblioteca è di casa"
+          className={`w-full max-w-sm space-y-4 rounded-panel border p-6 shadow-float ${veste.riquadro}`}
+        >
+          <h2 className={veste.titolo}>Qui puoi solo guardare</h2>
+
+          <p className={veste.testo}>
+            {messaggio ||
+              "La biblioteca è di casa: di qua si guarda, non si scrive."}{" "}
+            Quello che vedi — voti, letture, note — è del proprietario.
+          </p>
+
+          <div className="flex gap-3">
+            <Link
+              to="/videoteca"
+              onClick={onChiudi}
+              className={`flex-1 text-center ${veste.principale}`}
+            >
+              Vai in videoteca
+            </Link>
+
+            <button type="button" onClick={onChiudi} className={veste.secondario}>
+              Resto qui
+            </button>
+          </div>
+        </div>
+      </div>
+    </Sovrapposizione>
   );
 }
 
@@ -204,9 +284,12 @@ export function ModuloAccesso({
             </h2>
 
             <p className={veste.testo}>
-              Adesso tocca al proprietario della biblioteca accettarti. Quando
-              l'avrà fatto potrai entrare con lo stesso nome e la stessa
-              password — e avrai i tuoi voti e le tue letture, separate dalle sue.
+              Adesso tocca al proprietario accettarti. Quando l'avrà fatto
+              potrai entrare con lo stesso nome e la stessa password, e avrai
+              una <strong className="font-semibold">videoteca tua</strong>: le
+              tue serie, le tue spunte, i tuoi commenti nel Cineforum. La
+              biblioteca dei manga resta di casa — la vedrai, com'è adesso,
+              senza scriverci niente.
             </p>
 
             <button

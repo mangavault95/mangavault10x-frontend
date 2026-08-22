@@ -15,6 +15,7 @@ import Icon from "../app/Icon";
 import Sovrapposizione from "../ui/Sovrapposizione";
 import useChiusuraVelo from "../ui/useChiusuraVelo";
 import { useCollezione } from "../dati/collezione";
+import { useSessione } from "../dati/sessione";
 import { useAccessoProtetto } from "../dati/accesso";
 import { creaManga, enrichManga } from "../services/api";
 import { idDa, generiDiSerie, editoreCanonico } from "../dati/generi";
@@ -41,6 +42,7 @@ import {
  */
 export default function CollezionePage() {
   const { serie, inCorso, errore, ricarica } = useCollezione();
+  const { bibliotecaSolaLettura } = useSessione();
   const [parametri, setParametri] = useSearchParams();
   const [modaleAperto, setModaleAperto] = useState(false);
   const [filtriMobileAperti, setFiltriMobileAperti] = useState(false);
@@ -271,14 +273,19 @@ export default function CollezionePage() {
             )}
           </button>
 
-          <Bottone
-            onClick={() => setModaleAperto(true)}
-            aria-label="Nuova serie"
-            className="shrink-0 px-3 sm:px-4"
-          >
-            <Icon nome="plus" dimensione={16} className="sm:hidden" />
-            <span className="hidden sm:inline">Nuova serie</span>
-          </Bottone>
+          {/* Aggiungere una serie vuol dire dire «questa ce l'abbiamo
+              in casa»: è la cosa più di casa che ci sia, e chi di qua
+              guarda soltanto non ha niente da aggiungere. */}
+          {!bibliotecaSolaLettura && (
+            <Bottone
+              onClick={() => setModaleAperto(true)}
+              aria-label="Nuova serie"
+              className="shrink-0 px-3 sm:px-4"
+            >
+              <Icon nome="plus" dimensione={16} className="sm:hidden" />
+              <span className="hidden sm:inline">Nuova serie</span>
+            </Bottone>
+          )}
         </div>
       }
     >

@@ -36,7 +36,7 @@ export default function FiltriCollezione({
   variante = "sidebar",
   onChiudere
 }) {
-  const { lettori } = useSessione();
+  const { lettoriBiblioteca: lettori } = useSessione();
   const generi = useMemo(() => elencoGeneri(serie), [serie]);
   const editori = useMemo(() => elencoEditori(serie), [serie]);
   const categorie = useMemo(() => elencoCategorie(serie), [serie]);

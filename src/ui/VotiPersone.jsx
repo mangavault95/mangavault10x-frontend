@@ -19,7 +19,7 @@ import { votoDi, votoIt } from "../dati/serie";
  * due righe vuote, e si vede a colpo d'occhio che manca il tuo.
  */
 export default function VotiPersone({ serie, dimensione = 20 }) {
-  const { lettori, idVisto } = useSessione();
+  const { lettoriBiblioteca: lettori, idVisto } = useSessione();
   const { aggiornaVoto } = useCollezione();
 
   // Prima che l'elenco arrivi — o se il server è la versione vecchia —
