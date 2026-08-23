@@ -1,6 +1,25 @@
 import { useState } from "react";
 import { segnaEpisodio, togliEpisodio } from "../../services/api";
 import { Pillola } from "./Foglio";
+import { dataPuntata } from "./formati";
+
+/**
+ * Come si chiama una puntata che non ha un titolo.
+ *
+ * Le serie vecchie e quelle fiume ne hanno a centinaia: di One Piece
+ * AnimeClick elenca 1196 puntate e 846 non hanno un titolo linkato.
+ * Prima lì c'era scritto «senza titolo», che è vero e non serve a
+ * niente — ripetuto ottocento volte diventa una colonna di rumore che
+ * sembra un guasto nostro.
+ *
+ * «Episodio 847» invece è una riga completa: non manca niente, quella
+ * puntata si chiama così.
+ */
+function nomeDi(ep) {
+  if (ep.titolo) return ep.titolo;
+
+  return ep.numero === 0 ? "Speciale" : `Episodio ${ep.numero}`;
+}
 
 /**
  * L'elenco delle puntate, con la casella per ognuna.
@@ -81,6 +100,12 @@ export default function ListaEpisodi({ animeId, episodi, spuntati, puoiScrivere,
           const visto = spuntati.has(ep.numero);
           const futuro = ep.uscita_italia && new Date(ep.uscita_italia) > new Date();
 
+          // Quella italiana quando c'è: è la data che riguarda chi
+          // guarda da qui. Per le serie vecchie non ce l'abbiamo e
+          // resta quella in patria, che è comunque il giorno in cui
+          // quella puntata è esistita per la prima volta.
+          const quando = dataPuntata(ep.uscita_italia || ep.uscita_giappone);
+
           return (
             <li
               key={`${ep.numero}-${ep.titolo ?? ""}`}
@@ -101,21 +126,26 @@ export default function ListaEpisodi({ animeId, episodi, spuntati, puoiScrivere,
 
                 <span
                   className={`min-w-0 flex-1 truncate text-sm ${
-                    visto ? "text-quaderno-tenue" : "text-quaderno-inchiostro"
+                    visto || !ep.titolo ? "text-quaderno-tenue" : "text-quaderno-inchiostro"
                   }`}
                 >
-                  {ep.titolo || <span className="italic text-quaderno-tenue">senza titolo</span>}
+                  {nomeDi(ep)}
                 </span>
               </label>
 
-              {futuro && (
-                <Pillola tono="blu">
-                  {new Date(ep.uscita_italia).toLocaleDateString("it-IT", {
-                    day: "numeric",
-                    month: "short",
-                    timeZone: "Europe/Rome"
-                  })}
-                </Pillola>
+              {/* La data, in due modi diversi perché sono due fatti
+                  diversi. Una puntata già uscita porta la sua data in
+                  grigio, come un'annotazione a margine; una che deve
+                  ancora uscire è la sola cosa accesa della riga, perché
+                  è l'unica su cui c'è qualcosa da fare — aspettare. */}
+              {futuro ? (
+                <Pillola tono="blu">{dataPuntata(ep.uscita_italia)}</Pillola>
+              ) : (
+                quando && (
+                  <span className="shrink-0 font-numeric text-[0.7rem] text-quaderno-tenue">
+                    {quando}
+                  </span>
+                )
               )}
 
               {ep.durata && (

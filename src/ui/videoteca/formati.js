@@ -58,6 +58,34 @@ export function quandoBreve(quando) {
   });
 }
 
+/**
+ * La data di una puntata: "17 set 1984", e "22 ago" se è di quest'anno.
+ *
+ * L'anno si scrive solo quando serve, ma serve spesso: in una lista di
+ * puntate ci sono sia quella di sabato scorso sia quella del 1984, e
+ * senza l'anno «17 set» le fa sembrare la stessa cosa. Toglierlo
+ * sull'anno in corso è quello che si fa parlando — nessuno dice «esce
+ * il 30 agosto 2026».
+ */
+export function dataPuntata(quando) {
+  if (!quando) return null;
+
+  const data = new Date(quando);
+
+  if (Number.isNaN(data.getTime())) return null;
+
+  const suoAnno = Number(
+    data.toLocaleDateString("it-IT", { year: "numeric", timeZone: "Europe/Rome" })
+  );
+
+  return data.toLocaleDateString("it-IT", {
+    day: "numeric",
+    month: "short",
+    year: suoAnno === new Date().getFullYear() ? undefined : "numeric",
+    timeZone: "Europe/Rome"
+  });
+}
+
 /** 4,5 con la virgola, e senza zeri inutili: 4 resta 4. */
 export function formattaVoto(voto) {
   return Number(voto).toLocaleString("it-IT", { maximumFractionDigits: 1 });
