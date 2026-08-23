@@ -581,9 +581,16 @@ export const impostaTagliStagioni = (id, tagli) =>
 export const cercaTagliStagioni = (id) =>
   request(`/api/anime/${id}/stagioni/cerca`, { method: "POST", auth: true });
 
-/** Le uscite dei prossimi giorni, già in ora italiana. */
-export const getCalendarioAnime = (giorni = 14) =>
-  request(`/api/anime/calendario${diChi(`giorni=${giorni}`)}`);
+/**
+ * Le uscite, già in ora italiana: `giorni` in avanti e `indietro`
+ * all'indietro.
+ *
+ * Il passato non è un di più: "mi è sfuggito qualcosa?" è metà del
+ * motivo per cui si apre un calendario. `indietro = 0` toglie del
+ * tutto la finestra all'indietro.
+ */
+export const getCalendarioAnime = (giorni = 14, indietro = 14) =>
+  request(`/api/anime/calendario${diChi(`giorni=${giorni}&indietro=${indietro}`)}`);
 
 /**
  * I candidati su AnimeClick per un titolo.
