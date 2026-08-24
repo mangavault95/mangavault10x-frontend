@@ -191,7 +191,24 @@ const TRACCIATI = {
    * Solo il coperchio e la vasca, senza le righine dentro: a sedici
    * pixel quelle diventano tre puntini e il cestino sembra sporco.
    */
-  cestino: "M4.5 7h15M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7M6.5 7l.8 12a1.5 1.5 0 0 0 1.5 1.4h6.4a1.5 1.5 0 0 0 1.5-1.4L17.5 7"
+  cestino: "M4.5 7h15M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7M6.5 7l.8 12a1.5 1.5 0 0 0 1.5 1.4h6.4a1.5 1.5 0 0 0 1.5-1.4L17.5 7",
+
+  /**
+   * Una busta: consigliare un anime a qualcuno.
+   *
+   * Non un aeroplanino di carta — quello dice «invia» ed è il verbo di
+   * ogni casella di testo del mondo, compresa quella qui accanto del
+   * Cineforum. Non una stella e non un cuore: quelli dicono cosa pensi
+   * tu della serie, e un consiglio dice a chi lo stai portando. La
+   * busta è l'unico disegno che contiene la cosa e il destinatario
+   * insieme — ed è la stessa forma che poi si vede volare via
+   * nell'animazione e arrivare come cartolina dall'altra parte.
+   *
+   * Il lembo è una V che si ferma a metà altezza e non un triangolo
+   * chiuso: chiusa fino in fondo, a diciotto pixel, la busta diventa
+   * un rettangolo con una riga storta dentro.
+   */
+  busta: "M4.5 5.5h15a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2zM3 6.7l9 5.8 9-5.8"
 };
 
 export default function Icon({ nome, dimensione = 20, className = "", piena = false, ...resto }) {

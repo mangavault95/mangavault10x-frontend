@@ -16,6 +16,13 @@ import Tondino from "./Tondino";
  * una serie che hai visto anche tu. Sono lì dentro, sepolte fra le
  * giornate degli altri, e in pratica non si trovano mai.
  *
+ * Le altre due nel feed non ci sono affatto, perché non sono cose
+ * dette a tutti: un consiglio che ti hanno mandato, e la notizia che
+ * un tuo consiglio è stato aperto. Il primo si vede anche come
+ * cartolina a schermo intero (`PostaInArrivo`), ma quello succede una
+ * volta sola — passata quella, «chi mi aveva consigliato cosa?» non
+ * avrebbe nessun altro posto dove stare.
+ *
  * Sta in alto a destra e non nella barra laterale: è una cosa del
  * Cineforum, non del sito, e la barra la vedrebbe anche chi sta
  * sfogliando la biblioteca.
@@ -154,7 +161,7 @@ function Foglietto({ dati, primaDi, chiudi }) {
               <p className="px-4 py-10 text-center text-sm text-quaderno-tenue">
                 {dati?.daMigrare
                   ? "Il server non ha ancora l'ultima migrazione: fra poco."
-                  : "Ancora niente. Qui arrivano le risposte ai tuoi post, i cuori e i commenti sulle serie che hai visto."}
+                  : "Ancora niente. Qui arrivano le risposte ai tuoi post, i cuori, i commenti sulle serie che hai visto e i consigli che ti mandano."}
               </p>
             ) : (
               <ul className="divide-y divide-quaderno-riga">
@@ -203,9 +210,14 @@ function nomeDelPost(chiave, tuo = true) {
 function Avviso({ avviso, nuovo }) {
   const dentro = <Contenuto avviso={avviso} nuovo={nuovo} />;
 
-  // Il commento porta alla sua scheda; risposta e cuore no, perché il
-  // post del feed non ha un indirizzo suo.
-  if (avviso.tipo === "nota") {
+  // Quello che ha una scheda porta alla scheda; risposta e cuore no,
+  // perché il post del feed non ha un indirizzo suo.
+  //
+  // ⚠️ Per i consigli `anime.id` può essere NULL, e non è un caso
+  // limite: si consiglia anche quello che nessuno dei due ha in
+  // videoteca, e finché nessuno lo aggiunge quella scheda non esiste.
+  // Un `<Link to="/videoteca/null">` porterebbe a un 404.
+  if (avviso.anime?.id) {
     return (
       <Link
         to={`/videoteca/${avviso.anime.id}`}
@@ -219,6 +231,14 @@ function Avviso({ avviso, nuovo }) {
   return <div className="px-4 py-3">{dentro}</div>;
 }
 
+/** Il segno che sta sull'angolo della faccia, uno per tipo di avviso. */
+function segnoDi(tipo) {
+  if (tipo === "cuore") return "cuore";
+  if (tipo === "consiglio" || tipo === "consiglio-aperto") return "busta";
+
+  return "cineforum";
+}
+
 function Contenuto({ avviso, nuovo }) {
   return (
     <div className="flex gap-3">
@@ -229,11 +249,7 @@ function Contenuto({ avviso, nuovo }) {
             tipi diversi in un elenco tutto uguale si distinguono
             prima con un simbolo che leggendo il verbo. */}
         <span className="absolute -bottom-1 -right-1 grid h-[18px] w-[18px] place-items-center rounded-full bg-quaderno-foglio text-quaderno-blu">
-          <Icon
-            nome={avviso.tipo === "cuore" ? "cuore" : "cineforum"}
-            dimensione={12}
-            piena={avviso.tipo === "cuore"}
-          />
+          <Icon nome={segnoDi(avviso.tipo)} dimensione={12} piena={avviso.tipo === "cuore"} />
         </span>
       </div>
 
@@ -268,6 +284,15 @@ function frase(avviso) {
 
   if (avviso.tipo === "risposta") {
     return `ha risposto a ${nomeDelPost(avviso.post, avviso.tuo)}`;
+  }
+
+  if (avviso.tipo === "consiglio") return `ti ha consigliato ${avviso.anime.titolo}`;
+
+  // Detta al passato e col titolo dentro: chi ha mandato tre consigli
+  // in una settimana deve capire QUALE è stato aperto senza andare a
+  // ricostruirlo dalla data.
+  if (avviso.tipo === "consiglio-aperto") {
+    return `ha aperto il tuo consiglio: ${avviso.anime.titolo}`;
   }
 
   return avviso.numeroEpisodio == null

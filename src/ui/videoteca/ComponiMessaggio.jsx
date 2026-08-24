@@ -117,18 +117,25 @@ export default function ComponiMessaggio({ alFatto, chiediAccesso }) {
             )}
 
             {errore && <p className="mt-2 text-xs text-quaderno-tenue">{errore.message}</p>}
-
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-              <Bottone tono="nudo" onClick={() => setAgganciando((a) => !a)} className="px-2">
-                <Icon nome="pellicola" dimensione={16} />
-                {serie ? "Cambia serie" : "Aggancia una serie"}
-              </Bottone>
-
-              <Bottone tono="pieno" type="submit" disabled={!testo.trim() || inCorso}>
-                {inCorso ? "Pubblico…" : "Pubblica"}
-              </Bottone>
-            </div>
           </div>
+        </div>
+
+        {/* La riga dei comandi sta FUORI dalla colonna del testo, cioè
+            parte da sinistra sotto l'avatar invece che allineata alla
+            casella. Dentro, «Aggancia una serie» era spinto a destra
+            dai trentotto pixel del tondino più il divario: sembrava
+            appeso al testo e restava lontano dal bordo, mentre è un
+            comando del riquadro intero. Da qui i due estremi della
+            scheda fanno da appoggio a un bottone ciascuno. */}
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <Bottone tono="nudo" onClick={() => setAgganciando((a) => !a)} className="px-2">
+            <Icon nome="pellicola" dimensione={16} />
+            {serie ? "Cambia serie" : "Aggancia una serie"}
+          </Bottone>
+
+          <Bottone tono="pieno" type="submit" disabled={!testo.trim() || inCorso}>
+            {inCorso ? "Pubblico…" : "Pubblica"}
+          </Bottone>
         </div>
       </form>
 

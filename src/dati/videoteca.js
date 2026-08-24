@@ -382,7 +382,11 @@ export function raggruppaCandidati(candidati) {
         punteggio: Math.max(...parti.map((p) => p.punteggio || 0)),
         // Quante di queste schede sono già in videoteca. Serve a dire
         // «ce l'hai già» invece di riproporla come se fosse nuova.
-        gia: parti.filter((p) => p.giaInVideoteca).length
+        gia: parti.filter((p) => p.giaInVideoteca).length,
+        // Le stesse, ma nella videoteca di un'ALTRA persona: arriva
+        // solo quando la ricerca è stata fatta con `per=<id>`, cioè
+        // dal pannello dei consigli, e vale zero dappertutto altrove.
+        sue: parti.filter((p) => p.giaSua).length
       };
     })
     .sort((a, b) => b.punteggio - a.punteggio);

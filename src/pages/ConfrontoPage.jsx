@@ -171,6 +171,8 @@ export default function ConfrontoPage() {
               </p>
             ) : (
               <Scheda className="divide-y divide-quaderno-riga">
+                <Intestazione a={personaA} b={personaB} />
+
                 {righe.map((s) => (
                   <InComune key={s.chiave} serie={s} />
                 ))}
@@ -285,10 +287,59 @@ function Paragone({ etichetta, a, b }) {
   );
 }
 
+/**
+ * La larghezza di una colonna di voti.
+ *
+ * Scritta una volta e usata da tutt'e tre i posti che si devono
+ * incolonnare — i due voti di una riga e i due nomi dell'intestazione.
+ * `w-14` e non `w-8` come prima: adesso lassù ci va un soprannome, e
+ * «Nanaki» in trentadue pixel non ci sta.
+ */
+const COLONNA = "w-14 text-center";
+
+/**
+ * Chi è la colonna di sinistra e chi quella di destra.
+ *
+ * Prima non lo diceva nessuno. C'erano due voti separati da una barra
+ * e in cima due facce con scritto «vs», e fra le due cose non passava
+ * nessun filo: davanti a «★5 / ★3» bisognava tirare a indovinare di
+ * chi fosse il cinque. I nomi sopra le colonne rispondono una volta
+ * per tutte, e costano una riga.
+ *
+ * La barra finta in mezzo non è una svista: è la stessa «/» delle
+ * righe, resa trasparente. Serve a occupare esattamente la stessa
+ * larghezza — che dipende dal carattere e non da un numero che
+ * potremmo scrivere qui — così i nomi cadono sopra i loro voti al
+ * pixel invece che quasi.
+ */
+function Intestazione({ a, b }) {
+  return (
+    <div className="flex items-center gap-3 rounded-t-card bg-quaderno-carta px-3 py-1.5 sm:px-4">
+      <span aria-hidden="true" className="w-10 shrink-0" />
+
+      <span className="min-w-0 flex-1 text-[0.65rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+        Serie
+      </span>
+
+      <span className="flex shrink-0 items-center gap-1.5 font-numeric text-sm">
+        <span className={`${COLONNA} truncate text-[0.65rem] font-semibold uppercase tracking-wider text-quaderno-tenue`}>
+          {a?.nickname}
+        </span>
+
+        <span aria-hidden="true" className="text-transparent">
+          /
+        </span>
+
+        <span className={`${COLONNA} truncate text-[0.65rem] font-semibold uppercase tracking-wider text-quaderno-tenue`}>
+          {b?.nickname}
+        </span>
+      </span>
+    </div>
+  );
+}
+
 /** Una serie vista da tutti e due, con i due voti accanto. */
 function InComune({ serie }) {
-  const d = distanza(serie);
-
   return (
     <Link
       to={`/videoteca/${serie.animeId}`}
@@ -309,30 +360,35 @@ function InComune({ serie }) {
         {serie.titolo}
       </span>
 
+      {/* Qui c'era anche una pillola blu «2 di scarto», su ogni riga in
+          cui i voti distavano almeno un punto. Se n'è andata: era il
+          conto che il lettore aveva già fatto da sé leggendo i due
+          numeri, e su una lista lunga diventava una terza colonna
+          irregolare — presente su certe righe e assente su altre — che
+          spingeva i voti a sinistra di quantità diverse. Il disaccordo
+          si cerca col filtro qui sopra, che è il posto giusto. */}
       <span className="flex shrink-0 items-center gap-1.5 font-numeric text-sm">
         <Voto valore={serie.votoA} />
         <span className="text-quaderno-riga">/</span>
         <Voto valore={serie.votoB} />
       </span>
-
-      {/* Il numero del disaccordo solo quando c'è: una colonna piena di
-          zeri e trattini non aggiunge niente. */}
-      {d >= 1 && (
-        <span className="shrink-0 rounded-full bg-quaderno-blu-tenue px-2 py-0.5 font-numeric text-[0.65rem] font-semibold text-quaderno-blu">
-          {formattaVoto(d)} di scarto
-        </span>
-      )}
     </Link>
   );
 }
 
 /**
- * Un voto, a semaforo.
+ * Un voto, colorato agli estremi.
  *
- * Dal 4 in su verde, il 3 giallo, sotto rosso. Serve qui più che
- * altrove: in una colonna di «★4 / ★2» ripetuta venti volte i due
- * numeri si somigliano, e capire chi ha amato cosa vuol dire leggere
- * riga per riga. Col colore la lista si legge a colpo d'occhio.
+ * Dal 4 in su verde, sotto il 3 rosso, in mezzo l'inchiostro di tutto
+ * il resto della pagina. Serve qui più che altrove: in una colonna di
+ * «★4 / ★2» ripetuta venti volte i due numeri si somigliano, e capire
+ * chi ha amato cosa vuol dire leggere riga per riga. Col colore la
+ * lista si legge a colpo d'occhio.
+ *
+ * IL TRE NON HA PIÙ UN COLORE SUO. Era giallo, e il giallo in mezzo a
+ * verdi e rossi si legge come un terzo giudizio — «attenzione», «così
+ * così» — mentre il tre qui è il voto di chi non si è pronunciato.
+ * Detto in nero non dice niente, che è esattamente quello che vale.
  *
  * Il colore non è l'unica cosa che distingue i due voti — il numero
  * c'è e si legge — quindi chi non distingue rosso e verde non perde
@@ -340,18 +396,18 @@ function InComune({ serie }) {
  */
 function tintaVoto(valore) {
   if (valore >= 4) return "text-quaderno-verde";
-  if (valore >= 3) return "text-quaderno-giallo";
+  if (valore < 3) return "text-quaderno-rosso";
 
-  return "text-quaderno-rosso";
+  return "text-quaderno-inchiostro";
 }
 
 function Voto({ valore }) {
   if (valore == null) {
-    return <span className="w-8 text-center text-quaderno-riga">—</span>;
+    return <span className={`${COLONNA} text-quaderno-riga`}>—</span>;
   }
 
   return (
-    <span className={`w-8 text-center font-semibold ${tintaVoto(valore)}`}>
+    <span className={`${COLONNA} font-semibold ${tintaVoto(valore)}`}>
       ★{formattaVoto(valore)}
     </span>
   );

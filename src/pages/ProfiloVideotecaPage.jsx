@@ -117,6 +117,7 @@ export default function ProfiloVideotecaPage() {
           <TestaProfilo
             persona={persona}
             mia={mia}
+            puoiConsigliare={Boolean(utente)}
             altrePersone={persone.dati ?? []}
             sommario={sommarioDi(statistiche)}
             // Cambiando faccia o striscione la testata si aggiorna da

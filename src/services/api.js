@@ -649,12 +649,17 @@ export const getCalendarioAnime = (giorni = 14, indietro = 14) =>
  * `segnale` serve alla ricerca che si aggiorna mentre si scrive: la
  * richiesta della lettera prima si annulla, così l'ultima risposta che
  * arriva è sempre quella dell'ultima cosa scritta.
+ *
+ * `per` è il numero di UN'ALTRA persona, e lo passa solo il pannello
+ * dei consigli: ogni risultato torna con `giaSua`, cioè se quella
+ * persona ce l'ha già in videoteca. Senza, consigliare una serie che
+ * l'altro ha finito e votato sarebbe l'errore più facile da fare.
  */
-export const cercaAnime = (titolo, segnale) =>
-  request(`/api/anime/cerca?titolo=${encodeURIComponent(titolo)}`, {
-    auth: true,
-    signal: segnale
-  });
+export const cercaAnime = (titolo, segnale, { per = null } = {}) =>
+  request(
+    `/api/anime/cerca?titolo=${encodeURIComponent(titolo)}${per ? `&per=${per}` : ""}`,
+    { auth: true, signal: segnale }
+  );
 
 /**
  * Di quante parti è fatta la serie a cui appartiene questa scheda.
@@ -854,6 +859,44 @@ export const getPersone = () => request("/api/cineforum/chi");
  * riceve il padrone di casa, come ovunque nel sito.
  */
 export const getIoVideoteca = () => request("/api/cineforum/io", { auth: true });
+
+/* ---- I consigli ----
+   «Guarda questo», detto a una persona sola. Non è il Cineforum con
+   un destinatario: lì si racconta, qui si consegna qualcosa — una
+   copertina, due righe di perché — e si vuole sapere se è arrivata.
+
+   Si consiglia anche quello che nessuno dei due ha in videoteca (la
+   ricerca è la stessa di «aggiungi una serie»), quindi la cartolina
+   si porta dietro titolo e copertina invece di puntare a una scheda
+   che potrebbe non esistere. */
+
+export const mandaConsiglio = ({ a, animeclickId, titolo, coverUrl, testo }) =>
+  request("/api/cineforum/consigli", {
+    method: "POST",
+    body: { a, animeclickId, titolo, coverUrl, testo },
+    auth: true
+  });
+
+/**
+ * Le cartoline che non hai ancora aperto.
+ *
+ * La chiede la cornice a ogni apertura del mondo videoteca: è la
+ * lettura che decide se mostrare l'animazione a schermo intero, e sul
+ * server ha un indice tutto suo perché costi quanto una chiave.
+ */
+export const getConsigliInArrivo = () =>
+  request("/api/cineforum/consigli/in-arrivo", { auth: true });
+
+/**
+ * «L'ho vista».
+ *
+ * Si manda quando la cartolina COMPARE, non quando si chiude: chi
+ * chiude la scheda a metà animazione l'ha comunque vista, e
+ * rimostrargliela per sempre sarebbe il modo sbagliato di sbagliare.
+ * È anche il momento in cui scatta l'avviso per chi l'ha mandata.
+ */
+export const segnaConsiglioAperto = (id) =>
+  request(`/api/cineforum/consigli/${id}/aperto`, { method: "POST", auth: true });
 
 /* ==================================================
    MERCATO

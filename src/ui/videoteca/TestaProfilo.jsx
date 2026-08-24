@@ -10,6 +10,7 @@ import {
 } from "../../services/api";
 import Sovrapposizione from "../Sovrapposizione";
 import useChiusuraVelo from "../useChiusuraVelo";
+import ConsigliaAnime from "./ConsigliaAnime";
 import SceltaImmagine, { TastoModifica, TastoTondo } from "./SceltaImmagine";
 import Striscione from "./Striscione";
 import Tondino from "./Tondino";
@@ -33,10 +34,14 @@ import Tondino from "./Tondino";
  * ---------------------------------------------------------------
  * IL TASTINO DEI COLLEGAMENTI
  *
- * Sta fuori dallo striscione, sotto a destra, e tiene le quattro cose
- * che non stanno nella pagina — preferiti, classifica, commenti,
- * confronto. Non è una barra di navigazione: sono modi diversi di
- * guardare la stessa persona, e stanno bene sotto un gesto solo.
+ * Sta fuori dallo striscione, sotto a destra, e tiene le cose che non
+ * stanno nella pagina — preferiti, classifica, commenti, confronto.
+ * Non è una barra di navigazione: sono modi diversi di guardare la
+ * stessa persona, e stanno bene sotto un gesto solo.
+ *
+ * Sulla pagina di un altro c'è anche «Consiglia», che è l'unica voce
+ * che non guarda: parla. Sta in cima perché è la sola azione fra
+ * quattro destinazioni.
  *
  * ---------------------------------------------------------------
  * SPOSTARE L'IMMAGINE
@@ -56,12 +61,22 @@ export default function TestaProfilo({
   sommario,
   altrePersone = [],
   mia = false,
+  // Chi non è entrato non consiglia niente: il server chiede il token
+  // comunque, e una voce di menu che porta a un 401 è peggio di una
+  // voce che non c'è.
+  puoiConsigliare = false,
   alCambio
 }) {
   const [menu, setMenu] = useState(false);
   const [cambiando, setCambiando] = useState(null);
   const [striscione, setStriscione] = useState(null);
   const [spostando, setSpostando] = useState(false);
+
+  // Il pannello dei consigli vive QUI e non dentro `MenuProfilo`: il
+  // menu si chiude nell'istante in cui lo si apre, e un pannello
+  // montato là dentro se ne andrebbe con lui.
+  const [consigliando, setConsigliando] = useState(false);
+  const [mandato, setMandato] = useState(false);
 
   // Le immagini si mostrano da subito dopo il salvataggio, senza
   // aspettare che la pagina si ricarichi: cambiare foto e non vederla
@@ -233,6 +248,17 @@ export default function TestaProfilo({
         </button>
       </div>
 
+      {/* La conferma sta qui sotto il tastino e non dentro il pannello:
+          quando arriva, il pannello se n'è già andato via col volo
+          della busta. È l'unica traccia che resta di una cosa che è
+          uscita dallo schermo, e serve — senza, premere «manda» e
+          vedere sparire tutto sembra un errore. */}
+      {mandato && (
+        <p className="mb-2 text-right text-xs font-semibold text-quaderno-blu" role="status">
+          Consiglio mandato a {persona.nickname}.
+        </p>
+      )}
+
       {menu && (
         <MenuProfilo
           base={base}
@@ -240,12 +266,26 @@ export default function TestaProfilo({
           altrePersone={altrePersone}
           mia={mia}
           haFaccia={Boolean(quandoFaccia)}
+          puoiConsigliare={puoiConsigliare}
+          consiglia={() => {
+            setMenu(false);
+            setMandato(false);
+            setConsigliando(true);
+          }}
           togliLaFaccia={async () => {
             await togliFaccia();
             setFaccia(false);
             alCambio?.();
           }}
           chiudi={() => setMenu(false)}
+        />
+      )}
+
+      {consigliando && (
+        <ConsigliaAnime
+          persona={persona}
+          alMandato={() => setMandato(true)}
+          chiudi={() => setConsigliando(false)}
         />
       )}
 
@@ -276,7 +316,17 @@ export default function TestaProfilo({
  * secondo passo si salta: chiedere di scegliere fra un'opzione è una
  * domanda inutile.
  */
-function MenuProfilo({ base, persona, altrePersone, mia, haFaccia, togliLaFaccia, chiudi }) {
+function MenuProfilo({
+  base,
+  persona,
+  altrePersone,
+  mia,
+  haFaccia,
+  puoiConsigliare,
+  consiglia,
+  togliLaFaccia,
+  chiudi
+}) {
   const navigate = useNavigate();
   const velo = useChiusuraVelo(chiudi);
   const [scegliendo, setScegliendo] = useState(false);
@@ -323,6 +373,20 @@ function MenuProfilo({ base, persona, altrePersone, mia, haFaccia, togliLaFaccia
       onClick: versoIlConfronto
     }
   ];
+
+  // Solo sulla pagina di un ALTRO, e sta in cima: le altre quattro
+  // voci sono modi di guardare questa persona, questa è l'unica che le
+  // parla. Consigliarsi qualcosa da soli non vuol dire niente, e
+  // infatti il server lo rifiuta.
+  if (!mia && puoiConsigliare) {
+    voci.unshift({
+      id: "consiglia",
+      etichetta: "Consiglia",
+      spiega: `Manda a ${persona.nickname} un anime da guardare`,
+      icona: "busta",
+      onClick: consiglia
+    });
+  }
 
   // Togliere la propria foto sta qui e non accanto alla matita: è una
   // cosa che si fa una volta ogni tanto, e un secondo tastino sopra

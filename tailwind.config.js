@@ -97,13 +97,18 @@ export default {
           blu: "#1b3fcc", // l'accento: progressi, ore, numeri
           "blu-tenue": "#e3e8ff", // il blu quando fa da fondo
 
-          // I voti, a semaforo: dal 4 in su verde, il 3 giallo, sotto
-          // rosso. Non riusano `jade` ed `ember` — quelli sono nati per
-          // il fondo scuro della biblioteca e su carta bianca sono due
+          // I voti, agli estremi: dal 4 in su verde, sotto il 3 rosso.
+          // In mezzo resta `inchiostro`, il nero di tutto il resto —
+          // c'era anche un giallo per il 3 ed è stato tolto, perché fra
+          // un verde e un rosso il giallo si legge come un terzo
+          // giudizio («così così») mentre il 3 è il voto di chi non si
+          // è pronunciato.
+          //
+          // Non riusano `jade` ed `ember`: quelli sono nati per il
+          // fondo scuro della biblioteca e su carta bianca sono due
           // pastelli che non si leggono. Questi sono scuri abbastanza
           // da passare il contrasto su `foglio`.
           verde: "#12784a",
-          giallo: "#9a6700",
           rosso: "#c02626"
         }
       },
@@ -225,6 +230,71 @@ export default {
         battuta: {
           from: { opacity: "0", transform: "translate3d(0, 14px, 0)" },
           to: { opacity: "1", transform: "translate3d(0, 0, 0)" }
+        },
+
+        /* ---- La posta della videoteca ----
+           Consigliare un anime a qualcuno è l'unico gesto del sito che
+           ha un destinatario, e le altre animazioni non sanno dirlo:
+           una cosa che compare in dissolvenza è arrivata da nessuna
+           parte. Qui la copertina si piega dentro una busta, la busta
+           parte, e dall'altra parte arriva e si apre. Sono cinque
+           fotogrammi chiave che raccontano un oggetto che viaggia. */
+
+        // La copertina che si rimpicciolisce e scivola dentro la busta.
+        // `forwards`: deve RESTARE piccola mentre il lembo si chiude.
+        //
+        // ⚠️ Le percentuali sono sull'altezza della COPERTINA, non della
+        // busta: `translateY(15%)` di un'immagine alta 240 la abbassa di
+        // 36 punti, che con `scale(0.34)` la lasciano dentro la
+        // silhouette della busta. Numeri più grandi la fanno uscire dal
+        // fondo — la copertina scivolerebbe SOTTO invece che DENTRO.
+        imbusta: {
+          "0%": { transform: "translate3d(0, 0, 0) scale(1) rotate(0deg)" },
+          "55%": { transform: "translate3d(0, 9%, 0) scale(0.74) rotate(-3deg)" },
+          "100%": { transform: "translate3d(0, 15%, 0) scale(0.34) rotate(-5deg)" }
+        },
+
+        // Il lembo che si ribalta e chiude. L'origine sta in alto: la
+        // mette il componente, perché è una proprietà della forma e non
+        // del movimento.
+        "chiudi-lembo": {
+          from: { transform: "rotateX(-176deg)" },
+          to: { transform: "rotateX(0deg)" }
+        },
+
+        // La busta che parte. Il primo terzo è un contraccolpo verso il
+        // basso: senza, non parte — si limita a sparire in alto a
+        // destra, che è la differenza fra un lancio e una dissolvenza.
+        spedisci: {
+          "0%": { opacity: "1", transform: "translate3d(0, 0, 0) scale(1) rotate(0deg)" },
+          "22%": { opacity: "1", transform: "translate3d(0, 5%, 0) scale(0.97) rotate(-2deg)" },
+          "100%": {
+            opacity: "0",
+            transform: "translate3d(46vw, -72vh, 0) scale(0.28) rotate(16deg)"
+          }
+        },
+
+        // Dall'altra parte: la cartolina arriva da lontano e si posa.
+        "cartolina-arriva": {
+          "0%": {
+            opacity: "0",
+            transform: "translate3d(-24vw, 46vh, 0) scale(0.18) rotate(-16deg)"
+          },
+          "58%": { opacity: "1" },
+          "100%": { opacity: "1", transform: "translate3d(0, 0, 0) scale(1) rotate(0deg)" }
+        },
+
+        // Il lembo che si apre: l'inverso della chiusura, ma più lento
+        // — chiudere è un gesto, aprire è quello che si sta aspettando.
+        "apri-lembo": {
+          from: { transform: "rotateX(0deg)" },
+          to: { transform: "rotateX(-176deg)" }
+        },
+
+        // Quello che c'era dentro: sale fuori dalla busta.
+        "esce-dalla-busta": {
+          from: { opacity: "0", transform: "translate3d(0, 34%, 0) scale(0.86)" },
+          to: { opacity: "1", transform: "translate3d(0, 0, 0) scale(1)" }
         }
       },
 
@@ -248,7 +318,22 @@ export default {
         "rise-in": "rise-in 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards",
         "glow-pulse": "glow-pulse 4s ease-in-out infinite",
         shimmer: "shimmer 1.6s linear infinite",
-        battuta: "battuta 380ms cubic-bezier(0.16, 1, 0.3, 1) both"
+        battuta: "battuta 380ms cubic-bezier(0.16, 1, 0.3, 1) both",
+
+        /* La posta. Qui `forwards` ci vuole davvero, ed è l'eccezione
+           alla nota sopra: la copertina deve RESTARE piegata dentro la
+           busta e la busta deve RESTARE via, o alla fine del volo
+           tornerebbero tutt'e due al loro posto di partenza con uno
+           scatto. Il transform che resta addosso non fa danni perché
+           questi elementi vivono dentro `Sovrapposizione` — un portale
+           sul `<body>` — e non hanno discendenti `position: fixed` da
+           sganciare dallo schermo. */
+        imbusta: "imbusta 620ms cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        "chiudi-lembo": "chiudi-lembo 420ms cubic-bezier(0.34, 1.4, 0.64, 1) forwards",
+        spedisci: "spedisci 780ms cubic-bezier(0.55, 0, 0.9, 0.45) forwards",
+        "cartolina-arriva": "cartolina-arriva 760ms cubic-bezier(0.16, 1, 0.3, 1) backwards",
+        "apri-lembo": "apri-lembo 620ms cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        "esce-dalla-busta": "esce-dalla-busta 520ms cubic-bezier(0.16, 1, 0.3, 1) backwards"
       },
 
       zIndex: {

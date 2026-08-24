@@ -30,6 +30,7 @@ import Icon from "./Icon";
 import Bibliotecario from "../bibliotecario/Bibliotecario";
 import Identita from "../ui/Identita";
 import AggiungiAnime from "../ui/videoteca/AggiungiAnime";
+import PostaInArrivo from "../ui/videoteca/PostaInArrivo";
 import { useSessione } from "../dati/sessione";
 
 /**
@@ -126,9 +127,21 @@ export default function Shell({ children }) {
   const aggiunta = puoiAggiungere && parametriAggiunta.has("aggiungi");
   const titoloCercato = parametriAggiunta.get("aggiungi") || "";
 
-  function apriAggiunta() {
+  /**
+   * Apre il pannello, eventualmente con una ricerca già scritta.
+   *
+   * Il titolo lo passa la cartolina di un consiglio: chi riceve
+   * «guarda questo» e tocca la copertina di una serie che in catalogo
+   * non c'è deve trovarsi il pannello con dentro il titolo, non una
+   * casella vuota da riempire a memoria.
+   *
+   * ⚠️ Va chiamata SEMPRE con le parentesi (`() => apriAggiunta()`) da
+   * un `onClick`: passata nuda, React le consegna l'evento del click e
+   * quello finirebbe nell'indirizzo al posto del titolo.
+   */
+  function apriAggiunta(titolo = "") {
     const nuovi = new URLSearchParams(parametriAggiunta);
-    nuovi.set("aggiungi", "");
+    nuovi.set("aggiungi", titolo);
     setParametriAggiunta(nuovi);
   }
 
@@ -216,7 +229,7 @@ export default function Shell({ children }) {
       >
         <Commutatore mondo={mondo} veste={veste} />
 
-        {puoiAggiungere && <BottoneAggiungi veste={veste} apri={apriAggiunta} />}
+        {puoiAggiungere && <BottoneAggiungi veste={veste} apri={() => apriAggiunta()} />}
 
         {sezioniDi(mondo).map((sezione) => (
           <VoceMenu
@@ -309,7 +322,7 @@ export default function Shell({ children }) {
             metà fra "quante di qua, quante di là" era quello che lo
             spostava dal centro vero ogni volta che «Altro» pesava
             diverso dalle linguette prima di lui. */}
-        {puoiAggiungere && <LinguettaAggiungi veste={veste} apri={apriAggiunta} />}
+        {puoiAggiungere && <LinguettaAggiungi veste={veste} apri={() => apriAggiunta()} />}
       </nav>
 
       {altroAperto && (
@@ -342,6 +355,14 @@ export default function Shell({ children }) {
           }}
         />
       )}
+
+      {/* La posta: le cartoline che qualcuno ti ha consigliato e che
+          non hai ancora aperto. Sta nella cornice e non in una pagina
+          perché non è di nessuna pagina — è la prima cosa che si vede
+          entrando nella videoteca, da qualunque indirizzo ci si
+          entri. Stessa condizione dell'«aggiungi»: serve il mondo
+          giusto e serve un nome, o non c'è nessuno a cui consegnarla. */}
+      {puoiAggiungere && <PostaInArrivo apriAggiunta={apriAggiunta} />}
     </div>
   );
 }

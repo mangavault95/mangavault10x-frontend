@@ -30,8 +30,17 @@
  * riga intera di intestazione per un cerchio di quaranta pixel, e
  * l'allineamento in basso la fa cadere all'altezza del sommario
  * invece che del titolo. `angolo` sta fuori dal flusso, ancorato in
- * alto a destra e centrato sull'altezza dell'intestazione: non va mai
- * a capo e resta sempre accanto al titolo.
+ * alto a destra: non va mai a capo e resta sempre in cima.
+ *
+ * L'ALTEZZA È QUELLA DELL'OCCHIELLO, non il centro dell'intestazione.
+ * Centrata, la campanella cadeva a metà fra «Videoteca» e «Cineforum»,
+ * cioè sul titolo grande, e sembrava appartenergli. Sulla riga
+ * dell'occhiello sta invece dove sta la roba di servizio, e sopra il
+ * titolo resta aria. Lo scostamento è calcolato: l'occhiello è alto
+ * circa 16px e il suo centro cade a 8px dal bordo, il cerchio è alto
+ * 40px, quindi va tirato su di 12px (`-translate-y-3`) perché i due
+ * centri combacino. Sborda nel `pt-5` della pagina, che di spazio ne
+ * ha 20.
  */
 export default function PaginaVideoteca({
   titolo,
@@ -81,9 +90,7 @@ export default function PaginaVideoteca({
 
         {azioni && <div className="flex flex-wrap items-center gap-2">{azioni}</div>}
 
-        {angolo && (
-          <div className="absolute right-0 top-1/2 -translate-y-1/2">{angolo}</div>
-        )}
+        {angolo && <div className="absolute right-0 top-0 -translate-y-3">{angolo}</div>}
       </header>
 
       {children}
