@@ -141,19 +141,12 @@ export const SEZIONI = [
     // la regola di lettura di tutto il sito.
     percorso: "/videoteca/io",
     etichetta: "Videoteca",
-    descrizione: "La tua pagina: serie, film, numeri, preferiti",
+    // «In visione» non è più una voce sua: è la prima cosa che si
+    // vede aprendo la propria pagina, non un'altra tappa da
+    // raggiungere per saperlo.
+    descrizione: "La tua pagina: cosa guardi ora, serie, film, preferiti",
     icona: "pellicola",
     tasto: "2"
-  },
-  {
-    id: "visione",
-    mondo: "videoteca",
-    primaria: true,
-    percorso: "/visione",
-    etichetta: "In visione",
-    descrizione: "Cosa stai guardando adesso",
-    icona: "bookmark",
-    tasto: "3"
   },
   {
     id: "calendario",
@@ -163,7 +156,7 @@ export const SEZIONI = [
     etichetta: "Calendario",
     descrizione: "Quando escono i prossimi episodi, in Italia",
     icona: "calendario",
-    tasto: "4"
+    tasto: "3"
   }
 ];
 

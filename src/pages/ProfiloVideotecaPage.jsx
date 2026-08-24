@@ -13,6 +13,7 @@ import {
 import Icon from "../app/Icon";
 import PaginaVideoteca, { Caricamento, Errore, Scheda } from "../ui/videoteca/Foglio";
 import Fila, { PostoAggiungi, PostoSerie } from "../ui/videoteca/Fila";
+import ListaInVisione from "../ui/videoteca/ListaInVisione";
 import TestaProfilo from "../ui/videoteca/TestaProfilo";
 
 /**
@@ -127,6 +128,20 @@ export default function ProfiloVideotecaPage() {
           />
 
           <Numeri statistiche={statistiche} base={base} />
+
+          {/* Solo sulla propria pagina: «in visione» per questo sito
+              vuol dire sempre «le tue puntate pronte da segnare», e su
+              quella di un altro non c'è niente da spuntare — vedere le
+              sue senza poterci fare niente sarebbe solo una vetrina a
+              metà. */}
+          {mia && (
+            <ListaInVisione
+              righe={videoteca.dati}
+              setRighe={videoteca.setDati}
+              ricarica={videoteca.ricarica}
+              puoiScrivere
+            />
+          )}
 
           <Fila
             titolo="Serie"

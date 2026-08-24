@@ -344,9 +344,18 @@ export default function AnimePage() {
   return (
     <PaginaVideoteca
       occhiello={
-        <Link to="/videoteca/io" className="hover:text-quaderno-inchiostro">
-          ← La mia videoteca
-        </Link>
+        // `navigate(-1)` e non un indirizzo fisso: questa scheda si
+        // raggiunge da un sacco di posti — Cineforum, la propria
+        // pagina, quella di un altro, il Calendario, «In visione» —
+        // e tornare sempre a «La mia videoteca» smentiva la cronologia
+        // reale. Stessa scelta già fatta in `SeriePage`/`DesiderioPage`.
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="hover:text-quaderno-inchiostro"
+        >
+          ← Indietro
+        </button>
       }
       titolo={titolo}
       sommario={[

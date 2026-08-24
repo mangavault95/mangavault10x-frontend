@@ -256,12 +256,11 @@ function Uscita({ uscita: u, passato }) {
  * è arrivato alla 12 ha visto anche la 9, e una serie senza nessuna
  * spunta le ha da recuperare tutte.
  *
- * Su una serie droppata non si scrive niente: lì "non l'hai vista" non
- * è un promemoria, è una scelta già fatta.
+ * Le serie droppate o in pausa non arrivano nemmeno fin qui — le
+ * esclude la query del calendario, non questa funzione: lì "non
+ * l'hai vista" non è un promemoria, è una scelta già fatta.
  */
 function daRecuperareQuesta(u) {
-  if (u.stato_visione === "droppata") return false;
-
   return u.ultimo_visto === null || Number(u.ultimo_visto) < u.numero;
 }
 

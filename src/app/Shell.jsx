@@ -267,21 +267,7 @@ export default function Shell({ children }) {
         aria-label="Navigazione principale"
         className={`fixed inset-x-0 bottom-0 z-sticky flex pb-[env(safe-area-inset-bottom)] md:hidden ${veste.barraBasso}`}
       >
-        {primarie.slice(0, Math.ceil(primarie.length / 2)).map((sezione) => (
-          <Linguetta
-            key={sezione.id}
-            sezione={sezione}
-            veste={veste}
-            attiva={eAttiva(sezione.percorso, location.pathname)}
-          />
-        ))}
-
-        {/* In mezzo alla barra e non in coda: è il comando più usato
-            della videoteca, e il pollice ci arriva senza scegliere fra
-            «prima» o «dopo» le altre voci. */}
-        {puoiAggiungere && <LinguettaAggiungi veste={veste} apri={apriAggiunta} />}
-
-        {primarie.slice(Math.ceil(primarie.length / 2)).map((sezione) => (
+        {primarie.map((sezione) => (
           <Linguetta
             key={sezione.id}
             sezione={sezione}
@@ -291,9 +277,7 @@ export default function Shell({ children }) {
         ))}
 
         {/* «Altro» tiene insieme quello che non si apre ogni giorno e il
-            passaggio all'altro mondo. È l'unico modo di stare dentro le
-            cinque linguette che un telefono regge senza tagliare le
-            parole a metà. */}
+            passaggio all'altro mondo. */}
         <button
           type="button"
           onClick={() => setApertoSu(altroAperto ? null : location.pathname)}
@@ -317,6 +301,15 @@ export default function Shell({ children }) {
           </span>
           <span className="text-[0.65rem] font-medium tracking-wide">Altro</span>
         </button>
+
+        {/* Centrato sull'INTERA barra, non infilato in mezzo alle
+            linguette: a `position: fixed` sopra segue già da sé il
+            numero di linguette che cambia, ed è la ragione per cui è
+            un fratello assoluto e non un `flex-1` in più — un conto a
+            metà fra "quante di qua, quante di là" era quello che lo
+            spostava dal centro vero ogni volta che «Altro» pesava
+            diverso dalle linguette prima di lui. */}
+        {puoiAggiungere && <LinguettaAggiungi veste={veste} apri={apriAggiunta} />}
       </nav>
 
       {altroAperto && (
@@ -506,25 +499,31 @@ function Linguetta({ sezione, veste, attiva }) {
 /**
  * «Aggiungi una serie» nella barra del telefono.
  *
- * Un cerchio pieno invece di un'altra linguetta con l'etichetta sotto:
- * a 375px le parole delle sezioni sono già al limite ("Calendario"),
- * e un sesto testo le avrebbe tagliate. Il colore basta a dire che
- * questo è diverso dagli altri — è l'azione, non una destinazione.
+ * Un cerchio pieno e sollevato, non un'altra linguetta con l'etichetta
+ * sotto: a 375px le parole delle sezioni sono già al limite
+ * ("Calendario"), e un sesto testo le avrebbe tagliate. Sollevato a
+ * cavallo del bordo — metà dentro la barra, metà sopra — perché è il
+ * comando che si preme più spesso e deve saltare all'occhio prima
+ * ancora di leggere le altre voci.
+ *
+ * `absolute` sul `<nav>` (che essendo `fixed` gli fa già da
+ * riferimento) invece di un fratello in mezzo al flusso: così resta
+ * al centro ESATTO della barra qualunque sia il numero di linguette
+ * intorno, invece di dipendere da quante ce ne sono a sinistra e
+ * quante a destra.
  */
 function LinguettaAggiungi({ veste, apri }) {
   return (
-    <div className="flex w-14 shrink-0 items-center justify-center">
-      <button
-        type="button"
-        onClick={apri}
-        aria-label="Aggiungi una serie"
-        title="Aggiungi una serie"
-        className={`grid h-10 w-10 place-items-center rounded-full transition-transform duration-quick ease-spring hover:scale-105 active:scale-95
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${veste.anello} ${veste.commutatoreAcceso}`}
-      >
-        <Icon nome="plus" dimensione={20} />
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={apri}
+      aria-label="Aggiungi una serie"
+      title="Aggiungi una serie"
+      className={`absolute left-1/2 top-0 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full shadow-float transition-transform duration-quick ease-spring hover:scale-105 active:scale-95
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${veste.anello} ${veste.commutatoreAcceso}`}
+    >
+      <Icon nome="plus" dimensione={22} />
+    </button>
   );
 }
 

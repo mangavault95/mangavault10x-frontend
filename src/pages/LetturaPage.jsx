@@ -743,7 +743,7 @@ export default function LetturaPage() {
             Questo è il tavolo di{" "}
             <span className="font-semibold text-ink-bright">{nomeLettore}</span>: di
             qua puoi guardare dove è arrivato e cosa ha letto. Le tue letture
-            stanno in <Link to="/visione" className="font-medium text-brass-400 underline decoration-brass-400/30 underline-offset-2">videoteca</Link>.
+            stanno in <Link to="/videoteca/io" className="font-medium text-brass-400 underline decoration-brass-400/30 underline-offset-2">videoteca</Link>.
           </p>
         )}
 

@@ -38,7 +38,6 @@ const NumeriVideoteca = lazy(() => import("../pages/NumeriVideotecaPage"));
 const CommentiVideoteca = lazy(() => import("../pages/CommentiVideotecaPage"));
 const Confronto = lazy(() => import("../pages/ConfrontoPage"));
 const Anime = lazy(() => import("../pages/AnimePage"));
-const Visione = lazy(() => import("../pages/VisionePage"));
 const Calendario = lazy(() => import("../pages/CalendarioPage"));
 const GestioneVideoteca = lazy(() => import("../pages/GestioneVideotecaPage"));
 
@@ -168,7 +167,10 @@ function Contenuto() {
                       `:id` qui sotto, che è come deve andare. */}
                   <Route path="/videoteca/gestione" element={<GestioneVideoteca />} />
                   <Route path="/videoteca/:id" element={<Anime />} />
-                  <Route path="/visione" element={<Visione />} />
+                  {/* «In visione» non ha più un indirizzo suo: è una
+                      sezione della propria pagina (`/videoteca/io`).
+                      Vecchio indirizzo mantenuto funzionante. */}
+                  <Route path="/visione" element={<Navigate to="/videoteca/io" replace />} />
                   <Route path="/calendario" element={<Calendario />} />
 
                   {/* Il gioco e le partite già giocate. Una partita ha
