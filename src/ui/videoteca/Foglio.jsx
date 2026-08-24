@@ -22,12 +22,23 @@
  * sembravano una barra vuota e che facevano cominciare la pagina due
  * volte. La fascia deve toccare il bordo: è una copertina, e le
  * copertine partono da sopra.
+ *
+ * `angolo` è un secondo posto per un'azione, slegato dal resto:
+ * `azioni` scorre nel flusso e va a capo sotto al titolo quando lo
+ * spazio manca, che va benissimo per un bottone vero ma è sbagliato
+ * per un'icona sola come la campanella — andare a capo le regala una
+ * riga intera di intestazione per un cerchio di quaranta pixel, e
+ * l'allineamento in basso la fa cadere all'altezza del sommario
+ * invece che del titolo. `angolo` sta fuori dal flusso, ancorato in
+ * alto a destra e centrato sull'altezza dell'intestazione: non va mai
+ * a capo e resta sempre accanto al titolo.
  */
 export default function PaginaVideoteca({
   titolo,
   occhiello,
   sommario,
   azioni,
+  angolo,
   attaccata = false,
   children
 }) {
@@ -40,14 +51,17 @@ export default function PaginaVideoteca({
   // l'esagono e il soprannome — dove un `<h1>` vuoto lascerebbe uno
   // scalino di margine e un titolo senza testo per i lettori di
   // schermo.
-  if (!titolo && !occhiello && !azioni) {
+  if (!titolo && !occhiello && !azioni && !angolo) {
     return <div className={margini}>{children}</div>;
   }
 
   return (
     <div className={margini}>
-      <header className="mb-5 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 sm:mb-8">
-        <div className="min-w-0">
+      <header className="relative mb-5 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 sm:mb-8">
+        {/* `pr-12` riserva lo spazio dell'angolo: senza, il sommario —
+            che scorre largo quanto il titolo — gli scorrerebbe sotto
+            sul telefono, dove l'angolo non ha una colonna tutta sua. */}
+        <div className={`min-w-0 ${angolo ? "pr-12" : ""}`}>
           {occhiello && (
             <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-quaderno-tenue">
               {occhiello}
@@ -66,6 +80,10 @@ export default function PaginaVideoteca({
         </div>
 
         {azioni && <div className="flex flex-wrap items-center gap-2">{azioni}</div>}
+
+        {angolo && (
+          <div className="absolute right-0 top-1/2 -translate-y-1/2">{angolo}</div>
+        )}
       </header>
 
       {children}

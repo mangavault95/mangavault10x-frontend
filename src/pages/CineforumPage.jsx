@@ -99,13 +99,16 @@ export default function CineforumPage() {
       occhiello="Videoteca"
       titolo="Cineforum"
       sommario="Cosa hanno guardato tutti, dal più recente. Non c'è nessuno da seguire: si vede tutto."
-      // In alto a destra: la campanella per chi è entrato, l'ingresso
-      // per chi no. Non tutte e due — la campanella di chi non ha un
-      // nome non avrebbe niente dentro.
+      // La campanella per chi è entrato, l'ingresso per chi no. Non
+      // tutte e due — la campanella di chi non ha un nome non avrebbe
+      // niente dentro. La campanella passa da `angolo` e non da
+      // `azioni`: quella scorre nel flusso e andava a capo sotto al
+      // titolo, regalandosi una riga intera d'intestazione per
+      // un'icona sola. `angolo` sta fuori dal flusso, fissa in alto a
+      // destra all'altezza del titolo.
+      angolo={utente && <Campanella />}
       azioni={
-        utente ? (
-          <Campanella />
-        ) : (
+        !utente && (
           <Bottone tono="pieno" onClick={() => setAccesso(true)}>
             Entra
           </Bottone>
