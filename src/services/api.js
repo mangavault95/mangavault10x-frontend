@@ -538,6 +538,20 @@ export const getVideoteca = (utenteId = null) => request(`/api/anime${diChi("", 
 export const getAnime = (id) => request(`/api/anime/${id}${diChi()}`);
 
 /**
+ * «Se ti è piaciuto questo»: i consigli in fondo alla scheda.
+ *
+ * Chiamata a parte e non dentro `getAnime` perché ha tempi diversi di
+ * un ordine di grandezza: la scheda è roba nostra e torna subito,
+ * questa interroga AniList e AnimeClick. Unite, ogni apertura di un
+ * anime aspetterebbe due siti esterni per mostrare le puntate.
+ *
+ * Porta `?utente=` come tutto il resto in lettura: i consigli si
+ * dividono fra «da scoprire» e «riprendile» guardando chi ha visto
+ * cosa, quindi cambiano da lettore a lettore.
+ */
+export const getSimiliAnime = (id) => request(`/api/anime/${id}/simili${diChi()}`);
+
+/**
  * Toglie una serie dalla videoteca di chi ha premuto.
  *
  * Non è una cancellazione dal catalogo, se non quando non la guarda

@@ -25,6 +25,7 @@ import PaginaVideoteca, {
 } from "../ui/videoteca/Foglio";
 import Stagione from "../ui/videoteca/Stagione";
 import NoteAnime from "../ui/videoteca/NoteAnime";
+import Simili from "../ui/videoteca/Simili";
 import Sovrapposizione from "../ui/Sovrapposizione";
 import { NOMI_STATO_SERIE, NOMI_TIPO, formattaVoto } from "../ui/videoteca/formati";
 
@@ -591,6 +592,19 @@ export default function AnimePage() {
             />
           </Blocco>
         </div>
+      </div>
+
+      {/* In fondo a TUTTO, fuori dalle due colonne e a tutta larghezza.
+          Non è una scelta di riempimento: sopra c'è la roba che si è
+          venuti a cercare — a che punto sei, le puntate, i commenti — e
+          questa è la coda che si legge solo se si è arrivati in fondo,
+          cioè quando la serie l'hai finita o quasi. È esattamente il
+          momento in cui «e adesso?» diventa una domanda vera.
+
+          Si carica per conto suo (una rotta a parte, due siti esterni):
+          la scheda è già in piedi da un pezzo quando questa arriva. */}
+      <div className="mt-8">
+        <Simili anime={prima} />
       </div>
 
       {rimozione?.tutto && (
