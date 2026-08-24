@@ -111,7 +111,11 @@ export default function Approdo({ titolo, fondo, children, className = "" }) {
 
       {/* ---------- Il velo ---------- */}
 
-      <Sovrapposizione>
+      {/* `blocca={false}`: questo non è un modulo, è il sipario dei
+          passaggi di pagina. Non prende tocchi, non chiede niente, e
+          resta montato per sempre — fermare la pagina sotto vorrebbe
+          dire non poterla più scorrere affatto. */}
+      <Sovrapposizione blocca={false}>
         <div
           aria-hidden="true"
           className={`pointer-events-none fixed inset-0 z-overlay bg-void transition-opacity ease-settle
