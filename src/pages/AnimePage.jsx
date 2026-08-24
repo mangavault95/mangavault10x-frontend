@@ -550,11 +550,18 @@ export default function AnimePage() {
                   alCambio={(cambio) => aggiornaSpunte(stagione.id, cambio)}
                   alVoto={(voto) => cambiaVoto(stagione.id, voto)}
                   alStato={(stato) => cambiaStato(stagione.id, stato)}
-                  // Solo con più di una parte: da sola, «togli questa
-                  // parte» e «togli dalla videoteca» sarebbero lo
+                  // Solo con più di una parte VISIBILE: da sola, «togli
+                  // questa parte» e «togli dalla videoteca» sarebbero lo
                   // stesso gesto scritto due volte.
+                  //
+                  // Conta `stagioni.length` e non `schede.length`: Frieren
+                  // è UNA scheda con dentro due blocchi (il taglio lo dà
+                  // AniList, non AnimeClick — vedi `stagioniDi`). Contare
+                  // le schede lasciava senza bottone proprio le serie in
+                  // cui il taglio serve di più, perché una scheda sola
+                  // sembrava sempre «una parte sola».
                   alTogli={
-                    schede.length > 1
+                    stagioni.length > 1
                       ? () => setRimozione({ scheda: stagione })
                       : null
                   }

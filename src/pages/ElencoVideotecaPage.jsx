@@ -11,12 +11,10 @@ import {
   preferisciAnime
 } from "../services/api";
 import { ModuloAccesso } from "../dati/AccessoProvider";
-import Sovrapposizione from "../ui/Sovrapposizione";
 import Icon from "../app/Icon";
 import PaginaVideoteca, { Bottone, Caricamento, Errore, Vuoto } from "../ui/videoteca/Foglio";
 import { NOMI_STATO } from "../ui/videoteca/formati";
 import CartaAnime from "../ui/videoteca/CartaAnime";
-import AggiungiAnime from "../ui/videoteca/AggiungiAnime";
 
 /**
  * TUTTI I TITOLI DI UNA PERSONA.
@@ -63,21 +61,8 @@ export default function ElencoVideotecaPage() {
   const navigate = useNavigate();
   const [parametri, setParametri] = useSearchParams();
 
-  // Il pannello «aggiungi» sta NELL'INDIRIZZO, non in uno stato del
-  // componente, e il testo cercato ci sta dentro insieme a lui.
-  //
-  // Non è la solita regola sugli indirizzi condivisibili: è quello che
-  // rende possibile aggiungere tre serie di fila. Aprendolo si mette
-  // una tappa nella cronologia; scelta la serie si finisce sulla sua
-  // scheda; e il tasto Indietro riporta alla ricerca con ancora
-  // scritto quello che si era cercato. Prima riportava alla videoteca
-  // — un posto giusto, ma non quello da cui si era partiti — e
-  // aggiungere la seconda serie voleva dire rifare tutto il giro.
   const [accesso, setAccesso] = useState(false);
   const [segnando, setSegnando] = useState(null);
-
-  const aggiunta = parametri.has("aggiungi");
-  const titoloCercato = parametri.get("aggiungi") || "";
 
   const filtro = parametri.get("filtro") || "tutti";
   const ordina = parametri.get("ordina") || "titolo";
@@ -165,30 +150,14 @@ export default function ElencoVideotecaPage() {
    * indietro una farebbe ricomparire la serie fra i preferiti al
    * ricaricamento.
    */
-  /**
-   * Aprire mette una tappa; scrivere e chiudere no.
-   *
-   * È tutta qui la differenza fra un Indietro che funziona e uno che
-   * fa perdere il posto: se ogni lettera scritta fosse una tappa,
-   * tornare indietro da una scheda vorrebbe dire premere Indietro una
-   * volta per lettera.
-   */
+  // Il pannello vero e proprio ora vive nella cornice (`Shell.jsx`), e
+  // si apre da qualunque pagina della videoteca: qui resta solo questa
+  // scorciatoia per lo stato vuoto, che scrive lo stesso `?aggiungi=`
+  // che la cornice legge — non serve altro per aprirlo.
   function apriAggiunta() {
     const nuovi = new URLSearchParams(parametri);
     nuovi.set("aggiungi", "");
     setParametri(nuovi);
-  }
-
-  function chiudiAggiunta() {
-    const nuovi = new URLSearchParams(parametri);
-    nuovi.delete("aggiungi");
-    setParametri(nuovi, { replace: true });
-  }
-
-  function ricordaCercato(testo) {
-    const nuovi = new URLSearchParams(parametri);
-    nuovi.set("aggiungi", testo);
-    setParametri(nuovi, { replace: true });
   }
 
   async function preferisci(gruppo) {
@@ -247,10 +216,6 @@ export default function ElencoVideotecaPage() {
               La pagina
             </Bottone>
           )}
-
-          {/* Qui non c'è più: il comando per aggiungere è il tondo in
-              basso, dove il pollice arriva senza risalire in cima alla
-              pagina. */}
 
           {!utente && (
             <Bottone tono="pieno" onClick={() => setAccesso(true)}>
@@ -400,66 +365,6 @@ export default function ElencoVideotecaPage() {
             </ul>
           )}
         </>
-      )}
-
-      {/* ---------- Il tondo ----------
-          Il comando più usato della videoteca stava in cima a destra,
-          della stessa forma e dello stesso colore di «La pagina»: per
-          premerlo bisognava risalire tutta la griglia. Adesso sta in
-          basso al centro, è l'unica cosa tonda del sito, e porta una
-          lente perché quello che fa è cercare — la serie si aggiunge
-          dopo, e solo se è quella giusta.
-
-          Sopra la barra del telefono e non dentro: sotto md la
-          navigazione occupa già il fondo dello schermo. Da md in su la
-          barra laterale sposta il contenuto di 4.5rem, e il tondo la
-          segue di metà — altrimenti sarebbe al centro dello schermo ma
-          fuori centro rispetto alla griglia.
-
-          ⚠️ E passa da «Sovrapposizione», cioè da un portale sul body,
-          per la ragione già scritta in ui/Sovrapposizione.jsx: un
-          «fixed» non si ancora allo schermo se un antenato ha un
-          transform, e <main> ce l'ha per via di animate-rise-in.
-          Messo qui dentro senza portale, il tondo si ancorava al
-          fondo della PAGINA — misurato: duemila pixel sotto lo
-          schermo, cioè invisibile finché non si scorreva tutta la
-          griglia. Che è esattamente il difetto che doveva risolvere. */}
-      {mia && !aggiunta && (
-        <Sovrapposizione>
-        <button
-          type="button"
-          onClick={apriAggiunta}
-          aria-label="Aggiungi una serie"
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-1/2 z-sticky grid h-14 w-14 -translate-x-1/2 place-items-center rounded-full bg-quaderno-blu text-white shadow-float
-            transition-transform duration-quick ease-spring hover:scale-105 active:scale-95
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu focus-visible:ring-offset-2 focus-visible:ring-offset-quaderno-carta
-            md:bottom-8 md:left-[calc(50%+2.25rem)]"
-        >
-          <Icon nome="search" dimensione={22} />
-        </button>
-        </Sovrapposizione>
-      )}
-
-      {aggiunta && (
-        <AggiungiAnime
-          titoloIniziale={titoloCercato}
-          alTitolo={ricordaCercato}
-          chiudi={chiudiAggiunta}
-          alFatto={(esito) => {
-            // Sulla scheda nuova SENZA togliere il pannello
-            // dall'indirizzo: quella tappa è la ricerca, ed è lì che
-            // il tasto Indietro deve riportare per aggiungere la
-            // serie dopo. Il pannello sparisce da sé, perché la
-            // pagina non è più questa.
-            if (esito?.anime?.id) {
-              navigate(`/videoteca/${esito.anime.id}`);
-              return;
-            }
-
-            chiudiAggiunta();
-            ricarica();
-          }}
-        />
       )}
 
       {accesso && (

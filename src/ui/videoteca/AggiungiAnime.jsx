@@ -324,6 +324,9 @@ const NOMI_RUOLO = {
 function Proposta({ scelta, indietro, chiudi, alFatto }) {
   const [dati, setDati] = useState(null);
   const [errore, setErrore] = useState(null);
+  // Vuoto all'inizio e sempre: nessuna parte entra spuntata da sola,
+  // nemmeno quella consigliata. Chi cerca una serie decide lui cosa
+  // mettere in videoteca — il consiglio resta scritto sulla targhetta.
   const [prese, setPrese] = useState(() => new Set());
   const [aggiungo, setAggiungo] = useState(null);
 
@@ -386,10 +389,11 @@ function Proposta({ scelta, indietro, chiudi, alFatto }) {
 
         if (!vivo) return;
 
+        // Niente spuntato da solo: la proposta segna con la targhetta
+        // blu quali parti consiglia, ma la scelta di cosa entra in
+        // videoteca è di chi guarda, non dell'automatismo. `prese`
+        // parte vuota — vedi il commento sopra la sua dichiarazione.
         setDati(esito);
-        setPrese(
-          new Set(esito.parti.filter((p) => p.consigliato && !p.giaTua).map((p) => p.animeclick_id))
-        );
       } catch (err) {
         if (err?.name === "AbortError" || !vivo) return;
 

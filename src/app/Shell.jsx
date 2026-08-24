@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 /*
  * `Link` e non `NavLink`, ed è una correzione, non una preferenza.
  *
@@ -29,6 +29,7 @@ import {
 import Icon from "./Icon";
 import Bibliotecario from "../bibliotecario/Bibliotecario";
 import Identita from "../ui/Identita";
+import AggiungiAnime from "../ui/videoteca/AggiungiAnime";
 import { useSessione } from "../dati/sessione";
 
 /**
@@ -88,7 +89,7 @@ export default function Shell({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const contenutoRef = useRef(null);
-  const { richieste } = useSessione();
+  const { richieste, utente } = useSessione();
   // Il foglio «Altro» ricorda la pagina su cui è stato aperto, invece
   // di ricordare solo che è aperto. Così cambiando pagina si chiude da
   // sé — anche col tasto Indietro del browser — senza un effetto che
@@ -103,6 +104,45 @@ export default function Shell({ children }) {
   const admin = sezioneAdminDi(mondo);
   const primarie = primarieDi(mondo);
   const secondarie = secondarieDi(mondo);
+
+  /**
+   * «Aggiungi una serie», raggiungibile da ovunque nella videoteca.
+   *
+   * Prima stava solo sulla griglia «tutti i titoli» — un tondo in
+   * fondo alla pagina che si trova aprendo Cineforum, poi la propria
+   * pagina, poi «Vedi tutto»: tre tocchi per una cosa che si usa ogni
+   * volta che esce una serie nuova. Vive qui, nella cornice che non si
+   * smonta mai, perché è esattamente il tipo di comando che non deve
+   * dipendere da quale pagina della videoteca si sta guardando.
+   *
+   * Il pannello sta nell'indirizzo (`?aggiungi=`) come stava prima:
+   * chi lo apre da Cineforum e poi va Indietro torna a Cineforum con
+   * la ricerca ancora scritta, chi lo apre dalla propria pagina torna
+   * lì. Non serve una rotta apposta, basta leggere lo stesso parametro
+   * a un livello più alto.
+   */
+  const [parametriAggiunta, setParametriAggiunta] = useSearchParams();
+  const puoiAggiungere = mondo === "videoteca" && Boolean(utente);
+  const aggiunta = puoiAggiungere && parametriAggiunta.has("aggiungi");
+  const titoloCercato = parametriAggiunta.get("aggiungi") || "";
+
+  function apriAggiunta() {
+    const nuovi = new URLSearchParams(parametriAggiunta);
+    nuovi.set("aggiungi", "");
+    setParametriAggiunta(nuovi);
+  }
+
+  function chiudiAggiunta() {
+    const nuovi = new URLSearchParams(parametriAggiunta);
+    nuovi.delete("aggiungi");
+    setParametriAggiunta(nuovi, { replace: true });
+  }
+
+  function ricordaCercato(testo) {
+    const nuovi = new URLSearchParams(parametriAggiunta);
+    nuovi.set("aggiungi", testo);
+    setParametriAggiunta(nuovi, { replace: true });
+  }
 
   // Il titolo della scheda dice dove sei: serve a chi tiene molte
   // schede aperte e a chi salva un indirizzo nei preferiti.
@@ -176,6 +216,8 @@ export default function Shell({ children }) {
       >
         <Commutatore mondo={mondo} veste={veste} />
 
+        {puoiAggiungere && <BottoneAggiungi veste={veste} apri={apriAggiunta} />}
+
         {sezioniDi(mondo).map((sezione) => (
           <VoceMenu
             key={sezione.id}
@@ -225,7 +267,21 @@ export default function Shell({ children }) {
         aria-label="Navigazione principale"
         className={`fixed inset-x-0 bottom-0 z-sticky flex pb-[env(safe-area-inset-bottom)] md:hidden ${veste.barraBasso}`}
       >
-        {primarie.map((sezione) => (
+        {primarie.slice(0, Math.ceil(primarie.length / 2)).map((sezione) => (
+          <Linguetta
+            key={sezione.id}
+            sezione={sezione}
+            veste={veste}
+            attiva={eAttiva(sezione.percorso, location.pathname)}
+          />
+        ))}
+
+        {/* In mezzo alla barra e non in coda: è il comando più usato
+            della videoteca, e il pollice ci arriva senza scegliere fra
+            «prima» o «dopo» le altre voci. */}
+        {puoiAggiungere && <LinguettaAggiungi veste={veste} apri={apriAggiunta} />}
+
+        {primarie.slice(Math.ceil(primarie.length / 2)).map((sezione) => (
           <Linguetta
             key={sezione.id}
             sezione={sezione}
@@ -271,6 +327,26 @@ export default function Shell({ children }) {
           secondarie={secondarie}
           richieste={richieste.length}
           chiudi={() => setApertoSu(null)}
+        />
+      )}
+
+      {aggiunta && (
+        <AggiungiAnime
+          titoloIniziale={titoloCercato}
+          alTitolo={ricordaCercato}
+          chiudi={chiudiAggiunta}
+          alFatto={(esito) => {
+            // Solo «ho finito», e niente «chiudi»: chi ascolta è già
+            // andato sulla scheda nuova, e un replace sui parametri
+            // della pagina vecchia subito dopo se lo mangerebbe (vedi
+            // la stessa nota che c'era prima su ElencoVideotecaPage).
+            if (esito?.anime?.id) {
+              navigate(`/videoteca/${esito.anime.id}`);
+              return;
+            }
+
+            chiudiAggiunta();
+          }}
         />
       )}
     </div>
@@ -373,6 +449,38 @@ function VoceMenu({ sezione, veste, attiva, pallina = 0 }) {
   );
 }
 
+/**
+ * Il bottone «Aggiungi una serie» della barra laterale.
+ *
+ * Non è una `VoceMenu`: non porta a una pagina, apre il pannello di
+ * ricerca sopra quella che si sta già guardando. Pieno del colore
+ * d'accento e non del solito contorno, perché è un'azione e non una
+ * destinazione — la stessa differenza che il commutatore fa fra
+ * «acceso» e «spento».
+ */
+function BottoneAggiungi({ veste, apri }) {
+  return (
+    <button
+      type="button"
+      onClick={apri}
+      aria-label="Aggiungi una serie"
+      title="Aggiungi una serie"
+      className={`group relative grid h-11 w-11 place-items-center rounded-card transition-all duration-quick ease-settle hover:scale-105
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${veste.anello} ${veste.commutatoreAcceso}
+        active:scale-95`}
+    >
+      <Icon nome="plus" dimensione={20} />
+
+      <span
+        role="tooltip"
+        className={`pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm font-medium opacity-0 shadow-raised backdrop-blur-xl transition-all duration-quick ease-settle translate-x-1 group-hover:translate-x-0 group-hover:opacity-100 ${veste.fogliettoBordo}`}
+      >
+        Aggiungi una serie
+      </span>
+    </button>
+  );
+}
+
 /** Una linguetta della barra del telefono. */
 function Linguetta({ sezione, veste, attiva }) {
   return (
@@ -392,6 +500,31 @@ function Linguetta({ sezione, veste, attiva }) {
 
       <span className="text-[0.65rem] font-medium tracking-wide">{sezione.etichetta}</span>
     </Link>
+  );
+}
+
+/**
+ * «Aggiungi una serie» nella barra del telefono.
+ *
+ * Un cerchio pieno invece di un'altra linguetta con l'etichetta sotto:
+ * a 375px le parole delle sezioni sono già al limite ("Calendario"),
+ * e un sesto testo le avrebbe tagliate. Il colore basta a dire che
+ * questo è diverso dagli altri — è l'azione, non una destinazione.
+ */
+function LinguettaAggiungi({ veste, apri }) {
+  return (
+    <div className="flex w-14 shrink-0 items-center justify-center">
+      <button
+        type="button"
+        onClick={apri}
+        aria-label="Aggiungi una serie"
+        title="Aggiungi una serie"
+        className={`grid h-10 w-10 place-items-center rounded-full transition-transform duration-quick ease-spring hover:scale-105 active:scale-95
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${veste.anello} ${veste.commutatoreAcceso}`}
+      >
+        <Icon nome="plus" dimensione={20} />
+      </button>
+    </div>
   );
 }
 
