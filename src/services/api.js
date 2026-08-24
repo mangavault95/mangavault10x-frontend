@@ -552,6 +552,24 @@ export const getAnime = (id) => request(`/api/anime/${id}${diChi()}`);
 export const getSimiliAnime = (id) => request(`/api/anime/${id}/simili${diChi()}`);
 
 /**
+ * Cos'è una serie consigliata: trama in italiano, generi, dove si vede.
+ *
+ * Si passa quello che si ha. I consigli che vengono da AnimeClick
+ * portano già il loro `animeclickId` e non c'è niente da cercare;
+ * quelli di AniList hanno solo dei titoli, e il server li prova in
+ * ordine — l'originale funziona meglio dell'inglese, quindi l'ordine
+ * in cui arrivano è quello in cui vanno provati.
+ */
+export const getAnteprimaConsiglio = ({ animeclickId = null, titoli = [] }) => {
+  const q = new URLSearchParams();
+
+  if (animeclickId) q.set("animeclick_id", animeclickId);
+  else q.set("titolo", titoli.slice(0, 3).join("\n"));
+
+  return request(`/api/anime/consiglio/anteprima?${q}`, { auth: true });
+};
+
+/**
  * Toglie una serie dalla videoteca di chi ha premuto.
  *
  * Non è una cancellazione dal catalogo, se non quando non la guarda
