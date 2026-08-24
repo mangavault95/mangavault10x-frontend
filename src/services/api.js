@@ -331,6 +331,21 @@ export const togliFaccia = () =>
 export const salvaStriscione = (immagini) =>
   request("/api/utenti/io/striscione", { method: "PUT", body: { immagini }, auth: true });
 
+/**
+ * Quale pezzo di un'immagine si vede: due percentuali, come
+ * `object-position`.
+ *
+ * Non passa da `salvaStriscione` apposta: quello riscrive la fascia
+ * intera e fa viaggiare le immagini, questo manda due numeri — e si
+ * chiama a ogni rilascio del dito mentre si trascina la foto.
+ */
+export const salvaFuocoStriscione = (id, x, y) =>
+  request(`/api/utenti/io/striscione/${id}/fuoco`, {
+    method: "PUT",
+    body: { x, y },
+    auth: true
+  });
+
 /** Le richieste di accesso ancora in sospeso (solo il proprietario). */
 export const getRichiesteAccesso = () => request("/api/utenti/richieste", { auth: true });
 
@@ -803,6 +818,16 @@ export const modificaRisposta = (id, testo) =>
 
 export const eliminaRisposta = (id) =>
   request(`/api/cineforum/risposte/${id}`, { method: "DELETE", auth: true });
+
+/* ---- La campanella ----
+   Cosa è successo che TI riguarda: risposte ai tuoi post, cuori,
+   commenti su serie che hai visto. Solo per chi è entrato — senza
+   sapere chi sei non c'è niente da calcolare. */
+
+export const getAvvisi = () => request("/api/cineforum/avvisi", { auth: true });
+
+export const segnaAvvisiLetti = () =>
+  request("/api/cineforum/avvisi/letti", { method: "POST", auth: true });
 
 /* ---- Le pagine delle persone ----
    Il soprannome è l'indirizzo pubblico di ciascuno: si cerca per

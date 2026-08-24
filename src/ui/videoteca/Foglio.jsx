@@ -12,23 +12,40 @@
  *   tenue      i metadati        blu        l'accento
  */
 
-/** L'intestazione e il margine di ogni schermata della videoteca. */
-export default function PaginaVideoteca({ titolo, occhiello, sommario, azioni, children }) {
+/**
+ * L'intestazione e il margine di ogni schermata della videoteca.
+ *
+ * `attaccata` toglie il margine SOPRA, e serve a una pagina sola:
+ * quella di una persona, che comincia con la fascia dell'immagine.
+ * Con il margine, sopra il banner restava una striscia di carta
+ * chiara larga tutto lo schermo — quaranta pixel di niente che
+ * sembravano una barra vuota e che facevano cominciare la pagina due
+ * volte. La fascia deve toccare il bordo: è una copertina, e le
+ * copertine partono da sopra.
+ */
+export default function PaginaVideoteca({
+  titolo,
+  occhiello,
+  sommario,
+  azioni,
+  attaccata = false,
+  children
+}) {
+  const margini = `mx-auto w-full max-w-[110rem] px-3 pb-5 sm:px-8 sm:pb-8 lg:px-12 lg:pb-12 ${
+    attaccata ? "" : "pt-5 sm:pt-8 lg:pt-12"
+  }`;
+
   // Senza titolo l'intestazione non si disegna affatto. Serve alle
   // pagine che hanno una testata loro — quella di una persona ha
   // l'esagono e il soprannome — dove un `<h1>` vuoto lascerebbe uno
   // scalino di margine e un titolo senza testo per i lettori di
   // schermo.
   if (!titolo && !occhiello && !azioni) {
-    return (
-      <div className="mx-auto w-full max-w-[110rem] px-3 py-5 sm:px-8 sm:py-8 lg:px-12 lg:py-12">
-        {children}
-      </div>
-    );
+    return <div className={margini}>{children}</div>;
   }
 
   return (
-    <div className="mx-auto w-full max-w-[110rem] px-3 py-5 sm:px-8 sm:py-8 lg:px-12 lg:py-12">
+    <div className={margini}>
       <header className="mb-5 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 sm:mb-8">
         <div className="min-w-0">
           {occhiello && (
@@ -57,10 +74,11 @@ export default function PaginaVideoteca({ titolo, occhiello, sommario, azioni, c
 }
 
 /** Una scheda appoggiata sulla carta. */
-export function Scheda({ children, className = "" }) {
+export function Scheda({ children, className = "", ...resto }) {
   return (
     <div
       className={`rounded-card border border-quaderno-riga bg-quaderno-foglio ${className}`}
+      {...resto}
     >
       {children}
     </div>

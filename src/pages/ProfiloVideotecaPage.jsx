@@ -99,7 +99,7 @@ export default function ProfiloVideotecaPage() {
   const caricando = (io.inCorso && !io.dati) || (profilo.inCorso && !profilo.dati);
 
   return (
-    <PaginaVideoteca titolo={null}>
+    <PaginaVideoteca titolo={null} attaccata>
       {caricando && <Caricamento testo="Apro la pagina…" />}
 
       {errore && (
@@ -212,12 +212,19 @@ function sommarioDi(statistiche) {
 }
 
 /**
- * Le tre caselle, con la freccia che porta al resto.
+ * Le quattro caselle, con il seguito in cima.
  *
- * Tre e non sei: è un'anteprima, e un riquadro che prova a dire tutto
- * smette di essere un riassunto. Le tre sono le domande che uno si fa
- * guardando la pagina di un altro — quanto ha visto, per quanto
- * tempo, e da lì in poi si va a vedere.
+ * Ognuna dice cos'è: la DICITURA sta sopra il numero, non sotto.
+ * Prima sotto c'era l'unità di misura — «giorni», «episodi» — e
+ * un'unità sotto una cifra si legge come parte della cifra: tre
+ * caselle affiancate mostravano tre numeri e nessuna diceva di cosa.
+ * Sopra invece si legge prima il nome e poi il valore, che è l'ordine
+ * in cui si fa la domanda.
+ *
+ * La freccia è passata dalla quinta colonna al titolo della sezione:
+ * con quattro caselle una colonna in più le stringeva, e «Tutti i
+ * numeri» scritto per esteso dice dove porta meglio di una freccia
+ * sola.
  */
 function Numeri({ statistiche, base }) {
   if (!statistiche) return null;
@@ -226,32 +233,35 @@ function Numeri({ statistiche, base }) {
 
   return (
     <section className="space-y-2">
-      <h2 className="font-display text-lg font-semibold text-quaderno-inchiostro">Statistiche</h2>
-
-      <div className="flex items-stretch gap-2 sm:gap-3">
-        {caselle.map((c) => (
-          <Scheda key={c.chiave} className="flex-1 px-2 py-3 text-center sm:px-4 sm:py-4">
-            <p
-              className="font-numeric text-xl font-bold text-quaderno-inchiostro sm:text-2xl"
-              title={c.extra}
-            >
-              {c.valore.toLocaleString("it-IT")}
-            </p>
-
-            <p className="text-[0.7rem] uppercase tracking-wider text-quaderno-tenue">
-              {c.etichetta}
-            </p>
-          </Scheda>
-        ))}
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="font-display text-lg font-semibold text-quaderno-inchiostro">
+          Statistiche
+        </h2>
 
         <Link
           to={`${base}/numeri`}
-          aria-label="Tutti i numeri"
-          className="grid w-12 shrink-0 place-items-center rounded-card border border-quaderno-riga bg-quaderno-foglio text-quaderno-blu transition-colors duration-quick hover:bg-quaderno-blu-tenue
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-quaderno-blu hover:underline"
         >
-          <Icon nome="avanti" dimensione={20} />
+          Tutti i numeri
+          <Icon nome="avanti" dimensione={14} />
         </Link>
+      </div>
+
+      {/* Due per riga sul telefono e quattro da tablet in su: in fila
+          per quattro su uno schermo stretto, «Tempo Totale» andrebbe a
+          capo tre volte. */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+        {caselle.map((c) => (
+          <Scheda key={c.chiave} className="px-3 py-3 text-center sm:py-4" title={c.extra}>
+            <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+              {c.etichetta}
+            </p>
+
+            <p className="mt-1 font-numeric text-lg font-bold leading-tight text-quaderno-inchiostro sm:text-xl">
+              {c.valore}
+            </p>
+          </Scheda>
+        ))}
       </div>
     </section>
   );

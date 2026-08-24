@@ -229,8 +229,21 @@ export default function Post({ post, alCambio }) {
    UNA RIGA DI GIORNATA
    ================================================== */
 
+
+/**
+ * UNA SERIE, UNA RIGA.
+ *
+ * Tutto quello che è successo oggi a questa serie sta qui dentro: il
+ * titolo una volta sola, accanto il voto se ne è arrivato uno, sotto
+ * l'elenco di cosa le è stato fatto. Prima ogni evento faceva riga per
+ * conto suo e lo stesso titolo compariva fino a cinque volte di
+ * seguito — il post era lungo il triplo e diceva un terzo delle cose.
+ *
+ * I commenti restano in chiaro sotto l'elenco: sono l'unico evento che
+ * ha qualcosa da leggere dentro, e ridurli a «commentata» vorrebbe
+ * dire aprire una scheda per sapere cosa è stato detto.
+ */
 function Voce({ voce }) {
-  const [scoperto, setScoperto] = useState(false);
   const { serie } = voce;
 
   return (
@@ -252,39 +265,59 @@ function Voce({ voce }) {
       </Link>
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm leading-snug text-quaderno-inchiostro">
-          <Link to={`/videoteca/${serie.animeId}`} className="hover:text-quaderno-blu">
-            {voce.frase}
+        <p className="flex items-baseline gap-2">
+          <Link
+            to={`/videoteca/${serie.animeId}`}
+            className="min-w-0 flex-1 truncate text-sm font-semibold leading-snug text-quaderno-inchiostro hover:text-quaderno-blu"
+          >
+            {serie.titolo}
           </Link>
 
           {voce.coda && (
-            <span className="ml-2 font-numeric text-xs font-semibold text-quaderno-blu">
+            <span className="shrink-0 font-numeric text-xs font-semibold text-quaderno-blu">
               {voce.coda}
             </span>
           )}
         </p>
 
-        {voce.testo &&
-          (voce.spoiler && !scoperto ? (
-            // Coperto, non nascosto: chi vuole leggerlo tocca. Chi è
-            // indietro di due stagioni non deve scoprire il finale
-            // scorrendo il feed col pollice.
-            <button
-              type="button"
-              onClick={() => setScoperto(true)}
-              className="mt-1 rounded bg-quaderno-carta px-2 py-1 text-xs font-semibold text-quaderno-tenue hover:text-quaderno-inchiostro"
-            >
-              Contiene spoiler — tocca per leggere
-            </button>
-          ) : (
-            <p className="mt-1 whitespace-pre-wrap border-l-2 border-quaderno-riga pl-2.5 text-sm leading-relaxed text-quaderno-tenue">
-              {voce.testo}
-            </p>
-          ))}
+        {voce.azioni.length > 0 && (
+          <p className="text-xs leading-snug text-quaderno-tenue">{voce.azioni.join(" · ")}</p>
+        )}
+
+        {voce.note.map((nota) => (
+          <Nota key={nota.chiave} nota={nota} />
+        ))}
       </div>
     </li>
   );
 }
+
+/** Il testo di un commento, sotto la riga della sua serie. */
+function Nota({ nota }) {
+  const [scoperto, setScoperto] = useState(false);
+
+  if (nota.spoiler && !scoperto) {
+    // Coperto, non nascosto: chi vuole leggerlo tocca. Chi è indietro
+    // di due stagioni non deve scoprire il finale scorrendo il feed
+    // col pollice.
+    return (
+      <button
+        type="button"
+        onClick={() => setScoperto(true)}
+        className="mt-1 rounded bg-quaderno-carta px-2 py-1 text-xs font-semibold text-quaderno-tenue hover:text-quaderno-inchiostro"
+      >
+        Contiene spoiler — tocca per leggere
+      </button>
+    );
+  }
+
+  return (
+    <p className="mt-1 whitespace-pre-wrap border-l-2 border-quaderno-riga pl-2.5 text-sm leading-relaxed text-quaderno-tenue">
+      {nota.testo}
+    </p>
+  );
+}
+
 
 /** La copertina agganciata a un messaggio scritto. */
 function Copertina({ anime, className = "" }) {

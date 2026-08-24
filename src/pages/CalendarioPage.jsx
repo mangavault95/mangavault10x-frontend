@@ -9,6 +9,7 @@ import PaginaVideoteca, {
   Scheda,
   Vuoto
 } from "../ui/videoteca/Foglio";
+import { alNumero } from "../ui/videoteca/formati";
 
 /** Quanto si guarda indietro e quanto avanti, in giorni. */
 const INDIETRO = 14;
@@ -241,7 +242,7 @@ function Uscita({ uscita: u, passato }) {
           {/* Il numero da solo non dice se sei pronto per guardarlo:
               questo sì. Nel passato lo sostituisce «da recuperare». */}
           {!passato && u.ultimo_visto !== null && Number(u.ultimo_visto) < u.numero - 1 && (
-            <Pillola>sei all'{Number(u.ultimo_visto)}</Pillola>
+            <Pillola>sei {alNumero(u.ultimo_visto)}</Pillola>
           )}
         </div>
       </div>

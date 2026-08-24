@@ -90,3 +90,27 @@ export function dataPuntata(quando) {
 export function formattaVoto(voto) {
   return Number(voto).toLocaleString("it-IT", { maximumFractionDigits: 1 });
 }
+
+/**
+ * «al 4», «all'8»: la preposizione articolata davanti a un numero.
+ *
+ * Nasce da un errore che si leggeva in calendario — «sei all'4» —
+ * perché l'apostrofo era scritto a mano nella frase. L'elisione non
+ * dipende dalla cifra ma dalla PAROLA: si apostrofa solo davanti a
+ * vocale, cioè otto, undici, ottanta… e non davanti a diciotto o
+ * ventotto, che pure finiscono per otto.
+ *
+ * Il conto pratico: si elide quando il numero comincia per 8 (otto,
+ * ottanta, ottocento) e quando è undici. Da mille in su ricomincia
+ * per consonante — «milleottocento» — e infatti il limite è a tre
+ * cifre. Più in là non si va: sono numeri di episodio.
+ */
+export function alNumero(numero) {
+  const n = Number(numero);
+
+  if (!Number.isFinite(n)) return "";
+
+  const elide = n === 11 || (n > 0 && n < 1000 && String(n).startsWith("8"));
+
+  return elide ? `all'${n}` : `al ${n}`;
+}

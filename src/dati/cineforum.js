@@ -67,22 +67,26 @@ function perSerie(righe) {
    ================================================== */
 
 /**
- * «l'episodio 7», «gli episodi 3-8», «4 episodi».
+ * «episodio 7», «episodi 3-8», «4 episodi».
  *
  * Consecutivi si scrivono come un intervallo, sparsi si contano.
  * Elencarli tutti («3, 5, 6, 9, 12, 13, 14…») è la scrittura che
  * sembra più precisa e che nessuno legge.
+ *
+ * Senza articolo davanti: questa frase non sta più in mezzo a una
+ * proposizione («ha visto l'episodio 7 di…») ma dentro un elenco di
+ * cose fatte a una serie, dove l'articolo sarebbe di troppo.
  */
 export function frasEpisodi(numeri) {
   if (!numeri?.length) return "";
 
-  if (numeri.length === 1) return `l'episodio ${numeri[0]}`;
+  if (numeri.length === 1) return `episodio ${numeri[0]}`;
 
   const primo = numeri[0];
   const ultimo = numeri[numeri.length - 1];
   const consecutivi = ultimo - primo + 1 === numeri.length;
 
-  if (consecutivi) return `gli episodi ${primo}-${ultimo}`;
+  if (consecutivi) return `episodi ${primo}-${ultimo}`;
 
   return `${numeri.length} episodi`;
 }
@@ -91,101 +95,153 @@ export function frasEpisodi(numeri) {
    LA GIORNATA
    ================================================== */
 
-// L'ordine in cui si legge un giorno. Non è cronologico: finire una
-// serie è l'unica cosa che uno racconterebbe a voce, e nasconderla
-// sotto quattordici spunte vorrebbe dire non farla vedere mai.
+// L'ordine in cui si leggono le serie di un giorno. Non è cronologico:
+// finire una serie è l'unica cosa che uno racconterebbe a voce, e
+// nasconderla sotto quattordici spunte vorrebbe dire non farla vedere
+// mai. Una serie vale per la cosa più grossa che le è successa.
 const ORDINE = ["finite", "commenti", "voti", "episodi", "aggiunte"];
 
 /**
  * Le righe di un post-giornata, già scritte.
  *
- * Ognuna porta con sé la serie di cui parla, così chi mostra può
+ * ---------------------------------------------------------------
+ * UNA SERIE, UNA RIGA
+ *
+ * Prima ogni tipo di evento faceva riga per conto suo: chi in un
+ * pomeriggio aggiungeva Frieren, ne guardava dodici puntate, la
+ * finiva, la votava e la commentava occupava CINQUE righe che
+ * dicevano cinque volte «Frieren». Su una giornata piena il post
+ * diventava chilometrico e si leggeva solo il titolo, ripetuto.
+ *
+ * Adesso il raggruppamento è per SERIE: tutto quello che è successo
+ * oggi a quella serie sta su una riga sola — il titolo una volta, e
+ * accanto l'elenco di cosa le è stato fatto. Il voto resta in coda
+ * perché è un numero e non un'azione, e i commenti restano leggibili
+ * sotto: sono l'unica cosa che ha un dentro.
+ *
+ * Ogni riga porta con sé la serie di cui parla, così chi mostra può
  * mettere la copertina accanto e collegare alla scheda senza
  * rimettere insieme i pezzi.
  */
 export function raccontaGiornata(eventi) {
   if (!eventi) return { voci: [], sommario: [] };
 
-  const voci = [];
+  // Una voce per serie, costruita man mano che i cinque elenchi la
+  // nominano. La mappa tiene anche l'ORDINE di prima apparizione, che
+  // è quello di `perSerie`, cioè quello degli eventi.
+  const per = new Map();
+
+  const voceDi = (serie) => {
+    if (!per.has(serie.chiave)) {
+      per.set(serie.chiave, {
+        chiave: serie.chiave,
+        serie,
+        azioni: [],
+        note: [],
+        voto: null,
+        peso: ORDINE.length
+      });
+    }
+
+    return per.get(serie.chiave);
+  };
+
+  // `peso` è la cosa più grossa capitata alla serie: decide dove
+  // finisce nel post. Una serie finita sta in cima anche se il primo
+  // elenco a nominarla è quello delle spunte.
+  const segna = (voce, tipo) => {
+    voce.peso = Math.min(voce.peso, ORDINE.indexOf(tipo));
+  };
 
   for (const serie of perSerie(eventi.finite || [])) {
+    const voce = voceDi(serie);
     const voto = serie.righe.find((r) => r.voto != null)?.voto;
 
-    voci.push({
-      chiave: `finite-${serie.chiave}`,
-      tipo: "finite",
-      serie,
-      frase: `Ha finito ${serie.titolo}`,
-      // Il voto accanto al «finita» e non come riga a parte: sono lo
-      // stesso gesto — si finisce una serie e la si giudica — e due
-      // righe di fila sulla stessa serie sembrano un errore.
-      coda: voto != null ? `★ ${formattaVoto(voto)}` : null
-    });
-  }
+    voce.azioni.push("finita");
+    if (voto != null) voce.voto = voto;
 
-  for (const nota of eventi.commenti || []) {
-    const serie = perSerie([nota])[0];
-
-    voci.push({
-      chiave: `commento-${nota.nota_id}`,
-      tipo: "commenti",
-      serie,
-      frase:
-        nota.numero_episodio == null
-          ? `Ha commentato ${serie.titolo}`
-          : `Ha commentato l'episodio ${nota.numero_episodio} di ${serie.titolo}`,
-      // L'unico evento che ha qualcosa da leggere dentro. Lo spoiler
-      // resta coperto finché non si tocca: chi è indietro di due
-      // stagioni non deve scoprire il finale scorrendo il feed.
-      testo: nota.testo,
-      spoiler: nota.spoiler,
-      titoloEpisodio: nota.titolo_episodio
-    });
+    segna(voce, "finite");
   }
 
   for (const serie of perSerie(eventi.voti || [])) {
+    const voce = voceDi(serie);
     const voto = serie.righe[0]?.voto;
 
-    voci.push({
-      chiave: `voto-${serie.chiave}`,
-      tipo: "voti",
-      serie,
-      frase: `Ha votato ${serie.titolo}`,
-      coda: voto != null ? `★ ${formattaVoto(voto)}` : null
-    });
+    // Nessuna azione da scrivere: il voto si vede in coda, e
+    // «votata ★4,5» direbbe due volte la stessa cosa.
+    if (voto != null) voce.voto = voto;
+
+    segna(voce, "voti");
   }
 
   for (const serie of perSerie(eventi.episodi || [])) {
+    const voce = voceDi(serie);
     const quanti = serie.righe.reduce((somma, r) => somma + (r.numeri?.length || 0), 0);
 
     // I numeri si scrivono solo quando la serie è una scheda sola.
     // Due stagioni ripartono da 1 (è il motivo per cui esistono i
     // gruppi, vedi la 014): unire «1-12» e «1-13» darebbe un
-    // intervallo che non vuol dire niente, e tenerli separati direbbe
-    // due volte «Noragami».
+    // intervallo che non vuol dire niente.
     const numeri = serie.righe.length === 1 ? serie.righe[0].numeri : null;
 
-    voci.push({
-      chiave: `episodi-${serie.chiave}`,
-      tipo: "episodi",
-      serie,
-      frase: numeri
-        ? `Ha visto ${frasEpisodi(numeri)} di ${serie.titolo}`
-        : `Ha visto ${quanti} episodi di ${serie.titolo}`,
-      quanti
+    voce.azioni.push(numeri ? frasEpisodi(numeri) : `${quanti} episodi`);
+
+    segna(voce, "episodi");
+  }
+
+  for (const nota of eventi.commenti || []) {
+    const voce = voceDi(perSerie([nota])[0]);
+
+    voce.note.push({
+      chiave: `commento-${nota.nota_id}`,
+      testo: nota.testo,
+      spoiler: nota.spoiler,
+      numeroEpisodio: nota.numero_episodio,
+      titoloEpisodio: nota.titolo_episodio
     });
+
+    segna(voce, "commenti");
   }
 
   for (const serie of perSerie(eventi.aggiunte || [])) {
-    voci.push({
-      chiave: `aggiunta-${serie.chiave}`,
-      tipo: "aggiunte",
-      serie,
-      frase: `Ha aggiunto ${serie.titolo}`
-    });
+    const voce = voceDi(serie);
+
+    voce.azioni.push("aggiunta");
+
+    segna(voce, "aggiunte");
   }
 
-  voci.sort((a, b) => ORDINE.indexOf(a.tipo) - ORDINE.indexOf(b.tipo));
+  const voci = [...per.values()];
+
+  for (const voce of voci) {
+    // I commenti si annunciano per ultimi fra le azioni: il loro testo
+    // sta subito sotto, e nominarli in mezzo alla riga staccherebbe
+    // l'annuncio da quello che annuncia.
+    if (voce.note.length === 1) {
+      const [nota] = voce.note;
+
+      voce.azioni.push(
+        nota.numeroEpisodio == null
+          ? "commentata"
+          : `commento all'episodio ${nota.numeroEpisodio}`
+      );
+    } else if (voce.note.length > 1) {
+      voce.azioni.push(`${voce.note.length} commenti`);
+    }
+
+    voce.coda = voce.voto != null ? `★ ${formattaVoto(voce.voto)}` : null;
+
+    // Quando in tutto il giorno a una serie è successo solo il voto,
+    // il verbo va detto: la riga sarebbe il titolo con una stella
+    // accanto, che sembra un elenco e non una cosa fatta. Accanto a
+    // «finita» invece è di troppo — si finisce una serie e la si
+    // giudica, è un gesto solo.
+    if (voce.azioni.length === 0 && voce.voto != null) voce.azioni.push("votata");
+  }
+
+  // `sort` è stabile: a parità di peso resta l'ordine in cui gli
+  // eventi le hanno nominate, che è quello del tempo.
+  voci.sort((a, b) => a.peso - b.peso);
 
   return { voci, sommario: sommarioDi(eventi) };
 }
@@ -348,22 +404,95 @@ export function formattaMedia(voto) {
 }
 
 /**
- * Le tre caselle in cima alla pagina personale.
+ * Il tempo totale scritto per intero: «2 mesi 4 g 7 h».
  *
- * Tre e non sei: sono un'anteprima con la freccia accanto, e il
- * riquadro che prova a dire tutto smette di essere un riassunto.
- * Quali tre non è arbitrario — sono le tre domande che uno si fa
- * guardando la pagina di un altro: quanto ha visto, per quanto tempo,
- * cosa gli piace.
+ * `tempoVisto` sceglie UNA unità e ci arrotonda dentro — comodo
+ * accanto a un nome, dove ci sta una parola sola — ma nel riquadro
+ * delle statistiche «61 giorni» è un numero che non si riesce a
+ * immaginare: nessuno ha passato due mesi filati davanti allo
+ * schermo, e infatti quei giorni sono spalmati su quattro anni. Detto
+ * in mesi, giorni e ore si legge per quello che è.
+ *
+ * Il mese vale trenta giorni. Non è il calendario — non c'è nessun
+ * mese vero da misurare, è una durata — e trenta è il numero che
+ * chiunque usa a mente.
+ *
+ * Gli zeri in mezzo restano («2 mesi 0 g 7 h» no, «2 mesi 7 h» sì):
+ * si scrivono solo i pezzi che ci sono, e le ore spariscono del tutto
+ * quando ci sono i mesi e i giorni — a quel punto sono cifre che non
+ * cambiano niente.
+ */
+export function tempoTotale(minuti) {
+  const oreIntere = Math.floor(minuti / 60);
+
+  if (oreIntere < 1) {
+    const m = Math.round(minuti);
+
+    return { testo: `${m} min`, extra: null };
+  }
+
+  const mesi = Math.floor(oreIntere / (30 * 24));
+  const giorni = Math.floor((oreIntere % (30 * 24)) / 24);
+  const ore = oreIntere % 24;
+
+  const pezzi = [];
+
+  if (mesi) pezzi.push(`${mesi} ${mesi === 1 ? "mese" : "mesi"}`);
+  if (giorni) pezzi.push(`${giorni} g`);
+  if (ore && !(mesi && giorni)) pezzi.push(`${ore} h`);
+
+  return {
+    testo: pezzi.join(" "),
+    // Le ore tonde restano nel suggerimento: è il numero che si manda
+    // agli altri, e sparirebbe del tutto.
+    extra: `${oreIntere.toLocaleString("it-IT")} ore in tutto`
+  };
+}
+
+/**
+ * Le quattro caselle in cima alla pagina personale.
+ *
+ * Quattro e non sei: sono un'anteprima, e il riquadro che prova a
+ * dire tutto smette di essere un riassunto. Quali quattro non è
+ * arbitrario — sono le domande che uno si fa guardando la pagina di
+ * un altro: per quanto tempo, quanta roba, di che genere.
+ *
+ * Ognuna porta la sua DICITURA per esteso. Prima l'etichetta era
+ * l'unità di misura del numero («giorni», «episodi»), che sotto un
+ * numero grosso si legge come parte del numero e non come il nome di
+ * quello che si sta guardando: tre caselle affiancate dicevano tre
+ * cifre e nessuna diceva di cosa.
+ *
+ * «Visti» tiene insieme episodi e film perché per il database sono la
+ * stessa cosa — un film è una puntata sola, e si spunta come tutte le
+ * altre. Serie e Film si dividono invece per quante puntate hanno:
+ * il conto lo fa il server (`services/cineforum.js`), così la pagina
+ * personale e il confronto dicono lo stesso numero.
  */
 export function tesserine(statistiche) {
   if (!statistiche) return [];
 
-  const tempo = tempoVisto(statistiche.minuti);
+  const tempo = tempoTotale(statistiche.minuti);
 
   return [
-    { chiave: "serie", valore: statistiche.serie, etichetta: statistiche.serie === 1 ? "serie" : "serie" },
-    { chiave: "episodi", valore: statistiche.episodi, etichetta: "episodi" },
-    { chiave: "tempo", valore: tempo.valore, etichetta: tempo.unita, extra: tempo.extra }
+    { chiave: "tempo", etichetta: "Tempo Totale", valore: tempo.testo, extra: tempo.extra },
+    {
+      chiave: "visti",
+      etichetta: "Visti",
+      valore: statistiche.episodi.toLocaleString("it-IT"),
+      extra: "Episodi e film insieme"
+    },
+    {
+      chiave: "serie",
+      etichetta: "Serie",
+      valore: statistiche.serie.toLocaleString("it-IT"),
+      extra: "Quelle con più di una puntata"
+    },
+    {
+      chiave: "film",
+      etichetta: "Film",
+      valore: statistiche.film.toLocaleString("it-IT"),
+      extra: "Quelli con una puntata sola"
+    }
   ];
 }

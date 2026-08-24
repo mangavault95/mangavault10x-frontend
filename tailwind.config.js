@@ -95,7 +95,16 @@ export default {
           inchiostro: "#131a26", // quello che ci si scrive
           tenue: "#66707f", // metadati, didascalie
           blu: "#1b3fcc", // l'accento: progressi, ore, numeri
-          "blu-tenue": "#e3e8ff" // il blu quando fa da fondo
+          "blu-tenue": "#e3e8ff", // il blu quando fa da fondo
+
+          // I voti, a semaforo: dal 4 in su verde, il 3 giallo, sotto
+          // rosso. Non riusano `jade` ed `ember` — quelli sono nati per
+          // il fondo scuro della biblioteca e su carta bianca sono due
+          // pastelli che non si leggono. Questi sono scuri abbastanza
+          // da passare il contrasto su `foglio`.
+          verde: "#12784a",
+          giallo: "#9a6700",
+          rosso: "#c02626"
         }
       },
 

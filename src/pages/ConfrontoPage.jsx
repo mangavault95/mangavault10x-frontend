@@ -16,26 +16,40 @@ import Tondino from "../ui/videoteca/Tondino";
  * accanto. È la domanda che uno si fa guardando la videoteca di
  * qualcun altro: «l'hai visto anche tu, e cosa ne pensi?».
  *
- * Le righe si possono mettere in ordine di DISACCORDO, ed è la vista
- * più interessante che c'è: in cima finiscono le serie su cui uno ha
- * dato cinque e l'altro due, cioè esattamente le cose di cui vale la
- * pena parlare. Provata sui dati veri, la distanza media fra i voti
- * di Nicer e Nanaki è 0,32 su 14 serie votate da entrambi — vanno
+ * La lista si può ridurre ai DISACCORDI, ed è la vista più
+ * interessante che c'è: restano solo le serie su cui uno ha dato
+ * cinque e l'altro due, cioè esattamente le cose di cui vale la pena
+ * parlare. Provata sui dati veri, la distanza media fra i voti di
+ * Nicer e Nanaki è 0,32 su 14 serie votate da entrambi — vanno
  * d'accordo quasi su tutto, e quel «quasi» è quello che si cerca.
+ * Per questo è un filtro e non un ordinamento: mettere in cima i due
+ * disaccordi lasciando sotto le altre dodici righe è una risposta che
+ * bisogna ancora cercare.
  *
  * Il confronto sta sui GRUPPI e non sulle schede (`services/cineforum.js`):
  * se uno ha aggiunto Frieren come due stagioni e l'altra come una
  * sola, è comunque la stessa serie e deve comparire una volta.
  */
 
-const ORDINI = [
-  { id: "titolo", etichetta: "Titolo" },
-  { id: "disaccordo", etichetta: "Dove non siete d'accordo" }
+/**
+ * Quanto devono distare due voti perché sia un disaccordo.
+ *
+ * Due stelle intere, non mezza. Sui dati veri la distanza media fra
+ * Nicer e Nanaki è 0,32: con una soglia bassa «dove non siete
+ * d'accordo» restituirebbe quasi tutta la lista, cioè non
+ * risponderebbe alla domanda. Un 5 contro un 3 invece è una
+ * conversazione.
+ */
+const SCARTO = 2;
+
+const VISTE = [
+  { id: "tutte", etichetta: "Tutte" },
+  { id: "disaccordo", etichetta: `Dove non siete d'accordo` }
 ];
 
 export default function ConfrontoPage() {
   const { a, b } = useParams();
-  const [ordina, setOrdina] = useState("titolo");
+  const [vista, setVista] = useState("tutte");
 
   const { dati, errore, inCorso, ricarica } = useRisorsa(
     useCallback(() => getConfronto(a, b), [a, b])
@@ -44,12 +58,16 @@ export default function ConfrontoPage() {
   const righe = useMemo(() => {
     const elenco = dati?.inComune ?? [];
 
-    if (ordina !== "disaccordo") return elenco;
+    if (vista !== "disaccordo") return elenco;
 
-    // Chi non ha votato non è «in disaccordo»: non ha detto niente, e
-    // metterlo in cima riempirebbe la lista di silenzi.
-    return [...elenco].sort((x, y) => distanza(y) - distanza(x));
-  }, [dati, ordina]);
+    // Filtra, non ordina soltanto. Ordinare lasciava in fondo alla
+    // stessa lista tutte le serie su cui siete d'accordo e tutte
+    // quelle che uno dei due non ha votato: la risposta c'era ma
+    // bisognava scorrere per non vederla. Chi non ha votato non è «in
+    // disaccordo» — non ha detto niente — e `distanza` gli dà -1,
+    // quindi esce da sé.
+    return elenco.filter((s) => distanza(s) >= SCARTO).sort((x, y) => distanza(y) - distanza(x));
+  }, [dati, vista]);
 
   // Il piu' grande dei due decide l'unita' del tempo per entrambi.
   const tempoMassimo = Math.max(dati?.a?.minuti ?? 0, dati?.b?.minuti ?? 0);
@@ -117,27 +135,28 @@ export default function ConfrontoPage() {
               <h2 className="font-display text-lg font-semibold text-quaderno-inchiostro">
                 Avete visto tutti e due
                 <span className="ml-2 font-numeric text-sm font-normal text-quaderno-tenue">
-                  {dati.quanteInComune}
+                  {righe.length}
+                  {vista === "disaccordo" && ` di ${dati.quanteInComune}`}
                 </span>
               </h2>
 
               {dati.quanteInComune > 1 && (
                 <div className="flex items-center gap-2 text-xs text-quaderno-tenue">
-                  <span>Ordina per</span>
+                  <span>Mostra</span>
 
-                  {ORDINI.map((o) => (
+                  {VISTE.map((v) => (
                     <button
-                      key={o.id}
+                      key={v.id}
                       type="button"
-                      onClick={() => setOrdina(o.id)}
-                      aria-pressed={ordina === o.id}
+                      onClick={() => setVista(v.id)}
+                      aria-pressed={vista === v.id}
                       className={`rounded px-1.5 py-0.5 font-semibold transition-colors duration-quick ${
-                        ordina === o.id
+                        vista === v.id
                           ? "text-quaderno-blu underline"
                           : "hover:text-quaderno-inchiostro"
                       }`}
                     >
-                      {o.etichetta}
+                      {v.etichetta}
                     </button>
                   ))}
                 </div>
@@ -146,7 +165,9 @@ export default function ConfrontoPage() {
 
             {righe.length === 0 ? (
               <p className="rounded-card border border-dashed border-quaderno-riga px-4 py-8 text-center text-sm text-quaderno-tenue">
-                Per adesso non avete nessuna serie in comune.
+                {vista === "disaccordo"
+                  ? `Nessuna serie su cui i vostri voti distino ${SCARTO} stelle o più: su quello che avete visto in due la pensate allo stesso modo.`
+                  : "Per adesso non avete nessuna serie in comune."}
               </p>
             ) : (
               <Scheda className="divide-y divide-quaderno-riga">
@@ -305,13 +326,32 @@ function InComune({ serie }) {
   );
 }
 
+/**
+ * Un voto, a semaforo.
+ *
+ * Dal 4 in su verde, il 3 giallo, sotto rosso. Serve qui più che
+ * altrove: in una colonna di «★4 / ★2» ripetuta venti volte i due
+ * numeri si somigliano, e capire chi ha amato cosa vuol dire leggere
+ * riga per riga. Col colore la lista si legge a colpo d'occhio.
+ *
+ * Il colore non è l'unica cosa che distingue i due voti — il numero
+ * c'è e si legge — quindi chi non distingue rosso e verde non perde
+ * niente.
+ */
+function tintaVoto(valore) {
+  if (valore >= 4) return "text-quaderno-verde";
+  if (valore >= 3) return "text-quaderno-giallo";
+
+  return "text-quaderno-rosso";
+}
+
 function Voto({ valore }) {
   if (valore == null) {
     return <span className="w-8 text-center text-quaderno-riga">—</span>;
   }
 
   return (
-    <span className="w-8 text-center font-semibold text-quaderno-inchiostro">
+    <span className={`w-8 text-center font-semibold ${tintaVoto(valore)}`}>
       ★{formattaVoto(valore)}
     </span>
   );

@@ -161,6 +161,31 @@ const TRACCIATI = {
   matita: "M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3zM14.5 6.5l3 3",
 
   /**
+   * Quattro frecce dal centro: «questo si trascina».
+   *
+   * È il segno che i sistemi operativi usano da trent'anni per
+   * spostare una cosa, e infatti si capisce senza etichetta. Sta
+   * accanto alla matita sopra lo striscione — quella cambia
+   * l'immagine, questo sceglie che pezzo se ne vede.
+   *
+   * Le punte si fermano a due unità dal bordo: a quindici pixel una
+   * freccia che arriva fino in fondo tocca i lati del riquadro e il
+   * disegno diventa un rettangolo con dentro una croce.
+   */
+  sposta:
+    "M12 4.5v15M4.5 12h15M12 4.5 9.9 6.6M12 4.5l2.1 2.1M12 19.5l-2.1-2.1M12 19.5l2.1-2.1M4.5 12l2.1-2.1M4.5 12l2.1 2.1M19.5 12l-2.1-2.1M19.5 12l-2.1 2.1",
+
+  /**
+   * La campanella degli avvisi.
+   *
+   * Il batacchio è un archetto staccato e non un puntino: a diciotto
+   * pixel un cerchietto pieno sotto la campana sembra sporco sullo
+   * schermo, mentre la curva si legge per quello che è.
+   */
+  campanella:
+    "M12 3.2a5.6 5.6 0 0 0-5.6 5.6c0 3.2-.8 4.9-1.5 5.8-.4.5 0 1.2.6 1.2h13a.8.8 0 0 0 .6-1.2c-.7-.9-1.5-2.6-1.5-5.8A5.6 5.6 0 0 0 12 3.2zM10 18.6a2 2 0 0 0 4 0",
+
+  /**
    * Un cestino: togliere l'immagine che c'è.
    *
    * Solo il coperchio e la vasca, senza le righine dentro: a sedici

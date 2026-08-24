@@ -32,9 +32,17 @@ export const MISURE = {
   // Tonda, quindi quadrata: 512 basta anche per uno schermo che
   // raddoppia i pixel, e per un cerchio da 92.
   faccia: { larghezza: 512, altezza: 512 },
-  // Larga e bassa, il rapporto di una fascia. 1600 copre uno schermo
-  // grande senza arrivare a pesare come una fotografia.
-  striscione: { larghezza: 1600, altezza: 500 }
+  // Larga, ma NON quanto la fascia: 2:1 contro il 4:1 abbondante di
+  // uno schermo largo. La differenza è quello che si può spostare —
+  // un'immagine tagliata esattamente sulla misura della fascia sta
+  // ferma per forza, perché non ne avanza un pixel da nessuna parte.
+  // Tagliandola più alta, ne resta metà fuori ed è quella metà che il
+  // dito sceglie (vedi `ui/videoteca/Striscione.jsx`).
+  //
+  // Le immagini caricate prima di questa modifica restano 1600×500 e
+  // si spostano poco: non c'è niente da migrare, si ricarica la foto
+  // se si vuole più spazio di manovra.
+  striscione: { larghezza: 1400, altezza: 700 }
 };
 
 /**

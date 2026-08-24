@@ -5,6 +5,7 @@ import { useSessione } from "../dati/sessione";
 import { getCineforum, getPersone } from "../services/api";
 import { ModuloAccesso } from "../dati/AccessoProvider";
 import PaginaVideoteca, { Bottone, Caricamento, Errore, Vuoto } from "../ui/videoteca/Foglio";
+import Campanella from "../ui/videoteca/Campanella";
 import ComponiMessaggio from "../ui/videoteca/ComponiMessaggio";
 import Tondino from "../ui/videoteca/Tondino";
 import Post from "../ui/videoteca/Post";
@@ -30,6 +31,10 @@ import Post from "../ui/videoteca/Post";
  * ---------------------------------------------------------------
  * COSA C'È IN PAGINA, IN ORDINE
  *
+ *   la campanella  in alto a destra, cosa è successo che TI riguarda:
+ *                risposte, cuori, commenti sulle serie che hai visto.
+ *                Sono cose che il feed contiene già ma che nessuno
+ *                troverebbe mai scorrendo all'indietro
  *   le persone   poche, quindi in chiaro invece che dietro una
  *                ricerca: si va sulla pagina di qualcuno cliccando
  *                la sua faccia, non ricordandosi come si scrive il
@@ -94,8 +99,13 @@ export default function CineforumPage() {
       occhiello="Videoteca"
       titolo="Cineforum"
       sommario="Cosa hanno guardato tutti, dal più recente. Non c'è nessuno da seguire: si vede tutto."
+      // In alto a destra: la campanella per chi è entrato, l'ingresso
+      // per chi no. Non tutte e due — la campanella di chi non ha un
+      // nome non avrebbe niente dentro.
       azioni={
-        !utente && (
+        utente ? (
+          <Campanella />
+        ) : (
           <Bottone tono="pieno" onClick={() => setAccesso(true)}>
             Entra
           </Bottone>

@@ -2,10 +2,15 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Icon from "../../app/Icon";
 import { vaiAlConfronto } from "../../dati/cineforum";
-import { salvaFaccia, salvaStriscione, togliFaccia } from "../../services/api";
+import {
+  salvaFaccia,
+  salvaFuocoStriscione,
+  salvaStriscione,
+  togliFaccia
+} from "../../services/api";
 import Sovrapposizione from "../Sovrapposizione";
 import useChiusuraVelo from "../useChiusuraVelo";
-import SceltaImmagine, { TastoModifica } from "./SceltaImmagine";
+import SceltaImmagine, { TastoModifica, TastoTondo } from "./SceltaImmagine";
 import Striscione from "./Striscione";
 import Tondino from "./Tondino";
 
@@ -32,6 +37,18 @@ import Tondino from "./Tondino";
  * che non stanno nella pagina — preferiti, classifica, commenti,
  * confronto. Non è una barra di navigazione: sono modi diversi di
  * guardare la stessa persona, e stanno bene sotto un gesto solo.
+ *
+ * ---------------------------------------------------------------
+ * SPOSTARE L'IMMAGINE
+ *
+ * Un'immagine larga il doppio della fascia ci entra per metà, e prima
+ * quale metà non lo decideva nessuno: era sempre il centro, che su
+ * una copertina è la pancia del personaggio. Il tasto con le quattro
+ * frecce apre lo spostamento — il velo sparisce, la giostra si ferma,
+ * e la foto segue il dito finché non è al posto giusto. Si salva al
+ * rilascio e non con un tasto «salva»: quello che si vede È il
+ * risultato, e un tasto in più chiederebbe di confermare una cosa già
+ * fatta.
  */
 
 export default function TestaProfilo({
@@ -44,14 +61,17 @@ export default function TestaProfilo({
   const [menu, setMenu] = useState(false);
   const [cambiando, setCambiando] = useState(null);
   const [striscione, setStriscione] = useState(null);
+  const [spostando, setSpostando] = useState(false);
 
   // Le immagini si mostrano da subito dopo il salvataggio, senza
   // aspettare che la pagina si ricarichi: cambiare foto e non vederla
   // cambiare è il modo più sicuro di farlo tre volte.
   const [faccia, setFaccia] = useState(null);
+  const [fuochi, setFuochi] = useState(null);
 
   const immagini = striscione ?? persona.striscione ?? [];
   const quandoFaccia = faccia === null ? persona.faccia : faccia;
+  const doveGuardano = fuochi ?? persona.fuochi ?? {};
 
   const base = `/videoteca/chi/${encodeURIComponent(persona.nickname)}`;
 
@@ -82,43 +102,71 @@ export default function TestaProfilo({
     alCambio?.();
   }
 
+  /**
+   * Il fuoco si salva al rilascio del dito, e la pagina NON si
+   * ricarica: `alCambio` rileggerebbe il profilo e farebbe lampeggiare
+   * la fascia a ogni piccolo aggiustamento. Qui non c'è niente da
+   * rimettere d'accordo col resto del sito — la fascia si vede solo su
+   * questa pagina.
+   */
+  async function spostaImmagine(id, x, y) {
+    const esito = await salvaFuocoStriscione(id, x, y);
+
+    setFuochi(esito.fuochi);
+  }
+
   return (
     <>
-      <header className="-mx-3 overflow-hidden border-y border-quaderno-riga sm:mx-0 sm:rounded-card sm:border">
-        <Striscione immagini={immagini} colore={persona.colore}>
+      {/* Attaccata al bordo di sopra — niente arrotondamento in cima e
+          niente bordo: la pagina comincia con la fascia, come una
+          copertina. Prima sopra restava una striscia di carta chiara
+          larga tutto lo schermo, che sembrava una barra vuota. */}
+      <header className="-mx-3 overflow-hidden border-b border-quaderno-riga sm:mx-0 sm:rounded-b-card sm:border-x sm:border-b">
+        <Striscione
+          immagini={immagini}
+          fuochi={doveGuardano}
+          colore={persona.colore}
+          spostando={spostando}
+          alSpostato={spostaImmagine}
+        >
           {/* Sopra l'immagine: la faccia e il nome. In basso a
               sinistra, dove finisce lo sguardo dopo aver guardato la
               foto — e dove la velatura è più densa, quindi il bianco
-              si legge. */}
-          <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 p-3 sm:gap-4 sm:p-5">
-            <div className="relative shrink-0">
-              <Tondino
-                utente={{ ...persona, faccia: quandoFaccia }}
-                dimensione={72}
-                anello
-              />
+              si legge.
 
-              {mia && (
-                <TastoModifica
-                  etichetta="Cambia la foto"
-                  onClick={() => setCambiando("faccia")}
-                  className="absolute -bottom-1 -right-1"
+              Mentre si sposta spariscono: sono quello che coprirebbe
+              proprio il pezzo di foto che si sta scegliendo. */}
+          {!spostando && (
+            <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 p-3 sm:gap-4 sm:p-5">
+              <div className="relative shrink-0">
+                <Tondino
+                  utente={{ ...persona, faccia: quandoFaccia }}
+                  dimensione={72}
+                  anello
                 />
-              )}
+
+                {mia && (
+                  <TastoModifica
+                    etichetta="Cambia la foto"
+                    onClick={() => setCambiando("faccia")}
+                    className="absolute -bottom-1 -right-1"
+                  />
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1 pb-1">
+                <h1 className="truncate font-display text-2xl font-bold tracking-tight text-white drop-shadow sm:text-3xl">
+                  {persona.nickname}
+                </h1>
+
+                {sommario && (
+                  <p className="truncate text-sm text-white/80 drop-shadow">{sommario}</p>
+                )}
+              </div>
             </div>
+          )}
 
-            <div className="min-w-0 flex-1 pb-1">
-              <h1 className="truncate font-display text-2xl font-bold tracking-tight text-white drop-shadow sm:text-3xl">
-                {persona.nickname}
-              </h1>
-
-              {sommario && (
-                <p className="truncate text-sm text-white/80 drop-shadow">{sommario}</p>
-              )}
-            </div>
-          </div>
-
-          {mia && (
+          {mia && !spostando && (
             <div className="absolute right-2 top-2 flex gap-1.5">
               <TastoModifica
                 etichetta="Aggiungi un'immagine allo striscione"
@@ -126,23 +174,46 @@ export default function TestaProfilo({
               />
 
               {immagini.length > 0 && (
-                <button
-                  type="button"
-                  // Toglie l'ULTIMA e non apre un elenco: le immagini
-                  // sono al massimo sei e si sostituiscono più spesso
-                  // di quanto si riordinino. Un pannello di gestione
-                  // per sei fotografie sarebbe più lavoro da usare che
-                  // da rifare.
-                  onClick={() => togliImmagine(immagini[immagini.length - 1])}
-                  aria-label="Togli l'ultima immagine dello striscione"
-                  title="Togli l'ultima immagine"
-                  className="grid h-8 w-8 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors duration-quick hover:bg-black/65
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                >
-                  <Icon nome="cestino" dimensione={15} />
-                </button>
+                <>
+                  <TastoTondo
+                    etichetta="Sposta l'immagine per scegliere cosa si vede"
+                    icona="sposta"
+                    onClick={() => setSpostando(true)}
+                  />
+
+                  <TastoTondo
+                    // Toglie l'ULTIMA e non apre un elenco: le immagini
+                    // sono al massimo sei e si sostituiscono più spesso
+                    // di quanto si riordinino. Un pannello di gestione
+                    // per sei fotografie sarebbe più lavoro da usare che
+                    // da rifare.
+                    etichetta="Togli l'ultima immagine dello striscione"
+                    icona="cestino"
+                    onClick={() => togliImmagine(immagini[immagini.length - 1])}
+                  />
+                </>
               )}
             </div>
+          )}
+
+          {/* La barra dello spostamento. `pointer-events-none` sulla
+              scritta: sta in mezzo alla foto, e senza si trascinerebbe
+              tutto tranne che dove c'è scritto come si fa. */}
+          {spostando && (
+            <>
+              <p className="pointer-events-none absolute inset-x-0 top-0 bg-black/45 px-3 py-2 text-center text-xs font-medium text-white backdrop-blur-sm">
+                Trascina la foto per scegliere cosa si vede
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setSpostando(false)}
+                className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-quaderno-inchiostro shadow-lift
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                Fatto
+              </button>
+            </>
           )}
         </Striscione>
       </header>

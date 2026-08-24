@@ -293,8 +293,14 @@ function DaCopertine({ usa }) {
   );
 }
 
-/** Il bottoncino rotondo che apre questo pannello. */
-export function TastoModifica({ etichetta, onClick, className = "" }) {
+/**
+ * Un bottoncino rotondo appoggiato sopra un'immagine.
+ *
+ * Scuro e sfocato dietro, perché sotto ci può essere qualunque cosa:
+ * su una copertina chiara un tasto bianco sparirebbe, e su una scura
+ * sparirebbe uno nero. Il velo scuro funziona su tutte e due.
+ */
+export function TastoTondo({ etichetta, icona, onClick, className = "" }) {
   return (
     <button
       type="button"
@@ -304,7 +310,12 @@ export function TastoModifica({ etichetta, onClick, className = "" }) {
       className={`grid h-8 w-8 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors duration-quick hover:bg-black/65
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${className}`}
     >
-      <Icon nome="matita" dimensione={15} />
+      <Icon nome={icona} dimensione={15} />
     </button>
   );
+}
+
+/** Il bottoncino rotondo che apre questo pannello. */
+export function TastoModifica(props) {
+  return <TastoTondo icona="matita" {...props} />;
 }
