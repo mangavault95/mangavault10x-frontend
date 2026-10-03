@@ -148,8 +148,25 @@ export async function titoliSimili(serie) {
   const perTitolo = new Set([chiave(base.titolo), chiave(serie.titolo)]);
   const candidati = [];
 
+  // I nomi dell'opera stessa, per riconoscerne le altre forme: il
+  // romanzo, l'edizione speciale, la «2nd Season». Verificato il
+  // 04/10/2026 su Boruto: fra i suoi simili c'era «BORUTO: NARUTO NEXT
+  // GENERATIONS NOVEL», che è la stessa serie in un altro formato.
+  const nomiBase = [base.titolo, base.titoloInglese, ...(base.sinonimi || []), serie.titolo]
+    .filter(Boolean)
+    .map(ossoDelTitolo)
+    .filter(Boolean);
+
+  const eLaStessa = (m) =>
+    [m.titolo, m.titoloInglese, ...(m.sinonimi || [])]
+      .filter(Boolean)
+      .map(ossoDelTitolo)
+      .filter(Boolean)
+      .some((n) => nomiBase.some((b) => stessaOpera(n, b)));
+
   const aggiungi = (m, affinita) => {
     if (!m?.titolo || visti.has(m.idEsterno) || perTitolo.has(chiave(m.titolo))) return;
+    if (eLaStessa(m)) return;
 
     visti.add(m.idEsterno);
     perTitolo.add(chiave(m.titolo));

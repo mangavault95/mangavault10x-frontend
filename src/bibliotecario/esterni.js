@@ -32,6 +32,9 @@ const CAMPI = `
     # ed è l'unico modo di riconoscere nella collezione una serie che
     # AniList chiama in romaji.
     synonyms
+    # MANGA, NOVEL, ONE_SHOT: serve a scegliCorrispondenza, perché lo
+    # stesso autore firma anche i romanzi e gli one-shot della serie.
+    format
     volumes
     chapters
     status
@@ -195,6 +198,7 @@ function normalizza(media) {
     titolo: media.title.romaji || media.title.english || media.title.native,
     titoloInglese: media.title.english || null,
     sinonimi: media.synonyms || [],
+    formato: media.format || null,
     autore,
     disegnatore,
     // `volumes` è null per quasi tutte le serie in corso: AniList non
@@ -309,12 +313,26 @@ export async function similiPerTemi(temi, { escludi = null, quanti = 12 } = {}) 
 export function scegliCorrispondenza(risultati, serie) {
   if (!risultati?.length) return null;
 
-  const mioAutore = serie.autore || "";
+  // Anche il disegnatore firma: Boruto in collezione ha «Ukyo Kodachi»
+  // come autore e «Mikio Ikemoto» come disegnatore, e AniList mette
+  // Kishimoto come autore del manga e Ikemoto ai disegni. Guardando
+  // solo l'autore, l'unico a confermare era il romanzo del film.
+  const mieFirme = [serie.autore, serie.disegnatore].filter(Boolean);
 
-  if (mioAutore) {
-    const conferma = risultati.find((r) =>
-      [r.autore, r.disegnatore].filter(Boolean).some((n) => stessoAutore(n, mioAutore))
+  if (mieFirme.length) {
+    const confermati = risultati.filter((r) =>
+      [r.autore, r.disegnatore]
+        .filter(Boolean)
+        .some((n) => mieFirme.some((mia) => stessoAutore(n, mia)))
     );
+
+    // A parità di firma vince il manga vero. Lo stesso autore firma
+    // anche i romanzi e gli one-shot della serie, e la ricerca li mette
+    // spesso davanti: verificato il 04/10/2026 su Boruto, dove davanti
+    // al manga c'erano un one-shot e due romanzi. Partendo da un
+    // romanzo, fra i suoi simili tornavano il manga e l'altro romanzo —
+    // cioè la serie stessa, in cima ai «Titoli simili» della sua scheda.
+    const conferma = confermati.find((r) => r.formato === "MANGA") || confermati[0];
 
     if (conferma) return { manga: conferma, sicuro: true };
   }

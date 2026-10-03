@@ -104,9 +104,9 @@ function preconnessione(indirizzo) {
  * uno si installa l'app sul telefono: se li prende il guardiano la
  * prima volta che si entra davvero nella stanza, e da lì in poi restano.
  *
- * Escludere anche Three.js sarebbe stato inutile: la Collezione monta
- * il libro in vetrina, quindi Three.js lo scarica comunque alla prima
- * schermata. Un pezzo che arriva sempre tanto vale averlo da parte.
+ * Three.js resta dentro: la stanza d'ingresso lo usa, e un pezzo che
+ * arriva quasi sempre tanto vale averlo da parte. (Fino al 04/10/2026
+ * lo montava anche la Collezione, col libro in vetrina, poi tolto.)
  */
 function guscioOffline() {
   const MARCATORE = "/*__CODICE__*/";

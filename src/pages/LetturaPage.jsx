@@ -815,10 +815,13 @@ export default function LetturaPage() {
                `minmax(0, 1fr)`, che è la stessa cosa con il permesso
                di stringersi. */
             <ul className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-              {attive.map((lettura) => (
+              {attive.map((lettura, i) => (
                 <li key={lettura.idSessione}>
                   <LibroAperto
                     lettura={lettura}
+                    // Il server le manda dalla più recente: la prima è
+                    // quella che stai leggendo adesso.
+                    principale={i === 0}
                     onAvanti={() => impostaVolume(lettura, { delta: 1 })}
                     onIndietro={() => impostaVolume(lettura, { delta: -1 })}
                     onVaiAVolume={(n) => impostaVolume(lettura, { assoluto: n })}

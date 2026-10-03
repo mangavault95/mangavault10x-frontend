@@ -1,4 +1,5 @@
 import { ricordaUtente, utenteDalToken, utenteRicordato } from "../dati/sessione";
+import { copertinaLocale } from "../tre/copertine";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -132,13 +133,22 @@ async function request(path, { method = "GET", body, auth = false, signal } = {}
    ================================================== */
 
 /**
- * L'indirizzo di una copertina passando dal ponte del backend.
+ * L'indirizzo di una copertina servito dal NOSTRO dominio.
  *
  * Serve perché né AniList né AnimeClick mandano gli header CORS:
  * disegnare una di quelle immagini su una canvas la rende
  * illeggibile, quindi non si potrebbero ricavare i colori del dorso.
- * In più il ponte tiene una copia in cache, e AnimeClick da sola
- * impiega secondi a rispondere.
+ *
+ * Prima passava tutto dal ponte del backend. Funzionava, ma il backend
+ * sta su Render gratuito, che dorme dopo un quarto d'ora: la prima
+ * apertura della Videoteca aspettava il risveglio e mezza griglia
+ * restava grigia (misurato il 04/10/2026: 3 copertine su 16 mai
+ * arrivate). Gli inoltri di Vercel — gli stessi che usa la stanza in
+ * 3D, vedi `tre/copertine.js` — non dormono mai, e da qui le immagini
+ * sono dello stesso dominio, quindi la canvas resta leggibile.
+ *
+ * Il ponte resta per gli host che Vercel non inoltra (Google Books, le
+ * miniature di Google): meglio lenti che rotti.
  */
 export function urlCopertina(originale) {
   if (!originale) return null;
@@ -146,7 +156,7 @@ export function urlCopertina(originale) {
   // Un'immagine già nostra o già in formato dati non va rimbalzata.
   if (originale.startsWith("data:") || originale.startsWith("/")) return originale;
 
-  return `${API_URL}/api/cover?url=${encodeURIComponent(originale)}`;
+  return copertinaLocale(originale) || `${API_URL}/api/cover?url=${encodeURIComponent(originale)}`;
 }
 
 /* ==================================================

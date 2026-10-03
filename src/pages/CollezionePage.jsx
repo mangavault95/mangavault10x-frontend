@@ -6,9 +6,7 @@ import { GrigliaSerie } from "../ui/CartaSerie";
 import { CaricamentoGriglia, Errore, Vuoto } from "../ui/Stati";
 import { CampoRicerca, Tendina, Bottone } from "../ui/Controlli";
 import FiltriCollezione from "../ui/FiltriCollezione";
-import AnalisiCollezione from "../ui/AnalisiCollezione";
 import ConsigliRail from "../ui/ConsigliRail";
-import LibroVetrina from "../ui/LibroVetrina";
 import Piegabile from "../ui/Piegabile";
 import Copertina from "../ui/Copertina";
 import Icon from "../app/Icon";
@@ -301,14 +299,17 @@ export default function CollezionePage() {
         <FiltriCollezione {...propsFiltri} variante="sheet" onChiudere={() => setFiltriMobileAperti(false)} />
       )}
 
-      {/* Su schermo largo stanno in cima aperti, come sono sempre stati.
-          Su un telefono sono una riga sola da aprire: il perché, col conto
-          dei pixel che costavano, sta in `ui/Piegabile.jsx`. */}
+      {/* Su schermo largo stanno in cima aperti, su un telefono sono una
+          riga sola da aprire: il perché sta in `ui/Piegabile.jsx`.
+
+          Fino al 04/10/2026 qui c'erano anche il libro «In vetrina oggi»
+          e i quattro riquadri di numeri. Tolti: la vetrina mostrava una
+          serie a caso, quasi sempre già completa, senza farti fare niente
+          (e caricava Three.js per farlo); i numeri erano gli stessi della
+          pagina Numeri, che è il loro posto. */}
       {!inCorso && serie.length > 0 && (
-        <Piegabile titolo="Vetrina, numeri e consigli">
-          <div className="mb-4 space-y-5 lg:mb-8 lg:space-y-6">
-            <LibroVetrina serie={serie} />
-            <AnalisiCollezione serie={risultati} />
+        <Piegabile titolo="Consigli">
+          <div className="mb-4 lg:mb-8">
             <ConsigliRail serie={serie} />
           </div>
         </Piegabile>

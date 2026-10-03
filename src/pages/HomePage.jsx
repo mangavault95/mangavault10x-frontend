@@ -142,8 +142,6 @@ export default function HomePage() {
     totali: 1,
     soglia: { indice: 0, totali: 1 }
   });
-  // Chi rientra non trova nessuna porta: la stanza c'era già, e lui pure.
-  const [introFinita, setIntroFinita] = useState(Boolean(rientroDa));
   const [stanzaPronta, setStanzaPronta] = useState(false);
   const [inViaggio, setInViaggio] = useState(false);
   const [guasto, setGuasto] = useState(null);
@@ -453,15 +451,6 @@ export default function HomePage() {
           )}
         </div>
       </div>
-
-      {/* La porta è un velo sopra tutto il resto, canvas compreso: il
-          sito si deve aprire su un'anta chiusa, non su una stanza già
-          visibile con una porta in mezzo. Sparisce del tutto (non solo
-          scorre fuori vista) appena finita, così non resta a
-          intercettare i click. */}
-      {!introFinita && (
-        <Porta menoMovimento={menoMovimento} onFinita={() => setIntroFinita(true)} />
-      )}
 
       {/* Chi rientra da una pagina non trova la porta ma il buio, ed è
           lo stesso buio in cui la pagina che sta lasciando si è appena
@@ -791,81 +780,15 @@ function BottoneScorrimento({ etichetta, scorciatoia, children, ...resto }) {
   );
 }
 
-/* ==================================================
-   LA PORTA
-   ================================================== */
-
-// Un po' più della durata della transizione CSS sotto: il timer che
-// avvisa React deve scattare dopo che le ante hanno davvero finito di
-// scorrere, mai prima.
-const PORTA_DURATA_MS = 1100;
-
-/**
- * L'apertura della porta, in CSS e non in WebGL.
- *
- * Una porta a cardine vista da una telecamera quasi frontale non si
- * "apre" mai per davvero: resta un pannello ruotato in mezzo
- * all'inquadratura, qualunque angolo si scelga. Due ante che scorrono
- * fuori dallo schermo, sopra il canvas, si aprono per davvero e non
- * lasciano macerie da smaltire nella scena 3D.
- */
-function Porta({ menoMovimento, onFinita }) {
-  const [aperta, setAperta] = useState(menoMovimento);
-
-  useEffect(() => {
-    if (menoMovimento) {
-      onFinita();
-      return undefined;
-    }
-
-    // Un fotogramma di ritardo: si parte chiusa, poi si passa ad aperta.
-    // Impostarla già aperta al primo render salterebbe la transizione
-    // invece di farla partire.
-    const apri = requestAnimationFrame(() => setAperta(true));
-
-    return () => cancelAnimationFrame(apri);
-  }, [menoMovimento, onFinita]);
-
-  useEffect(() => {
-    if (!aperta || menoMovimento) return undefined;
-
-    const timer = setTimeout(onFinita, PORTA_DURATA_MS);
-
-    return () => clearTimeout(timer);
-  }, [aperta, menoMovimento, onFinita]);
-
-  return (
-    <div className="absolute inset-0 z-raised flex">
-      <Battente lato="sinistra" aperta={aperta} />
-      <Battente lato="destra" aperta={aperta} />
-
-      {/* La luce che filtra dalla fessura: si allarga insieme alle ante
-          e dice "di là c'è una stanza illuminata" prima ancora che la
-          stanza si veda. */}
-      <div
-        aria-hidden="true"
-        className={`pointer-events-none absolute inset-y-0 left-1/2 w-40 -translate-x-1/2 bg-[radial-gradient(closest-side,rgba(250,204,21,0.5),transparent)]
-                    transition-opacity ease-out ${aperta ? "opacity-0" : "opacity-100"}`}
-        style={{ transitionDuration: `${PORTA_DURATA_MS * 0.7}ms` }}
-      />
-
-      <button
-        onClick={onFinita}
-        className="pointer-events-auto absolute bottom-8 left-1/2 -translate-x-1/2 rounded-full border border-hairline bg-glass-3 px-4 py-2 text-sm font-medium text-ink-bright backdrop-blur-xl transition-colors duration-quick hover:border-brass-400/40"
-      >
-        Salta
-      </button>
-    </div>
-  );
-}
-
 /**
  * Il nero da cui si rientra.
  *
- * Non è la porta con un altro vestito: la porta è un'entrata, questo è
- * il rovescio di un'uscita. Si alza e basta, senza ante e senza bottone
- * da saltare — sotto c'è già la stanza, e quello che si sta aspettando
- * non è un'animazione ma tre megabyte di modelli.
+ * Si alza e basta: sotto c'è già la stanza, e quello che si sta
+ * aspettando non è un'animazione ma tre megabyte di modelli.
+ *
+ * (Fino al 04/10/2026 l'entrata aveva anche una porta a due ante con
+ * un bottone «Salta». Tolta: bella la prima volta, una tassa da pagare
+ * a ogni apertura dal telefono.)
  */
 function Buio({ alzato }) {
   return (
@@ -874,32 +797,5 @@ function Buio({ alzato }) {
       className={`pointer-events-none absolute inset-0 z-raised bg-void transition-opacity duration-700 ease-settle
                   ${alzato ? "opacity-0" : "opacity-100"}`}
     />
-  );
-}
-
-/** Un'anta: legno scuro, un pannello inciso e una maniglia d'ottone. */
-function Battente({ lato, aperta }) {
-  const sinistra = lato === "sinistra";
-
-  return (
-    <div
-      aria-hidden="true"
-      className={`relative h-full w-1/2 bg-gradient-to-b from-legno to-void transition-transform ease-[cubic-bezier(0.7,0,0.3,1)]
-                  ${sinistra ? "border-r" : "border-l"} border-brass-400/25
-                  ${aperta ? (sinistra ? "-translate-x-full" : "translate-x-full") : "translate-x-0"}`}
-      style={{ transitionDuration: `${PORTA_DURATA_MS}ms` }}
-    >
-      {/* Il pannello inciso: due bordi rientrati fanno leggere l'anta
-          come una porta invece che come metà schermo colorata. */}
-      <span className="absolute inset-8 rounded-sm border border-brass-400/15 shadow-[inset_0_1px_0_rgba(250,204,21,0.08)]" />
-      <span className="absolute inset-12 rounded-sm border border-brass-400/10" />
-
-      {/* La maniglia, verso il centro della porta */}
-      <span
-        className={`absolute top-1/2 h-10 w-10 -translate-y-1/2 rounded-full border-2 border-brass-400/70 ${
-          sinistra ? "right-6" : "left-6"
-        }`}
-      />
-    </div>
   );
 }

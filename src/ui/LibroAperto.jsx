@@ -114,6 +114,7 @@ function PiattoCieco({ titolo }) {
  */
 export default function LibroAperto({
   lettura,
+  principale = false,
   onAvanti,
   onIndietro,
   onLetto,
@@ -364,7 +365,14 @@ export default function LibroAperto({
                   </Passo>
                 </div>
 
-                <Bottone onClick={onLetto} className="min-w-0 flex-1 !px-3 !py-1.5 !text-xs">
+                {/* Giallo pieno solo sulla lettura in corso. Sette bottoni
+                    gialli uno sotto l'altro gridavano tutti insieme, e
+                    quando tutto grida niente si sente (04/10/2026). */}
+                <Bottone
+                  onClick={onLetto}
+                  variante={principale ? "primario" : "secondario"}
+                  className="min-w-0 flex-1 !px-3 !py-1.5 !text-xs"
+                >
                   {alLimite ? "Finito" : "Finito, avanti"}
                 </Bottone>
               </>
