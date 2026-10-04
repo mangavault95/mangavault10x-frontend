@@ -44,12 +44,11 @@ export const SEZIONI = [
     mondo: "biblioteca",
     primaria: true,
     percorso: "/",
-    // "Scaffale" era il nome di quando la home era una vista della
-    // collezione. Adesso è una biblioteca in cui si entra, con dentro
-    // gli scaffali fra le altre cose, e chiamarla come una delle cose
-    // che contiene faceva sembrare le altre quattro un altro sito.
-    etichetta: "Biblioteca",
-    descrizione: "La biblioteca: scaffali, banco, bacheca, tavolino",
+    // Dal 04/10/2026 la home è «Adesso»: cosa riprendere, cosa leggere,
+    // cosa esce. La stanza in 3D, che fino a qui era la porta, sta su
+    // `/sala` e ci si arriva dal fondo di Adesso.
+    etichetta: "Adesso",
+    descrizione: "Cosa riprendere, cosa leggere, cosa esce questa settimana",
     // Il portale, cioè il marchio del sito. Prima era 本, il kanji di
     // «libro»: giusto come idea ma è un'icona come le altre, e la voce
     // che riporta a casa dovrebbe essere l'unica a non esserlo.
@@ -197,6 +196,7 @@ export function sezioneAdminDi(mondo) {
  * quando non è una voce di navigazione.
  */
 const PORTE = {
+  "/sala": "La sala",
   "/cassa": "Lo scontrino",
   "/bacheca": "La bacheca",
   "/tavolino": "Il tavolino",

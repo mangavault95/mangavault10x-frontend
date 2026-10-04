@@ -42,7 +42,7 @@ import { useBibliotecario } from "./contesto";
 const Pannello = lazy(() => import("./Banco"));
 
 // Dove il bibliotecario è già in scena, e quindi non serve chiamarlo.
-const IN_PERSONA = ["/", "/banco"];
+const IN_PERSONA = ["/sala", "/banco"];
 
 export default function Bibliotecario() {
   const { aperto, apri, chiudi, alterna } = useBibliotecario();

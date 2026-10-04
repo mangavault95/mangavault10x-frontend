@@ -72,7 +72,7 @@ export default function Approdo({ titolo, fondo, children, className = "" }) {
   const esci = useCallback(() => {
     setUscendo(true);
 
-    setTimeout(() => navigate("/"), NERO_MS);
+    setTimeout(() => navigate("/sala"), NERO_MS);
   }, [navigate]);
 
   useEffect(() => {

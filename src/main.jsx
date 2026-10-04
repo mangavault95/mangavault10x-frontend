@@ -34,7 +34,7 @@ anticipaCollezione();
 
 // I modelli della stanza no: chi apre la Collezione o i Numeri non li
 // vedrà mai, e chiederglieli sarebbe un megabyte buttato.
-if (window.location.pathname === "/") anticipaModelli();
+if (window.location.pathname === "/sala") anticipaModelli();
 
 // Il guscio offline, per chi il sito se l'è messo sulla schermata Home
 // del telefono. Aspetta il carico da sé, quindi non ruba niente a qui.

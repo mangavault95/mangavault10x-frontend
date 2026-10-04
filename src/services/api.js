@@ -166,6 +166,13 @@ export function urlCopertina(originale) {
 export const getManga = () => request("/api/manga");
 
 /**
+ * I volumi in uscita per le serie in collezione, nella stessa edizione
+ * (vedi `services/usciteManga.js` sul backend). Se AnimeClick non
+ * risponde arriva un elenco vuoto con `errore`, mai un'eccezione.
+ */
+export const getUsciteManga = (giorni = 7) => request(`/api/manga/uscite?giorni=${giorni}`);
+
+/**
  * Il pezzo di indirizzo che dice di chi sono i dati che si chiedono.
  *
  * Vale solo per le letture personali — cronologia e segnalibri. Chi

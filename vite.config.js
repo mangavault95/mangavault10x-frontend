@@ -173,7 +173,10 @@ export default defineConfig(({ mode }) => {
          * quello vero e questo blocco non esiste nemmeno.
          */
         "/api": {
-          target: "https://mangavault10x-api.onrender.com",
+          // `VITE_PROXY_API` in `.env.local` manda le chiamate a un backend
+          // acceso sul proprio computer, per provare una rotta nuova prima
+          // di pubblicarla. Senza, si parla con Render come sempre.
+          target: ambiente.VITE_PROXY_API || "https://mangavault10x-api.onrender.com",
           changeOrigin: true,
 
           /**
