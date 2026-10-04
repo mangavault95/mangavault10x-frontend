@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import useRisorsa from "../dati/useRisorsa";
 import { coloreLettore } from "../dati/lettori";
 import { euro } from "../dati/serie";
-import { getMese, urlCopertina } from "../services/api";
+import { dopoIlRipiego, getMese, urlCopertina } from "../services/api";
 
 /**
  * IL VOSTRO MESE (04/10/2026).
@@ -158,10 +158,10 @@ function Barre({ titolo, righe, massimo }) {
 
 function Copertina({ src }) {
   const [rotta, setRotta] = useState(false);
-  const indirizzo = urlCopertina(src);
+  const indirizzo = urlCopertina(src, 256);
 
   return indirizzo && !rotta ? (
-    <img src={indirizzo} alt="" onError={() => setRotta(true)} className="h-24 w-[68px] shrink-0 rounded-xl object-cover" />
+    <img src={indirizzo} alt="" onError={dopoIlRipiego(() => setRotta(true))} className="h-24 w-[68px] shrink-0 rounded-xl object-cover" />
   ) : (
     <span aria-hidden="true" className="h-24 w-[68px] shrink-0 rounded-xl bg-glass-2" />
   );

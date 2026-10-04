@@ -8,6 +8,7 @@ import { interpretaAcquisto, serieDellAcquisto } from "../dati/acquisto";
 import { euro } from "../dati/serie";
 import {
   annullaAcquisti,
+  dopoIlRipiego,
   getVideoteca,
   getWishlist,
   registraAcquisto,
@@ -279,13 +280,13 @@ function Gruppo({ titolo, children }) {
 
 function Riga({ a, copertina, titolo, sotto, etichetta }) {
   const [rotta, setRotta] = useState(false);
-  const indirizzo = urlCopertina(copertina);
+  const indirizzo = urlCopertina(copertina, 128);
 
   return (
     <li>
       <Link to={a} className="flex items-center gap-3 py-2.5">
         {indirizzo && !rotta ? (
-          <img src={indirizzo} alt="" loading="lazy" onError={() => setRotta(true)} className="h-12 w-8 shrink-0 rounded-md object-cover" />
+          <img src={indirizzo} alt="" loading="lazy" onError={dopoIlRipiego(() => setRotta(true))} className="h-12 w-8 shrink-0 rounded-md object-cover" />
         ) : (
           <span aria-hidden="true" className="h-12 w-8 shrink-0 rounded-md bg-glass-2" />
         )}

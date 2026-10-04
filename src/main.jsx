@@ -9,6 +9,7 @@ import AppRoutes from "./app/routes";
 import { agganciaServizio } from "./app/servizio";
 import { anticipaCollezione } from "./dati/anticipo";
 import { anticipaModelli } from "./tre/indirizzi";
+import { copertinaOriginale } from "./services/api";
 
 /**
  * Il punto d'ingresso.
@@ -39,6 +40,27 @@ if (window.location.pathname === "/sala") anticipaModelli();
 // Il guscio offline, per chi il sito se l'è messo sulla schermata Home
 // del telefono. Aspetta il carico da sé, quindi non ruba niente a qui.
 agganciaServizio();
+
+// Il ripiego delle copertine rimpicciolite (vedi `urlCopertina`): se una
+// non arriva, la si chiede intera. Uno solo per tutto il sito, in ascolto
+// in fase di cattura perché l'errore di un'immagine non risale.
+window.addEventListener(
+  "error",
+  (evento) => {
+    const immagine = evento.target;
+
+    if (!(immagine instanceof HTMLImageElement) || immagine.dataset.ripiego) return;
+
+    const originale = copertinaOriginale(immagine.currentSrc || immagine.src);
+
+    if (!originale) return;
+
+    immagine.dataset.ripiego = "1";
+    immagine.srcset = "";
+    immagine.src = originale;
+  },
+  true
+);
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>

@@ -7,6 +7,7 @@ import { useAccessoProtetto } from "../dati/accesso";
 import { euro, tettoLettura, volumiMancanti } from "../dati/serie";
 import {
   addReadingHistory,
+  dopoIlRipiego,
   getCalendarioAnime,
   getReadingSessions,
   getUsciteManga,
@@ -215,7 +216,7 @@ export default function AdessoPage() {
                   to={`/serie/${l.mangaId}`}
                   className="flex items-center gap-2.5 rounded-2xl bg-alcove p-2.5 transition-colors duration-quick active:bg-glass-2"
                 >
-                  <Immagine src={l.copertina} alt="" className="h-12 w-8 shrink-0 rounded-md" />
+                  <Immagine src={l.copertina} alt="" className="h-12 w-8 shrink-0 rounded-md" larghezza={128} />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-ink-bright">{l.titolo}</p>
                     <p className="font-numeric text-xs text-ink-muted">
@@ -240,7 +241,7 @@ export default function AdessoPage() {
                     <p className="text-[0.7rem] uppercase text-ink-muted">{u.giornoSettimana}</p>
                     <p className="font-numeric text-lg font-semibold text-ink-bright">{u.giorno}</p>
                   </div>
-                  <Immagine src={u.copertina} alt="" className="h-12 w-8 shrink-0 rounded-md" />
+                  <Immagine src={u.copertina} alt="" className="h-12 w-8 shrink-0 rounded-md" larghezza={128} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-ink-bright">{u.titolo}</p>
                     <p className="truncate text-xs text-ink-muted">{u.dettaglio}</p>
@@ -545,9 +546,9 @@ function RichiamoMese({ adesso }) {
 }
 
 /** Una copertina con il suo ripiego: un riquadro del colore della scheda. */
-function Immagine({ src, alt, className = "" }) {
+function Immagine({ src, alt, className = "", larghezza = 256 }) {
   const [rotta, setRotta] = useState(false);
-  const indirizzo = urlCopertina(src);
+  const indirizzo = urlCopertina(src, larghezza);
 
   if (!indirizzo || rotta) return <div aria-hidden="true" className={`bg-glass-2 ${className}`} />;
 
@@ -557,7 +558,7 @@ function Immagine({ src, alt, className = "" }) {
       alt={alt}
       loading="lazy"
       decoding="async"
-      onError={() => setRotta(true)}
+      onError={dopoIlRipiego(() => setRotta(true))}
       className={`object-cover ${className}`}
     />
   );

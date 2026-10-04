@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { urlCopertina } from "../services/api";
+import { dopoIlRipiego, urlCopertina } from "../services/api";
 
 /**
  * Una copertina che reagisce al mouse.
@@ -146,7 +146,7 @@ export default function Copertina({
               // camelCase e la scarterebbe con un avviso in console.
               fetchpriority={priorita ? "high" : "auto"}
               onLoad={() => setCaricata(true)}
-              onError={() => setRotta(true)}
+              onError={dopoIlRipiego(() => setRotta(true))}
               // `riempi` ritaglia invece di contenere: in una griglia
               // fitta ogni copertina deve occupare esattamente lo stesso
               // rettangolo, a costo di perdere un margine di immagine.

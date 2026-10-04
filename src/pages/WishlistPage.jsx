@@ -12,6 +12,7 @@ import { useCollezione } from "../dati/collezione";
 import {
   addToWishlist,
   deleteWishlistItem,
+  dopoIlRipiego,
   enrichManga,
   getUsciteManga,
   getWishlist,
@@ -387,7 +388,7 @@ function Mucchio({ titolo, children }) {
 function Miniatura({ src, ripiego = null }) {
   const [tentativo, setTentativo] = useState(0);
   const candidate = [src, ripiego].filter(Boolean);
-  const indirizzo = urlCopertina(candidate[tentativo]);
+  const indirizzo = urlCopertina(candidate[tentativo], 128);
 
   return indirizzo ? (
     <img
@@ -395,7 +396,7 @@ function Miniatura({ src, ripiego = null }) {
       src={indirizzo}
       alt=""
       loading="lazy"
-      onError={() => setTentativo((t) => t + 1)}
+      onError={dopoIlRipiego(() => setTentativo((t) => t + 1))}
       className="h-14 w-10 shrink-0 rounded-md object-cover"
     />
   ) : (

@@ -1,5 +1,20 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "images": {
+    "sizes": [128, 256, 384, 640],
+    "formats": ["image/avif", "image/webp"],
+    "minimumCacheTTL": 2592000,
+    "remotePatterns": [
+      { "protocol": "https", "hostname": "**.anilist.co" },
+      { "protocol": "https", "hostname": "www.animeclick.it" },
+      { "protocol": "https", "hostname": "animeclick.it" },
+      { "protocol": "https", "hostname": "cdn.myanimelist.net" },
+      { "protocol": "https", "hostname": "myanimelist.net" },
+      { "protocol": "https", "hostname": "books.google.com" },
+      { "protocol": "https", "hostname": "books.googleusercontent.com" },
+      { "protocol": "https", "hostname": "**.gstatic.com" }
+    ]
+  },
   "rewrites": [
     { "source": "/copertine/anilist/:percorso*", "destination": "https://s4.anilist.co/:percorso*" },
     { "source": "/copertine/mal/:percorso*", "destination": "https://myanimelist.net/:percorso*" },

@@ -150,13 +150,84 @@ async function request(path, { method = "GET", body, auth = false, signal } = {}
  * Il ponte resta per gli host che Vercel non inoltra (Google Books, le
  * miniature di Google): meglio lenti che rotti.
  */
-export function urlCopertina(originale) {
+export function urlCopertina(originale, larghezza = 384) {
   if (!originale) return null;
 
   // Un'immagine già nostra o già in formato dati non va rimbalzata.
   if (originale.startsWith("data:") || originale.startsWith("/")) return originale;
 
+  if (RIDIMENSIONA && HOST_RIDIMENSIONABILI.test(originale)) {
+    return `/_vercel/image?url=${encodeURIComponent(originale)}&w=${misuraPer(larghezza)}&q=72`;
+  }
+
   return copertinaLocale(originale) || `${API_URL}/api/cover?url=${encodeURIComponent(originale)}`;
+}
+
+/*
+ * LE COPERTINE RIMPICCIOLITE (04/10/2026)
+ *
+ * Una copertina pesava in media 100 KB, con punte di mezzo megabyte, per
+ * finire in un riquadro largo 120 pixel: la Collezione ne scaricava 204,
+ * una ventina di megabyte su un telefono. E Vercel non le teneva da
+ * parte — ogni apertura le richiedeva da capo ad AniList e AnimeClick.
+ *
+ * In produzione passano dal ridimensionatore di Vercel (`/_vercel/image`,
+ * configurato in `vercel.json`): la misura giusta, in WebP o AVIF, tenuta
+ * in cache un mese. Di solito un decimo del peso. Resta dello stesso
+ * dominio, quindi la canvas che legge i colori del dorso funziona ancora.
+ *
+ * Se un'immagine rimpicciolita non arriva (il servizio rifiuta il file, o
+ * il tetto mensile del piano gratuito è finito), `main.jsx` la sostituisce
+ * con l'originale: più lenta, mai rotta.
+ *
+ * In sviluppo `/_vercel/image` non esiste e si usano gli inoltri di sempre.
+ */
+const RIDIMENSIONA = import.meta.env.PROD;
+const HOST_RIDIMENSIONABILI =
+  /^https:\/\/([a-z0-9-]+\.anilist\.co|(www\.)?animeclick\.it|(cdn\.)?myanimelist\.net|books\.google(usercontent)?\.com)\//i;
+
+// Le misure ammesse da `vercel.json` (`images.sizes`): si sceglie la
+// prima che basta, contando che uno schermo di telefono raddoppia o
+// triplica i pixel.
+const MISURE_COPERTINA = [128, 256, 384, 640];
+
+function misuraPer(larghezza) {
+  return MISURE_COPERTINA.find((m) => m >= larghezza) || MISURE_COPERTINA[MISURE_COPERTINA.length - 1];
+}
+
+/**
+ * Per gli `onError` delle copertine: lascia passare il primo errore di
+ * un'immagine rimpicciolita, perché `main.jsx` la sta già richiedendo
+ * intera, e agisce solo se fallisce anche quella. Senza, il riquadro
+ * vuoto comparirebbe proprio mentre l'originale sta arrivando.
+ */
+export function dopoIlRipiego(azione) {
+  return (evento) => {
+    const immagine = evento.currentTarget;
+
+    if (immagine?.dataset.ripiego === "1" && !immagine.dataset.ripiegoTentato) {
+      immagine.dataset.ripiegoTentato = "1";
+      return;
+    }
+
+    azione(evento);
+  };
+}
+
+/**
+ * Da un indirizzo rimpicciolito all'originale, per il ripiego di
+ * `main.jsx`. Torna `null` se l'indirizzo non è uno dei nostri.
+ */
+export function copertinaOriginale(indirizzo) {
+  if (!String(indirizzo).includes("/_vercel/image")) return null;
+
+  try {
+    const originale = new URL(indirizzo, window.location.origin).searchParams.get("url");
+
+    return originale ? copertinaLocale(originale) || `${API_URL}/api/cover?url=${encodeURIComponent(originale)}` : null;
+  } catch {
+    return null;
+  }
 }
 
 /* ==================================================
