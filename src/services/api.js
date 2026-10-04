@@ -173,6 +173,21 @@ export const getManga = () => request("/api/manga");
 export const getUsciteManga = (giorni = 7) => request(`/api/manga/uscite?giorni=${giorni}`);
 
 /**
+ * Un acquisto registrato dal sito, con le regole del bot di Telegram
+ * (vedi `services/acquisti.js` sul backend). `volumi` vuoto = il
+ * prossimo; `prezzo` è il totale, `null` usa il prezzo della scheda.
+ */
+export const registraAcquisto = (mangaId, { volumi = null, prezzo = null, data = null } = {}) =>
+  request(`/api/manga/${mangaId}/acquisto`, {
+    method: "POST",
+    body: { volumi, prezzo, data },
+    auth: true
+  });
+
+export const annullaAcquisti = (ids) =>
+  request("/api/manga/acquisti/annulla", { method: "POST", body: { ids }, auth: true });
+
+/**
  * Il pezzo di indirizzo che dice di chi sono i dati che si chiedono.
  *
  * Vale solo per le letture personali — cronologia e segnalibri. Chi

@@ -2,8 +2,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
+import { useAccessoProtetto } from "../dati/accesso";
 import { ossoDelTitolo } from "../dati/identita";
-import { getVideoteca, getWishlist, urlCopertina } from "../services/api";
+import { interpretaAcquisto, serieDellAcquisto } from "../dati/acquisto";
+import { euro } from "../dati/serie";
+import {
+  annullaAcquisti,
+  getVideoteca,
+  getWishlist,
+  registraAcquisto,
+  urlCopertina
+} from "../services/api";
 
 /**
  * CERCA — una casella sola per tutto (04/10/2026).
@@ -20,6 +29,11 @@ import { getVideoteca, getWishlist, urlCopertina } from "../services/api";
  *
  * Il testo sta nell'indirizzo (`?q=`): tornando indietro da una scheda
  * si ritrova la ricerca com'era.
+ *
+ * E si può scrivere come al bot di Telegram: «dandadan 23», «one piece
+ * 105-107 19,80», «berserk 42 ieri». Se la frase è un acquisto e la
+ * serie si riconosce senza dubbi, in cima compare la proposta di
+ * registrarlo (vedi `dati/acquisto.js`), con «Annulla» subito dopo.
  */
 
 const QUANTI = 8;
@@ -44,7 +58,11 @@ export default function CercaPage() {
   const testo = parametri.get("q") || "";
   const casella = useRef(null);
 
-  const { serie: collezione } = useCollezione();
+  const { serie: collezione, ricarica: ricaricaCollezione } = useCollezione();
+  const eseguiProtetto = useAccessoProtetto();
+  const [registrando, setRegistrando] = useState(false);
+  const [registrato, setRegistrato] = useState(null);
+  const [problema, setProblema] = useState(null);
   const videoteca = useRisorsa(() => getVideoteca());
   const desideri = useRisorsa(() => getWishlist());
 
@@ -57,6 +75,7 @@ export default function CercaPage() {
 
   function cambia(valore) {
     setScritto(valore);
+    setProblema(null);
 
     const nuovi = new URLSearchParams(parametri);
 
@@ -66,7 +85,55 @@ export default function CercaPage() {
     setParametri(nuovi, { replace: true });
   }
 
-  const parole = useMemo(() => ossoDelTitolo(testo).split(" ").filter(Boolean), [testo]);
+  // La frase come acquisto, e la serie a cui si riferisce. Se è un
+  // acquisto, la ricerca qui sotto usa solo il titolo: «dandadan 23»
+  // deve comunque mostrare DanDaDan fra i manga in casa.
+  const acquisto = useMemo(() => {
+    const capito = interpretaAcquisto(testo);
+    const serie = capito ? serieDellAcquisto(collezione, capito) : null;
+
+    return capito && serie ? { ...capito, serie } : null;
+  }, [testo, collezione]);
+
+  const parole = useMemo(
+    () => ossoDelTitolo(acquisto ? acquisto.titolo : testo).split(" ").filter(Boolean),
+    [testo, acquisto]
+  );
+
+  async function registra() {
+    setProblema(null);
+    setRegistrando(true);
+
+    try {
+      const esito = await eseguiProtetto(() =>
+        registraAcquisto(acquisto.serie.id, {
+          volumi: acquisto.volumi,
+          prezzo: acquisto.prezzo,
+          data: acquisto.data
+        })
+      );
+
+      setRegistrato(esito);
+      ricaricaCollezione();
+      cambia("");
+    } catch (e) {
+      if (!e?.annullato) setProblema(e?.message || "L'acquisto non è stato registrato.");
+    } finally {
+      setRegistrando(false);
+    }
+  }
+
+  async function annulla() {
+    setProblema(null);
+
+    try {
+      await eseguiProtetto(() => annullaAcquisti(registrato.acquisti));
+      setRegistrato(null);
+      ricaricaCollezione();
+    } catch (e) {
+      if (!e?.annullato) setProblema("Non sono riuscito ad annullarlo: riprova.");
+    }
+  }
 
   const risultati = useMemo(() => {
     if (!parole.length) return null;
@@ -128,6 +195,16 @@ export default function CercaPage() {
         )}
       </div>
 
+      {problema && (
+        <p role="alert" className="mt-4 rounded-card border border-ember/30 bg-ember/10 px-4 py-3 text-sm text-ember">
+          {problema}
+        </p>
+      )}
+
+      {registrato && <Registrato esito={registrato} onAnnulla={annulla} onChiudi={() => setRegistrato(null)} />}
+
+      {acquisto && <ProposataAcquisto acquisto={acquisto} occupato={registrando} onRegistra={registra} />}
+
       {risultati?.manga.length > 0 && (
         <Gruppo titolo="Manga in casa">
           {risultati.manga.map((s) => (
@@ -175,7 +252,7 @@ export default function CercaPage() {
 
       {vuoto && <p className="mt-8 px-1 text-center text-sm text-ink-muted">Niente con «{testo}», né in casa né in videoteca.</p>}
 
-      {parole.length > 0 && (
+      {parole.length > 0 && !acquisto && (
         <Gruppo titolo={vuoto ? "Aggiungila" : "Non è quella giusta?"}>
           <Azione a={`/collezione?nuova=${encodeURIComponent(testo)}`} titolo={`«${testo}» in collezione`} sotto="Apre il modulo della nuova serie, già compilato" />
           <Azione a={`/videoteca/io?aggiungi=${encodeURIComponent(testo)}`} titolo={`«${testo}» fra gli anime`} sotto="Cerca su AnimeClick per aggiungerla alla videoteca" />
@@ -240,5 +317,90 @@ function Azione({ a, titolo, sotto }) {
         </div>
       </Link>
     </li>
+  );
+}
+
+/** La proposta in cima: «Registra acquisto · DanDaDan 23 · 6,50 €». */
+function ProposataAcquisto({ acquisto, occupato, onRegistra }) {
+  const { serie, volumi, prezzo, data } = acquisto;
+  const numeri = volumi ?? [serie.posseduti + 1];
+  const unitario = serie.grezzo?.PrezzoCopertina ? Number(serie.grezzo.PrezzoCopertina) : serie.costo;
+  const totale = prezzo ?? (unitario ? unitario * numeri.length : null);
+
+  const primo = numeri[0];
+  const buco = primo > serie.posseduti + 1 ? [serie.posseduti + 1, primo - 1] : null;
+  const giaInCasa = numeri.filter((n) => n <= serie.posseduti);
+
+  const etichettaVolumi =
+    numeri.length === 1
+      ? `${numeri[0]}`
+      : numeri.every((n, i) => i === 0 || n === numeri[i - 1] + 1)
+        ? `${numeri[0]}–${numeri[numeri.length - 1]}`
+        : numeri.join(", ");
+
+  return (
+    <section className="mt-5 rounded-2xl bg-brass-400 p-4 text-void">
+      <div className="flex items-center gap-3.5">
+        {urlCopertina(serie.copertina) ? (
+          <img src={urlCopertina(serie.copertina)} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" />
+        ) : null}
+
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold opacity-75">Registra acquisto</p>
+          <p className="truncate text-[1.05rem] font-bold">
+            {serie.titolo} {etichettaVolumi}
+          </p>
+          <p className="text-[0.8rem] opacity-80">
+            {totale != null ? `${euro(totale)}${prezzo == null ? " (prezzo della scheda)" : ""}` : "senza prezzo"}
+            {" · "}
+            {data ? new Date(`${data}T12:00:00`).toLocaleDateString("it-IT", { day: "numeric", month: "long" }) : "oggi"}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onRegistra}
+          disabled={occupato}
+          className="shrink-0 rounded-xl bg-void px-4 py-2.5 text-sm font-semibold text-ink-bright transition-transform duration-quick active:scale-95 disabled:opacity-60"
+        >
+          {occupato ? "Registro…" : "Registra"}
+        </button>
+      </div>
+
+      {(buco || giaInCasa.length > 0) && (
+        <p className="mt-3 text-[0.8rem] font-medium">
+          {giaInCasa.length > 0
+            ? `Attento: in casa ne risultano già ${serie.posseduti}.`
+            : `Prima ti ${buco[0] === buco[1] ? `manca il ${buco[0]}` : `mancano dal ${buco[0]} al ${buco[1]}`}.`}
+        </p>
+      )}
+    </section>
+  );
+}
+
+/** Fatto: cosa è stato scritto, e il modo di tornare indietro. */
+function Registrato({ esito, onAnnulla, onChiudi }) {
+  const volumi = esito.volumi.length === 1 ? `${esito.volumi[0]}` : `${esito.volumi[0]}–${esito.volumi[esito.volumi.length - 1]}`;
+
+  return (
+    <section role="status" className="mt-5 flex items-center gap-3 rounded-2xl bg-jade/15 px-4 py-3 text-sm">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-jade">
+        <path d="M20 6 9 17l-5-5" />
+      </svg>
+
+      <p className="min-w-0 flex-1 text-ink-bright">
+        <span className="font-semibold">
+          {esito.serie.titolo} {volumi}
+        </span>{" "}
+        registrato · ora ne hai {esito.serie.posseduti}
+      </p>
+
+      <button type="button" onClick={onAnnulla} className="shrink-0 font-semibold text-brass-300">
+        Annulla
+      </button>
+      <button type="button" onClick={onChiudi} aria-label="Chiudi" className="shrink-0 text-ink-muted">
+        ✕
+      </button>
+    </section>
   );
 }
