@@ -18,6 +18,7 @@ import { useSessione } from "../dati/sessione";
 import { coloreDi, nomeDi } from "../dati/lettori";
 import {
   getMarketPrice,
+  getReadingSessions,
   getStoricoPerSerie,
   riprendiSerie,
   saveReadingSession,
@@ -581,6 +582,15 @@ function Volumi({ serie, letti = [], droppata = false, onRiprendi, di = null }) 
   // stato, e cliccarlo per sbaglio riaprirebbe una lettura non voluta.
   const riprendibile = Boolean(droppata) && typeof onRiprendi === "function";
 
+  // La mensola dice la forma; i numeri si aprono quando servono.
+  const [numeri, setNumeri] = useState(false);
+
+  // Il segnalibro, se la serie è sul tavolo di lettura: sulla mensola è
+  // il dorso più alto e chiaro, «sei qui».
+  const sessioni = useRisorsa(() => getReadingSessions());
+  const corrente =
+    Number((sessioni.dati || []).find((s) => String(s.manga_id) === String(serie.id))?.volume) || null;
+
   return (
     <Sezione
       titolo="Volumi"
@@ -605,8 +615,20 @@ function Volumi({ serie, letti = [], droppata = false, onRiprendi, di = null }) 
         totali={serie.totali}
         letti={letti}
         posseduti={serie.posseduti}
+        corrente={corrente}
         onSelezionaVolume={riprendibile ? onRiprendi : undefined}
+        resa={numeri ? "automatica" : "mensola"}
       />
+
+      {!riprendibile && (
+        <button
+          type="button"
+          onClick={() => setNumeri((n) => !n)}
+          className="mt-3 text-sm font-medium text-brass-300 hover:underline"
+        >
+          {numeri ? "Torna alla mensola" : "Mostra i numeri"}
+        </button>
+      )}
     </Sezione>
   );
 }

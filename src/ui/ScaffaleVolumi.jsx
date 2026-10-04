@@ -33,6 +33,14 @@ import { useId, useState } from "react";
  * due a dire cosa si legge stasera. Il segnalibro, dove c'è, sporge
  * sopra gli altri: è un nastro che esce dal libro, non un colore in
  * più da imparare.
+ *
+ * E una terza resa, la MENSOLA (04/10/2026), che la scheda della serie
+ * usa al posto delle altre due: una fila sola di dorsi sottili, larga
+ * quanto la pagina, con letti, posseduti e mancanti nello stesso ordine
+ * in cui stanno sullo scaffale vero. I 42 quadretti di Berserk
+ * occupavano sei righe per dire una cosa che la mensola dice in una —
+ * fin dove sei arrivato e cosa manca. I numeri restano a un tocco
+ * («Mostra i numeri» nella scheda), per quando servono davvero.
  */
 
 // Sopra questo numero i numeri scritti smettono di essere leggibili e
@@ -52,7 +60,8 @@ export default function ScaffaleVolumi({
   corrente = null,
   onSelezionaVolume,
   compatto = false,
-  riepilogo = true
+  riepilogo = true,
+  resa = "automatica"
 }) {
   const insieme = new Set(letti.map(Number));
   const idAvviso = useId();
@@ -106,6 +115,17 @@ export default function ScaffaleVolumi({
       {insieme.size > 0 && buchi(letti)}
     </>
   );
+
+  // La mensola non si preme: i dorsi sono troppo sottili per un dito.
+  // Quando i volumi vanno toccati vale la resa di sempre.
+  if (resa === "mensola" && !interattivo) {
+    return (
+      <div className="space-y-2.5">
+        <Mensola {...comuni} />
+        {riepilogo && <p className="font-numeric text-xs text-ink-faint">{riassunto}</p>}
+      </div>
+    );
+  }
 
   return (
     <div className={compatto ? "space-y-1.5" : "space-y-2"}>
@@ -319,6 +339,58 @@ function Nastro({
           </span>
         </div>
       ))}
+    </div>
+  );
+}
+
+/* ==================================================
+   LA MENSOLA: UNA FILA DI DORSI
+   ================================================== */
+
+const ASPETTO_DORSO = {
+  letto: "bg-brass-400",
+  posseduto: "bg-ink-bright/25",
+  // Il volume che non c'è è un vuoto basso sulla mensola: si vede come
+  // un buco fra i dorsi, che è quello che è.
+  mancante: "bg-ink-bright/[0.06]"
+};
+
+// Le altezze dei dorsi variano un poco, come quelle dei volumi veri. Il
+// conto dipende solo dal numero, così Berserk 17 è alto uguale ogni
+// volta che si apre la scheda.
+const ALTEZZE = ["86%", "92%", "80%", "96%", "88%", "83%", "94%"];
+
+function Mensola({ quanti, statoDi, descrizioneDi, corrente }) {
+  const numeri = Array.from({ length: quanti }, (_, i) => i + 1);
+
+  return (
+    <div>
+      <div
+        role="list"
+        aria-label={`${quanti} volumi`}
+        className={`flex h-16 items-end border-b-2 border-strong ${quanti > 70 ? "gap-px" : "gap-[2px]"}`}
+      >
+        {numeri.map((n) => {
+          const stato = statoDi(n);
+          const eCorrente = corrente === n;
+
+          return (
+            <span
+              key={n}
+              role="listitem"
+              aria-label={descrizioneDi(n)}
+              title={descrizioneDi(n)}
+              style={{ height: eCorrente ? "100%" : stato === "mancante" ? "38%" : ALTEZZE[(n * 5) % ALTEZZE.length] }}
+              className={`block min-w-[2px] max-w-[12px] flex-1 rounded-t-[2px] ${eCorrente ? "bg-ink-bright" : ASPETTO_DORSO[stato]}`}
+            />
+          );
+        })}
+      </div>
+
+      <div aria-hidden="true" className="mt-1 flex justify-between font-numeric text-[0.65rem] text-ink-faint">
+        <span>1</span>
+        <span>{quanti}</span>
+      </div>
     </div>
   );
 }
