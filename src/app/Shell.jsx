@@ -17,13 +17,13 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
  * schermo ne annunciava un'altra. Con `Link` la decisione è una sola.
  */
 import {
-  MONDI,
+  SCHEDE,
+  SEZIONI_ADMIN,
   eAttiva,
   mondoDi,
-  primarieDi,
-  secondarieDi,
+  schedaDi,
   sezioneAdminDi,
-  sezioniDi,
+  sottosezioniDi,
   titoloPer
 } from "./navigation";
 import Icon from "./Icon";
@@ -32,6 +32,7 @@ import Identita from "../ui/Identita";
 import AggiungiAnime from "../ui/videoteca/AggiungiAnime";
 import PostaInArrivo from "../ui/videoteca/PostaInArrivo";
 import { useSessione } from "../dati/sessione";
+import { scegliTema, temaDi } from "../dati/tema";
 
 /**
  * La cornice fissa attorno a ogni pagina.
@@ -41,49 +42,30 @@ import { useSessione } from "../dati/sessione";
  * ciascun contesto. La posizione non cambia mai da una pagina
  * all'altra, così l'orientamento resta stabile.
  *
- * Da quando i mondi sono due (vedi `navigation.js`), la cornice fa una
- * cosa in più: si veste come il mondo in cui ci si trova. La
- * biblioteca resta ottone su legno scuro, la videoteca è chiara e blu
- * — l'idea è che passando di là si abbia l'impressione di essere
- * altrove, pur restando nello stesso sito.
+ * DAL 04/10/2026 LA BARRA È UNA SOLA. Prima la cornice si vestiva come
+ * il mondo in cui ci si trovava — ottone in biblioteca, blu e chiaro in
+ * videoteca — e un commutatore BIB/VID in cima decideva quale delle due
+ * barre mostrare. Adesso i colori li decide il tema di chi guarda
+ * (`dati/tema.js`), e la barra è sempre Adesso · Manga · Anime · Cerca ·
+ * Tu. Le sezioni di ciascun mondo stanno nella riga in cima alle sue
+ * pagine (`Sottosezioni`).
  */
 
-// I due vestiti. Le classi stanno scritte per intero e non composte a
-// pezzi: Tailwind legge i sorgenti alla lettera, e una classe formata
-// unendo stringhe non finirebbe mai nel CSS prodotto.
-const VESTITO = {
-  biblioteca: {
-    pagina: "bg-shelf text-ink",
-    barra: "border-r border-hairline bg-glass-1 backdrop-blur-xl",
-    barraBasso: "border-t border-hairline bg-glass-3 backdrop-blur-2xl",
-    voceAttiva: "bg-brass-400/12 text-brass-400",
-    voceInerte: "text-ink-muted hover:bg-glass-2 hover:text-ink-bright",
-    barretta: "bg-brass-400",
-    tabAttiva: "text-brass-400",
-    tabInerte: "text-ink-muted active:text-ink",
-    anello: "focus-visible:ring-brass-400 focus-visible:ring-offset-shelf",
-    fogliettoBordo: "border-hairline bg-glass-3 text-ink-bright",
-    commutatoreFondo: "bg-glass-2",
-    commutatoreAcceso: "bg-brass-400 text-void",
-    commutatoreSpento: "text-ink-muted hover:text-ink-bright",
-    ambiente: true
-  },
-  videoteca: {
-    pagina: "bg-quaderno-carta text-quaderno-inchiostro",
-    barra: "border-r border-quaderno-riga bg-quaderno-foglio",
-    barraBasso: "border-t border-quaderno-riga bg-quaderno-foglio",
-    voceAttiva: "bg-quaderno-blu-tenue text-quaderno-blu",
-    voceInerte: "text-quaderno-tenue hover:bg-quaderno-carta hover:text-quaderno-inchiostro",
-    barretta: "bg-quaderno-blu",
-    tabAttiva: "text-quaderno-blu",
-    tabInerte: "text-quaderno-tenue active:text-quaderno-inchiostro",
-    anello: "focus-visible:ring-quaderno-blu focus-visible:ring-offset-quaderno-carta",
-    fogliettoBordo: "border-quaderno-riga bg-quaderno-foglio text-quaderno-inchiostro",
-    commutatoreFondo: "bg-quaderno-carta",
-    commutatoreAcceso: "bg-quaderno-blu text-quaderno-su-blu",
-    commutatoreSpento: "text-quaderno-tenue hover:text-quaderno-inchiostro",
-    ambiente: false
-  }
+// Le classi stanno scritte per intero e non composte a pezzi: Tailwind
+// legge i sorgenti alla lettera, e una classe formata unendo stringhe
+// non finirebbe mai nel CSS prodotto.
+const VESTE = {
+  pagina: "bg-shelf text-ink",
+  barra: "border-r border-hairline bg-shelf",
+  barraBasso: "border-t border-hairline bg-shelf/95 backdrop-blur-xl",
+  voceAttiva: "bg-brass-400/12 text-brass-400",
+  voceInerte: "text-ink-muted hover:bg-glass-2 hover:text-ink-bright",
+  barretta: "bg-brass-400",
+  tabAttiva: "text-brass-400",
+  tabInerte: "text-ink-muted active:text-ink",
+  anello: "focus-visible:ring-brass-400 focus-visible:ring-offset-shelf",
+  fogliettoBordo: "border-hairline bg-alcove text-ink-bright",
+  acceso: "bg-brass-400 text-void"
 };
 
 export default function Shell({ children }) {
@@ -98,13 +80,12 @@ export default function Shell({ children }) {
   const [apertoSu, setApertoSu] = useState(null);
 
   const mondo = mondoDi(location.pathname);
-  const altroAperto = apertoSu === location.pathname;
-  const veste = VESTITO[mondo];
+  const scheda = schedaDi(location.pathname);
+  const tuAperto = apertoSu === location.pathname;
+  const veste = VESTE;
   // «Gestione» cambia porta col mondo: dalla videoteca apre le stagioni
   // e i collegamenti, non le schede della collezione di carta.
   const admin = sezioneAdminDi(mondo);
-  const primarie = primarieDi(mondo);
-  const secondarie = secondarieDi(mondo);
 
   /**
    * «Aggiungi una serie», raggiungibile da ovunque nella videoteca.
@@ -123,7 +104,7 @@ export default function Shell({ children }) {
    * a un livello più alto.
    */
   const [parametriAggiunta, setParametriAggiunta] = useSearchParams();
-  const puoiAggiungere = mondo === "videoteca" && Boolean(utente);
+  const puoiAggiungere = scheda === "anime" && Boolean(utente);
   const aggiunta = puoiAggiungere && parametriAggiunta.has("aggiungi");
   const titoloCercato = parametriAggiunta.get("aggiungi") || "";
 
@@ -171,9 +152,7 @@ export default function Shell({ children }) {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [location.pathname]);
 
-  // Scorciatoie: i numeri saltano alle sezioni del mondo acceso, B e V
-  // cambiano mondo. I numeri ripartono da 1 di là — sono i piani di un
-  // palazzo, e ogni piano ha la sua stanza 1.
+  // Scorciatoie: 1-4 sono le linguette della barra, nello stesso ordine.
   useEffect(() => {
     function alTasto(e) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -182,39 +161,20 @@ export default function Shell({ children }) {
       const dentroCampo = /^(input|textarea|select)$/i.test(e.target.tagName);
       if (dentroCampo || e.target.isContentEditable) return;
 
-      const altroMondo = MONDI.find((m) => m.tasto === e.key.toLowerCase());
+      const voce = SCHEDE.find((s) => s.tasto === e.key);
 
-      if (altroMondo) {
+      if (voce) {
         e.preventDefault();
-        navigate(altroMondo.casa);
-        return;
-      }
-
-      const sezione = sezioniDi(mondo).find((s) => s.tasto === e.key);
-
-      if (sezione) {
-        e.preventDefault();
-        navigate(sezione.percorso);
+        navigate(voce.percorso);
       }
     }
 
     window.addEventListener("keydown", alTasto);
     return () => window.removeEventListener("keydown", alTasto);
-  }, [navigate, mondo]);
+  }, [navigate]);
 
   return (
     <div className={`min-h-dvh ${veste.pagina}`}>
-      {/* Luce d'ambiente: immobile, dietro tutto, non intercetta i click.
-          Solo in biblioteca — su carta chiara le stesse aureole
-          sembrerebbero aloni di umidità. */}
-      {veste.ambiente && (
-        <div className="pointer-events-none fixed inset-0 z-base overflow-hidden">
-          <div className="absolute -top-40 left-1/4 h-[36rem] w-[36rem] rounded-full bg-brass-500/[0.07] blur-[140px] animate-glow-pulse" />
-          <div className="absolute top-1/3 -right-32 h-[32rem] w-[32rem] rounded-full bg-lapis/[0.06] blur-[150px]" />
-          <div className="absolute -bottom-40 left-1/3 h-[30rem] w-[30rem] rounded-full bg-indigo-500/[0.05] blur-[130px]" />
-        </div>
-      )}
-
       <a
         href="#contenuto"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-toast focus:rounded-lg focus:bg-brass-400 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-void"
@@ -227,17 +187,8 @@ export default function Shell({ children }) {
         aria-label="Navigazione principale"
         className={`fixed left-0 top-0 z-sticky hidden h-dvh w-rail flex-col items-center gap-2 py-5 md:flex ${veste.barra}`}
       >
-        <Commutatore mondo={mondo} veste={veste} />
-
-        {puoiAggiungere && <BottoneAggiungi veste={veste} apri={() => apriAggiunta()} />}
-
-        {sezioniDi(mondo).map((sezione) => (
-          <VoceMenu
-            key={sezione.id}
-            sezione={sezione}
-            veste={veste}
-            attiva={eAttiva(sezione.percorso, location.pathname)}
-          />
+        {SCHEDE.map((voce) => (
+          <VoceMenu key={voce.id} sezione={voce} veste={veste} attiva={scheda === voce.id} />
         ))}
 
         <div className="mt-auto flex flex-col items-center gap-3">
@@ -265,6 +216,12 @@ export default function Shell({ children }) {
         tabIndex={-1}
         className="relative z-raised min-h-dvh pb-24 outline-none md:ml-rail md:pb-0 animate-rise-in"
       >
+        <Sottosezioni
+          scheda={scheda}
+          percorso={location.pathname}
+          aggiungi={puoiAggiungere ? () => apriAggiunta() : null}
+        />
+
         {children}
       </main>
 
@@ -273,35 +230,31 @@ export default function Shell({ children }) {
           In videoteca non c'è: il bibliotecario risponde di carta,
           volumi ed edizioni, e un banco che non sa niente di quello che
           hai davanti è peggio di un banco assente. */}
-      {mondo === "biblioteca" && <Bibliotecario />}
+      {/* Solo nelle pagine dei manga: su Adesso e su Cerca il bottone
+          tondo copriva l'ultima riga, e di là c'è già da cercare. */}
+      {scheda === "manga" && <Bibliotecario />}
 
       {/* ---------- Barra inferiore (solo mobile) ---------- */}
       <nav
         aria-label="Navigazione principale"
         className={`fixed inset-x-0 bottom-0 z-sticky flex pb-[env(safe-area-inset-bottom)] md:hidden ${veste.barraBasso}`}
       >
-        {primarie.map((sezione) => (
-          <Linguetta
-            key={sezione.id}
-            sezione={sezione}
-            veste={veste}
-            attiva={eAttiva(sezione.percorso, location.pathname)}
-          />
+        {SCHEDE.map((voce) => (
+          <Linguetta key={voce.id} sezione={voce} veste={veste} attiva={scheda === voce.id} />
         ))}
 
-        {/* «Altro» tiene insieme quello che non si apre ogni giorno e il
-            passaggio all'altro mondo. */}
+        {/* «Tu»: chi sei, il tema, la sala e la Gestione. */}
         <button
           type="button"
-          onClick={() => setApertoSu(altroAperto ? null : location.pathname)}
-          aria-expanded={altroAperto}
-          aria-label="Altre sezioni"
+          onClick={() => setApertoSu(tuAperto ? null : location.pathname)}
+          aria-expanded={tuAperto}
+          aria-label="Tu: account, tema e gestione"
           className={`relative flex min-h-[3.5rem] flex-1 flex-col items-center justify-center gap-1 transition-colors duration-quick ${
-            altroAperto ? veste.tabAttiva : veste.tabInerte
+            tuAperto ? veste.tabAttiva : veste.tabInerte
           }`}
         >
           <span className="relative">
-            <Icon nome="menu" dimensione={20} />
+            <Icon nome="persona" dimensione={20} />
 
             {richieste.length > 0 && (
               <span
@@ -312,29 +265,11 @@ export default function Shell({ children }) {
               </span>
             )}
           </span>
-          <span className="text-[0.65rem] font-medium tracking-wide">Altro</span>
+          <span className="text-[0.65rem] font-medium tracking-wide">Tu</span>
         </button>
-
-        {/* Centrato sull'INTERA barra, non infilato in mezzo alle
-            linguette: a `position: fixed` sopra segue già da sé il
-            numero di linguette che cambia, ed è la ragione per cui è
-            un fratello assoluto e non un `flex-1` in più — un conto a
-            metà fra "quante di qua, quante di là" era quello che lo
-            spostava dal centro vero ogni volta che «Altro» pesava
-            diverso dalle linguette prima di lui. */}
-        {puoiAggiungere && <LinguettaAggiungi veste={veste} apri={() => apriAggiunta()} />}
       </nav>
 
-      {altroAperto && (
-        <FoglioAltro
-          mondo={mondo}
-          admin={admin}
-          veste={veste}
-          secondarie={secondarie}
-          richieste={richieste.length}
-          chiudi={() => setApertoSu(null)}
-        />
-      )}
+      {tuAperto && <FoglioTu richieste={richieste.length} chiudi={() => setApertoSu(null)} />}
 
       {aggiunta && (
         <AggiungiAnime
@@ -363,48 +298,6 @@ export default function Shell({ children }) {
           entri. Stessa condizione dell'«aggiungi»: serve il mondo
           giusto e serve un nome, o non c'è nessuno a cui consegnarla. */}
       {puoiAggiungere && <PostaInArrivo apriAggiunta={apriAggiunta} />}
-    </div>
-  );
-}
-
-/**
- * Il commutatore fra i due mondi, in cima alla barra.
- *
- * Prima qui c'era il battente della biblioteca — una porta di legno
- * con la maniglia, che riportava alla stanza d'ingresso. Adesso quel
- * ritorno è la prima voce del mondo biblioteca, e il posto in cima
- * serve a una domanda più grande: in quale metà del sito ti trovi.
- *
- * Sono due bottoni e non un interruttore a scivolo: uno scivolo dice
- * "acceso/spento", e nessuno dei due mondi è lo spegnimento dell'altro.
- */
-function Commutatore({ mondo, veste }) {
-  return (
-    <div
-      role="group"
-      aria-label="Cambia sezione del sito"
-      className={`mb-4 flex w-[3.25rem] flex-col gap-1 rounded-card p-1 ${veste.commutatoreFondo}`}
-    >
-      {MONDI.map((m) => {
-        const acceso = m.id === mondo;
-
-        return (
-          <Link
-            key={m.id}
-            to={m.casa}
-            aria-current={acceso ? "true" : undefined}
-            title={`${m.etichetta} (${m.tasto.toUpperCase()})`}
-            className={`grid h-8 place-items-center rounded-lg text-[0.6rem] font-semibold uppercase tracking-wider transition-colors duration-quick
-              focus-visible:outline-none focus-visible:ring-2 ${veste.anello}
-              ${acceso ? veste.commutatoreAcceso : veste.commutatoreSpento}`}
-          >
-            {/* Tre lettere, non l'icona: qui sotto le icone sono già
-                sei, e due in più a distinguere due mondi si
-                confonderebbero con le sezioni. */}
-            {m.etichetta.slice(0, 3)}
-          </Link>
-        );
-      })}
     </div>
   );
 }
@@ -463,38 +356,6 @@ function VoceMenu({ sezione, veste, attiva, pallina = 0 }) {
   );
 }
 
-/**
- * Il bottone «Aggiungi una serie» della barra laterale.
- *
- * Non è una `VoceMenu`: non porta a una pagina, apre il pannello di
- * ricerca sopra quella che si sta già guardando. Pieno del colore
- * d'accento e non del solito contorno, perché è un'azione e non una
- * destinazione — la stessa differenza che il commutatore fa fra
- * «acceso» e «spento».
- */
-function BottoneAggiungi({ veste, apri }) {
-  return (
-    <button
-      type="button"
-      onClick={apri}
-      aria-label="Aggiungi una serie"
-      title="Aggiungi una serie"
-      className={`group relative grid h-11 w-11 place-items-center rounded-card transition-all duration-quick ease-settle hover:scale-105
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${veste.anello} ${veste.commutatoreAcceso}
-        active:scale-95`}
-    >
-      <Icon nome="plus" dimensione={20} />
-
-      <span
-        role="tooltip"
-        className={`pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm font-medium opacity-0 shadow-raised backdrop-blur-xl transition-all duration-quick ease-settle translate-x-1 group-hover:translate-x-0 group-hover:opacity-100 ${veste.fogliettoBordo}`}
-      >
-        Aggiungi una serie
-      </span>
-    </button>
-  );
-}
-
 /** Una linguetta della barra del telefono. */
 function Linguetta({ sezione, veste, attiva }) {
   return (
@@ -518,57 +379,85 @@ function Linguetta({ sezione, veste, attiva }) {
 }
 
 /**
- * «Aggiungi una serie» nella barra del telefono.
+ * La riga di linguette in cima alle pagine di un mondo.
  *
- * Un cerchio pieno e sollevato, non un'altra linguetta con l'etichetta
- * sotto: a 375px le parole delle sezioni sono già al limite
- * ("Calendario"), e un sesto testo le avrebbe tagliate. Sollevato a
- * cavallo del bordo — metà dentro la barra, metà sopra — perché è il
- * comando che si preme più spesso e deve saltare all'occhio prima
- * ancora di leggere le altre voci.
+ * È quello che resta del vecchio commutatore: le sezioni di Manga
+ * (Collezione, In lettura, Wishlist, Numeri, Kachinuki) e di Anime
+ * (la propria videoteca, Calendario, Cineforum), a portata di pollice
+ * in cima a ogni pagina di quel mondo invece che dentro un menu.
  *
- * `absolute` sul `<nav>` (che essendo `fixed` gli fa già da
- * riferimento) invece di un fratello in mezzo al flusso: così resta
- * al centro ESATTO della barra qualunque sia il numero di linguette
- * intorno, invece di dipendere da quante ce ne sono a sinistra e
- * quante a destra.
+ * Nella videoteca c'è anche «Aggiungi»: prima era il cerchio sollevato
+ * al centro della barra, che con cinque linguette fisse sarebbe finito
+ * sopra «Anime».
  */
-function LinguettaAggiungi({ veste, apri }) {
+function Sottosezioni({ scheda, percorso, aggiungi }) {
+  const voci = sottosezioniDi(scheda);
+
+  if (!voci.length) return null;
+
   return (
-    <button
-      type="button"
-      onClick={apri}
-      aria-label="Aggiungi una serie"
-      title="Aggiungi una serie"
-      className={`absolute left-1/2 top-0 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full shadow-float transition-transform duration-quick ease-spring hover:scale-105 active:scale-95
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${veste.anello} ${veste.commutatoreAcceso}`}
+    <nav
+      aria-label={scheda === "manga" ? "Sezioni dei manga" : "Sezioni degli anime"}
+      className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-4 sm:px-6 lg:px-8"
     >
-      <Icon nome="plus" dimensione={22} />
-    </button>
+      {voci.map((voce) => {
+        const attiva = eAttiva(voce.percorso, percorso);
+
+        return (
+          <Link
+            key={voce.id}
+            to={voce.percorso}
+            aria-current={attiva ? "page" : undefined}
+            className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium transition-colors duration-quick
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
+              ${attiva ? "bg-ink-bright text-void" : "bg-alcove text-ink hover:text-ink-bright"}`}
+          >
+            {voce.etichetta}
+          </Link>
+        );
+      })}
+
+      {aggiungi && (
+        <button
+          type="button"
+          onClick={aggiungi}
+          className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brass-400 px-3.5 py-2 text-sm font-semibold text-void transition-transform duration-quick active:scale-95
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf"
+        >
+          <Icon nome="plus" dimensione={16} />
+          Aggiungi
+        </button>
+      )}
+    </nav>
   );
 }
 
 /**
- * Il foglio che si apre da «Altro» sul telefono.
+ * Il foglio che si apre da «Tu».
  *
- * In cima il passaggio fra i mondi e chi sei, sotto le sezioni che non
- * si aprono ogni giorno e Gestione. Gestione sta qui e non fra le
- * linguette per la ragione di sempre: da mobile deve restare
- * raggiungibile senza scrivere l'indirizzo a mano, ma non merita un
- * quinto dello schermo.
- *
- * L'identità è finita qui il giorno in cui la videoteca è diventata di
- * ciascuno. Prima stava solo nella barra laterale, che sul telefono non
- * esiste: chi apriva il sito dal divano non aveva nessun modo di
- * entrare — se non fingere di correggere una scheda — e vedeva per
- * sempre la videoteca del padrone di casa.
+ * Chi sei e la porta per entrare; il tema, che da quando ce n'è uno a
+ * testa si può anche scegliere a mano; e le cose che non si aprono ogni
+ * giorno: la sala in 3D e le due Gestioni. Le Gestioni sono qui per la
+ * ragione di sempre: da mobile devono restare raggiungibili senza
+ * scrivere l'indirizzo a mano, ma non meritano una linguetta.
  */
-function FoglioAltro({ mondo, admin, veste, secondarie, richieste, chiudi }) {
+function FoglioTu({ richieste, chiudi }) {
   const { utente, esci } = useSessione();
-  const voci = [...secondarie, admin];
+  const [tema, setTema] = useState(() => temaDi(utente));
+
+  const voci = [
+    { id: "sala", percorso: "/sala", etichetta: "La sala della biblioteca", icona: "portale" },
+    { ...SEZIONI_ADMIN.biblioteca, etichetta: "Gestione dei manga" },
+    { ...SEZIONI_ADMIN.videoteca, etichetta: "Gestione degli anime" }
+  ];
+
+  function cambiaTema(nuovo) {
+    scegliTema(utente, nuovo);
+    setTema(nuovo);
+  }
 
   return (
-    <div className="fixed inset-0 z-modal md:hidden" role="dialog" aria-label="Altre sezioni">
+    <div className="fixed inset-0 z-modal md:hidden" role="dialog" aria-label="Tu">
       {/* Il velo: toccare fuori chiude, che è il gesto che tutti provano. */}
       <button
         type="button"
@@ -578,43 +467,17 @@ function FoglioAltro({ mondo, admin, veste, secondarie, richieste, chiudi }) {
       />
 
       <div
-        className={`absolute inset-x-0 bottom-0 rounded-t-sheet border-t p-4 pb-[calc(env(safe-area-inset-bottom)+5rem)] shadow-float ${veste.fogliettoBordo}`}
+        className={`absolute inset-x-0 bottom-0 rounded-t-sheet border-t p-4 pb-[calc(env(safe-area-inset-bottom)+5rem)] shadow-float ${VESTE.fogliettoBordo}`}
       >
-        <div className={`mx-auto mb-4 h-1 w-10 rounded-full ${veste.barretta} opacity-30`} />
+        <div className={`mx-auto mb-4 h-1 w-10 rounded-full ${VESTE.barretta} opacity-30`} />
 
-        <div className={`mb-4 flex gap-1 rounded-card p-1 ${veste.commutatoreFondo}`}>
-          {MONDI.map((m) => {
-            const acceso = m.id === mondo;
-
-            return (
-              <Link
-                key={m.id}
-                to={m.casa}
-                onClick={chiudi}
-                aria-current={acceso ? "true" : undefined}
-                className={`flex-1 rounded-lg py-2 text-center text-sm font-semibold transition-colors duration-quick ${
-                  acceso ? veste.commutatoreAcceso : veste.commutatoreSpento
-                }`}
-              >
-                {m.etichetta}
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Chi sei, e la porta per diventare qualcuno.
-            Da entrati non si riusa `Identita`: il suo pannellino si
-            apre a destra del bottone, che dentro un foglio largo quanto
-            lo schermo vuol dire fuori dallo schermo. Qui il nome e
-            l'uscita stanno già in chiaro, e il pannellino non serve. */}
-        <div
-          className={`mb-3 flex items-center gap-3 rounded-card border px-3 py-2 ${veste.fogliettoBordo}`}
-        >
+        {/* Chi sei, e la porta per diventare qualcuno. */}
+        <div className="mb-3 flex items-center gap-3 rounded-card bg-shelf px-3 py-2.5">
           {utente ? (
             <>
               <span
                 aria-hidden="true"
-                className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-sm font-semibold ${veste.commutatoreAcceso}`}
+                className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-sm font-semibold ${VESTE.acceso}`}
               >
                 {(utente.nickname || "?").trim().charAt(0).toUpperCase()}
               </span>
@@ -636,26 +499,49 @@ function FoglioAltro({ mondo, admin, veste, secondarie, richieste, chiudi }) {
             </>
           ) : (
             <>
-              <Identita compatto mondo={mondo} />
+              <Identita compatto />
 
               <span className="min-w-0 flex-1 text-sm font-medium">Entra o registrati</span>
             </>
           )}
         </div>
 
-        <ul className="flex flex-col">
-          {voci.map((sezione) => (
-            <li key={sezione.id}>
-              <Link
-                to={sezione.percorso}
-                onClick={chiudi}
-                className={`flex items-center gap-3 rounded-card px-3 py-3 ${veste.voceInerte}`}
+        {/* Il tema. Solo per chi è entrato: la scelta si ricorda per
+            persona, e chi non ha un nome non ha dove ricordarla. */}
+        {utente && (
+          <div role="group" aria-label="Tema" className="mb-3 grid grid-cols-2 gap-1 rounded-card bg-shelf p-1">
+            {[
+              { id: "ardesia", etichetta: "Ardesia e ottone" },
+              { id: "lilla", etichetta: "Carta e lilla" }
+            ].map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => cambiaTema(t.id)}
+                aria-pressed={tema === t.id}
+                className={`rounded-lg py-2.5 text-sm font-semibold transition-colors duration-quick ${
+                  tema === t.id ? VESTE.acceso : "text-ink-muted"
+                }`}
               >
-                <Icon nome={sezione.icona} dimensione={20} />
+                {t.etichetta}
+              </button>
+            ))}
+          </div>
+        )}
 
-                <span className="flex-1 text-sm font-medium">{sezione.etichetta}</span>
+        <ul className="flex flex-col">
+          {voci.map((voce) => (
+            <li key={voce.id}>
+              <Link
+                to={voce.percorso}
+                onClick={chiudi}
+                className={`flex items-center gap-3 rounded-card px-3 py-3 ${VESTE.voceInerte}`}
+              >
+                <Icon nome={voce.icona} dimensione={20} />
 
-                {sezione.id === admin.id && richieste > 0 && (
+                <span className="flex-1 text-sm font-medium">{voce.etichetta}</span>
+
+                {voce.id === SEZIONI_ADMIN.biblioteca.id && richieste > 0 && (
                   <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ember px-1.5 font-numeric text-[0.7rem] font-bold text-void">
                     {richieste}
                   </span>

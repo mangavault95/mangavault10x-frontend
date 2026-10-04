@@ -42,7 +42,9 @@ export default function CollezionePage() {
   const { serie, inCorso, errore, ricarica } = useCollezione();
   const { bibliotecaSolaLettura } = useSessione();
   const [parametri, setParametri] = useSearchParams();
-  const [modaleAperto, setModaleAperto] = useState(false);
+  // `?nuova=<titolo>` apre il modulo già compilato col titolo: ci arriva
+  // la pagina Cerca quando una serie in collezione non c'è.
+  const [modaleAperto, setModaleAperto] = useState(() => parametri.has("nuova"));
   const [filtriMobileAperti, setFiltriMobileAperti] = useState(false);
 
   const ricercaTesto = parametri.get("q") || "";
@@ -290,7 +292,16 @@ export default function CollezionePage() {
       {modaleAperto && (
         <ModuloNuovaSerie
           tutteLeSerie={serie}
-          onChiuso={() => setModaleAperto(false)}
+          titoloIniziale={parametri.get("nuova") || ""}
+          onChiuso={() => {
+            setModaleAperto(false);
+
+            if (parametri.has("nuova")) {
+              const altri = new URLSearchParams(parametri);
+              altri.delete("nuova");
+              setParametri(altri, { replace: true });
+            }
+          }}
           onCreata={ricarica}
         />
       )}
@@ -392,11 +403,11 @@ const CAMPI_VUOTI = {
  * il titolo: lo stesso servizio che arricchisce le schede in Gestione
  * compila il resto.
  */
-function ModuloNuovaSerie({ tutteLeSerie, onChiuso, onCreata }) {
+function ModuloNuovaSerie({ tutteLeSerie, titoloIniziale = "", onChiuso, onCreata }) {
   const eseguiProtetto = useAccessoProtetto();
   const navigate = useNavigate();
 
-  const [campi, setCampi] = useState(CAMPI_VUOTI);
+  const [campi, setCampi] = useState(() => ({ ...CAMPI_VUOTI, titolo: titoloIniziale }));
   const [compilando, setCompilando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [errore, setErrore] = useState(null);

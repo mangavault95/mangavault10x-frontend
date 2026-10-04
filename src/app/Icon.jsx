@@ -28,6 +28,12 @@ const TRACCIATI = {
   // Il calendario delle uscite: il mese, con i due anelli in cima.
   calendario: "M4 6h16v14H4zM4 10h16M8.5 4v3.6M15.5 4v3.6",
   close: "M6 6l12 12M18 6L6 18",
+  // Le quattro linguette della barra unica (04/10/2026): l'orologio di
+  // «Adesso», i volumi in piedi, lo schermo con il tasto play, la persona.
+  adesso: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",
+  manga: "M4 5a2 2 0 0 1 2-2h4v18H6a2 2 0 0 1-2-2zM10 3h4v18h-4zM15 4l4 1-3 16-4-1",
+  anime: "M3 5h18v13H3zM10 9l5 2.5-5 2.5zM8 21h8",
+  persona: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6",
   back: "M15 19l-7-7 7-7",
   plus: "M12 5v14M5 12h14",
   menu: "M4 7h16M4 12h16M4 17h16",

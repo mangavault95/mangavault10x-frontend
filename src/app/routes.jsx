@@ -15,6 +15,7 @@ import { BibliotecarioProvider } from "../bibliotecario/BibliotecarioProvider";
 // di tutto il resto del sito messo insieme, e la home lo scarica
 // sempre: è la stanza d'ingresso, non un'ala facoltativa.
 const Adesso = lazy(() => import("../pages/AdessoPage"));
+const Cerca = lazy(() => import("../pages/CercaPage"));
 // La stanza in 3D: dal 04/10/2026 non è più la porta del sito ma una
 // sala in cui si entra apposta (`/sala`). Three.js lo scarica solo chi
 // ci va.
@@ -118,6 +119,7 @@ function Contenuto() {
                 <Routes location={location} key={`${location.pathname}|${idVisto ?? "ospite"}`}>
                   <Route path="/" element={<Adesso />} />
                   <Route path="/sala" element={<Home />} />
+                  <Route path="/cerca" element={<Cerca />} />
                   <Route path="/collezione" element={<Collezione />} />
                   {/* La biblioteca non è più una pagina a sé: è lo scaffale
                       della stanza d'ingresso. Il vecchio indirizzo resta

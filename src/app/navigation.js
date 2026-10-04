@@ -21,6 +21,64 @@
  * passaggio si vede prima ancora di leggere le voci.
  */
 
+/* ---------------------------------------------------------------
+ * LA BARRA UNICA (04/10/2026)
+ *
+ * Il commutatore BIBLIOTECA/VIDEOTECA non c'è più. In basso ci sono
+ * sempre le stesse quattro linguette più «Tu», qualunque cosa si stia
+ * guardando: Adesso, Manga, Anime, Cerca. Le sezioni di ciascun mondo
+ * (Collezione, In lettura, Wishlist… / Videoteca, Calendario…) stanno
+ * in una riga di linguette in cima alle pagine di quel mondo
+ * (`sottosezioniDi`), così niente resta senza strada per arrivarci.
+ *
+ * `MONDI` e `SEZIONI` qui sotto restano: dicono ancora a quale mondo
+ * appartiene un indirizzo (Gestione, il banco, il tasto «aggiungi»
+ * della videoteca) e danno il titolo alle schede del browser.
+ * --------------------------------------------------------------- */
+
+export const SCHEDE = [
+  { id: "adesso", percorso: "/", etichetta: "Adesso", icona: "adesso", tasto: "1" },
+  { id: "manga", percorso: "/collezione", etichetta: "Manga", icona: "manga", tasto: "2" },
+  { id: "anime", percorso: "/videoteca/io", etichetta: "Anime", icona: "anime", tasto: "3" },
+  { id: "cerca", percorso: "/cerca", etichetta: "Cerca", icona: "search", tasto: "4" }
+];
+
+// Le pagine che si raggiungono dalla stanza in 3D sono della biblioteca:
+// stanno sotto «Manga» anche se nessuna linguetta di quel mondo le nomina.
+const PAGINE_MANGA = [
+  "/collezione", "/serie/", "/lettura", "/wishlist", "/desiderio/", "/statistiche",
+  "/kachinuki", "/admin", "/sala", "/cassa", "/bacheca", "/tavolino", "/banco"
+];
+const PAGINE_ANIME = ["/videoteca", "/calendario"];
+
+/** Quale linguetta della barra unica è accesa per questo indirizzo. */
+export function schedaDi(percorso) {
+  if (percorso === "/") return "adesso";
+  if (percorso.startsWith("/cerca")) return "cerca";
+  if (PAGINE_ANIME.some((p) => percorso.startsWith(p))) return "anime";
+  if (PAGINE_MANGA.some((p) => percorso.startsWith(p))) return "manga";
+
+  return null;
+}
+
+/**
+ * La riga di linguette in cima alle pagine di un mondo.
+ *
+ * Nella videoteca la propria pagina viene prima del Cineforum: è quella
+ * che si apre ogni sera, il Cineforum si guarda ogni tanto.
+ */
+export function sottosezioniDi(scheda) {
+  if (scheda === "manga") return SEZIONI.filter((s) => s.mondo === "biblioteca" && s.percorso !== "/");
+
+  if (scheda === "anime") {
+    const ordine = ["videoteca", "calendario", "cineforum"];
+
+    return ordine.map((id) => SEZIONI.find((s) => s.id === id)).filter(Boolean);
+  }
+
+  return [];
+}
+
 export const MONDI = [
   {
     id: "biblioteca",
@@ -298,6 +356,8 @@ export function titoloPer(percorso) {
   if (/^\/kachinuki\/\d+/.test(percorso)) return "Una partita · Kachinuki-sen";
 
   if (PORTE[percorso]) return `${PORTE[percorso]} · MangaVault`;
+
+  if (percorso.startsWith("/cerca")) return "Cerca · MangaVault";
 
   const sezione = [...SEZIONI, ...Object.values(SEZIONI_ADMIN)].find(
     (s) => s.percorso === percorso
