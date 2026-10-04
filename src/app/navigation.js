@@ -359,6 +359,7 @@ export function titoloPer(percorso) {
   if (PORTE[percorso]) return `${PORTE[percorso]} · MangaVault`;
 
   if (percorso.startsWith("/cerca")) return "Cerca · MangaVault";
+  if (percorso.startsWith("/mese")) return "Il vostro mese · MangaVault";
 
   const sezione = [...SEZIONI, ...Object.values(SEZIONI_ADMIN)].find(
     (s) => s.percorso === percorso

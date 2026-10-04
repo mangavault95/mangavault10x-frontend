@@ -184,6 +184,9 @@ export const registraAcquisto = (mangaId, { volumi = null, prezzo = null, data =
     auth: true
   });
 
+/** Il riassunto di un mese di casa (`routes/mese.js`); senza mese, quello scorso. */
+export const getMese = (mese = null) => request(`/api/mese${mese ? `?m=${mese}` : ""}`);
+
 export const annullaAcquisti = (ids) =>
   request("/api/manga/acquisti/annulla", { method: "POST", body: { ids }, auth: true });
 

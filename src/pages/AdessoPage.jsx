@@ -170,6 +170,8 @@ export default function AdessoPage() {
     <div className="mx-auto w-full max-w-2xl pb-6">
       <Testata nome={utente?.nickname} />
 
+      <RichiamoMese adesso={adesso} />
+
       {problema && (
         <p role="alert" className="mx-4 mt-4 rounded-card border border-ember/30 bg-ember/10 px-4 py-3 text-sm text-ember">
           {problema}
@@ -509,6 +511,36 @@ function LetturaPrincipale({ lettura, occupato, onPiuUno }) {
         {eUltimo ? "✓" : "+1"}
       </button>
     </div>
+  );
+}
+
+/**
+ * Nei primi dieci giorni del mese, una riga sola: il riassunto del mese
+ * appena finito è pronto. Dopo il dieci sparisce — resta in «Tu».
+ */
+const NOME_DEL_MESE = new Intl.DateTimeFormat("it-IT", { month: "long", timeZone: "Europe/Rome" });
+
+function RichiamoMese({ adesso }) {
+  const oggi = new Date(adesso);
+
+  if (Number(new Intl.DateTimeFormat("it-IT", { day: "numeric", timeZone: "Europe/Rome" }).format(oggi)) > 10) {
+    return null;
+  }
+
+  const scorso = new Date(oggi.getFullYear(), oggi.getMonth() - 1, 15);
+
+  return (
+    <Link
+      to="/mese"
+      className="mx-4 mt-4 flex items-center justify-between rounded-2xl bg-brass-400/12 px-4 py-3 text-sm text-ink-bright transition-colors duration-quick active:bg-brass-400/20"
+    >
+      <span>
+        Il vostro <span className="font-semibold">{NOME_DEL_MESE.format(scorso)}</span>: com'è andato
+      </span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="text-brass-300">
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+    </Link>
   );
 }
 

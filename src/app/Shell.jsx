@@ -446,6 +446,7 @@ function FoglioTu({ richieste, chiudi }) {
   const [tema, setTema] = useState(() => temaDi(utente));
 
   const voci = [
+    { id: "mese", percorso: "/mese", etichetta: "Il vostro mese", icona: "calendario" },
     { id: "sala", percorso: "/sala", etichetta: "La sala della biblioteca", icona: "portale" },
     { ...SEZIONI_ADMIN.biblioteca, etichetta: "Gestione dei manga" },
     { ...SEZIONI_ADMIN.videoteca, etichetta: "Gestione degli anime" }
