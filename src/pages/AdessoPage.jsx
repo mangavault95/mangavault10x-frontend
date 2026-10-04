@@ -4,7 +4,7 @@ import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
 import { useSessione } from "../dati/sessione";
 import { useAccessoProtetto } from "../dati/accesso";
-import { euro, tettoLettura, volumiMancanti } from "../dati/serie";
+import { chiudibile, euro, fraseMancanti, tettoLettura, volumiMancanti } from "../dati/serie";
 import {
   addReadingHistory,
   dopoIlRipiego,
@@ -269,7 +269,10 @@ export default function AdessoPage() {
                 {prossimoAcquisto.serie.titolo} {prossimoAcquisto.volume}
               </p>
               <p className="text-[0.8rem] text-ink-muted">
-                {prossimoAcquisto.mancanti === 1 ? "L'ultimo che ti manca" : `Te ne mancano ${prossimoAcquisto.mancanti}`}
+                {(() => {
+                  const frase = fraseMancanti(prossimoAcquisto.serie, prossimoAcquisto.mancanti);
+                  return frase.charAt(0).toUpperCase() + frase.slice(1);
+                })()}
                 {prossimoAcquisto.serie.editore ? ` · ${prossimoAcquisto.serie.editore}` : ""}
                 {prossimoAcquisto.serie.costo ? (
                   <>
@@ -374,17 +377,24 @@ function usciteDellaSettimana(volumi, puntate, anime, adesso) {
 }
 
 /**
- * La serie a cui manca meno per essere completa, contando solo i volumi
- * usciti in Italia (`volumiMancanti`). A pari mancanti vince la più
- * avanti: chiudere Happiness al decimo vale più che chiudere una serie
- * da due volumi.
+ * Il prossimo volume da comprare: prima le serie che con quell'acquisto
+ * si chiudono davvero (`chiudibile`), poi quelle in corso da rimettere in
+ * pari; a parità vince quella a cui manca meno, e poi la più avanti —
+ * chiudere Happiness al decimo vale più che chiudere una serie da due.
  */
 function acquistoPiuVicino(collezione) {
   const candidate = (collezione || [])
     .filter((s) => !s.droppato)
     .map((s) => ({ serie: s, mancanti: volumiMancanti(s) }))
     .filter((c) => c.mancanti > 0 && c.mancanti <= 3)
-    .sort((a, b) => a.mancanti - b.mancanti || b.serie.posseduti - a.serie.posseduti);
+    // Prima le serie che si chiudono davvero (conclusa e tutta uscita in
+    // Italia), poi quelle in corso da rimettere in pari.
+    .sort(
+      (a, b) =>
+        Number(chiudibile(b.serie)) - Number(chiudibile(a.serie)) ||
+        a.mancanti - b.mancanti ||
+        b.serie.posseduti - a.serie.posseduti
+    );
 
   if (!candidate.length) return null;
 

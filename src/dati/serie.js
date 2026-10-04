@@ -288,6 +288,35 @@ export function completamento(serie) {
   return Math.min(100, Math.round((serie.posseduti / totale) * 100));
 }
 
+/**
+ * Comprando quello che manca, la serie è COMPLETA? (04/10/2026)
+ *
+ * Solo se è conclusa e in Italia è uscita tutta. «Te ne manca uno» vuol
+ * dire due cose diverse: su Chainsaw Man (conclusa, 23 su 24) è l'ultimo
+ * volume e poi la serie è finita; su Vita da Slime (in corso) è l'ultimo
+ * USCITO, e poi si è in pari finché non esce il prossimo. Dire «poi è
+ * completa» del secondo era una bugia.
+ *
+ * Una serie senza stato vale come non chiudibile: meglio la frase
+ * prudente («poi sei in pari») che una promessa sbagliata.
+ */
+export function chiudibile(serie) {
+  if (serie?.stato !== "conclusa") return false;
+
+  const { volumiItalia, totali } = serie;
+
+  return volumiItalia == null || totali == null || volumiItalia >= totali;
+}
+
+/** La frase sotto un volume da comprare, giusta per serie concluse e in corso. */
+export function fraseMancanti(serie, mancanti) {
+  if (chiudibile(serie)) {
+    return mancanti === 1 ? "l'ultimo, poi è completa" : `te ne mancano ${mancanti} per completarla`;
+  }
+
+  return mancanti === 1 ? "l'ultimo uscito, poi sei in pari" : `te ne mancano ${mancanti} per essere in pari`;
+}
+
 export function volumiMancanti(serie) {
   const totale = totaleDisponibile(serie);
 

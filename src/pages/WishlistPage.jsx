@@ -22,7 +22,7 @@ import {
   urlCopertina
 } from "../services/api";
 import { cercaFuori } from "../bibliotecario/esterni";
-import { euro, volumiMancanti } from "../dati/serie";
+import { chiudibile, euro, fraseMancanti, volumiMancanti } from "../dati/serie";
 
 /**
  * DA COMPRARE — la lista della spesa (04/10/2026).
@@ -94,7 +94,14 @@ export default function WishlistPage() {
       .filter((s) => !s.droppato && !inUscita.has(Number(s.id)))
       .map((s) => ({ serie: s, mancanti: volumiMancanti(s) }))
       .filter((c) => c.mancanti > 0 && c.mancanti <= 3 && !presi.has(`${c.serie.id}:${c.serie.posseduti + 1}`))
-      .sort((a, b) => a.mancanti - b.mancanti || b.serie.posseduti - a.serie.posseduti)
+      // Prima quelle che si chiudono davvero, poi quelle in corso da
+      // rimettere in pari; dentro ciascun gruppo, la più vicina.
+      .sort(
+        (a, b) =>
+          Number(chiudibile(b.serie)) - Number(chiudibile(a.serie)) ||
+          a.mancanti - b.mancanti ||
+          b.serie.posseduti - a.serie.posseduti
+      )
       .slice(0, 8);
   }, [collezione, escono, presi]);
 
@@ -284,15 +291,15 @@ export default function WishlistPage() {
         )}
 
         {!ricercaTesto && perChiudere.length > 0 && (
-          <Mucchio titolo="Per chiudere una serie">
+          <Mucchio titolo="Ti mancano">
             {perChiudere.map(({ serie: s, mancanti }) => (
               <RigaSpesa
                 key={`c${s.id}`}
                 a={`/serie/${s.id}`}
                 copertina={s.copertina}
                 titolo={`${s.titolo} ${s.posseduti + 1}`}
-                sotto={mancanti === 1 ? "l'ultimo, poi è completa" : mancanti === 2 ? "poi te ne manca 1" : `poi te ne mancano ${mancanti - 1}`}
-                sottoColore={mancanti === 1 ? "text-jade" : undefined}
+                sotto={fraseMancanti(s, mancanti)}
+                sottoColore={mancanti === 1 && chiudibile(s) ? "text-jade" : undefined}
                 prezzo={s.costo}
                 occupato={prendendo === `${s.id}:${s.posseduti + 1}`}
                 onPreso={bibliotecaSolaLettura ? null : () => preso(Number(s.id), s.posseduti + 1, s.titolo)}
