@@ -874,6 +874,22 @@ export default function LetturaPage() {
                     {s.titolo}
                   </Link>
                   <VotoStelle serie={s} dimensione={20} onCambiato={(nuovo) => aggiornaVoto(s.id, nuovo)} />
+                  {/* Una serie finisce qui anche per sbaglio: segnata a nome
+                      tuo mentre la leggeva l'altra persona (Clover in Love,
+                      04/10/2026). Toglierla cancella solo i TUOI volumi. */}
+                  <Menu
+                    etichetta={`Altro su ${s.titolo}`}
+                    voci={[
+                      {
+                        chiave: "non-mia",
+                        etichetta: "Non l'ho letta io",
+                        descrizione: "Toglie i volumi segnati a tuo nome. Le letture degli altri restano.",
+                        conferma: "Sicuro? Tocca di nuovo",
+                        pericolo: true,
+                        onClick: () => togliDalleLette(s)
+                      }
+                    ]}
+                  />
                 </li>
               ))}
             </ul>
