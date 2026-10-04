@@ -4,27 +4,43 @@ import Pagina from "../ui/Pagina";
 import Copertina from "../ui/Copertina";
 import { Bottone, CampoRicerca } from "../ui/Controlli";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
+import Menu from "../ui/Menu";
 import useRisorsa from "../dati/useRisorsa";
 import { useSessione } from "../dati/sessione";
 import { useAccessoProtetto } from "../dati/accesso";
+import { useCollezione } from "../dati/collezione";
 import {
   addToWishlist,
   deleteWishlistItem,
   enrichManga,
+  getUsciteManga,
   getWishlist,
   purchaseWishlistItem,
-  updateWishlistItem
+  registraAcquisto,
+  updateWishlistItem,
+  urlCopertina
 } from "../services/api";
 import { cercaFuori } from "../bibliotecario/esterni";
-import { dataIt } from "../dati/serie";
+import { euro, volumiMancanti } from "../dati/serie";
 
 /**
- * I desideri: le serie che non hai ancora.
+ * DA COMPRARE — la lista della spesa (04/10/2026).
  *
- * La differenza con la collezione è che qui i dati li scrive una
- * persona, non un import. Quindi il modulo fa il lavoro pesante:
- * basta il titolo, il resto lo cerca il bottone "Compila" chiamando
- * lo stesso servizio che arricchisce le schede della collezione.
+ * Era la pagina dei desideri: una riga per serie con la trama, tre
+ * bottoni e un «Elimina» rosso sempre a un millimetro da «Comprato».
+ * Prometteva «con dove trovarle» e non lo diceva mai. Adesso risponde
+ * a «cosa devo comprare?», in tre mucchi:
+ *
+ *   ESCONO ORA       i volumi delle vostre serie in uscita nelle due
+ *                    settimane, nella vostra edizione (`/api/manga/uscite`)
+ *   PER CHIUDERE     le serie a cui mancano uno, due o tre volumi
+ *   DESIDERI         le serie che non avete ancora, come prima
+ *
+ * e in fondo quanto costano le prime due. «Preso» registra l'acquisto
+ * come il bot di Telegram; Modifica ed Elimina stanno sotto i puntini.
+ *
+ * Dei desideri il modulo fa il lavoro pesante: basta il titolo, il resto
+ * lo cerca il bottone «Compila» con lo stesso servizio delle schede.
  */
 
 const VUOTO = {
@@ -57,6 +73,52 @@ export default function WishlistPage() {
   // in collezione c'era già).
   const [daComprare, setDaComprare] = useState(null);
   const [nota, setNota] = useState(null);
+
+  // Le uscite e le serie quasi complete. Quello che si segna «preso»
+  // sparisce subito da qui, senza aspettare che tornino le liste.
+  const { serie: collezione, ricarica: ricaricaCollezione } = useCollezione();
+  const uscite = useRisorsa(() => getUsciteManga(14));
+  const [presi, setPresi] = useState(() => new Set());
+  const [prendendo, setPrendendo] = useState(null);
+
+  const escono = useMemo(
+    () => (uscite.dati?.uscite || []).filter((u) => u.stato !== "gia" && !presi.has(`${u.serie.id}:${u.numero}`)),
+    [uscite.dati, presi]
+  );
+
+  const perChiudere = useMemo(() => {
+    const inUscita = new Set(escono.map((u) => u.serie.id));
+
+    return (collezione || [])
+      .filter((s) => !s.droppato && !inUscita.has(Number(s.id)))
+      .map((s) => ({ serie: s, mancanti: volumiMancanti(s) }))
+      .filter((c) => c.mancanti > 0 && c.mancanti <= 3 && !presi.has(`${c.serie.id}:${c.serie.posseduti + 1}`))
+      .sort((a, b) => a.mancanti - b.mancanti || b.serie.posseduti - a.serie.posseduti)
+      .slice(0, 8);
+  }, [collezione, escono, presi]);
+
+  const totale =
+    escono.reduce((t, u) => t + (u.serie.prezzo_stimato || 0), 0) +
+    perChiudere.reduce((t, c) => t + (c.serie.costo || 0) * c.mancanti, 0);
+
+  async function preso(serieId, numero, titolo) {
+    const chiave = `${serieId}:${numero}`;
+
+    setProblema(null);
+    setNota(null);
+    setPrendendo(chiave);
+
+    try {
+      await eseguiProtetto(() => registraAcquisto(serieId, { volumi: [numero] }));
+      setPresi((p) => new Set(p).add(chiave));
+      setNota(`${titolo} ${numero} registrato.`);
+      ricaricaCollezione();
+    } catch (e) {
+      if (!e?.annullato) setProblema(`${titolo} ${numero} non è stato registrato.`);
+    } finally {
+      setPrendendo(null);
+    }
+  }
 
   // `dati || []` sta dentro il useMemo: fuori creerebbe un array nuovo
   // a ogni render, e il filtro si rifarebbe da capo anche quando non
@@ -98,9 +160,8 @@ export default function WishlistPage() {
     }
   }
 
+  // La conferma la chiede il menu (secondo tocco): niente finestra del browser.
   async function elimina(elemento) {
-    if (!window.confirm(`Togliere «${elemento.titolo}» dai desideri?`)) return;
-
     setProblema(null);
     setDati((precedenti) => (precedenti || []).filter((e) => e.id !== elemento.id));
 
@@ -150,9 +211,8 @@ export default function WishlistPage() {
 
   return (
     <Pagina
-      occhiello="Da comprare"
-      titolo="Wishlist"
-      sommario="Le serie che vuoi, con dove trovarle."
+      titolo="Da comprare"
+      sommario="Uscite, ultimi volumi e desideri, in un posto solo."
       azioni={
         <div className="flex flex-wrap items-center gap-3">
           <CampoRicerca
@@ -203,12 +263,60 @@ export default function WishlistPage() {
           />
         )}
 
+        {!ricercaTesto && escono.length > 0 && (
+          <Mucchio titolo="Escono ora">
+            {escono.map((u) => (
+              <RigaSpesa
+                key={`u${u.serie.id}:${u.numero}`}
+                a={`/serie/${u.serie.id}`}
+                copertina={u.copertina}
+                ripiego={u.serie.copertina}
+                titolo={`${u.serie.titolo} ${u.numero}`}
+                sotto={[giornoBreve(u.data), u.editore].filter(Boolean).join(" · ")}
+                avviso={u.stato === "manca" ? `prima te ne ${u.mancanti === 1 ? "manca 1" : `mancano ${u.mancanti}`}` : null}
+                prezzo={u.serie.prezzo_stimato}
+                occupato={prendendo === `${u.serie.id}:${u.numero}`}
+                onPreso={bibliotecaSolaLettura ? null : () => preso(u.serie.id, u.numero, u.serie.titolo)}
+              />
+            ))}
+          </Mucchio>
+        )}
+
+        {!ricercaTesto && perChiudere.length > 0 && (
+          <Mucchio titolo="Per chiudere una serie">
+            {perChiudere.map(({ serie: s, mancanti }) => (
+              <RigaSpesa
+                key={`c${s.id}`}
+                a={`/serie/${s.id}`}
+                copertina={s.copertina}
+                titolo={`${s.titolo} ${s.posseduti + 1}`}
+                sotto={mancanti === 1 ? "l'ultimo, poi è completa" : mancanti === 2 ? "poi te ne manca 1" : `poi te ne mancano ${mancanti - 1}`}
+                sottoColore={mancanti === 1 ? "text-jade" : undefined}
+                prezzo={s.costo}
+                occupato={prendendo === `${s.id}:${s.posseduti + 1}`}
+                onPreso={bibliotecaSolaLettura ? null : () => preso(Number(s.id), s.posseduti + 1, s.titolo)}
+              />
+            ))}
+          </Mucchio>
+        )}
+
+        {!ricercaTesto && totale > 0 && (
+          <div className="flex items-center justify-between rounded-2xl border border-dashed border-strong px-4 py-3.5">
+            <span className="text-sm text-ink-muted">Uscite e ultimi volumi</span>
+            <span className="font-numeric text-lg font-semibold text-ink-bright">{euro(totale)}</span>
+          </div>
+        )}
+
+        {!ricercaTesto && (dati || []).length > 0 && (
+          <h2 className="-mb-4 px-1 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">Desideri</h2>
+        )}
+
         {errore ? (
           <Errore errore={errore} riprova={ricarica} />
         ) : inCorso && !dati ? (
           <CaricamentoElenco />
         ) : visibili.length ? (
-          <ul className="space-y-3">
+          <ul className="divide-y divide-hairline rounded-2xl bg-alcove px-3.5">
             {visibili.map((e) => (
               <li key={e.id}>
                 <RigaDesiderio
@@ -253,67 +361,122 @@ export default function WishlistPage() {
 }
 
 /* ==================================================
-   RIGA
+   I MUCCHI DELLA SPESA
+   ================================================== */
+
+const GIORNO = new Intl.DateTimeFormat("it-IT", { weekday: "long", day: "numeric", timeZone: "Europe/Rome" });
+
+function giornoBreve(data) {
+  return GIORNO.format(new Date(`${data}T12:00:00`));
+}
+
+function Mucchio({ titolo, children }) {
+  return (
+    <section>
+      <h2 className="mb-2.5 px-1 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">{titolo}</h2>
+      <ul className="divide-y divide-hairline rounded-2xl bg-alcove px-3.5">{children}</ul>
+    </section>
+  );
+}
+
+/**
+ * La copertina del volume, e se non arriva quella della serie: le
+ * miniature delle edizioni su AnimeClick a volte non esistono ancora
+ * per i volumi appena annunciati.
+ */
+function Miniatura({ src, ripiego = null }) {
+  const [tentativo, setTentativo] = useState(0);
+  const candidate = [src, ripiego].filter(Boolean);
+  const indirizzo = urlCopertina(candidate[tentativo]);
+
+  return indirizzo ? (
+    <img
+      key={indirizzo}
+      src={indirizzo}
+      alt=""
+      loading="lazy"
+      onError={() => setTentativo((t) => t + 1)}
+      className="h-14 w-10 shrink-0 rounded-md object-cover"
+    />
+  ) : (
+    <span aria-hidden="true" className="h-14 w-10 shrink-0 rounded-md bg-glass-2" />
+  );
+}
+
+function RigaSpesa({ a, copertina, ripiego, titolo, sotto, sottoColore = "text-ink-muted", avviso, prezzo, occupato, onPreso }) {
+  return (
+    <li className="flex items-center gap-3 py-2.5">
+      <Link to={a} className="flex min-w-0 flex-1 items-center gap-3">
+        <Miniatura src={copertina} ripiego={ripiego} />
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[0.95rem] font-semibold text-ink-bright">{titolo}</p>
+          <p className={`truncate text-xs ${sottoColore}`}>{sotto}</p>
+          {avviso && <p className="truncate text-xs text-ember">{avviso}</p>}
+        </div>
+      </Link>
+
+      {prezzo ? <span className="shrink-0 font-numeric text-sm font-semibold text-ink-bright">{euro(prezzo)}</span> : null}
+
+      {onPreso && (
+        <button
+          type="button"
+          onClick={onPreso}
+          disabled={occupato}
+          className="shrink-0 rounded-xl bg-glass-2 px-3 py-2 text-sm font-semibold text-ink-bright transition-transform duration-quick active:scale-95 disabled:opacity-60"
+        >
+          {occupato ? "…" : "Preso"}
+        </button>
+      )}
+    </li>
+  );
+}
+
+/* ==================================================
+   RIGA DI UN DESIDERIO
    ================================================== */
 
 function RigaDesiderio({ elemento, onModifica, onElimina, onComprato, soloLettura }) {
-  // Fermare la propagazione sui bottoni: la riga intera è un Link,
-  // altrimenti "Elimina" aprirebbe anche la scheda del desiderio.
-  const fermaEAgisci = (azione) => (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    azione();
-  };
-
   return (
-    <Link
-      to={`/desiderio/${elemento.id}`}
-      className="flex flex-wrap items-start gap-x-5 gap-y-4 rounded-panel border border-hairline bg-glass-1 p-4 backdrop-blur-xl transition-colors duration-base hover:border-soft"
-    >
-      <div className="w-16 shrink-0">
-        <Copertina src={elemento.coverurl} alt={elemento.titolo} />
-      </div>
+    <div className="flex items-center gap-3 py-2.5">
+      <Link to={`/desiderio/${elemento.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="w-10 shrink-0">
+          <Copertina src={elemento.coverurl} alt={elemento.titolo} />
+        </div>
 
-      <div className="min-w-0 flex-1 space-y-1.5">
-        <h3 className="font-medium text-ink-bright">{elemento.titolo}</h3>
-
-        {elemento.autori && (
-          <p className="text-sm text-ink-muted">{elemento.autori}</p>
-        )}
-
-        <p className="font-numeric text-xs text-ink-faint">
-          {elemento.volumitotali ? `${elemento.volumitotali} volumi · ` : ""}
-          aggiunto il {dataIt(elemento.created_at) || "—"}
-        </p>
-
-        {elemento.dovecomprare && (
-          <p className="text-xs text-ink-muted">
-            <span className="text-ink-faint">Dove: </span>
-            {elemento.dovecomprare}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[0.95rem] font-semibold text-ink-bright">{elemento.titolo}</p>
+          <p className="truncate text-xs text-ink-muted">
+            {[elemento.volumitotali ? `${elemento.volumitotali} ${Number(elemento.volumitotali) === 1 ? "volume" : "volumi"}` : null, elemento.autori].filter(Boolean).join(" · ")}
           </p>
-        )}
-
-        {elemento.trama && (
-          <p className="line-clamp-2 max-w-2xl pt-1 text-sm text-ink">{elemento.trama}</p>
-        )}
-      </div>
+          {elemento.dovecomprare ? (
+            <p className="truncate text-xs text-ink-muted">Dove: {elemento.dovecomprare}</p>
+          ) : null}
+        </div>
+      </Link>
 
       {!soloLettura && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Bottone onClick={fermaEAgisci(onComprato)} title="Sposta in collezione">
+        <>
+          <Bottone onClick={onComprato} title="Sposta in collezione" className="shrink-0 !px-3 !py-2">
             Comprato
           </Bottone>
 
-          <Bottone variante="secondario" onClick={fermaEAgisci(onModifica)}>
-            Modifica
-          </Bottone>
-
-          <Bottone variante="pericolo" onClick={fermaEAgisci(onElimina)}>
-            Elimina
-          </Bottone>
-        </div>
+          <Menu
+            etichetta={`Altro su ${elemento.titolo}`}
+            voci={[
+              { chiave: "modifica", etichetta: "Modifica", descrizione: "Titolo, volumi, dove comprarla.", onClick: onModifica },
+              {
+                chiave: "elimina",
+                etichetta: "Togli dai desideri",
+                conferma: "Sicuro? Tocca di nuovo",
+                pericolo: true,
+                onClick: onElimina
+              }
+            ]}
+          />
+        </>
       )}
-    </Link>
+    </div>
   );
 }
 

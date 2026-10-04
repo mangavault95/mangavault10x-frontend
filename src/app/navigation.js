@@ -138,10 +138,11 @@ export const SEZIONI = [
     mondo: "biblioteca",
     primaria: true,
     percorso: "/wishlist",
-    // «Wishlist» e non «Desideri»: è il nome che si usa parlandone, e la
-    // voce della barra deve chiamarsi come la chiama chi la clicca.
-    etichetta: "Wishlist",
-    descrizione: "Le serie che vuoi comprare",
+    // «Da comprare» dal 04/10/2026: non è più solo l'elenco dei
+    // desideri, ma la lista della spesa intera — uscite, ultimi volumi
+    // e desideri. L'indirizzo resta /wishlist.
+    etichetta: "Da comprare",
+    descrizione: "Uscite, ultimi volumi e desideri",
     icona: "cartellino",
     tasto: "4"
   },

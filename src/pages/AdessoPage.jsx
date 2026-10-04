@@ -255,7 +255,7 @@ export default function AdessoPage() {
       )}
 
       {prossimoAcquisto && (
-        <Sezione titolo="Prossimo acquisto" link={{ a: "/wishlist", testo: "Wishlist" }}>
+        <Sezione titolo="Prossimo acquisto" link={{ a: "/wishlist", testo: "Da comprare" }}>
           <Link
             to={`/serie/${prossimoAcquisto.serie.id}`}
             className="flex items-center gap-3.5 rounded-2xl bg-alcove p-3.5 transition-colors duration-quick active:bg-glass-2"
