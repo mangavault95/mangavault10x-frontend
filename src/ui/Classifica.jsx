@@ -33,7 +33,7 @@ export default function Classifica({ voci, formatta = (v) => v, unita }) {
 
             {/* Il binario resta visibile anche a barra corta: senza,
                 una riga da 1 su 200 sembrerebbe un errore di stampa. */}
-            <span className="h-2.5 w-full overflow-hidden rounded-full bg-white/[0.05]">
+            <span className="h-2.5 w-full overflow-hidden rounded-full bg-ink-bright/[0.05]">
               <span
                 className="block h-full rounded-full bg-brass-400/85 transition-[width,background-color] duration-slow ease-settle group-hover:bg-brass-400"
                 style={{ width: `${larghezza}%` }}

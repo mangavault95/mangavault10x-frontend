@@ -137,7 +137,7 @@ export function Blocco({ titolo, extra, children, className = "" }) {
  */
 export function Bottone({ tono = "quieto", className = "", ...props }) {
   const toni = {
-    pieno: "bg-quaderno-blu text-white hover:bg-quaderno-blu/90",
+    pieno: "bg-quaderno-blu text-quaderno-su-blu hover:bg-quaderno-blu/90",
     quieto:
       "border border-quaderno-riga bg-quaderno-foglio text-quaderno-inchiostro hover:bg-quaderno-carta",
     nudo: "text-quaderno-tenue hover:text-quaderno-inchiostro"

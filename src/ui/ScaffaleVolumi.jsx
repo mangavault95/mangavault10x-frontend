@@ -220,7 +220,7 @@ function Quadretti({
 const ASPETTO_TACCA = {
   letto: "bg-brass-400",
   posseduto: "bg-brass-400/30",
-  mancante: "bg-white/[0.07]"
+  mancante: "bg-ink-bright/[0.07]"
 };
 
 function Nastro({

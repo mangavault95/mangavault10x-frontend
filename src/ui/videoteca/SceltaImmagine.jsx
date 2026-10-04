@@ -114,7 +114,7 @@ function Linguetta({ acceso, children, ...resto }) {
       aria-pressed={acceso}
       className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors duration-quick ${
         acceso
-          ? "bg-quaderno-blu text-white"
+          ? "bg-quaderno-blu text-quaderno-su-blu"
           : "border border-quaderno-riga text-quaderno-tenue hover:text-quaderno-inchiostro"
       }`}
       {...resto}

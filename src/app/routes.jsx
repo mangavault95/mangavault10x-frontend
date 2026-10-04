@@ -7,6 +7,7 @@ import { CollezioneProvider } from "../dati/CollezioneContext";
 import { AccessoProvider } from "../dati/AccessoProvider";
 import { SessioneProvider } from "../dati/SessioneProvider";
 import { useSessione } from "../dati/sessione";
+import { useTema } from "../dati/tema";
 import { BibliotecarioProvider } from "../bibliotecario/BibliotecarioProvider";
 
 // Ogni pagina è un chunk separato: la prima apertura scarica solo
@@ -93,6 +94,9 @@ export default function AppRoutes() {
 function Contenuto() {
   const location = useLocation();
   const { idVisto } = useSessione();
+
+  // Il tema segue chi è entrato: ardesia per Nicer, lilla per Sara.
+  useTema();
 
   // La chiave rimette in piedi il muro a ogni cambio di pagina: una
   // sezione caduta non deve tenersi il posto quando si prova ad andare

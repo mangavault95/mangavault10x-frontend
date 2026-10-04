@@ -3,6 +3,130 @@
 @tailwind utilities;
 
 /* =========================================================
+   I DUE TEMI — uno a testa (04/10/2026)
+
+   Li legge `tailwind.config.js`: ogni token di colore punta a una di
+   queste variabili, scritte come tre canali RGB perché Tailwind ci
+   possa aggiungere la trasparenza (`bg-brass-400/10`).
+
+   Chi è entrato decide quale vale (`dati/tema.js`): «ardesia» per
+   Nicer, «lilla» per Sara. Chi non è entrato vede l'ardesia.
+
+   I nomi sono ruoli, non colori: `--c-ink-bright` è il testo più forte,
+   chiaro su ardesia e scuro su carta. Per lo stesso motivo nel tema
+   chiaro la scala dell'accento è rovesciata: `brass-300` è sempre
+   «l'accento usato come testo», e su carta bianca deve essere scuro.
+   ========================================================= */
+
+/* ---- Ardesia e ottone: Nicer ----
+   Scuro ma non nero: un grafite caldo che sta bene con l'ottone. */
+:root {
+  --c-void: 26 24 21;
+  --c-shelf: 30 28 25;
+  --c-alcove: 41 38 34;
+  --c-riga: 58 54 48;
+
+  --c-ink-bright: 245 239 228;
+  --c-ink: 220 213 200;
+  --c-ink-muted: 187 178 163;
+  --c-ink-faint: 133 125 112;
+
+  --c-brass-50: 254 252 232;
+  --c-brass-100: 254 249 195;
+  --c-brass-200: 254 240 138;
+  --c-brass-300: 253 224 71;
+  --c-brass-400: 245 197 66;
+  --c-brass-500: 234 179 8;
+  --c-brass-600: 202 138 4;
+  --c-brass-700: 161 98 7;
+  --c-brass-800: 133 77 14;
+  --c-brass-900: 113 63 18;
+
+  --c-accento: 245 197 66;
+  --c-accento-tenue: 61 52 30;
+  --c-su-accento: 26 20 6;
+
+  --c-jade: 126 223 176;
+  --c-ember: 255 155 138;
+  --c-lapis: 129 140 248;
+  --c-voto-alto: 126 223 176;
+  --c-voto-basso: 255 155 138;
+
+  --superficie-1: rgb(41 38 34 / 0.6);
+  --superficie-2: rgb(47 43 38 / 0.9);
+  --superficie-3: rgb(55 51 45 / 0.97);
+
+  --linea-1: rgb(245 239 228 / 0.08);
+  --linea-2: rgb(245 239 228 / 0.13);
+  --linea-3: rgb(245 239 228 / 0.22);
+
+  --ombra-lift: 0 2px 8px rgb(0 0 0 / 0.35);
+  --ombra-raised: 0 8px 24px -6px rgb(0 0 0 / 0.5);
+  --ombra-float: 0 20px 48px -12px rgb(0 0 0 / 0.6);
+  --ombra-accento: 0 0 0 1px rgb(245 197 66 / 0.4), 0 4px 20px -4px rgb(245 197 66 / 0.28);
+
+  --barra: rgb(245 239 228 / 0.18);
+
+  color-scheme: dark;
+}
+
+/* ---- Carta e lilla: Sara ----
+   Bianco vero, schede appena velate di lilla, accento lilla scuro
+   abbastanza da reggere il testo bianco sopra (5,7:1). */
+[data-tema="lilla"] {
+  --c-void: 255 255 255;
+  --c-shelf: 255 255 255;
+  --c-alcove: 247 244 252;
+  --c-riga: 232 224 245;
+
+  --c-ink-bright: 31 23 48;
+  --c-ink: 58 49 80;
+  --c-ink-muted: 94 86 112;
+  --c-ink-faint: 152 144 168;
+
+  /* Rovesciata: i numeri bassi sono i lilla scuri (testo), gli alti i
+     lilla tenui (fondi), come sull'ardesia lo sono gialli chiari e
+     ottoni bruniti. */
+  --c-brass-50: 44 24 87;
+  --c-brass-100: 59 32 117;
+  --c-brass-200: 76 42 150;
+  --c-brass-300: 94 53 184;
+  --c-brass-400: 123 79 214;
+  --c-brass-500: 143 106 224;
+  --c-brass-600: 168 139 234;
+  --c-brass-700: 194 174 241;
+  --c-brass-800: 220 207 247;
+  --c-brass-900: 238 230 251;
+
+  --c-accento: 123 79 214;
+  --c-accento-tenue: 238 230 251;
+  --c-su-accento: 255 255 255;
+
+  --c-jade: 18 120 74;
+  --c-ember: 192 38 38;
+  --c-lapis: 79 70 229;
+  --c-voto-alto: 18 120 74;
+  --c-voto-basso: 192 38 38;
+
+  --superficie-1: rgb(247 244 252 / 0.9);
+  --superficie-2: rgb(240 234 250);
+  --superficie-3: rgb(255 255 255 / 0.97);
+
+  --linea-1: rgb(31 23 48 / 0.08);
+  --linea-2: rgb(31 23 48 / 0.12);
+  --linea-3: rgb(31 23 48 / 0.2);
+
+  --ombra-lift: 0 1px 3px rgb(31 23 48 / 0.08);
+  --ombra-raised: 0 8px 24px -8px rgb(31 23 48 / 0.18);
+  --ombra-float: 0 20px 48px -16px rgb(31 23 48 / 0.25);
+  --ombra-accento: 0 0 0 1px rgb(123 79 214 / 0.35), 0 4px 18px -4px rgb(123 79 214 / 0.3);
+
+  --barra: rgb(31 23 48 / 0.18);
+
+  color-scheme: light;
+}
+
+/* =========================================================
    BASE / DESIGN SYSTEM
    ========================================================= */
 @layer components {
@@ -349,7 +473,7 @@
   .panel-scrollbar,
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+    scrollbar-color: var(--barra) transparent;
   }
 
   .panel-scrollbar::-webkit-scrollbar,
@@ -365,11 +489,7 @@
 
   .panel-scrollbar::-webkit-scrollbar-thumb,
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.14),
-      rgba(255, 255, 255, 0.08)
-    );
+    background: var(--barra);
     border-radius: 999px;
     border: 2px solid rgba(0, 0, 0, 0);
   }
@@ -379,7 +499,7 @@
      già a tema dentro le modali. */
   html {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+    scrollbar-color: var(--barra) transparent;
   }
 
   html::-webkit-scrollbar {
@@ -391,11 +511,7 @@
   }
 
   html::-webkit-scrollbar-thumb {
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.14),
-      rgba(255, 255, 255, 0.08)
-    );
+    background: var(--barra);
     border-radius: 999px;
     border: 2px solid rgba(0, 0, 0, 0);
   }
@@ -689,7 +805,7 @@
    in orizzontale si vede il body, e un body senza colore è bianco. */
 html,
 body {
-  background-color: #0b0d14; /* shelf */
+  background-color: rgb(var(--c-shelf)); /* segue il tema */
 }
 
 /* Il lampo grigio che il browser accende su ogni tocco è una cosa da

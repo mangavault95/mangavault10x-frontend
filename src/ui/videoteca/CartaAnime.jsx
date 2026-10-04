@@ -69,7 +69,7 @@ export default function CartaAnime({ anime }) {
             sola e la barra del progresso non cambia quota da una
             scheda all'altra. */}
         {anime.prossima_uscita ? (
-          <span className="absolute left-2 top-2 rounded-full bg-quaderno-blu px-2 py-0.5 font-numeric text-[0.65rem] font-semibold text-white">
+          <span className="absolute left-2 top-2 rounded-full bg-quaderno-blu px-2 py-0.5 font-numeric text-[0.65rem] font-semibold text-quaderno-su-blu">
             ep {anime.prossimo_episodio} · {quandoBreve(anime.prossima_uscita)}
           </span>
         ) : (

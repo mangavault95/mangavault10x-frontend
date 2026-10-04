@@ -103,7 +103,7 @@ export default function Campanella() {
             «ne hai sette» sono due notizie diverse. Sopra il nove
             diventa «9+», o il numero non ci sta dentro. */}
         {quanti > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-quaderno-blu px-1 font-numeric text-[0.65rem] font-bold text-white">
+          <span className="absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-quaderno-blu px-1 font-numeric text-[0.65rem] font-bold text-quaderno-su-blu">
             {quanti > 9 ? "9+" : quanti}
           </span>
         )}

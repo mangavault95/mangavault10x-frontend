@@ -211,7 +211,7 @@ const VESTI = {
       "w-full rounded-card border border-quaderno-riga bg-quaderno-carta px-3.5 py-2.5 text-sm text-quaderno-inchiostro outline-none transition-colors duration-quick focus:border-quaderno-blu",
     etichetta: "mb-1.5 block text-xs font-medium uppercase tracking-wider text-quaderno-tenue",
     principale:
-      "rounded-card bg-quaderno-blu px-4 py-2.5 text-sm font-semibold text-white transition-all duration-quick ease-settle hover:brightness-110 active:scale-95 disabled:pointer-events-none disabled:opacity-40",
+      "rounded-card bg-quaderno-blu px-4 py-2.5 text-sm font-semibold text-quaderno-su-blu transition-all duration-quick ease-settle hover:brightness-110 active:scale-95 disabled:pointer-events-none disabled:opacity-40",
     secondario:
       "rounded-card px-4 py-2.5 text-sm font-medium text-quaderno-tenue transition-colors duration-quick hover:bg-quaderno-carta hover:text-quaderno-inchiostro",
     piede: "border-t border-quaderno-riga pt-3 text-center text-sm text-quaderno-tenue",

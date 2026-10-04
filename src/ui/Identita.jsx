@@ -38,7 +38,7 @@ const VESTI = {
     ospite:
       "border border-quaderno-riga text-quaderno-tenue hover:border-quaderno-blu hover:text-quaderno-inchiostro",
     iniziale:
-      "border border-quaderno-blu/30 bg-quaderno-blu-tenue text-quaderno-blu hover:bg-quaderno-blu hover:text-white",
+      "border border-quaderno-blu/30 bg-quaderno-blu-tenue text-quaderno-blu hover:bg-quaderno-blu hover:text-quaderno-su-blu",
     pannello: "border-quaderno-riga bg-quaderno-foglio",
     nome: "font-display text-sm font-semibold text-quaderno-inchiostro",
     ruolo: "mt-0.5 text-xs text-quaderno-tenue",

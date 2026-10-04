@@ -11,43 +11,69 @@
  * scritti a mano. Se serve un colore che non c'è, si aggiunge qui.
  */
 
+/**
+ * ⚠️ DAL 04/10/2026 I COLORI SONO VARIABILI, NON VALORI.
+ *
+ * Il sito ha un tema per persona — «ardesia e ottone» per Nicer, «carta
+ * e lilla» per Sara — e il tema lo sceglie chi è entrato (vedi
+ * `dati/tema.js`). I valori veri stanno in `index.css`, sotto `:root`
+ * e `[data-tema="lilla"]`; qui ogni token punta alla sua variabile.
+ *
+ * Due regole che reggono tutto:
+ *
+ *   1. I NOMI SONO RUOLI, NON COLORI. `ink-bright` è «il testo più
+ *      forte», che su ardesia è quasi bianco e su carta quasi nero.
+ *      `brass-300` è «l'accento usato come testo su fondo», giallo
+ *      chiaro su ardesia e lilla scuro su carta: per questo nel tema
+ *      chiaro la scala è rovesciata, e i componenti non se ne accorgono.
+ *
+ *   2. ANCHE LA VIDEOTECA PASSA DI QUI. Il «Quaderno» era un secondo
+ *      tema, chiaro e blu, fisso. Adesso i suoi token puntano alle
+ *      stesse variabili: la videoteca segue il tema di chi guarda senza
+ *      che un solo componente sia stato riscritto.
+ *
+ * La forma `rgb(var(--x) / <alpha-value>)` è quella che fa funzionare
+ * le trasparenze di Tailwind (`bg-brass-400/10`) anche su una variabile.
+ */
+const v = (nome) => `rgb(var(--${nome}) / <alpha-value>)`;
+
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
         // ---- Fondali: dal più profondo al più vicino ----
-        void: "#06070b", // il buio dietro tutto
-        shelf: "#0b0d14", // il legno dello scaffale
-        alcove: "#111524", // la nicchia illuminata
+        void: v("c-void"), // il fondo più profondo
+        shelf: v("c-shelf"), // il fondo della pagina
+        alcove: v("c-alcove"), // le schede appoggiate sopra
         legno: "#1a1410", // lo stesso legno della stanza 3D (`COLORE_LEGNO` in tre/scena.js)
 
         // ---- Ottone: l'accento. 400 è il tuo yellow-400 di sempre ----
         brass: {
-          50: "#fefce8",
-          100: "#fef9c3",
-          200: "#fef08a",
-          300: "#fde047",
-          400: "#facc15", // ancora il colore firma
-          500: "#eab308",
-          600: "#ca8a04",
-          700: "#a16207",
-          800: "#854d0e",
-          900: "#713f12"
+          50: v("c-brass-50"),
+          100: v("c-brass-100"),
+          200: v("c-brass-200"),
+          300: v("c-brass-300"),
+          400: v("c-brass-400"), // l'accento: ottone per Nicer, lilla per Sara
+          500: v("c-brass-500"),
+          600: v("c-brass-600"),
+          700: v("c-brass-700"),
+          800: v("c-brass-800"),
+          900: v("c-brass-900")
         },
 
         // ---- Inchiostro: la gerarchia del testo ----
         ink: {
-          bright: "#f5f3ef", // titoli — leggermente caldo, non bianco puro
-          DEFAULT: "#c9c7c2", // corpo
-          muted: "#8b8a86", // metadati
-          faint: "#5c5b58" // disabilitato, segnaposto
+          bright: v("c-ink-bright"), // titoli
+          DEFAULT: v("c-ink"), // corpo
+          muted: v("c-ink-muted"), // metadati
+          faint: v("c-ink-faint") // disabilitato, segnaposto
         },
 
         // ---- Semantici ----
-        jade: "#34d399", // completato, confermato
-        ember: "#fb7185", // mancante, distruttivo
-        lapis: "#818cf8", // in corso, informativo
+        jade: v("c-jade"), // completato, confermato
+        ember: v("c-ember"), // mancante, distruttivo
+        lapis: v("c-lapis"), // in corso, informativo
 
         // ---- I lettori ----
         // Chi ha scritto una nota si riconosce dal colore, non dal nome
@@ -88,14 +114,19 @@ export default {
         // Freddo dove la biblioteca è calda, blu dove lei è ottone:
         // è la videoteca vera, quella degli schedari e delle tessere,
         // non un salotto di legno.
+        //
+        // (Dal 04/10/2026 tutto quanto sopra vale come storia: il
+        // Quaderno segue il tema di chi guarda, come il resto del sito.
+        // I nomi restano perché li usano un centinaio di componenti.)
         quaderno: {
-          carta: "#f2f4f7", // il fondo della sezione
-          foglio: "#ffffff", // le schede appoggiate sopra
-          riga: "#dde2ea", // le righe del quaderno: bordi e divisori
-          inchiostro: "#131a26", // quello che ci si scrive
-          tenue: "#66707f", // metadati, didascalie
-          blu: "#1b3fcc", // l'accento: progressi, ore, numeri
-          "blu-tenue": "#e3e8ff", // il blu quando fa da fondo
+          carta: v("c-shelf"), // il fondo della sezione
+          foglio: v("c-alcove"), // le schede appoggiate sopra
+          riga: v("c-riga"), // bordi e divisori
+          inchiostro: v("c-ink-bright"), // quello che ci si scrive
+          tenue: v("c-ink-muted"), // metadati, didascalie
+          blu: v("c-accento"), // l'accento: progressi, ore, numeri
+          "blu-tenue": v("c-accento-tenue"), // l'accento quando fa da fondo
+          "su-blu": v("c-su-accento"), // il testo sopra un fondo d'accento
 
           // I voti, agli estremi: dal 4 in su verde, sotto il 3 rosso.
           // In mezzo resta `inchiostro`, il nero di tutto il resto —
@@ -108,33 +139,35 @@ export default {
           // fondo scuro della biblioteca e su carta bianca sono due
           // pastelli che non si leggono. Questi sono scuri abbastanza
           // da passare il contrasto su `foglio`.
-          verde: "#12784a",
-          rosso: "#c02626"
+          verde: v("c-voto-alto"),
+          rosso: v("c-voto-basso")
         }
       },
 
       // Vetro a tre livelli: più un pannello è "vicino", più è denso.
       // Prima erano tutti rgba(24,30,56,0.42) e sembravano piatti.
+      //
+      // (Dal 04/10/2026 il vetro non c'è più: i tre livelli sono
+      // superfici piatte, una più vicina dell'altra. Il nome resta.)
       backgroundColor: {
-        "glass-1": "rgba(20, 25, 44, 0.34)",
-        "glass-2": "rgba(26, 32, 54, 0.52)",
-        "glass-3": "rgba(32, 39, 64, 0.72)"
+        "glass-1": "var(--superficie-1)",
+        "glass-2": "var(--superficie-2)",
+        "glass-3": "var(--superficie-3)"
       },
 
       borderColor: {
-        hairline: "rgba(255, 255, 255, 0.07)",
-        soft: "rgba(255, 255, 255, 0.12)",
-        strong: "rgba(255, 255, 255, 0.2)"
+        hairline: "var(--linea-1)",
+        soft: "var(--linea-2)",
+        strong: "var(--linea-3)"
       },
 
       // Ombre profonde ma non nere piatte: la profondità si legge
       // meglio con ombre ampie e morbide che con bordi marcati.
       boxShadow: {
-        lift: "0 2px 8px rgba(4, 5, 10, 0.5)",
-        raised: "0 8px 24px -6px rgba(4, 5, 10, 0.7)",
-        float: "0 20px 48px -12px rgba(4, 5, 10, 0.85)",
-        brass:
-          "0 0 0 1px rgba(250, 204, 21, 0.4), 0 4px 20px -4px rgba(250, 204, 21, 0.28)",
+        lift: "var(--ombra-lift)",
+        raised: "var(--ombra-raised)",
+        float: "var(--ombra-float)",
+        brass: "var(--ombra-accento)",
         "spine-l": "inset 8px 0 12px -8px rgba(0, 0, 0, 0.9)",
         "spine-r": "inset -8px 0 12px -8px rgba(0, 0, 0, 0.9)"
       },
@@ -177,12 +210,20 @@ export default {
       },
 
       fontFamily: {
-        // Il display serve per i titoli: dà il tono "editoriale".
-        display: ["Fraunces", "Georgia", "serif"],
-        sans: ["Inter Tight", "system-ui", "sans-serif"],
+        // ⚠️ Fino al 04/10/2026 qui c'erano Fraunces, Inter Tight e
+        // Roboto Mono, ma nessuno li caricava: il sito usciva in
+        // Georgia e nel carattere di sistema, ed era metà del motivo
+        // per cui sembrava vecchio. Adesso sono ospitati qui dentro
+        // (@fontsource-variable, importati in `main.jsx`): niente
+        // richieste a Google, e funzionano anche offline nell'app.
+        //
+        // Il display serve per i titoli.
+        display: ["Bricolage Grotesque Variable", "system-ui", "sans-serif"],
+        sans: ["Geist Variable", "system-ui", "sans-serif"],
         // Cifre a larghezza fissa per prezzi e contatori: senza
-        // questo i numeri "ballano" mentre si aggiornano.
-        numeric: ["Roboto Mono", "ui-monospace", "monospace"]
+        // questo i numeri "ballano" mentre si aggiornano. Solo lì:
+        // su date e didascalie il mono fa terminale.
+        numeric: ["Geist Mono Variable", "ui-monospace", "monospace"]
       },
 
       keyframes: {

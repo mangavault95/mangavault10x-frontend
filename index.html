@@ -8,7 +8,20 @@
     <!-- La barra di stato di iOS e la barra degli indirizzi di Android
          prendono questo colore: senza, il telefono ci mette il bianco e
          l'app comincia con una riga di luce sopra una stanza scura. -->
-    <meta name="theme-color" content="#0b0d14" />
+    <meta name="theme-color" content="#1e1c19" />
+
+    <!-- Il tema di chi guarda, prima che parta React: senza, chi ha il
+         tema chiaro vedrebbe un lampo scuro a ogni apertura. Lo scrive
+         `src/dati/tema.js`, che resta l'unico a decidere. -->
+    <script>
+      try {
+        var tema = localStorage.getItem("mangavault:tema");
+        if (tema === "lilla") {
+          document.documentElement.dataset.tema = tema;
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#ffffff");
+        }
+      } catch (e) {}
+    </script>
 
     <!--
       QUANDO E` UN'APP E NON UNA PAGINA

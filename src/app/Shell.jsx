@@ -80,7 +80,7 @@ const VESTITO = {
     anello: "focus-visible:ring-quaderno-blu focus-visible:ring-offset-quaderno-carta",
     fogliettoBordo: "border-quaderno-riga bg-quaderno-foglio text-quaderno-inchiostro",
     commutatoreFondo: "bg-quaderno-carta",
-    commutatoreAcceso: "bg-quaderno-blu text-white",
+    commutatoreAcceso: "bg-quaderno-blu text-quaderno-su-blu",
     commutatoreSpento: "text-quaderno-tenue hover:text-quaderno-inchiostro",
     ambiente: false
   }

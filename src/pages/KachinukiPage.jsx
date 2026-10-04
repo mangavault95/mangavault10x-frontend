@@ -399,7 +399,7 @@ function Partita({ partita, onScegli, onAnnulla, onAbbandona }) {
         {/* Il binario resta visibile anche a barra corta: alla prima
             sfida su centoventisette una barra invisibile sembrerebbe
             una barra rotta. */}
-        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/[0.06]">
+        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-ink-bright/[0.06]">
           <div
             role="progressbar"
             aria-valuenow={fatte}

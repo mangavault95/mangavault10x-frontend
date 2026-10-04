@@ -270,7 +270,7 @@ export default function ElencoVideotecaPage() {
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu
                         ${
                           acceso
-                            ? "bg-quaderno-blu text-white"
+                            ? "bg-quaderno-blu text-quaderno-su-blu"
                             : "border border-quaderno-riga text-quaderno-tenue hover:text-quaderno-inchiostro"
                         }`}
                     >
@@ -353,7 +353,7 @@ export default function ElencoVideotecaPage() {
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu
                         ${
                           serieIntera.preferito
-                            ? "bg-quaderno-blu text-white"
+                            ? "bg-quaderno-blu text-quaderno-su-blu"
                             : "bg-quaderno-foglio/85 text-quaderno-tenue hover:text-quaderno-inchiostro"
                         }`}
                     >

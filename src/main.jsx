@@ -1,6 +1,9 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
+import "@fontsource-variable/bricolage-grotesque";
+import "@fontsource-variable/geist";
+import "@fontsource-variable/geist-mono";
 import "./index.css";
 import AppRoutes from "./app/routes";
 import { agganciaServizio } from "./app/servizio";

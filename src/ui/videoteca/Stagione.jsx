@@ -149,7 +149,7 @@ export default function Stagione({
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu
                   ${
                     acceso
-                      ? "bg-quaderno-blu text-white"
+                      ? "bg-quaderno-blu text-quaderno-su-blu"
                       : "border border-quaderno-riga text-quaderno-tenue hover:text-quaderno-inchiostro"
                   }`}
               >

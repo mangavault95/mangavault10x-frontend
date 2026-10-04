@@ -41,7 +41,7 @@ export default function Progresso({ valore, etichetta, sottile = false }) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={etichetta || `Completamento ${percentuale}%`}
-      className={`w-full overflow-hidden rounded-full bg-white/[0.06] ${misura}`}
+      className={`w-full overflow-hidden rounded-full bg-ink-bright/[0.06] ${misura}`}
     >
       <div
         className={`h-full rounded-full transition-[width] duration-slow ease-settle ${

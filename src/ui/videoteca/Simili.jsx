@@ -226,7 +226,7 @@ function CartaSimile({ carta, apri }) {
             cosa. Merita di vedersi sulla copertina invece che nella
             riga del motivo insieme a tutto il resto. */}
         {carta.accordo && (
-          <span className="absolute left-1.5 top-1.5 rounded-full bg-quaderno-blu px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-white">
+          <span className="absolute left-1.5 top-1.5 rounded-full bg-quaderno-blu px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-quaderno-su-blu">
             doppia
           </span>
         )}
