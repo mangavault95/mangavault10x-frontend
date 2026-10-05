@@ -13,7 +13,6 @@ import {
   votoDi,
   votoIt
 } from "../dati/serie";
-import { generiDiSerie } from "../dati/generi";
 
 /**
  * Una serie dentro una griglia.
@@ -45,7 +44,6 @@ export default function CartaSerie({
   const pct = completamento(serie);
   const mancanti = volumiMancanti(serie);
   const totale = totaleDisponibile(serie);
-  const generi = generiDiSerie(serie).slice(0, 3);
 
   // `serie.valutazione` è già il voto di chi guarda: si scomoda
   // `votoDi` solo quando si sta guardando per conto di un altro.
@@ -66,24 +64,19 @@ export default function CartaSerie({
       <div className="relative">
         <Copertina src={serie.copertina} alt={serie.titolo} priorita={priorita} riempi={riempi} />
 
-        {/* Sempre presente, non solo quando è già preferito: altrimenti
-            non ci sarebbe modo di scoprire che si può segnare da qui.
-            Sfumata finché non la guardi o non l'hai già segnata.
-
-            Col dito «finché non la guardi» non arriva mai, e il cuore
-            resterebbe invisibile per sempre: lì sta acceso a metà — si
-            vede che c'è, senza gridare quanto uno già segnato. È l'unico
-            modo di segnare un preferito dalla griglia, e una funzione
-            raggiungibile solo col mouse su un telefono non esiste. */}
+        {/* Il cuore si vede solo se la serie è già preferita, o col mouse
+            sopra. Fino al 05/10/2026 stava sempre acceso a metà su ogni
+            copertina per far scoprire che si poteva segnare da qui: su
+            duecento serie era duecento cuori. Col dito non compare, e non
+            deve nemmeno prendere i tocchi: si segna dalla scheda. */}
         <BottonePreferito
           serie={serie}
           onCambiato={(nuovo) => aggiornaLocale(serie.id, { preferito: nuovo })}
           className={`absolute right-2 top-2 h-7 w-7 bg-void/70 backdrop-blur-sm transition-opacity duration-quick
-                      [@media(hover:none)]:h-9 [@media(hover:none)]:w-9
                       ${
                         serie.preferito
                           ? "opacity-100"
-                          : "opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-60"
+                          : "opacity-0 group-hover:opacity-100 [@media(hover:none)]:pointer-events-none"
                       }`}
         />
 
@@ -114,38 +107,6 @@ export default function CartaSerie({
           </span>
         )}
 
-        {/* Il pallino di stato: giada se l'editore l'ha già conclusa,
-            ottone se è ancora in uscita. Sta in basso per non litigare
-            con voto e preferito, già in alto. */}
-        {serie.stato && (serie.stato === "conclusa" || serie.stato === "in_corso") && (
-          <span
-            aria-hidden="true"
-            title={serie.stato === "conclusa" ? "Conclusa" : "In corso"}
-            className={`absolute bottom-2 left-2 h-2 w-2 rounded-full ring-2 ring-void/70 ${
-              serie.stato === "conclusa" ? "bg-jade" : "bg-lapis"
-            }`}
-          />
-        )}
-
-        {/* I generi, leggibili solo al passaggio del mouse: in 189
-            schede tutte insieme sarebbero solo rumore, ma sono il modo
-            più veloce di riconoscere una serie mentre scorri la griglia
-            cercando "qualcosa di simile a...". */}
-        {generi.length > 0 && (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap gap-1 rounded-b-card bg-gradient-to-t from-void/90 via-void/50 to-transparent p-2 pt-6 opacity-0 transition-opacity duration-quick group-hover:opacity-100"
-          >
-            {generi.map((g) => (
-              <span
-                key={g}
-                className="rounded-full bg-void/70 px-1.5 py-0.5 text-[0.62rem] text-ink-muted backdrop-blur-sm"
-              >
-                {g}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="mt-2 space-y-1 px-0.5 sm:mt-3 sm:space-y-1.5">
@@ -158,23 +119,20 @@ export default function CartaSerie({
           {serie.titolo}
         </h3>
 
+        {/* Completa: solo il numero, niente da guardare. Incompleta: quanti
+            ne hai su quanti e cosa manca, con la barra sottile. */}
         <p className="font-numeric text-xs text-ink-muted">
           {serie.posseduti}
-          {totale ? ` / ${totale}` : ""} vol.
-          {mancanti > 0 && (
-            <span className="ml-1.5 text-ember/80">−{mancanti}</span>
+          {mancanti > 0 && totale ? ` / ${totale}` : ""} vol.
+          {mancanti === 0 && serie.stato === "conclusa" && (
+            <span className="ml-1.5 text-jade">✓</span>
           )}
+          {mancanti > 0 && <span className="ml-1.5 text-ember/80">−{mancanti}</span>}
         </p>
 
-        <Progresso
-          valore={pct}
-          etichetta={
-            pct !== null
-              ? `${serie.titolo}: ${pct}% completa`
-              : `${serie.titolo}: in corso, volumi totali non ancora noti`
-          }
-          sottile
-        />
+        {pct !== null && pct < 100 && (
+          <Progresso valore={pct} etichetta={`${serie.titolo}: ${pct}% completa`} sottile />
+        )}
       </div>
     </Link>
   );

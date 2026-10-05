@@ -9,10 +9,12 @@ import Sovrapposizione from "./Sovrapposizione";
 import useChiusuraVelo from "./useChiusuraVelo";
 
 /**
- * Il pannello dei filtri: sidebar fissa su schermo largo, lastra a
- * comparsa sul telefono. Stesso contenuto nei due casi — cambia solo
- * come lo si raggiunge, perché una barra laterale sempre visibile su
- * un telefono ruberebbe la metà dello schermo alla griglia.
+ * Il foglio dei filtri, dietro il tasto «Filtri» della Collezione.
+ *
+ * Fino al 05/10/2026 su schermo largo c'era anche una barra laterale
+ * fissa con lo stesso contenuto: via, ruba un quarto della pagina alla
+ * griglia e i due modi di arrivarci erano due cose da tenere uguali.
+ * Ora è un foglio solo, sul telefono come sul computer.
  *
  * A differenza della Biblioteca, che si guarda camminandoci dentro,
  * qui si comincia a restringere: stato dell'editore, generi, casa
@@ -33,7 +35,8 @@ export default function FiltriCollezione({
   lettoreAttivo,
   onCambiaLettore,
   conteggiLettore,
-  variante = "sidebar",
+  onAzzera,
+  risultati,
   onChiudere
 }) {
   const { lettoriBiblioteca: lettori } = useSessione();
@@ -222,47 +225,47 @@ export default function FiltriCollezione({
     </div>
   );
 
-  if (variante === "sheet") {
-    return (
-      <Sovrapposizione>
-        <div
-          className="fixed inset-0 z-overlay flex items-end justify-center bg-void/70 p-0 backdrop-blur-sm animate-rise-in sm:items-center sm:p-5"
-          {...velo}
-        >
-          <div className="max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-t-sheet border border-hairline bg-glass-3 p-6 backdrop-blur-2xl sm:rounded-sheet">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="font-display text-lg font-semibold text-ink-bright">Filtri</h2>
+  return (
+    <Sovrapposizione>
+      <div
+        className="fixed inset-0 z-overlay flex items-end justify-center bg-void/70 p-0 backdrop-blur-sm animate-rise-in sm:items-center sm:p-5"
+        {...velo}
+      >
+        <div className="max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-t-sheet border border-hairline bg-glass-3 p-6 backdrop-blur-2xl sm:rounded-sheet">
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold text-ink-bright">Filtri</h2>
 
+            {onAzzera && (
               <button
-                onClick={onChiudere}
-                aria-label="Chiudi filtri"
-                className="grid h-9 w-9 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
+                type="button"
+                onClick={onAzzera}
+                className="ml-auto mr-2 text-sm font-medium text-brass-400 hover:text-brass-300"
               >
-                <Icon nome="close" dimensione={18} />
+                Azzera
               </button>
-            </div>
+            )}
 
-            {contenuto}
+            <button
+              onClick={onChiudere}
+              aria-label="Chiudi filtri"
+              className="grid h-9 w-9 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
+            >
+              <Icon nome="close" dimensione={18} />
+            </button>
+          </div>
 
-            <div className="mt-6 border-t border-hairline pt-5">
-              <button
-                onClick={onChiudere}
-                className="w-full rounded-card bg-brass-400 px-4 py-2.5 text-sm font-semibold text-void transition-all duration-quick ease-spring hover:brightness-110 active:scale-95"
-              >
-                Mostra i risultati
-              </button>
-            </div>
+          {contenuto}
+
+          <div className="mt-6 border-t border-hairline pt-5">
+            <button
+              onClick={onChiudere}
+              className="w-full rounded-card bg-brass-400 px-4 py-2.5 text-sm font-semibold text-void transition-all duration-quick ease-spring hover:brightness-110 active:scale-95"
+            >
+              {risultati != null ? `Mostra ${risultati} serie` : "Mostra i risultati"}
+            </button>
           </div>
         </div>
-      </Sovrapposizione>
-    );
-  }
-
-  return (
-    <aside className="hidden shrink-0 lg:block lg:w-72">
-      <div className="sticky top-8 rounded-panel border border-hairline bg-glass-1 p-5 backdrop-blur-xl">
-        {contenuto}
       </div>
-    </aside>
+    </Sovrapposizione>
   );
 }

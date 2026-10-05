@@ -1,13 +1,10 @@
-import { useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Fuse from "fuse.js";
-import Pagina from "../ui/Pagina";
 import { GrigliaSerie } from "../ui/CartaSerie";
 import { CaricamentoGriglia, Errore, Vuoto } from "../ui/Stati";
 import { CampoRicerca, Tendina, Bottone } from "../ui/Controlli";
 import FiltriCollezione from "../ui/FiltriCollezione";
-import ConsigliRail from "../ui/ConsigliRail";
-import Piegabile from "../ui/Piegabile";
 import Copertina from "../ui/Copertina";
 import Icon from "../app/Icon";
 import Sovrapposizione from "../ui/Sovrapposizione";
@@ -15,7 +12,14 @@ import useChiusuraVelo from "../ui/useChiusuraVelo";
 import { useCollezione } from "../dati/collezione";
 import { useSessione } from "../dati/sessione";
 import { useAccessoProtetto } from "../dati/accesso";
-import { creaManga, enrichManga } from "../services/api";
+import {
+  annullaAcquisti,
+  creaManga,
+  dopoIlRipiego,
+  enrichManga,
+  registraAcquisto,
+  urlCopertina
+} from "../services/api";
 import { idDa, generiDiSerie, editoreCanonico } from "../dati/generi";
 import {
   FILTRI,
@@ -24,28 +28,79 @@ import {
   lettaDa,
   numeroIt,
   ordinamentoPerId,
-  plurale
+  totaleDisponibile,
+  volumiMancanti,
+  votoDi,
+  votoIt
 } from "../dati/serie";
 
 /**
- * La collezione intera, con i mezzi per studiarla per davvero.
+ * COLLEZIONE — rifatta il 05/10/2026.
  *
- * La Biblioteca è il posto per camminarci dentro e guardare; questa è
- * il posto per capire cosa c'è — cercare, restringere per genere o
- * editore, vedere quanto vale quello che hai appena filtrato, scoprire
- * cosa prendere dopo. Ricerca, filtri e ordinamento vivono nell'indirizzo,
- * non nello stato del componente: una vista si può salvare nei
- * preferiti o mandare a qualcuno, il tasto Indietro annulla un filtro
- * invece di buttarti fuori dalla pagina, e ricaricando resti dov'eri.
+ * Prima era una pagina «da studiare»: occhiello, un riquadro di Consigli,
+ * una barra laterale di filtri, una carta con barra di progresso per ogni
+ * serie anche quando era già completa. Bella da guardare, lenta da usare.
+ *
+ * Adesso serve a tre cose, nell'ordine in cui si fanno:
+ *
+ *   TROVARE   la ricerca e le scorciatoie di stato stanno ferme in cima
+ *             mentre si scorre (Ti mancano · In corso · Concluse ·
+ *             Preferiti); i filtri fini (genere, editore, chi l'ha letta)
+ *             stanno dietro un solo tasto «Filtri»
+ *   SFOGLIARE copertine, con le lettere dell'alfabeto a fare da capitoli;
+ *             oppure un elenco compatto, per scorrere più titoli
+ *   AGGIORNARE nell'elenco ogni serie a cui manca qualcosa ha il suo
+ *             «+ N»: preso il volume N, un tocco, con Annulla
+ *
+ * I Consigli sono spariti: dicevano «prendi questa» mentre per sapere
+ * cosa comprare c'è già «Da comprare».
+ *
+ * Ricerca, filtri e ordine vivono nell'indirizzo, non nello stato del
+ * componente: una vista si salva nei preferiti, il tasto Indietro annulla
+ * un filtro invece di buttarti fuori, e ricaricando resti dov'eri.
  */
+
+// Le scorciatoie di stato sempre in vista. Le altre (sospese, brevi,
+// autoconclusive…) restano nel foglio dei filtri.
+const SCORCIATOIE = ["tutte", "mancanti", "in-corso", "concluse", "preferiti"];
+
+const CHIAVE_VISTA = "mangavault:collezione:vista";
+
+function vistaSalvata() {
+  try {
+    return localStorage.getItem(CHIAVE_VISTA) === "elenco" ? "elenco" : "copertine";
+  } catch {
+    return "copertine";
+  }
+}
+
+// «A» per «Àncora», «#» per tutto ciò che non è una lettera («20th
+// Century Boys»). Si cambia lettera quando cambia, non per gruppi
+// calcolati prima: se l'ordine avesse un'eccezione il titolo non sparisce.
+function letteraDi(titolo) {
+  const prima = String(titolo || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .trim()
+    .charAt(0)
+    .toUpperCase();
+
+  return /[A-Z]/.test(prima) ? prima : "#";
+}
+
 export default function CollezionePage() {
   const { serie, inCorso, errore, ricarica } = useCollezione();
   const { bibliotecaSolaLettura } = useSessione();
+  const eseguiProtetto = useAccessoProtetto();
   const [parametri, setParametri] = useSearchParams();
   // `?nuova=<titolo>` apre il modulo già compilato col titolo: ci arriva
   // la pagina Cerca quando una serie in collezione non c'è.
   const [modaleAperto, setModaleAperto] = useState(() => parametri.has("nuova"));
-  const [filtriMobileAperti, setFiltriMobileAperti] = useState(false);
+  const [filtriAperti, setFiltriAperti] = useState(false);
+  const [vista, setVista] = useState(vistaSalvata);
+  const [prendendo, setPrendendo] = useState(null);
+  const [registrato, setRegistrato] = useState(null);
+  const [problema, setProblema] = useState(null);
 
   const ricercaTesto = parametri.get("q") || "";
   const filtroAttivo = filtroPerId(parametri.get("filtro")).id;
@@ -58,6 +113,25 @@ export default function CollezionePage() {
     () => (parametri.get("generi") || "").split(",").filter(Boolean),
     [parametri]
   );
+
+  // Il «Registrato» si toglie da solo: è una ricevuta, non una pagina.
+  useEffect(() => {
+    if (!registrato) return undefined;
+
+    const t = setTimeout(() => setRegistrato(null), 9000);
+
+    return () => clearTimeout(t);
+  }, [registrato]);
+
+  function scegliVista(v) {
+    setVista(v);
+
+    try {
+      localStorage.setItem(CHIAVE_VISTA, v);
+    } catch {
+      /* senza memoria del browser la scelta vale solo per questa visita */
+    }
+  }
 
   // I parametri vuoti spariscono dall'indirizzo: `?filtro=tutte&q=`
   // non dice niente in più di `/collezione` ed è più brutto da leggere.
@@ -87,6 +161,22 @@ export default function CollezionePage() {
 
         if (!nuovi.length) p.delete("generi");
         else p.set("generi", nuovi.join(","));
+
+        return p;
+      },
+      { replace: true }
+    );
+  }
+
+  // Azzera i filtri ma tiene la ricerca scritta e l'ordine scelto.
+  function azzeraFiltri() {
+    setParametri(
+      (precedenti) => {
+        const p = new URLSearchParams();
+
+        for (const chiave of ["q", "ordine"]) {
+          if (precedenti.get(chiave)) p.set(chiave, precedenti.get(chiave));
+        }
 
         return p;
       },
@@ -193,102 +283,199 @@ export default function CollezionePage() {
     return mappa;
   }, [serie]);
 
-  const filtroPulito =
-    !ricercaTesto &&
-    filtroAttivo === "tutte" &&
-    !generiSelezionati.length &&
-    !editoreAttivo &&
-    !categoriaAttiva &&
-    !lettoreAttivo;
+  const volumiTotali = useMemo(() => serie.reduce((t, s) => t + s.posseduti, 0), [serie]);
 
-  const filtriAttivi = [
-    filtroAttivo !== "tutte",
+  // I filtri «fini» sono quelli dietro il tasto: lo stato è già nelle
+  // scorciatoie, e conta come attivo solo se non è «Tutte».
+  const filtriFini = [
     generiSelezionati.length > 0,
     Boolean(editoreAttivo),
     Boolean(categoriaAttiva),
     Boolean(lettoreAttivo)
   ].filter(Boolean).length;
 
-  if (errore) {
-    return (
-      <Pagina titolo="Collezione">
-        <Errore errore={errore} riprova={ricarica} />
-      </Pagina>
-    );
+  const filtroPulito = !ricercaTesto && filtroAttivo === "tutte" && filtriFini === 0;
+
+  // Le scorciatoie senza serie dentro si nascondono (oggi «Preferiti»
+  // finché non ne segni uno), a meno che non sia quella scelta; se il
+  // filtro scelto sta nel foglio, compare accanto alle altre.
+  const scorciatoie = FILTRI.filter(
+    (f) =>
+      f.id === filtroAttivo ||
+      f.id === "tutte" ||
+      (SCORCIATOIE.includes(f.id) && (conteggi[f.id] ?? 0) > 0)
+  ).sort((a, b) => {
+    const pos = (f) => (SCORCIATOIE.includes(f.id) ? SCORCIATOIE.indexOf(f.id) : SCORCIATOIE.length);
+
+    return pos(a) - pos(b);
+  });
+
+  // Le lettere si mostrano solo quando l'ordine è l'alfabeto, senza una
+  // ricerca (che ha un suo ordine) e su una lista abbastanza lunga da
+  // aver bisogno di capitoli.
+  const conLettere =
+    vista === "copertine" && ordineAttivo === "titolo" && !ricercaTesto.trim() && risultati.length > 24;
+
+  const gruppi = useMemo(() => {
+    if (!conLettere) return null;
+
+    const out = [];
+
+    for (const s of risultati) {
+      const l = letteraDi(s.titolo);
+      const ultimo = out[out.length - 1];
+
+      if (ultimo && ultimo.lettera === l) ultimo.serie.push(s);
+      else out.push({ lettera: l, serie: [s] });
+    }
+
+    return out;
+  }, [conLettere, risultati]);
+
+  async function preso(s) {
+    const numero = s.posseduti + 1;
+
+    setProblema(null);
+    setPrendendo(s.id);
+
+    try {
+      const esito = await eseguiProtetto(() => registraAcquisto(s.id, { volumi: [numero] }));
+
+      setRegistrato({ titolo: s.titolo, numero, acquisti: esito?.acquisti || [] });
+      ricarica();
+    } catch (e) {
+      if (!e?.annullato) setProblema(`${s.titolo} ${numero} non è stato registrato.`);
+    } finally {
+      setPrendendo(null);
+    }
   }
 
-  const propsFiltri = {
-    serie,
-    filtroAttivo,
-    onCambiaFiltro: (v) => aggiornaParametro("filtro", v),
-    conteggiFiltro: conteggi,
-    generiSelezionati,
-    onCambiaGeneri: aggiornaGeneri,
-    editoreAttivo,
-    onCambiaEditore: (v) => aggiornaParametro("editore", v),
-    categoriaAttiva,
-    onCambiaCategoria: (v) => aggiornaParametro("categoria", v),
-    lettoreAttivo,
-    onCambiaLettore: (v) => aggiornaParametro("lettore", v),
-    conteggiLettore
-  };
+  async function annulla() {
+    if (!registrato?.acquisti?.length) return;
 
-  return (
-    <Pagina
-      occhiello="Studia la tua collezione"
-      titolo="Collezione"
-      sommario={
-        inCorso && !serie.length
-          ? "Sto tirando giù le schede…"
-          : `${plurale(serie.length, "serie in collezione", "serie in collezione")}, ${numeroIt(
-              serie.reduce((t, s) => t + s.posseduti, 0)
-            )} volumi.`
-      }
-      azioni={
-        /* Sul telefono stanno su una riga sola: il campo prende lo spazio
-           che avanza e i due bottoni restano icone. Su due righe erano
-           quasi cento pixel di intestazione, cioè mezza fila di copertine
-           in meno prima di dover scorrere. */
-        <div className="flex w-full items-center gap-2 sm:w-auto sm:flex-wrap sm:gap-3">
-          <div className="min-w-0 flex-1 sm:flex-none">
+    setProblema(null);
+
+    try {
+      await eseguiProtetto(() => annullaAcquisti(registrato.acquisti));
+      setRegistrato(null);
+      ricarica();
+    } catch (e) {
+      if (!e?.annullato) setProblema("Non sono riuscito ad annullarlo: riprova.");
+    }
+  }
+
+  const cornice = (corpo) => (
+    <div className="mx-auto w-full max-w-[110rem] px-3 pb-10 pt-4 sm:px-8 lg:px-12">{corpo}</div>
+  );
+
+  if (errore) {
+    return cornice(<Errore errore={errore} riprova={ricarica} />);
+  }
+
+  return cornice(
+    <>
+      <header className="flex items-end justify-between gap-4 px-1 sm:px-0">
+        <div className="min-w-0">
+          <h1 className="font-display text-[2.1rem] font-extrabold leading-none tracking-tight text-ink-bright">
+            Collezione
+          </h1>
+
+          <p className="mt-2 text-sm text-ink-muted">
+            {inCorso && !serie.length ? (
+              "Sto tirando giù le schede…"
+            ) : (
+              <>
+                <span className="font-numeric">{numeroIt(serie.length)}</span> serie ·{" "}
+                <span className="font-numeric">{numeroIt(volumiTotali)}</span> volumi
+              </>
+            )}
+          </p>
+        </div>
+
+        {/* Aggiungere una serie vuol dire dire «questa ce l'abbiamo
+            in casa»: è la cosa più di casa che ci sia, e chi di qua
+            guarda soltanto non ha niente da aggiungere. */}
+        {!bibliotecaSolaLettura && (
+          <Bottone onClick={() => setModaleAperto(true)} className="shrink-0">
+            <Icon nome="plus" dimensione={16} />
+            Aggiungi
+          </Bottone>
+        )}
+      </header>
+
+      {/* La barra che resta in cima mentre si scorre: cercare e restringere
+          sono le cose che si fanno a metà lista, non solo all'inizio. */}
+      <div className="sticky top-0 z-sticky -mx-3 mt-4 space-y-2.5 bg-shelf/90 px-3 pb-2.5 pt-2 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12">
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1 sm:max-w-lg">
             <CampoRicerca
               valore={ricercaTesto}
               onCambia={(v) => aggiornaParametro("q", v)}
               segnaposto="Titolo, autore, editore…"
               risultati={risultati.length}
+              larghezzaPiena
             />
           </div>
 
           <button
-            onClick={() => setFiltriMobileAperti(true)}
-            aria-label="Filtri"
-            className="inline-flex shrink-0 items-center gap-2 rounded-card border border-hairline bg-glass-1 px-3 py-2.5 text-sm font-semibold text-ink-bright backdrop-blur-xl transition-colors duration-quick hover:border-soft sm:px-4 lg:hidden"
+            type="button"
+            onClick={() => setFiltriAperti(true)}
+            className="inline-flex shrink-0 items-center gap-2 rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm font-semibold text-ink-bright transition-colors duration-quick hover:border-soft active:scale-95
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
           >
-            <Icon nome="settings" dimensione={16} />
-            <span className="hidden sm:inline">Filtri</span>
-            {filtriAttivi > 0 && (
-              <span className="rounded-full bg-brass-400 px-1.5 py-0.5 font-numeric text-[0.65rem] text-void">
-                {filtriAttivi}
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
+              <circle cx="15" cy="7" r="2" />
+              <circle cx="9" cy="17" r="2" />
+            </svg>
+            Filtri
+            {filtriFini > 0 && (
+              <span className="rounded-full bg-brass-400 px-1.5 py-0.5 font-numeric text-[0.65rem] leading-none text-void">
+                {filtriFini}
               </span>
             )}
           </button>
-
-          {/* Aggiungere una serie vuol dire dire «questa ce l'abbiamo
-              in casa»: è la cosa più di casa che ci sia, e chi di qua
-              guarda soltanto non ha niente da aggiungere. */}
-          {!bibliotecaSolaLettura && (
-            <Bottone
-              onClick={() => setModaleAperto(true)}
-              aria-label="Nuova serie"
-              className="shrink-0 px-3 sm:px-4"
-            >
-              <Icon nome="plus" dimensione={16} className="sm:hidden" />
-              <span className="hidden sm:inline">Nuova serie</span>
-            </Bottone>
-          )}
         </div>
-      }
-    >
+
+        <div
+          role="group"
+          aria-label="Stato"
+          className="no-scrollbar -mx-3 flex gap-2 overflow-x-auto px-3 sm:mx-0 sm:px-0"
+        >
+          {scorciatoie.map((f) => {
+            const accesa = f.id === filtroAttivo;
+
+            return (
+              <button
+                key={f.id}
+                type="button"
+                aria-pressed={accesa}
+                onClick={() => aggiornaParametro("filtro", f.id)}
+                className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium transition-colors duration-quick active:scale-95
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
+                  ${accesa ? "bg-ink-bright text-void" : "bg-alcove text-ink hover:text-ink-bright"}`}
+              >
+                {f.etichetta}
+                <span
+                  className={`ml-1.5 font-numeric text-xs ${accesa ? "text-void/60" : "text-ink-faint"}`}
+                >
+                  {conteggi[f.id]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {modaleAperto && (
         <ModuloNuovaSerie
           tutteLeSerie={serie}
@@ -306,73 +493,246 @@ export default function CollezionePage() {
         />
       )}
 
-      {filtriMobileAperti && (
-        <FiltriCollezione {...propsFiltri} variante="sheet" onChiudere={() => setFiltriMobileAperti(false)} />
+      {filtriAperti && (
+        <FiltriCollezione
+          serie={serie}
+          filtroAttivo={filtroAttivo}
+          onCambiaFiltro={(v) => aggiornaParametro("filtro", v)}
+          conteggiFiltro={conteggi}
+          generiSelezionati={generiSelezionati}
+          onCambiaGeneri={aggiornaGeneri}
+          editoreAttivo={editoreAttivo}
+          onCambiaEditore={(v) => aggiornaParametro("editore", v)}
+          categoriaAttiva={categoriaAttiva}
+          onCambiaCategoria={(v) => aggiornaParametro("categoria", v)}
+          lettoreAttivo={lettoreAttivo}
+          onCambiaLettore={(v) => aggiornaParametro("lettore", v)}
+          conteggiLettore={conteggiLettore}
+          onAzzera={azzeraFiltri}
+          risultati={risultati.length}
+          onChiudere={() => setFiltriAperti(false)}
+        />
       )}
 
-      {/* Su schermo largo stanno in cima aperti, su un telefono sono una
-          riga sola da aprire: il perché sta in `ui/Piegabile.jsx`.
-
-          Fino al 04/10/2026 qui c'erano anche il libro «In vetrina oggi»
-          e i quattro riquadri di numeri. Tolti: la vetrina mostrava una
-          serie a caso, quasi sempre già completa, senza farti fare niente
-          (e caricava Three.js per farlo); i numeri erano gli stessi della
-          pagina Numeri, che è il loro posto. */}
-      {!inCorso && serie.length > 0 && (
-        <Piegabile titolo="Consigli">
-          <div className="mb-4 lg:mb-8">
-            <ConsigliRail serie={serie} />
-          </div>
-        </Piegabile>
-      )}
-
-      <div className="flex items-start gap-8">
-        <FiltriCollezione {...propsFiltri} variante="sidebar" />
-
-        <div className="min-w-0 flex-1">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            {!filtroPulito ? (
-              <p className="text-sm text-ink-muted" aria-live="polite">
-                {plurale(risultati.length, "serie trovata", "serie trovate")}
-              </p>
-            ) : (
-              <span />
-            )}
-
-            <Tendina
-              etichetta="Ordina"
-              valore={ordineAttivo}
-              opzioni={ORDINAMENTI}
-              onCambia={(v) => aggiornaParametro("ordine", v)}
-            />
-          </div>
-
-          {inCorso && !serie.length ? (
-            <CaricamentoGriglia />
-          ) : risultati.length ? (
-            /* Il lettore attivo non filtra soltanto: dice anche di chi
-               sono il voto e le letture da disegnare sulle copertine.
-               Senza, la selezione era la sua e i dati sopra erano di
-               chi guardava. */
-            <GrigliaSerie serie={risultati} riempi lettore={lettoreAttivo} />
-          ) : (
-            <Vuoto
-              titolo="Nessuna serie corrisponde"
-              testo={
-                ricercaTesto
-                  ? `Non trovo niente per «${ricercaTesto}». Prova con meno parole, o con il nome dell'autore.`
-                  : "Questo filtro non seleziona nessuna serie della collezione."
-              }
-              azione={
-                <Bottone variante="secondario" onClick={() => setParametri({}, { replace: true })}>
-                  Azzera ricerca e filtri
-                </Bottone>
-              }
-            />
+      <div className="mb-4 mt-1 flex items-center justify-between gap-3 px-1 sm:px-0">
+        <p className="whitespace-nowrap text-sm text-ink-muted" aria-live="polite">
+          {filtroPulito ? null : (
+            <>
+              <span className="font-numeric">{numeroIt(risultati.length)}</span>{" "}
+              serie
+            </>
           )}
+        </p>
+
+        <div className="flex items-center gap-2">
+          <Tendina
+            etichetta="Ordina"
+            mostraEtichetta={false}
+            className="w-36 sm:w-44"
+            valore={ordineAttivo}
+            opzioni={ORDINAMENTI}
+            onCambia={(v) => aggiornaParametro("ordine", v)}
+          />
+
+          <div
+            role="group"
+            aria-label="Vista"
+            className="flex rounded-card border border-hairline bg-glass-1 p-0.5"
+          >
+            {[
+              { id: "copertine", nome: "grid", etichetta: "Copertine" },
+              { id: "elenco", nome: "menu", etichetta: "Elenco" }
+            ].map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                aria-pressed={vista === v.id}
+                aria-label={v.etichetta}
+                title={v.etichetta}
+                onClick={() => scegliVista(v.id)}
+                className={`grid h-9 w-9 place-items-center rounded-[0.6rem] transition-colors duration-quick
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
+                  ${vista === v.id ? "bg-ink-bright text-void" : "text-ink-muted hover:text-ink-bright"}`}
+              >
+                <Icon nome={v.nome} dimensione={16} />
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-    </Pagina>
+
+      {problema && (
+        <p role="alert" className="mb-3 rounded-xl bg-ember/10 px-3.5 py-2.5 text-sm text-ember">
+          {problema}
+        </p>
+      )}
+
+      {inCorso && !serie.length ? (
+        <CaricamentoGriglia />
+      ) : risultati.length ? (
+        vista === "elenco" ? (
+          <ul className="divide-y divide-hairline rounded-2xl bg-alcove px-3.5">
+            {risultati.map((s) => (
+              <RigaSerie
+                key={s.id}
+                serie={s}
+                lettore={lettoreAttivo}
+                occupata={prendendo === s.id}
+                onPreso={bibliotecaSolaLettura ? null : () => preso(s)}
+              />
+            ))}
+          </ul>
+        ) : gruppi ? (
+          <div className="space-y-7">
+            {gruppi.map((g) => (
+              <section key={g.lettera} aria-label={`Titoli con ${g.lettera}`}>
+                <h2 className="mb-3 px-1 font-display text-lg font-bold text-ink-faint sm:px-0">
+                  {g.lettera}
+                </h2>
+
+                <GrigliaSerie serie={g.serie} riempi lettore={lettoreAttivo} />
+              </section>
+            ))}
+          </div>
+        ) : (
+          /* Il lettore attivo non filtra soltanto: dice anche di chi
+             sono il voto e le letture da disegnare sulle copertine.
+             Senza, la selezione era la sua e i dati sopra erano di
+             chi guardava. */
+          <GrigliaSerie serie={risultati} riempi lettore={lettoreAttivo} />
+        )
+      ) : (
+        <Vuoto
+          titolo="Nessuna serie corrisponde"
+          testo={
+            ricercaTesto
+              ? `Non trovo niente per «${ricercaTesto}». Prova con meno parole, o con il nome dell'autore.`
+              : "Questo filtro non seleziona nessuna serie della collezione."
+          }
+          azione={
+            <Bottone variante="secondario" onClick={() => setParametri({}, { replace: true })}>
+              Azzera ricerca e filtri
+            </Bottone>
+          }
+        />
+      )}
+
+      {registrato && (
+        <div
+          role="status"
+          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-1/2 z-toast flex w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 items-center gap-3 rounded-2xl bg-ink-bright px-4 py-3 text-void shadow-lg md:bottom-6"
+        >
+          <p className="min-w-0 flex-1 truncate text-sm font-semibold">
+            {registrato.titolo} {registrato.numero} registrato
+          </p>
+
+          {registrato.acquisti.length > 0 && (
+            <button
+              type="button"
+              onClick={annulla}
+              className="shrink-0 text-sm font-bold underline underline-offset-2"
+            >
+              Annulla
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setRegistrato(null)}
+            aria-label="Chiudi"
+            className="shrink-0 text-void/60"
+          >
+            <Icon nome="close" dimensione={16} />
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ==================================================
+   LA RIGA DELL'ELENCO
+   ================================================== */
+
+function Miniatura({ src }) {
+  const indirizzo = urlCopertina(src, 128);
+
+  return indirizzo ? (
+    <img
+      src={indirizzo}
+      alt=""
+      loading="lazy"
+      onError={dopoIlRipiego(() => {})}
+      className="h-14 w-10 shrink-0 rounded-md object-cover"
+    />
+  ) : (
+    <span aria-hidden="true" className="h-14 w-10 shrink-0 rounded-md bg-glass-2" />
+  );
+}
+
+/**
+ * Una serie in elenco: a colpo d'occhio titolo, quanti ne hai e cosa
+ * manca; a destra, se manca qualcosa, il tasto per segnare che l'hai
+ * preso. Una serie completa non ha tasti: non c'è niente da aggiornare.
+ */
+function RigaSerie({ serie, lettore, occupata, onPreso }) {
+  const mancanti = volumiMancanti(serie);
+  const totale = totaleDisponibile(serie);
+  const completa = mancanti === 0;
+  const voto = lettore ? votoDi(serie, lettore) : serie.valutazione;
+  const numero = serie.posseduti + 1;
+
+  return (
+    <li className="flex items-center gap-3 py-2.5">
+      <Link
+        to={lettore ? `/serie/${serie.id}?lettore=${lettore}` : `/serie/${serie.id}`}
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+      >
+        <Miniatura src={serie.copertina} />
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[0.95rem] font-semibold text-ink-bright">
+            {serie.titolo}
+            {serie.edizione && <span className="font-normal text-ink-muted"> · {serie.edizione}</span>}
+          </p>
+
+          <p className="truncate text-xs text-ink-muted">
+            <span className="font-numeric">
+              {serie.posseduti}
+              {totale ? `/${totale}` : ""}
+            </span>{" "}
+            vol.
+            {completa && (
+              <span className="ml-1.5 font-medium text-jade">
+                {serie.stato === "conclusa" ? "completa" : "in pari"}
+              </span>
+            )}
+            {mancanti > 0 && (
+              <span className="ml-1.5 font-medium text-ember">ne mancano {mancanti}</span>
+            )}
+            {serie.editore && <span> · {serie.editore}</span>}
+          </p>
+        </div>
+
+        {voto > 0 && (
+          <span className="shrink-0 font-numeric text-xs font-medium text-brass-300">
+            {votoIt(voto)}★
+          </span>
+        )}
+      </Link>
+
+      {onPreso && !completa && (
+        <button
+          type="button"
+          onClick={onPreso}
+          disabled={occupata}
+          aria-label={`Segna come preso il volume ${numero} di ${serie.titolo}`}
+          className="shrink-0 rounded-xl bg-glass-2 px-3 py-2 font-numeric text-sm font-semibold text-ink-bright transition-transform duration-quick active:scale-95 disabled:opacity-60"
+        >
+          {occupata ? "…" : `+ ${numero}`}
+        </button>
+      )}
+    </li>
   );
 }
 

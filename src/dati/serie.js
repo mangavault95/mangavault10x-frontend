@@ -481,6 +481,12 @@ export const FILTRI = [
     test: () => true
   },
   {
+    id: "mancanti",
+    etichetta: "Ti mancano",
+    descrizione: "Serie a cui manca almeno un volume uscito",
+    test: (s) => (volumiMancanti(s) ?? 0) > 0
+  },
+  {
     id: "in-corso",
     etichetta: "In corso",
     descrizione: "Serie non ancora concluse dall'editore",

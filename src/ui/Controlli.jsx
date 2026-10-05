@@ -47,7 +47,7 @@ export function CampoRicerca({
 
   return (
     <div className={`relative w-full ${larghezzaPiena ? "" : "sm:w-72"}`}>
-      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint">
+      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted">
         <Icon nome="search" dimensione={16} />
       </span>
 
@@ -141,9 +141,9 @@ export function Pastiglie({ opzioni, attiva, onCambia, conteggi }) {
  * un elenco che dice "Ordina: Titolo / Ordina: Voto / Ordina: …"
  * fa leggere la stessa parola sei volte per scegliere una volta.
  */
-export function Tendina({ etichetta, valore, opzioni, onCambia, mostraEtichetta = true }) {
+export function Tendina({ etichetta, valore, opzioni, onCambia, mostraEtichetta = true, className = "" }) {
   return (
-    <label className="relative inline-flex items-center gap-2.5">
+    <label className={`relative inline-flex items-center gap-2.5 ${className}`}>
       {mostraEtichetta && (
         <span className="hidden text-xs font-medium uppercase tracking-wider text-ink-muted sm:block">
           {etichetta}
@@ -154,7 +154,7 @@ export function Tendina({ etichetta, valore, opzioni, onCambia, mostraEtichetta 
         value={valore}
         onChange={(e) => onCambia(e.target.value)}
         aria-label={etichetta}
-        className="appearance-none rounded-card border border-hairline bg-glass-1 py-2.5 pl-3.5 pr-9 text-sm text-ink-bright
+        className="w-full min-w-0 appearance-none rounded-card border border-hairline bg-glass-1 py-2.5 pl-3.5 pr-9 text-sm text-ink-bright
                    outline-none backdrop-blur-xl transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
       >
         {opzioni.map((o) => (
