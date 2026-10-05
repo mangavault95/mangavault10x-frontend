@@ -166,17 +166,9 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-9 px-4 pb-8 pt-4 sm:px-6">
-      <div className="flex items-end justify-between">
-        <h1 className="font-display text-[2.1rem] font-extrabold leading-none tracking-tight text-ink-bright">Anime</h1>
-        <div className="flex gap-3 text-sm font-medium">
-          <Link to="/videoteca/io/numeri" className="text-brass-300 hover:underline">
-            Numeri
-          </Link>
-          <Link to="/videoteca/io/tutto" className="text-brass-300 hover:underline">
-            Tutti i titoli
-          </Link>
-        </div>
-      </div>
+      {/* «Tutti i titoli» e «Numeri» stanno nella riga delle sottosezioni,
+          qui sopra, come «Collezione» e «Numeri» per i manga. */}
+      <h1 className="font-display text-[2.1rem] font-extrabold leading-none tracking-tight text-ink-bright">Anime</h1>
 
       {problema && (
         <p role="alert" className="rounded-card border border-ember/30 bg-ember/10 px-4 py-3 text-sm text-ember">

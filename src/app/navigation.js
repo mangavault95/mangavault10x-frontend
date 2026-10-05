@@ -71,7 +71,7 @@ export function sottosezioniDi(scheda) {
   if (scheda === "manga") return SEZIONI.filter((s) => s.mondo === "biblioteca" && s.percorso !== "/");
 
   if (scheda === "anime") {
-    const ordine = ["videoteca", "calendario", "cineforum"];
+    const ordine = ["videoteca", "anime-tutti", "calendario", "anime-numeri", "cineforum"];
 
     return ordine.map((id) => SEZIONI.find((s) => s.id === id)).filter(Boolean);
   }
@@ -205,6 +205,25 @@ export const SEZIONI = [
     descrizione: "La tua pagina: cosa guardi ora, serie, film, preferiti",
     icona: "pellicola",
     tasto: "2"
+  },
+  // Le due pagine che prima erano link gialli accanto al titolo «Anime»
+  // (05/10/2026): sono sezioni come «Collezione» e «Numeri» dei manga, e
+  // stanno nella riga delle sottosezioni come quelle.
+  {
+    id: "anime-tutti",
+    mondo: "videoteca",
+    percorso: "/videoteca/io/tutto",
+    etichetta: "Tutti i titoli",
+    descrizione: "Tutti i tuoi anime, con filtri e ordinamenti",
+    icona: "grid"
+  },
+  {
+    id: "anime-numeri",
+    mondo: "videoteca",
+    percorso: "/videoteca/io/numeri",
+    etichetta: "Numeri",
+    descrizione: "Tempo, puntate e voti della videoteca",
+    icona: "chart"
   },
   {
     id: "calendario",
@@ -400,7 +419,11 @@ export function eAttiva(percorsoVoce, percorsoCorrente) {
     return (
       percorsoCorrente.startsWith("/videoteca") &&
       percorsoCorrente !== "/videoteca" &&
-      !percorsoCorrente.startsWith(SEZIONI_ADMIN.videoteca.percorso)
+      !percorsoCorrente.startsWith(SEZIONI_ADMIN.videoteca.percorso) &&
+      // «Tutti i titoli» e «Numeri» hanno la loro linguetta: due accese
+      // insieme direbbero che si è in due posti.
+      !percorsoCorrente.startsWith("/videoteca/io/tutto") &&
+      !percorsoCorrente.startsWith("/videoteca/io/numeri")
     );
   }
 
