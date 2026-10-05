@@ -46,7 +46,7 @@ export default function CommentiVideotecaPage() {
       }
       azioni={
         persona && (
-          <Link to={paginaDi(persona.nickname)}>
+          <Link to={nickname ? paginaDi(persona.nickname) : "/videoteca/io"}>
             <Bottone>
               <Icon nome="back" dimensione={16} />
               La pagina

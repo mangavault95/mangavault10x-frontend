@@ -211,7 +211,7 @@ export default function ElencoVideotecaPage() {
       azioni={
         <div className="flex items-center gap-2">
           {persona && (
-            <Bottone onClick={() => navigate(paginaDi(persona.nickname))}>
+            <Bottone onClick={() => navigate(nickname ? paginaDi(persona.nickname) : "/videoteca/io")}>
               <Icon nome="back" dimensione={16} />
               La pagina
             </Bottone>
