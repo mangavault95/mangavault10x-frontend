@@ -15,6 +15,7 @@ import PaginaVideoteca, { Caricamento, Errore, Scheda } from "../ui/videoteca/Fo
 import Fila, { PostoAggiungi, PostoSerie } from "../ui/videoteca/Fila";
 import ListaInVisione from "../ui/videoteca/ListaInVisione";
 import TestaProfilo from "../ui/videoteca/TestaProfilo";
+import MiaVideoteca from "../ui/videoteca/MiaVideoteca";
 
 /**
  * LA PAGINA DI UNA PERSONA.
@@ -97,6 +98,22 @@ export default function ProfiloVideotecaPage() {
 
   const errore = io.errore || profilo.errore || videoteca.errore;
   const caricando = (io.inCorso && !io.dati) || (profilo.inCorso && !profilo.dati);
+
+  // La propria pagina, aperta dalla linguetta «Anime»: dal 04/10/2026 è
+  // uno strumento per segnare cosa si guarda (`MiaVideoteca`), non più
+  // un profilo. Il profilo resta all'indirizzo con il nome, quello che
+  // vedono gli altri dal Cineforum — e lì, per chi è il padrone, si
+  // cambiano ancora faccia e striscione.
+  if (!nickname && mia) {
+    return (
+      <MiaVideoteca
+        righe={videoteca.dati}
+        setRighe={videoteca.setDati}
+        ricarica={videoteca.ricarica}
+        persona={persona}
+      />
+    );
+  }
 
   return (
     <PaginaVideoteca titolo={null} attaccata>
