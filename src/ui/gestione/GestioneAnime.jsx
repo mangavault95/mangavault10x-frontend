@@ -1,10 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import useRisorsa from "../dati/useRisorsa";
-import { useSessione } from "../dati/sessione";
-import { useCollezione } from "../dati/collezione";
-import { corrisponde, raggruppa, etichettaStagione } from "../dati/videoteca";
-import { ModuloAccesso } from "../dati/AccessoProvider";
+import useRisorsa from "../../dati/useRisorsa";
+import { useCollezione } from "../../dati/collezione";
+import { corrisponde, raggruppa, etichettaStagione } from "../../dati/videoteca";
 import {
   accorpaStagione,
   cercaTagliStagioni,
@@ -18,16 +16,16 @@ import {
   staccaStagione,
   togliDallaVideoteca,
   urlCopertina
-} from "../services/api";
-import PaginaVideoteca, {
+} from "../../services/api";
+import {
   Bottone,
   Caricamento,
   Errore,
   Pillola,
   Scheda,
   Vuoto
-} from "../ui/videoteca/Foglio";
-import { NOMI_TIPO } from "../ui/videoteca/formati";
+} from "../videoteca/Foglio";
+import { NOMI_TIPO } from "../videoteca/formati";
 
 /**
  * Gestione della videoteca.
@@ -49,14 +47,19 @@ import { NOMI_TIPO } from "../ui/videoteca/formati";
  * rileggono da AnimeClick con un bottone — correggerle a mano avrebbe
  * vita corta, perché la rilettura successiva le riscrive.
  */
-export default function GestioneVideotecaPage() {
-  const { utente } = useSessione();
+/**
+ * Gli anime: stagioni da unire, collegamenti al manga, serie da togliere.
+ *
+ * Dal 05/10/2026 è una linguetta della Gestione unica (`GestionePage`),
+ * non più una pagina a sé: l'accesso lo controlla la pagina sopra, e
+ * qui dentro resta solo il lavoro.
+ */
+export default function GestioneAnime() {
   const { dati, errore, inCorso, ricarica } = useRisorsa(getVideoteca);
 
   const [sceltaId, setSceltaId] = useState(null);
   const [cerca, setCerca] = useState("");
   const [tolta, setTolta] = useState(null);
-  const [accesso, setAccesso] = useState(false);
 
   const serie = useMemo(() => raggruppa(dati ?? []), [dati]);
 
@@ -69,48 +72,8 @@ export default function GestioneVideotecaPage() {
   const scelta =
     serie.find((s) => s.stagioni.some((st) => Number(st.id) === Number(sceltaId))) || null;
 
-  if (!utente) {
-    return (
-      <PaginaVideoteca occhiello="Videoteca" titolo="Gestione">
-        <Vuoto
-          titolo="Serve l'accesso"
-          sommario="La videoteca è di chi la guarda: per sistemare stagioni e collegamenti bisogna prima dire chi sei. Va bene l'account della biblioteca — è lo stesso."
-          azioni={
-            <Bottone tono="pieno" onClick={() => setAccesso(true)}>
-              Entra o registrati
-            </Bottone>
-          }
-        />
-
-        {accesso && (
-          <ModuloAccesso
-            mondo="videoteca"
-            motivo="Per sistemare la tua videoteca."
-            onRiuscito={() => {
-              setAccesso(false);
-              ricarica();
-            }}
-            onAnnulla={() => setAccesso(false)}
-          />
-        )}
-      </PaginaVideoteca>
-    );
-  }
-
   return (
-    <PaginaVideoteca
-      occhiello="Videoteca"
-      titolo="Gestione"
-      sommario="Stagioni da unire, collegamenti al manga, serie da togliere."
-      azioni={
-        <Link
-          to="/videoteca/io"
-          className="text-sm font-medium text-quaderno-blu hover:underline"
-        >
-          Torna alla videoteca
-        </Link>
-      }
-    >
+    <>
       {inCorso && !dati && <Caricamento testo="Apro la videoteca…" />}
 
       {errore && <Errore errore={errore} riprova={ricarica} />}
@@ -212,7 +175,7 @@ export default function GestioneVideotecaPage() {
           )}
         </div>
       )}
-    </PaginaVideoteca>
+    </>
   );
 }
 

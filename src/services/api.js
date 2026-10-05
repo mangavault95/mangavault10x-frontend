@@ -1,5 +1,5 @@
 import { ricordaUtente, utenteDalToken, utenteRicordato } from "../dati/sessione";
-import { copertinaLocale } from "../tre/copertine";
+import { copertinaLocale } from "../dati/copertine";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -144,7 +144,7 @@ async function request(path, { method = "GET", body, auth = false, signal } = {}
  * apertura della Videoteca aspettava il risveglio e mezza griglia
  * restava grigia (misurato il 04/10/2026: 3 copertine su 16 mai
  * arrivate). Gli inoltri di Vercel — gli stessi che usa la stanza in
- * 3D, vedi `tre/copertine.js` — non dormono mai, e da qui le immagini
+ * 3D, vedi `dati/copertine.js` — non dormono mai, e da qui le immagini
  * sono dello stesso dominio, quindi la canvas resta leggibile.
  *
  * Il ponte resta per gli host che Vercel non inoltra (Google Books, le

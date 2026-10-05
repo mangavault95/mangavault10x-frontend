@@ -18,11 +18,10 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
  */
 import {
   SCHEDE,
-  SEZIONI_ADMIN,
+  SEZIONE_GESTIONE,
   eAttiva,
   mondoDi,
   schedaDi,
-  sezioneAdminDi,
   sottosezioniDi,
   titoloPer
 } from "./navigation";
@@ -83,9 +82,8 @@ export default function Shell({ children }) {
   const scheda = schedaDi(location.pathname);
   const tuAperto = apertoSu === location.pathname;
   const veste = VESTE;
-  // «Gestione» cambia porta col mondo: dalla videoteca apre le stagioni
-  // e i collegamenti, non le schede della collezione di carta.
-  const admin = sezioneAdminDi(mondo);
+  // In Gestione la linguetta «Tu» resta accesa: ci si arriva da lì.
+  const inGestione = location.pathname.startsWith(SEZIONE_GESTIONE.percorso);
 
   /**
    * «Aggiungi una serie», raggiungibile da ovunque nella videoteca.
@@ -197,9 +195,9 @@ export default function Shell({ children }) {
           <Identita mondo={mondo} />
 
           <VoceMenu
-            sezione={admin}
+            sezione={SEZIONE_GESTIONE}
             veste={veste}
-            attiva={eAttiva(admin.percorso, location.pathname)}
+            attiva={eAttiva(SEZIONE_GESTIONE.percorso, location.pathname)}
             // La pallina è la notifica: qualcuno ha chiesto di entrare
             // e aspetta una risposta. Non è un avviso da schermo intero
             // perché non è urgente — ma deve essere impossibile aprire
@@ -250,7 +248,7 @@ export default function Shell({ children }) {
           aria-expanded={tuAperto}
           aria-label="Tu: account, tema e gestione"
           className={`relative flex min-h-[3.5rem] flex-1 flex-col items-center justify-center gap-1 transition-colors duration-quick ${
-            tuAperto ? veste.tabAttiva : veste.tabInerte
+            tuAperto || inGestione ? veste.tabAttiva : veste.tabInerte
           }`}
         >
           <span className="relative">
@@ -437,19 +435,19 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
  *
  * Chi sei e la porta per entrare; il tema, che da quando ce n'è uno a
  * testa si può anche scegliere a mano; e le cose che non si aprono ogni
- * giorno: la sala in 3D e le due Gestioni. Le Gestioni sono qui per la
- * ragione di sempre: da mobile devono restare raggiungibili senza
- * scrivere l'indirizzo a mano, ma non meritano una linguetta.
+ * giorno: il riassunto del mese e la Gestione, che da mobile devono
+ * restare raggiungibili senza scrivere l'indirizzo a mano ma non
+ * meritano una linguetta.
  */
 function FoglioTu({ richieste, chiudi }) {
   const { utente, esci } = useSessione();
   const [tema, setTema] = useState(() => temaDi(utente));
 
+  // Due voci sole. La sala in 3D non c'è più (05/10/2026) e le due
+  // Gestioni sono una: dentro, tre linguette (Manga, Anime, Accessi).
   const voci = [
     { id: "mese", percorso: "/mese", etichetta: "Il vostro mese", icona: "calendario" },
-    { id: "sala", percorso: "/sala", etichetta: "La sala della biblioteca", icona: "portale" },
-    { ...SEZIONI_ADMIN.biblioteca, etichetta: "Gestione dei manga" },
-    { ...SEZIONI_ADMIN.videoteca, etichetta: "Gestione degli anime" }
+    { ...SEZIONE_GESTIONE, descrizione: "Correggi schede, stagioni e accessi" }
   ];
 
   function cambiaTema(nuovo) {
@@ -540,9 +538,14 @@ function FoglioTu({ richieste, chiudi }) {
               >
                 <Icon nome={voce.icona} dimensione={20} />
 
-                <span className="flex-1 text-sm font-medium">{voce.etichetta}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium">{voce.etichetta}</span>
+                  {voce.descrizione && (
+                    <span className="block text-xs font-normal text-ink-muted">{voce.descrizione}</span>
+                  )}
+                </span>
 
-                {voce.id === SEZIONI_ADMIN.biblioteca.id && richieste > 0 && (
+                {voce.id === SEZIONE_GESTIONE.id && richieste > 0 && (
                   <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ember px-1.5 font-numeric text-[0.7rem] font-bold text-void">
                     {richieste}
                   </span>

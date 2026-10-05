@@ -43,11 +43,8 @@ export const SCHEDE = [
   { id: "cerca", percorso: "/cerca", etichetta: "Cerca", icona: "search", tasto: "4" }
 ];
 
-// Le pagine che si raggiungono dalla stanza in 3D sono della biblioteca:
-// stanno sotto «Manga» anche se nessuna linguetta di quel mondo le nomina.
 const PAGINE_MANGA = [
-  "/collezione", "/serie/", "/lettura", "/wishlist", "/desiderio/", "/statistiche",
-  "/kachinuki", "/admin", "/sala", "/cassa", "/bacheca", "/tavolino", "/banco"
+  "/collezione", "/serie/", "/lettura", "/wishlist", "/desiderio/", "/statistiche", "/kachinuki"
 ];
 const PAGINE_ANIME = ["/videoteca", "/calendario"];
 
@@ -103,8 +100,8 @@ export const SEZIONI = [
     primaria: true,
     percorso: "/",
     // Dal 04/10/2026 la home è «Adesso»: cosa riprendere, cosa leggere,
-    // cosa esce. La stanza in 3D, che fino a qui era la porta, sta su
-    // `/sala` e ci si arriva dal fondo di Adesso.
+    // cosa esce. La stanza in 3D che era la porta del sito è stata
+    // tolta il 05/10/2026.
     etichetta: "Adesso",
     descrizione: "Cosa riprendere, cosa leggere, cosa esce questa settimana",
     // Il portale, cioè il marchio del sito. Prima era 本, il kanji di
@@ -237,48 +234,18 @@ export const SEZIONI = [
   }
 ];
 
-// Separate dalle altre: è amministrazione, non navigazione quotidiana.
+// Separata dalle altre: è amministrazione, non navigazione quotidiana.
 //
-// Ce n'è una per mondo, e non è un dettaglio di comodo: «Gestione»
-// deve correggere quello che si ha davanti. Premuta dalla videoteca
-// apriva le schede della collezione di carta — le uniche che non
-// c'entravano niente con la pagina da cui si arrivava.
-export const SEZIONI_ADMIN = {
-  biblioteca: {
-    id: "admin",
-    percorso: "/admin",
-    etichetta: "Gestione",
-    descrizione: "Modifica le schede della collezione",
-    icona: "settings"
-  },
-  videoteca: {
-    id: "admin-videoteca",
-    percorso: "/videoteca/gestione",
-    etichetta: "Gestione",
-    descrizione: "Stagioni, collegamenti e serie da togliere",
-    icona: "settings"
-  }
-};
-
-/** La Gestione del mondo acceso. La biblioteca resta il ripiego. */
-export function sezioneAdminDi(mondo) {
-  return SEZIONI_ADMIN[mondo] || SEZIONI_ADMIN.biblioteca;
-}
-
-/**
- * Le quattro porte della stanza.
- *
- * Non sono sezioni e non stanno in nessun menu: ci si arriva solo
- * cliccando l'oggetto dentro la stanza d'ingresso. Qui figurano per una
- * ragione sola — un indirizzo condiviso deve dire cosa contiene anche
- * quando non è una voce di navigazione.
- */
-const PORTE = {
-  "/sala": "La sala",
-  "/cassa": "Lo scontrino",
-  "/bacheca": "La bacheca",
-  "/tavolino": "Il tavolino",
-  "/banco": "Il banco"
+// UNA SOLA, dal 05/10/2026. Ce n'erano due — una per le schede dei manga
+// (`/admin`) e una per stagioni e collegamenti degli anime
+// (`/videoteca/gestione`) — con lo stesso nome in due posti. Adesso è una
+// pagina con tre linguette (Manga, Anime, Accessi): vedi `GestionePage`.
+export const SEZIONE_GESTIONE = {
+  id: "gestione",
+  percorso: "/gestione",
+  etichetta: "Gestione",
+  descrizione: "Schede dei manga, serie degli anime, accessi",
+  icona: "settings"
 };
 
 /** Le voci di un mondo, nell'ordine in cui stanno in barra. */
@@ -375,14 +342,12 @@ export function titoloPer(percorso) {
   // a qualcuno: la scheda deve dire di cosa si tratta.
   if (/^\/kachinuki\/\d+/.test(percorso)) return "Una partita · Kachinuki-sen";
 
-  if (PORTE[percorso]) return `${PORTE[percorso]} · MangaVault`;
-
   if (percorso.startsWith("/cerca")) return "Cerca · MangaVault";
   if (percorso.startsWith("/mese")) return "Il vostro mese · MangaVault";
 
-  const sezione = [...SEZIONI, ...Object.values(SEZIONI_ADMIN)].find(
-    (s) => s.percorso === percorso
-  );
+  if (percorso.startsWith("/gestione")) return "Gestione · MangaVault";
+
+  const sezione = SEZIONI.find((s) => s.percorso === percorso);
 
   return sezione ? `${sezione.etichetta} · MangaVault` : "MangaVault";
 }
@@ -419,7 +384,6 @@ export function eAttiva(percorsoVoce, percorsoCorrente) {
     return (
       percorsoCorrente.startsWith("/videoteca") &&
       percorsoCorrente !== "/videoteca" &&
-      !percorsoCorrente.startsWith(SEZIONI_ADMIN.videoteca.percorso) &&
       // «Tutti i titoli» e «Numeri» hanno la loro linguetta: due accese
       // insieme direbbero che si è in due posti.
       !percorsoCorrente.startsWith("/videoteca/io/tutto") &&

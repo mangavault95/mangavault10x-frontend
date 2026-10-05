@@ -12,7 +12,7 @@ import react from "@vitejs/plugin-react";
  * nostro stesso indirizzo e il problema sparisce.
  *
  * Questa tabella deve restare allineata con `vercel.json` (che fa la
- * stessa cosa in produzione) e con `src/tre/copertine.js` (che riscrive
+ * stessa cosa in produzione) e con `src/dati/copertine.js` (che riscrive
  * gli indirizzi). Il `Referer` va tolto: alcuni CDN rispondono 403 a
  * chi arriva da un dominio che non riconoscono.
  */
@@ -99,14 +99,9 @@ function preconnessione(indirizzo) {
  * contengono l'impronta del contenuto, cambiano a ogni build, e un
  * service worker scritto a mano non ha modo di indovinarli.
  *
- * Cosa si mette da parte: tutto il codice, e solo il codice. I modelli
- * e le texture della stanza sono megabyte, e non sono il motivo per cui
- * uno si installa l'app sul telefono: se li prende il guardiano la
- * prima volta che si entra davvero nella stanza, e da lì in poi restano.
- *
- * Three.js resta dentro: la stanza d'ingresso lo usa, e un pezzo che
- * arriva quasi sempre tanto vale averlo da parte. (Fino al 04/10/2026
- * lo montava anche la Collezione, col libro in vetrina, poi tolto.)
+ * Cosa si mette da parte: tutto il codice, e solo il codice. (Fino al
+ * 05/10/2026 c'erano anche i modelli 3D della stanza d'ingresso, quasi
+ * due megabyte, lasciati fuori di proposito: la stanza è stata tolta.)
  */
 function guscioOffline() {
   const MARCATORE = "/*__CODICE__*/";

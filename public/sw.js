@@ -199,7 +199,7 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // Il codice e i modelli: il nome contiene l'impronta del contenuto,
+  // Il codice e le immagini: il nome contiene l'impronta del contenuto,
   // quindi la copia locale è sempre quella giusta e non serve chiedere.
   if (url.origin === self.location.origin && url.pathname.startsWith("/assets/")) {
     e.respondWith(primaLaCopia(richiesta, RISORSE));

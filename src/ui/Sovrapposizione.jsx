@@ -49,7 +49,7 @@ import { createPortal } from "react-dom";
  * e contain. La barra bassa resta ancorata allo schermo.
  *
  * `blocca={false}` per i veli che non sono moduli: il sipario dei
- * passaggi di pagina (`Approdo`) è `pointer-events-none` e non chiede
+ * passaggi di pagina (la vecchia `Approdo`) è `pointer-events-none` e non chiede
  * niente a nessuno, fermarci sopra la pagina sarebbe solo uno scatto.
  */
 

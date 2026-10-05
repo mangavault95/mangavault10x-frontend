@@ -1,5 +1,4 @@
 import { lazy, Suspense, useEffect } from "react";
-import { useLocation } from "react-router-dom";
 import Icon from "../app/Icon";
 import useTocco from "../ui/tocco";
 import { useBibliotecario } from "./contesto";
@@ -41,15 +40,9 @@ import { useBibliotecario } from "./contesto";
  */
 const Pannello = lazy(() => import("./Banco"));
 
-// Dove il bibliotecario è già in scena, e quindi non serve chiamarlo.
-const IN_PERSONA = ["/sala", "/banco"];
-
 export default function Bibliotecario() {
   const { aperto, apri, chiudi, alterna } = useBibliotecario();
-  const { pathname } = useLocation();
   const alTocco = useTocco();
-
-  const nellaStanza = IN_PERSONA.includes(pathname);
 
   // Scorciatoia: "b" da qualunque punto del sito. Non ruba il tasto a
   // chi sta scrivendo in un campo.
@@ -73,7 +66,7 @@ export default function Bibliotecario() {
 
   return (
     <>
-      {!aperto && !nellaStanza && !alTocco && <BottoneBanco onApri={apri} />}
+      {!aperto && !alTocco && <BottoneBanco onApri={apri} />}
 
       {aperto && (
         <Suspense fallback={null}>

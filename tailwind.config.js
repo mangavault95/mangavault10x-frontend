@@ -46,7 +46,6 @@ export default {
         void: v("c-void"), // il fondo più profondo
         shelf: v("c-shelf"), // il fondo della pagina
         alcove: v("c-alcove"), // le schede appoggiate sopra
-        legno: "#1a1410", // lo stesso legno della stanza 3D (`COLORE_LEGNO` in tre/scena.js)
 
         // ---- Ottone: l'accento. 400 è il tuo yellow-400 di sempre ----
         brass: {
@@ -91,18 +90,6 @@ export default {
           cielo: "#7dd3fc",
           rosa: "#f472b6"
         },
-
-        // ---- Materiali ----
-        // Le pagine che si raggiungono dalla stanza non sono pannelli di
-        // vetro su fondo scuro: sono oggetti. Uno scontrino è di carta
-        // termica, una bacheca è di sughero, un volume aperto è di carta
-        // ingiallita — e su quelle superfici si scrive in nero, non in
-        // avorio. Sono gli unici punti del sito in cui il fondo è chiaro,
-        // ed è voluto: lì si sta guardando una cosa, non una schermata.
-        carta: "#efe6d2", // la pagina di un volume
-        scontrino: "#e9e7e0", // la carta termica del registratore
-        sughero: "#8b6a45", // il pannello della bacheca
-        inchiostro: "#2a2118", // quello che ci si scrive sopra
 
         // ---- Videoteca: "Quaderno" ----
         // L'unica sezione del sito che è chiara per tutta la sua

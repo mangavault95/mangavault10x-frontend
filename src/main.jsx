@@ -8,7 +8,6 @@ import "./index.css";
 import AppRoutes from "./app/routes";
 import { agganciaServizio } from "./app/servizio";
 import { anticipaCollezione } from "./dati/anticipo";
-import { anticipaModelli } from "./tre/indirizzi";
 import { copertinaOriginale } from "./services/api";
 
 /**
@@ -32,10 +31,6 @@ import { copertinaOriginale } from "./services/api";
 
 // La collezione serve praticamente a ogni pagina.
 anticipaCollezione();
-
-// I modelli della stanza no: chi apre la Collezione o i Numeri non li
-// vedrà mai, e chiederglieli sarebbe un megabyte buttato.
-if (window.location.pathname === "/sala") anticipaModelli();
 
 // Il guscio offline, per chi il sito se l'è messo sulla schermata Home
 // del telefono. Aspetta il carico da sé, quindi non ruba niente a qui.

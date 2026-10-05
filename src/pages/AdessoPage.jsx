@@ -31,7 +31,7 @@ import {
  *   4. cosa esce questa settimana: volumi E puntate, in una lista sola
  *   5. il prossimo acquisto: la serie a cui manca meno per essere completa
  *
- * La stanza non è sparita: sta su `/sala`.
+ * (La stanza in 3D che stava qui prima è stata tolta il 05/10/2026.)
  *
  * Tutto quello che si legge qui è di chi guarda (chi non è entrato vede
  * quello del proprietario, come nel resto del sito). Ogni sezione si
@@ -285,12 +285,6 @@ export default function AdessoPage() {
           </Link>
         </Sezione>
       )}
-
-      <p className="mt-10 text-center text-sm">
-        <Link to="/sala" className="text-ink-muted underline-offset-4 hover:text-ink-bright hover:underline">
-          Entra nella sala della biblioteca
-        </Link>
-      </p>
     </div>
   );
 }

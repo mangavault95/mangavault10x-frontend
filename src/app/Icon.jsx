@@ -71,12 +71,11 @@ const TRACCIATI = {
    * passaggio, non lo chiude. Fatta di libri, dice anche di che passaggio
    * si tratta.
    *
-   * QUI I LIBRI NON SI VEDONO, ED È VOLUTO. Il marchio esiste in due
-   * misure: questa e quella grande sull'insegna della stanza
-   * (`creaTexturaInsegna` in `tre/bancone.js`), dove le colonne hanno le
-   * nervature del dorso e in mezzo si intravedono le pagine. A ventiquattro
-   * unità quei dettagli sono mezzo pixel l'uno e diventano sporco: resta
-   * la sagoma, che è la parte che si riconosce da lontano.
+   * QUI I LIBRI NON SI VEDONO, ED È VOLUTO. Il marchio esisteva anche in
+   * una misura grande sull'insegna della stanza 3D (ora tolta), con le
+   * nervature del dorso. A ventiquattro unità quei dettagli sono mezzo
+   * pixel l'uno e diventano sporco: resta la sagoma, che è la parte che
+   * si riconosce da lontano.
    *
    * L'architrave è curva verso l'alto (`Q`) e non dritta, perché è così
    * che è fatto il kasagi di un torii vero — ed è l'unico tratto che

@@ -11,31 +11,23 @@ import { useTema } from "../dati/tema";
 import { BibliotecarioProvider } from "../bibliotecario/BibliotecarioProvider";
 
 // Ogni pagina è un chunk separato: la prima apertura scarica solo
-// quello che serve invece dell'intera applicazione. Three.js pesa più
-// di tutto il resto del sito messo insieme, e la home lo scarica
-// sempre: è la stanza d'ingresso, non un'ala facoltativa.
+// quello che serve invece dell'intera applicazione. La videoteca è un
+// mondo a parte anche nel codice scaricato: chi non ci entra mai non
+// porta a casa nemmeno un byte delle sue pagine.
 const Adesso = lazy(() => import("../pages/AdessoPage"));
 const Cerca = lazy(() => import("../pages/CercaPage"));
 const Mese = lazy(() => import("../pages/MesePage"));
-// La stanza in 3D: dal 04/10/2026 non è più la porta del sito ma una
-// sala in cui si entra apposta (`/sala`). Three.js lo scarica solo chi
-// ci va.
-const Home = lazy(() => import("../pages/HomePage"));
+const Gestione = lazy(() => import("../pages/GestionePage"));
 const Collezione = lazy(() => import("../pages/CollezionePage"));
 const Serie = lazy(() => import("../pages/SeriePage"));
 const Wishlist = lazy(() => import("../pages/WishlistPage"));
 const Desiderio = lazy(() => import("../pages/DesiderioPage"));
 const Lettura = lazy(() => import("../pages/LetturaPage"));
 const Statistiche = lazy(() => import("../pages/StatistichePage"));
-const Admin = lazy(() => import("../pages/AdminPage"));
 const Kachinuki = lazy(() => import("../pages/KachinukiPage"));
 const Partita = lazy(() => import("../pages/PartitaPage"));
 const NonTrovata = lazy(() => import("../pages/NonTrovataPage"));
 
-// Le quattro vesti che si raggiungono dalla stanza. Stessi dati delle
-// pagine qui sopra, altro racconto: il perché sta in `ui/Approdo.jsx`.
-// Ognuna è un chunk suo — chi non passa mai dalla stanza non le scarica,
-// e chi ci passa ne scarica una alla volta.
 // La videoteca è un mondo a parte anche nel codice scaricato: chi non
 // ci entra mai non porta a casa nemmeno un byte delle sue pagine.
 const Cineforum = lazy(() => import("../pages/CineforumPage"));
@@ -46,12 +38,7 @@ const CommentiVideoteca = lazy(() => import("../pages/CommentiVideotecaPage"));
 const Confronto = lazy(() => import("../pages/ConfrontoPage"));
 const Anime = lazy(() => import("../pages/AnimePage"));
 const Calendario = lazy(() => import("../pages/CalendarioPage"));
-const GestioneVideoteca = lazy(() => import("../pages/GestioneVideotecaPage"));
 
-const Cassa = lazy(() => import("../pages/CassaPage"));
-const Bacheca = lazy(() => import("../pages/BachecaPage"));
-const Tavolino = lazy(() => import("../pages/TavolinoPage"));
-const Banco = lazy(() => import("../pages/BancoPage"));
 
 /**
  * Ogni schermata ha il suo indirizzo.
@@ -119,20 +106,16 @@ function Contenuto() {
                     pezzi della persona precedente. */}
                 <Routes location={location} key={`${location.pathname}|${idVisto ?? "ospite"}`}>
                   <Route path="/" element={<Adesso />} />
-                  <Route path="/sala" element={<Home />} />
+                  <Route path="/gestione" element={<Gestione />} />
                   <Route path="/cerca" element={<Cerca />} />
                   <Route path="/mese" element={<Mese />} />
                   <Route path="/collezione" element={<Collezione />} />
-                  {/* La biblioteca non è più una pagina a sé: è lo scaffale
-                      della stanza d'ingresso. Il vecchio indirizzo resta
-                      valido, ma porta alla home. */}
-                  <Route path="/biblioteca" element={<Navigate to="/sala" replace />} />
+                  <Route path="/biblioteca" element={<Navigate to="/collezione" replace />} />
                   <Route path="/serie/:id" element={<Serie />} />
                   <Route path="/wishlist" element={<Wishlist />} />
                   <Route path="/desiderio/:id" element={<Desiderio />} />
                   <Route path="/lettura" element={<Lettura />} />
                   <Route path="/statistiche" element={<Statistiche />} />
-                  <Route path="/admin" element={<Admin />} />
 
                   {/* ---- Videoteca ----
                       L'altra metà del sito: gli anime visti, il punto in
@@ -173,12 +156,6 @@ function Contenuto() {
                       mostrerebbe a chi lo riceve un'altra pagina. */}
                   <Route path="/videoteca/confronto/:a/:b" element={<Confronto />} />
 
-                  {/* La Gestione della videoteca sta sotto /videoteca e
-                      non accanto a /admin: è la stessa parola, ma
-                      corregge un'altra cosa — stagioni e collegamenti,
-                      non i volumi di carta. Il segmento fisso vince sul
-                      `:id` qui sotto, che è come deve andare. */}
-                  <Route path="/videoteca/gestione" element={<GestioneVideoteca />} />
                   <Route path="/videoteca/:id" element={<Anime />} />
                   {/* «In visione» non ha più un indirizzo suo: è una
                       sezione della propria pagina (`/videoteca/io`).
@@ -194,19 +171,21 @@ function Contenuto() {
                   <Route path="/kachinuki" element={<Kachinuki />} />
                   <Route path="/kachinuki/:id" element={<Partita />} />
 
-                  {/* Le porte della stanza. Non stanno nella barra
-                      laterale apposta: ci si arriva camminandoci, e una
-                      voce di menu che porta allo stesso posto toglierebbe
-                      la ragione per cui esistono. Restano indirizzi veri —
-                      condivisibili, salvabili, aggiornabili — e chi ci
-                      arriva senza essere passato dalla stanza trova il
-                      collegamento alla veste normale in alto a destra. */}
-                  <Route path="/cassa" element={<Cassa />} />
-                  <Route path="/bacheca" element={<Bacheca />} />
-                  <Route path="/tavolino" element={<Tavolino />} />
-                  <Route path="/banco" element={<Banco />} />
-
-                  {/* Vecchi indirizzi mantenuti funzionanti */}
+                  {/* Vecchi indirizzi mantenuti funzionanti. La stanza in 3D e
+                      le sue quattro porte (scontrino, bacheca, tavolino,
+                      banco) sono state tolte il 05/10/2026: chi ha un
+                      segnalibro finisce su Adesso, che le sostituisce. Le
+                      due Gestioni sono diventate una (`/gestione`). */}
+                  <Route path="/sala" element={<Navigate to="/" replace />} />
+                  <Route path="/cassa" element={<Navigate to="/mese" replace />} />
+                  <Route path="/bacheca" element={<Navigate to="/wishlist" replace />} />
+                  <Route path="/tavolino" element={<Navigate to="/lettura" replace />} />
+                  <Route path="/banco" element={<Navigate to="/cerca" replace />} />
+                  <Route path="/admin" element={<Navigate to="/gestione?sezione=manga" replace />} />
+                  <Route
+                    path="/videoteca/gestione"
+                    element={<Navigate to="/gestione?sezione=anime" replace />}
+                  />
                   <Route path="/records" element={<Navigate to="/statistiche" replace />} />
                   <Route
                     path="/preferiti"

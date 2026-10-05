@@ -6,21 +6,76 @@
   "lang": "it",
   "dir": "ltr",
   "scope": "/",
-  "start_url": "/collezione",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#1e1c19",
   "theme_color": "#1e1c19",
   "orientation": "any",
-  "categories": ["books", "lifestyle", "utilities"],
+  "categories": [
+    "books",
+    "lifestyle",
+    "utilities"
+  ],
   "icons": [
-    { "src": "/icona-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icona-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icona-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icona-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icona-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icona-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Collezione", "url": "/collezione", "icons": [{ "src": "/icona-192.png", "sizes": "192x192" }] },
-    { "name": "In lettura", "url": "/lettura", "icons": [{ "src": "/icona-192.png", "sizes": "192x192" }] },
-    { "name": "Wishlist", "url": "/wishlist", "icons": [{ "src": "/icona-192.png", "sizes": "192x192" }] },
-    { "name": "La stanza", "url": "/", "icons": [{ "src": "/icona-192.png", "sizes": "192x192" }] }
+    {
+      "name": "Adesso",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/icona-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "In lettura",
+      "url": "/lettura",
+      "icons": [
+        {
+          "src": "/icona-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Anime",
+      "url": "/videoteca/io",
+      "icons": [
+        {
+          "src": "/icona-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Da comprare",
+      "url": "/wishlist",
+      "icons": [
+        {
+          "src": "/icona-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }
