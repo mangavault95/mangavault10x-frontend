@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import Icon from "../app/Icon";
 import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
 import { useSessione } from "../dati/sessione";
@@ -184,14 +185,14 @@ export default function AdessoPage() {
       )}
 
       {daGuardare.length > 0 && (
-        <Sezione titolo="Da guardare" link={{ a: "/videoteca/io", testo: "Tutto" }}>
+        <Sezione titolo="Da guardare" kana="見る" link={{ a: "/videoteca/io", testo: "Tutto" }}>
           <ul className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
             {daGuardare.slice(0, 10).map((a) => (
               <li key={a.id} className="w-32 shrink-0">
                 <Link to={`/videoteca/${a.id}`} className="group block focus-visible:outline-none">
                   <div className="relative">
                     <Immagine src={a.cover_url} alt="" className="aspect-[2/3] w-32 rounded-2xl" />
-                    <span className="absolute left-2 top-2 rounded-lg bg-brass-400 px-1.5 py-0.5 font-numeric text-xs font-semibold text-void">
+                    <span className="absolute left-2 top-2 rounded-md border border-viola/40 bg-void/80 px-1.5 py-0.5 font-numeric text-xs font-medium text-viola backdrop-blur">
                       {a.nuovi} {a.nuovi === 1 ? "nuovo" : "nuovi"}
                     </span>
                   </div>
@@ -205,7 +206,7 @@ export default function AdessoPage() {
       )}
 
       {letture.length > 0 && (
-        <Sezione titolo="Continua a leggere" link={{ a: "/lettura", testo: "Tutte" }}>
+        <Sezione titolo="Continua a leggere" kana="読む" link={{ a: "/lettura", testo: "Tutte" }}>
           <LetturaPrincipale lettura={letture[0]} occupato={inCorso === `lettura:${letture[0].mangaId}`} onPiuUno={() => lettoProssimo(letture[0])} />
 
           {letture.length > 1 && (
@@ -232,7 +233,7 @@ export default function AdessoPage() {
       )}
 
       {settimana.length > 0 && (
-        <Sezione titolo="Esce questa settimana" link={{ a: "/calendario", testo: "Calendario" }}>
+        <Sezione titolo="Esce questa settimana" kana="今週" link={{ a: "/calendario", testo: "Calendario" }}>
           <ul className="divide-y divide-hairline rounded-2xl bg-alcove px-3.5">
             {settimana.map((u) => (
               <li key={u.chiave}>
@@ -258,7 +259,7 @@ export default function AdessoPage() {
       )}
 
       {prossimoAcquisto && (
-        <Sezione titolo="Prossimo acquisto" link={{ a: "/wishlist", testo: "Da comprare" }}>
+        <Sezione titolo="Prossimo acquisto" kana="買う" link={{ a: "/wishlist", testo: "Da comprare" }}>
           <Link
             to={`/serie/${prossimoAcquisto.serie.id}`}
             className="flex items-center gap-3.5 rounded-2xl bg-alcove p-3.5 transition-colors duration-quick active:bg-glass-2"
@@ -277,7 +278,7 @@ export default function AdessoPage() {
                 {prossimoAcquisto.serie.costo ? (
                   <>
                     {" · "}
-                    <span className="font-numeric text-ink-bright">{euro(prossimoAcquisto.serie.costo)}</span>
+                    <span className="font-numeric text-ambra">{euro(prossimoAcquisto.serie.costo)}</span>
                   </>
                 ) : null}
               </p>
@@ -410,36 +411,55 @@ const FORMATO_DATA = new Intl.DateTimeFormat("it-IT", {
   timeZone: "Europe/Rome"
 });
 
+// Il titolo della Home è un saluto (02/11/2026): «Home» resta nella barra,
+// dove serve a orientarsi, e qui la pagina dice di chi è e che ora è.
+function saluto(ora = new Date().getHours()) {
+  if (ora >= 5 && ora < 13) return "Buongiorno";
+  if (ora >= 13 && ora < 18) return "Buon pomeriggio";
+  return "Buonasera";
+}
+
+// Il giorno della settimana in kana, accanto alla data: 月曜日 il lunedì.
+const KANJI_GIORNO = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"];
+
 function Testata({ nome }) {
   // Solo la prima lettera: «Domenica 4 ottobre», non «Domenica 4 Ottobre».
   const data = FORMATO_DATA.format(new Date());
   const oggi = data.charAt(0).toUpperCase() + data.slice(1);
 
   return (
-    <header className="flex items-end justify-between px-5 pb-1 pt-6">
-      <div>
-        <p className="text-[0.8rem] text-ink-muted">{oggi}</p>
-        <h1 className="mt-0.5 font-display text-[2.5rem] font-extrabold leading-none tracking-tight text-ink-bright">Adesso</h1>
-      </div>
-      {nome && (
-        <span
-          aria-hidden="true"
-          className="grid h-10 w-10 place-items-center rounded-full bg-brass-400 text-sm font-bold text-void"
-        >
-          {nome.slice(0, 2)}
+    <header className="px-5 pb-1 pt-6">
+      <p className="flex items-center gap-2 font-numeric text-[0.72rem] uppercase tracking-[0.14em] text-ink-muted">
+        {oggi}
+        <span aria-hidden="true" className="font-pixel normal-case tracking-normal text-ink-faint">
+          {KANJI_GIORNO[new Date().getDay()]}
         </span>
-      )}
+      </p>
+      <h1 className="mt-2 flex items-center gap-3 font-display font-bold tracking-tight text-ink-bright">
+        {/* Il torii, cioè il marchio, acceso: è l'unico posto in cui il
+            logo è grande, e la Home è casa sua. */}
+        <span aria-hidden="true" className="text-brass-400 drop-shadow-[0_0_8px_rgb(var(--c-accento)/0.75)]">
+          <Icon nome="portale" dimensione={40} />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-[0.95rem] font-semibold leading-tight text-ink-muted">{saluto()},</span>
+          <span className="block text-[2rem] leading-none">{nome || "MangaVault"}</span>
+        </span>
+      </h1>
     </header>
   );
 }
 
-function Sezione({ titolo, link, children }) {
+function Sezione({ titolo, kana, link, children }) {
   return (
     <section className="px-4 pt-7">
       <div className="mb-3 flex items-baseline justify-between px-1">
-        <h2 className="font-display text-xl font-bold tracking-tight text-ink-bright">{titolo}</h2>
+        <h2 className="flex items-baseline gap-2 font-display text-lg font-semibold tracking-tight text-ink-bright">
+          {titolo}
+          {kana && <span aria-hidden="true" className="font-pixel text-xs font-normal text-ink-faint">{kana}</span>}
+        </h2>
         {link && (
-          <Link to={link.a} className="text-sm font-medium text-brass-300 hover:underline">
+          <Link to={link.a} className="text-sm font-medium text-ciano hover:underline">
             {link.testo}
           </Link>
         )}
@@ -451,7 +471,7 @@ function Sezione({ titolo, link, children }) {
 
 function DaRiprendere({ anime, occupato, onVisto }) {
   return (
-    <section className="relative mx-4 mt-5 overflow-hidden rounded-3xl bg-alcove shadow-raised">
+    <section className="relative mx-4 mt-5 overflow-hidden rounded-3xl border border-brass-400/25 bg-alcove shadow-raised">
       {/* La copertina stessa, sfocata, fa da fondo: la card prende il
           colore della serie invece di essere la stessa lastra per tutte.
           Sfuma verso il fondo della scheda perché il tasto resti su una
@@ -489,7 +509,7 @@ function DaRiprendere({ anime, occupato, onVisto }) {
           type="button"
           onClick={onVisto}
           disabled={occupato}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-brass-400 text-[0.95rem] font-semibold text-void shadow-brass transition-all duration-quick active:scale-[0.98] disabled:opacity-60"
+          className="insegna flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[0.95rem] font-semibold transition-all duration-quick active:scale-[0.98] disabled:opacity-60"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M20 6 9 17l-5-5" />
@@ -520,7 +540,7 @@ function LetturaPrincipale({ lettura, occupato, onPiuUno }) {
         </p>
         {percentuale !== null && (
           <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-ink-bright/[0.08]">
-            <div className="h-full rounded-full bg-brass-400" style={{ width: `${percentuale}%` }} />
+            <div className="h-full rounded-full bg-ink-bright/70" style={{ width: `${percentuale}%` }} />
           </div>
         )}
       </div>
@@ -529,7 +549,7 @@ function LetturaPrincipale({ lettura, occupato, onPiuUno }) {
         onClick={onPiuUno}
         disabled={occupato}
         aria-label={eUltimo ? `Finito ${lettura.titolo}` : `Finito il volume ${lettura.volume}, passa al ${lettura.volume + 1}`}
-        className="grid h-14 w-14 shrink-0 place-items-center rounded-[1.1rem] bg-brass-400 text-lg font-bold text-void transition-transform duration-quick active:scale-90 disabled:opacity-60"
+        className="grid h-14 w-14 shrink-0 place-items-center rounded-[1.1rem] border border-brass-400/50 font-numeric text-lg font-bold text-brass-300 transition-all duration-quick hover:bg-brass-400/10 active:scale-90 disabled:opacity-60"
       >
         {eUltimo ? "✓" : "+1"}
       </button>
@@ -555,7 +575,7 @@ function RichiamoMese({ adesso }) {
   return (
     <Link
       to="/mese"
-      className="mx-4 mt-4 flex items-center justify-between rounded-2xl bg-brass-400/12 px-4 py-3 text-sm text-ink-bright transition-colors duration-quick active:bg-brass-400/20"
+      className="mx-4 mt-4 flex items-center justify-between rounded-2xl border border-hairline bg-alcove/60 px-4 py-3 text-sm text-ink-bright transition-colors duration-quick active:bg-alcove"
     >
       <span>
         Il vostro <span className="font-semibold">{NOME_DEL_MESE.format(scorso)}</span>: com'è andato
@@ -598,7 +618,7 @@ function Immagine({ src, alt, className = "", larghezza = 256 }) {
       {!caricata && (
         <div
           aria-hidden="true"
-          className="absolute inset-0 animate-shimmer bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent)] bg-[length:200%_100%]"
+          className="absolute inset-0 animate-shimmer bg-[linear-gradient(90deg,transparent,rgb(var(--c-viola)/0.18),transparent)] bg-[length:200%_100%]"
         />
       )}
       <img

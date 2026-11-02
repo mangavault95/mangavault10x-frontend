@@ -6,6 +6,18 @@
  * in un componente significa che una modifica alla spaziatura vale
  * per tutto il sito, e che nessuna pagina può "sfasarsi" dalle altre.
  */
+// Il kana in pixel accanto al titolo (02/11/2026): una decorazione, mai
+// un testo da leggere. Sta qui e non in ogni pagina, così le pagine nuove
+// lo prendono da sole se il titolo è in elenco.
+const KANA = {
+  "In lettura": "読書中",
+  "Da comprare": "買い物",
+  Numeri: "数字",
+  "Kachinuki-sen": "勝ち抜き戦",
+  Collezione: "蔵書",
+  Gestione: "管理"
+};
+
 export default function Pagina({ titolo, occhiello, sommario, azioni, children }) {
   return (
     <div className="mx-auto w-full max-w-[110rem] px-3 py-5 sm:px-8 sm:py-8 lg:px-12 lg:py-12">
@@ -17,8 +29,13 @@ export default function Pagina({ titolo, occhiello, sommario, azioni, children }
             </p>
           )}
 
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-ink-bright sm:text-4xl">
+          <h1 className="flex items-baseline gap-2.5 font-display text-2xl font-bold tracking-tight text-ink-bright sm:text-4xl">
             {titolo}
+            {typeof titolo === "string" && KANA[titolo] && (
+              <span aria-hidden="true" className="font-pixel text-sm font-normal text-ink-faint">
+                {KANA[titolo]}
+              </span>
+            )}
           </h1>
 
           {sommario && (
@@ -44,7 +61,7 @@ export function Sezione({ titolo, extra, children, className = "" }) {
       {(titolo || extra) && (
         <div className="flex items-baseline justify-between gap-4">
           {titolo && (
-            <h2 className="font-display text-xl font-semibold text-ink-bright">
+            <h2 className="font-display text-xl font-semibold tracking-tight text-ink-bright">
               {titolo}
             </h2>
           )}

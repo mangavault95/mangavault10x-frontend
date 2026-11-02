@@ -169,9 +169,12 @@ export default function ScaffaleVolumi({
    ================================================== */
 
 const ASPETTO_QUADRETTO = {
-  letto: "border-brass-400/70 bg-brass-400/85 font-semibold text-void",
-  posseduto: "border-brass-400/30 bg-brass-400/12 text-brass-300",
-  mancante: "border-dashed border-soft text-ink-faint"
+  // Dal 02/11/2026: in casa è chiaro, letto prende la tinta dell'accento,
+  // e quello che manca è un tratteggio rosso lanterna — i buchi di una
+  // serie comprata a salti devono vedersi al primo sguardo.
+  letto: "border-brass-400/60 bg-brass-400/25 font-semibold text-ink-bright",
+  posseduto: "border-ink-bright/15 bg-ink-bright/[0.1] text-ink-bright",
+  mancante: "border-dashed border-ember/60 text-ember/80"
 };
 
 function Quadretti({

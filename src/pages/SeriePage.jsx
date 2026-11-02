@@ -780,16 +780,16 @@ function Volumi({
       {/* La legenda: i tre stati del tabellone, con il conto di ciascuno. */}
       <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-muted">
         <li className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm bg-brass-400" />
+          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm border border-brass-400/60 bg-brass-400/25" />
           Letti{di ? ` da ${di}` : ""} <span className="font-numeric">{insiemeLetti.size}</span>
         </li>
         <li className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm border border-brass-400/30 bg-brass-400/12" />
+          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm border border-ink-bright/15 bg-ink-bright/[0.1]" />
           Da leggere <span className="font-numeric">{numeri.filter((n) => !insiemeLetti.has(n)).length}</span>
         </li>
         {mancano > 0 && (
           <li className="flex items-center gap-1.5">
-            <span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm border border-dashed border-soft" />
+            <span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm border border-dashed border-ember/60" />
             Mancano <span className="font-numeric">{mancano}</span>
           </li>
         )}

@@ -752,7 +752,9 @@ export default function LetturaPage() {
       // lettura è la prima cosa che si viene a fare.
       azioni={
         bibliotecaSolaLettura ? null : (
-          <Bottone onClick={() => setSceltaAperta(true)}>
+          // Un contorno e non l'insegna: la luce della pagina spetta a
+          // «Finito il N», il gesto che si fa ogni sera.
+          <Bottone variante="secondario" onClick={() => setSceltaAperta(true)} className="!border-brass-400/50">
             <Icon nome="plus" dimensione={16} />
             Apri una serie
           </Bottone>
@@ -1739,7 +1741,7 @@ function RigaLettura({ lettura, principale, ultima, soloLettura, onAvanti, onInd
               onClick={onLetto}
               disabled={giaLetto && eUltimo}
               className={`h-10 min-w-0 flex-1 truncate rounded-xl px-3 text-sm font-semibold transition-transform duration-quick active:scale-[0.98] disabled:opacity-50 ${
-                principale ? "bg-brass-400 text-void" : "bg-glass-2 text-ink-bright"
+                principale ? "insegna" : "border border-hairline bg-glass-2 text-ink-bright hover:border-brass-400/40"
               }`}
             >
               {giaLetto && eUltimo ? "Finita" : eUltimo ? `Finito il ${volume}, l'ultimo` : `Finito il ${volume}`}

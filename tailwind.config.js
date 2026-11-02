@@ -74,6 +74,13 @@ export default {
         ember: v("c-ember"), // mancante, distruttivo
         lapis: v("c-lapis"), // in corso, informativo
 
+        // ---- I neon con un ruolo (02/11/2026) ----
+        // Separati dai semantici qui sopra perché non dicono «com'è
+        // andata», dicono «che cosa è»: un link, un prezzo, una puntata.
+        ciano: v("c-ciano"), // link, orari, focus
+        ambra: v("c-ambra"), // prezzi e voti
+        viola: v("c-viola"), // il mondo degli anime
+
         // ---- I lettori ----
         // Chi ha scritto una nota si riconosce dal colore, non dal nome
         // letto ogni volta. Sono tenuti volutamente FUORI dai semantici
@@ -83,7 +90,10 @@ export default {
         // da sempre. I nomi combaciano con `COLORI_LETTORE` nel backend
         // (`services/utenti.js`), che è chi li assegna.
         lettore: {
-          ottone: "#facc15", // = brass-400, il proprietario
+          // Il nome resta «ottone» perché è salvato così nel database
+          // (`utenti.colore`); il colore è il sakura dell'accento, dal
+          // 02/11/2026, ed è sempre il proprietario.
+          ottone: "#ff4fa3",
           lilla: "#c084fc",
           menta: "#5eead4",
           corallo: "#fb923c",
@@ -111,8 +121,12 @@ export default {
           riga: v("c-riga"), // bordi e divisori
           inchiostro: v("c-ink-bright"), // quello che ci si scrive
           tenue: v("c-ink-muted"), // metadati, didascalie
-          blu: v("c-accento"), // l'accento: progressi, ore, numeri
-          "blu-tenue": v("c-accento-tenue"), // l'accento quando fa da fondo
+          // Dal 02/11/2026 il colore del mondo degli anime è il viola, non
+          // l'accento: entrando in videoteca si capisce che lì si parla di
+          // puntate prima ancora di leggere. I nomi restano «blu» perché
+          // li usano un centinaio di componenti.
+          blu: v("c-viola"), // progressi, ore, numeri
+          "blu-tenue": v("c-viola-tenue"), // il viola quando fa da fondo
           "su-blu": v("c-su-accento"), // il testo sopra un fondo d'accento
 
           // I voti, agli estremi: dal 4 in su verde, sotto il 3 rosso.
@@ -205,12 +219,18 @@ export default {
         // richieste a Google, e funzionano anche offline nell'app.
         //
         // Il display serve per i titoli.
-        display: ["Bricolage Grotesque Variable", "system-ui", "sans-serif"],
+        //
+        // Dal 02/11/2026 il display è Sora: geometrico e pulito, il
+        // minimalismo tecnologico giapponese senza fare cosplay.
+        display: ["Sora Variable", "system-ui", "sans-serif"],
         sans: ["Geist Variable", "system-ui", "sans-serif"],
         // Cifre a larghezza fissa per prezzi e contatori: senza
         // questo i numeri "ballano" mentre si aggiornano. Solo lì:
         // su date e didascalie il mono fa terminale.
-        numeric: ["Geist Mono Variable", "ui-monospace", "monospace"]
+        numeric: ["JetBrains Mono Variable", "ui-monospace", "monospace"],
+        // I kana delle micro-etichette (今, 漫画, アニメ): pixel, piccoli e
+        // tenui. Una decorazione, mai un testo da leggere.
+        pixel: ["DotGothic16", "ui-monospace", "monospace"]
       },
 
       keyframes: {

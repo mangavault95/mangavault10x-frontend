@@ -206,7 +206,9 @@ export default function CartaSerie({
  * sono decine insieme.
  */
 const COLORE_ANELLO = {
-  parziale: "stroke-brass-400",
+  // Rosso lanterna e non l'accento (02/11/2026): «ne mancano» è uno
+  // stato, e l'accento è riservato a quello che si può premere.
+  parziale: "stroke-ember",
   "in-pari": "stroke-lapis",
   conclusa: "stroke-jade",
   ignoto: "stroke-lapis"

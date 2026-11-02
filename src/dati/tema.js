@@ -21,7 +21,7 @@ export const TEMI = ["ardesia", "lilla"];
 
 // Il colore della barra di stato del telefono, che non legge il CSS:
 // va detto a parte, con un <meta>. Sono i `--c-shelf` dei due temi.
-const BARRA = { ardesia: "#1e1c19", lilla: "#ffffff" };
+const BARRA = { ardesia: "#0b0d14", lilla: "#ffffff" };
 
 // L'ultimo tema mostrato, letto da uno script in `index.html` PRIMA che
 // parta React: senza, chi apre l'app con il tema chiaro vedrebbe un

@@ -395,7 +395,7 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
 
         {percento !== null && (
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-bright/[0.08]">
-            <div className="h-full rounded-full bg-brass-400" style={{ width: `${percento}%` }} />
+            <div className="h-full rounded-full bg-viola" style={{ width: `${percento}%` }} />
           </div>
         )}
 
@@ -405,7 +405,7 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
             onClick={onVisto}
             disabled={occupato}
             className={`mt-3 h-10 w-full truncate rounded-xl px-3 text-sm font-semibold transition-transform duration-quick active:scale-[0.98] disabled:opacity-60 ${
-              principale ? "bg-brass-400 text-void" : "bg-glass-2 text-ink-bright"
+              principale ? "insegna" : "border border-viola/40 bg-glass-2 text-ink-bright hover:bg-viola/10"
             }`}
           >
             {occupato ? "Segno…" : `Visto l'${etichettaEp(prossimo, anime.tagli)}`}

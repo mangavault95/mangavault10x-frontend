@@ -644,6 +644,14 @@ export default function CollezionePage() {
             onVista={scegliVista}
           />
         </div>
+
+        {/* Cosa vuol dire il colore dell'anello, detto una volta sola:
+            prima si leggeva solo se lo si sapeva già. */}
+        <p className="flex flex-wrap items-center gap-x-3.5 gap-y-1 px-1 text-[0.7rem] text-ink-muted sm:px-0">
+          <span className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border-2 border-jade" />Completa</span>
+          <span className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border-2 border-lapis" />In pari con le uscite</span>
+          <span className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border-2 border-ember" />Mancano volumi</span>
+        </p>
       </div>
 
       {modaleAperto && (
@@ -711,7 +719,7 @@ export default function CollezionePage() {
           type="button"
           onClick={() => setModaleAperto(true)}
           aria-label="Aggiungi una serie"
-          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full bg-brass-400 text-void shadow-float transition-transform duration-quick active:scale-90
+          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full insegna transition-transform duration-quick active:scale-90
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf md:hidden"
         >
           <Icon nome="plus" dimensione={24} />
@@ -748,8 +756,9 @@ export default function CollezionePage() {
                 aria-label={`Titoli con ${g.lettera}`}
                 className="scroll-mt-28"
               >
-                <h2 className="mb-3 px-1 font-display text-lg font-bold text-ink-faint sm:px-0">
-                  {g.lettera}
+                <h2 className="mb-3 flex items-center gap-3 px-1 sm:px-0">
+                  <span className="font-pixel text-2xl leading-none text-viola">{g.lettera}</span>
+                  <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-[rgb(var(--c-riga))] to-transparent" />
                 </h2>
 
                 <GrigliaSerie serie={g.serie} riempi lettore={lettoreAttivo} compatta={vista === "compatta"} />

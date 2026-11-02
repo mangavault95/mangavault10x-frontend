@@ -8,8 +8,8 @@
   "scope": "/",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1e1c19",
-  "theme_color": "#1e1c19",
+  "background_color": "#0b0d14",
+  "theme_color": "#0b0d14",
   "orientation": "any",
   "categories": [
     "books",

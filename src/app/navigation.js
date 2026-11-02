@@ -37,10 +37,14 @@
  * --------------------------------------------------------------- */
 
 export const SCHEDE = [
-  { id: "adesso", percorso: "/", etichetta: "Adesso", icona: "adesso", tasto: "1" },
-  { id: "manga", percorso: "/collezione", etichetta: "Manga", icona: "manga", tasto: "2" },
-  { id: "anime", percorso: "/videoteca/io", etichetta: "Anime", icona: "anime", tasto: "3" },
-  { id: "cerca", percorso: "/cerca", etichetta: "Cerca", icona: "search", tasto: "4" }
+  // Dal 02/11/2026 la prima si chiama «Home» e porta il torii, cioè il
+  // marchio: il logo che riporta a casa è la convenzione più forte che
+  // esista, e così il marchio c'è anche sul telefono. `kana` è la
+  // micro-etichetta in pixel sotto la voce accesa.
+  { id: "adesso", percorso: "/", etichetta: "Home", icona: "portale", tasto: "1", kana: "ホーム" },
+  { id: "manga", percorso: "/collezione", etichetta: "Manga", icona: "manga", tasto: "2", kana: "漫画" },
+  { id: "anime", percorso: "/videoteca/io", etichetta: "Anime", icona: "anime", tasto: "3", kana: "アニメ" },
+  { id: "cerca", percorso: "/cerca", etichetta: "Cerca", icona: "search", tasto: "4", kana: "検索" }
 ];
 
 const PAGINE_MANGA = [
@@ -102,7 +106,7 @@ export const SEZIONI = [
     // Dal 04/10/2026 la home è «Adesso»: cosa riprendere, cosa leggere,
     // cosa esce. La stanza in 3D che era la porta del sito è stata
     // tolta il 05/10/2026.
-    etichetta: "Adesso",
+    etichetta: "Home",
     descrizione: "Cosa riprendere, cosa leggere, cosa esce questa settimana",
     // Il portale, cioè il marchio del sito. Prima era 本, il kanji di
     // «libro»: giusto come idea ma è un'icona come le altre, e la voce

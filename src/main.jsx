@@ -1,9 +1,12 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import "@fontsource-variable/bricolage-grotesque";
+import "@fontsource-variable/sora";
 import "@fontsource-variable/geist";
-import "@fontsource-variable/geist-mono";
+import "@fontsource-variable/jetbrains-mono";
+// Solo i glifi che usano le micro-etichette: il file intero del giapponese
+// peserebbe megabyte per una decina di caratteri.
+import "@fontsource/dotgothic16/japanese-400.css";
 import "./index.css";
 import AppRoutes from "./app/routes";
 import { agganciaServizio } from "./app/servizio";

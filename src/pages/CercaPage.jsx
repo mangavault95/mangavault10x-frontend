@@ -527,7 +527,7 @@ function ProposataAcquisto({ acquisto, occupato, onRegistra }) {
         : numeri.join(", ");
 
   return (
-    <section className="mt-5 rounded-2xl bg-brass-400 p-4 text-void">
+    <section className="mt-5 rounded-2xl border border-brass-400/40 bg-alcove p-4 text-ink-bright">
       <div className="flex items-center gap-3.5">
         {urlCopertina(serie.copertina) ? (
           <img src={urlCopertina(serie.copertina)} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" />
@@ -549,7 +549,7 @@ function ProposataAcquisto({ acquisto, occupato, onRegistra }) {
           type="button"
           onClick={onRegistra}
           disabled={occupato}
-          className="shrink-0 rounded-xl bg-void px-4 py-2.5 text-sm font-semibold text-ink-bright transition-transform duration-quick active:scale-95 disabled:opacity-60"
+          className="insegna shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition-transform duration-quick active:scale-95 disabled:opacity-60"
         >
           {occupato ? "Registro…" : "Registra"}
         </button>

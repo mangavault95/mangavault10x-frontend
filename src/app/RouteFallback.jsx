@@ -8,7 +8,7 @@
 export default function RouteFallback() {
   return (
     <div className="px-8 py-10" role="status" aria-label="Caricamento in corso">
-      <div className="h-8 w-56 rounded-lg bg-glass-2 animate-shimmer bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent)] bg-[length:200%_100%]" />
+      <div className="h-8 w-56 rounded-lg bg-glass-2 animate-shimmer bg-[linear-gradient(90deg,transparent,rgb(var(--c-viola)/0.16),transparent)] bg-[length:200%_100%]" />
 
       <div className="mt-10 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
         {Array.from({ length: 12 }).map((_, i) => (

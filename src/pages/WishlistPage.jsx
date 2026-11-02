@@ -325,7 +325,7 @@ export default function WishlistPage() {
           type="button"
           onClick={() => setModulo(VUOTO)}
           aria-label="Aggiungi un desiderio"
-          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full bg-brass-400 text-void shadow-float transition-transform duration-quick active:scale-95 md:hidden
+          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full insegna transition-transform duration-quick active:scale-95 md:hidden
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf"
         >
           <Icon nome="plus" dimensione={24} />
@@ -340,7 +340,7 @@ export default function WishlistPage() {
           <p className="-mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 px-1 text-sm text-ink-muted">
             {volumiDaPrendere > 0 && (
               <>
-                <span className="font-numeric text-xl font-semibold text-ink-bright">{euro(totale)}</span>
+                <span className="font-numeric text-2xl font-semibold text-ambra [text-shadow:0_0_18px_rgb(var(--c-ambra)/0.35)]">{euro(totale)}</span>
                 <span>per {volumiDaPrendere === 1 ? "1 volume" : `${volumiDaPrendere} volumi`}</span>
               </>
             )}
@@ -557,7 +557,7 @@ function RigaSpesa({ a, copertina, ripiego, titolo, sotto, sottoColore = "text-i
         </div>
       </Link>
 
-      {prezzo ? <span className="shrink-0 font-numeric text-sm font-semibold text-ink-bright">{euro(prezzo)}</span> : null}
+      {prezzo ? <span className="shrink-0 font-numeric text-sm font-semibold text-ambra">{euro(prezzo)}</span> : null}
 
       {onPreso && (
         <button
@@ -600,7 +600,7 @@ function RigaDesiderio({ elemento, onModifica, onElimina, onComprato, soloLettur
 
       {!soloLettura && (
         <>
-          <Bottone onClick={onComprato} title="Sposta in collezione" className="shrink-0 !px-3 !py-2">
+          <Bottone variante="secondario" onClick={onComprato} title="Sposta in collezione" className="shrink-0 !border-jade/40 !px-3 !py-2 !text-jade">
             Comprato
           </Bottone>
 

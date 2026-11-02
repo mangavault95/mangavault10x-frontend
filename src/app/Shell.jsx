@@ -54,12 +54,14 @@ import { scegliTema, temaDi } from "../dati/tema";
 // legge i sorgenti alla lettera, e una classe formata unendo stringhe
 // non finirebbe mai nel CSS prodotto.
 const VESTE = {
-  pagina: "bg-shelf text-ink",
-  barra: "border-r border-hairline bg-shelf",
+  // Senza fondo proprio: sotto c'è il body, con gli aloni della notte
+  // neon (index.css). Nel tema lilla il body è bianco e non cambia niente.
+  pagina: "text-ink",
+  barra: "border-r border-hairline bg-void/70 backdrop-blur-xl",
   barraBasso: "border-t border-hairline bg-shelf/95 backdrop-blur-xl",
   voceAttiva: "bg-brass-400/12 text-brass-400",
   voceInerte: "text-ink-muted hover:bg-glass-2 hover:text-ink-bright",
-  barretta: "bg-brass-400",
+  barretta: "bg-brass-400 shadow-[0_0_10px_rgb(var(--c-accento))]",
   tabAttiva: "text-brass-400",
   tabInerte: "text-ink-muted active:text-ink",
   anello: "focus-visible:ring-brass-400 focus-visible:ring-offset-shelf",
@@ -183,8 +185,17 @@ export default function Shell({ children }) {
       {/* ---------- Barra laterale (da tablet in su) ---------- */}
       <nav
         aria-label="Navigazione principale"
-        className={`fixed left-0 top-0 z-sticky hidden h-dvh w-rail flex-col items-center gap-2 py-5 md:flex ${veste.barra}`}
+        className={`fixed left-0 top-0 z-sticky hidden h-dvh w-rail flex-col items-center gap-2 py-5 md:flex lg:w-56 lg:items-stretch lg:px-4 ${veste.barra}`}
       >
+        {/* Da schermo largo la barra ha posto per il marchio e per i
+            nomi: un menu di sole icone costringe a indovinare. */}
+        <Link to="/" className="mb-5 hidden items-center gap-2.5 px-2 lg:flex" aria-label="MangaVault, Home">
+          <span className="text-brass-400 drop-shadow-[0_0_6px_rgb(var(--c-accento)/0.7)]">
+            <Icon nome="portale" dimensione={28} />
+          </span>
+          <span className="font-display text-lg font-bold tracking-tight text-ink-bright">MangaVault</span>
+        </Link>
+
         {SCHEDE.map((voce) => (
           <VoceMenu key={voce.id} sezione={voce} veste={veste} attiva={scheda === voce.id} />
         ))}
@@ -212,7 +223,7 @@ export default function Shell({ children }) {
         id="contenuto"
         ref={contenutoRef}
         tabIndex={-1}
-        className="relative z-raised min-h-dvh pb-24 outline-none md:ml-rail md:pb-0 animate-rise-in"
+        className="relative z-raised min-h-dvh pb-24 outline-none md:ml-rail md:pb-0 lg:ml-56 animate-rise-in"
       >
         <Sottosezioni
           scheda={scheda}
@@ -264,6 +275,11 @@ export default function Shell({ children }) {
             )}
           </span>
           <span className="text-[0.65rem] font-medium tracking-wide">Tu</span>
+          {/* La stessa riga del kana delle altre linguette, o «Tu» starebbe
+              più in basso di tutte. */}
+          <span aria-hidden="true" className={`-mt-1 h-3 font-pixel text-[0.55rem] leading-3 ${tuAperto || inGestione ? "opacity-70" : "invisible"}`}>
+            あなた
+          </span>
         </button>
       </nav>
 
@@ -316,18 +332,26 @@ function VoceMenu({ sezione, veste, attiva, pallina = 0 }) {
       aria-current={attiva ? "page" : undefined}
       title={`${sezione.etichetta}${sezione.tasto ? ` (${sezione.tasto})` : ""}`}
       className={`group relative grid h-11 w-11 place-items-center rounded-card transition-all duration-quick ease-settle
+        lg:flex lg:w-full lg:items-center lg:justify-start lg:gap-3 lg:px-3
         ${attiva ? veste.voceAttiva : veste.voceInerte}
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${veste.anello}
         active:scale-95`}
     >
       {/* Indicatore di posizione: una barretta a sinistra */}
       <span
-        className={`absolute -left-[1.15rem] h-6 w-0.5 rounded-r-full transition-all duration-base ease-spring ${veste.barretta} ${
+        className={`absolute -left-[1.15rem] h-6 w-0.5 rounded-r-full lg:-left-4 transition-all duration-base ease-spring ${veste.barretta} ${
           attiva ? "opacity-100" : "scale-y-0 opacity-0"
         }`}
       />
 
       <Icon nome={sezione.icona} dimensione={20} />
+
+      <span className="hidden flex-1 text-sm font-medium lg:inline">{sezione.etichetta}</span>
+      {sezione.kana && (
+        <span aria-hidden="true" className={`hidden font-pixel text-[0.65rem] lg:inline ${attiva ? "opacity-80" : "text-ink-faint"}`}>
+          {sezione.kana}
+        </span>
+      )}
 
       {pallina > 0 && (
         <span
@@ -341,7 +365,7 @@ function VoceMenu({ sezione, veste, attiva, pallina = 0 }) {
       {/* Etichetta a comparsa */}
       <span
         role="tooltip"
-        className={`pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm font-medium opacity-0 shadow-raised backdrop-blur-xl transition-all duration-quick ease-settle translate-x-1 group-hover:translate-x-0 group-hover:opacity-100 ${veste.fogliettoBordo}`}
+        className={`pointer-events-none absolute left-full ml-3 lg:hidden whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm font-medium opacity-0 shadow-raised backdrop-blur-xl transition-all duration-quick ease-settle translate-x-1 group-hover:translate-x-0 group-hover:opacity-100 ${veste.fogliettoBordo}`}
       >
         {sezione.etichetta}
         {sezione.tasto && (
@@ -372,6 +396,11 @@ function Linguetta({ sezione, veste, attiva }) {
       <Icon nome={sezione.icona} dimensione={20} />
 
       <span className="text-[0.65rem] font-medium tracking-wide">{sezione.etichetta}</span>
+      {sezione.kana && (
+        <span aria-hidden="true" className={`-mt-1 h-3 font-pixel text-[0.55rem] leading-3 ${attiva ? "opacity-70" : "invisible"}`}>
+          {sezione.kana}
+        </span>
+      )}
     </Link>
   );
 }
@@ -391,84 +420,22 @@ function Linguetta({ sezione, veste, attiva }) {
 function Sottosezioni({ scheda, percorso, aggiungi }) {
   const voci = sottosezioniDi(scheda);
 
-  // Nei manga le tre che si usano ogni giorno restano in vista; Numeri e
-  // Kachinuki, che si aprono ogni tanto, stanno dietro «Altro». Cinque
-  // pillole in 375 pixel finivano tagliate («Numer…»), e una riga che
-  // scorre di lato nasconde le sezioni a chi non sa di doverla trascinare.
-  //
-  // Gli anime hanno cinque voci e fanno lo stesso sul telefono, così le
-  // due righe si comportano uguale: tre in vista e il resto dietro «⋮».
-  // Da `md` in su c'è posto e le voci in più tornano in linea.
-  const principali = voci.slice(0, 3);
-  const altre = voci.slice(3);
-  const soloTelefono = scheda !== "manga";
-  const altraAttiva = altre.find((v) => eAttiva(v.percorso, percorso)) || null;
-
-  const [posizione, setPosizione] = useState(null);
-  const tastoAltro = useRef(null);
-
-  // Si chiude da sola: toccando altrove, con Esc, o cambiando pagina.
-  useEffect(() => {
-    if (!posizione) return undefined;
-
-    const fuori = (e) => {
-      if (!tastoAltro.current?.contains(e.target) && !e.target.closest?.("[data-menu-altro]")) {
-        setPosizione(null);
-      }
-    };
-    const esc = (e) => e.key === "Escape" && setPosizione(null);
-
-    document.addEventListener("pointerdown", fuori);
-    document.addEventListener("keydown", esc);
-
-    return () => {
-      document.removeEventListener("pointerdown", fuori);
-      document.removeEventListener("keydown", esc);
-    };
-  }, [posizione]);
-
   if (!voci.length) return null;
 
-  // Il menu è `fixed` e non `absolute`: la riga scorre di lato, e un
-  // elemento assoluto dentro un contenitore che scorre verrebbe tagliato.
-  function apriAltro() {
-    if (posizione) return setPosizione(null);
-
-    const r = tastoAltro.current.getBoundingClientRect();
-
-    setPosizione({ top: r.bottom + 6, sinistra: Math.max(12, Math.min(r.left, window.innerWidth - 180)) });
-  }
-
+  // Tutte in vista dal 02/11/2026. Prima Numeri e Kachinuki stavano dietro
+  // un «⋮» che non diceva cosa nascondeva; adesso la riga scorre di lato
+  // e sfuma a destra (`sfuma-destra`), che è il segno che c'è altro.
+  // Restano linguette sottolineate e non pillole: le pillole sono i
+  // filtri qui sotto, e due righe della stessa forma si leggerebbero
+  // come due filtri.
   return (
     <>
     <nav
       aria-label={scheda === "manga" ? "Sezioni dei manga" : "Sezioni degli anime"}
-      className="no-scrollbar mx-4 flex items-end gap-5 overflow-x-auto border-b border-hairline pt-3 sm:mx-6 lg:mx-8"
+      className="mx-4 flex items-end gap-3 border-b border-hairline pt-3 sm:mx-6 lg:mx-8"
     >
-      {/* Linguette con la sottolineatura, e non pillole: le pillole
-          sono già i filtri qui sotto, e due righe della stessa forma si
-          leggevano come due filtri. Questa è la navigazione: testo più
-          grande, in caratteri da titolo, e un filo sotto che porta
-          l'accento sulla voce accesa. */}
-      {principali.map((voce) => {
-        const attiva = eAttiva(voce.percorso, percorso);
-
-        return (
-          <Link
-            key={voce.id}
-            to={voce.percorso}
-            aria-current={attiva ? "page" : undefined}
-            className={`-mb-px shrink-0 whitespace-nowrap border-b-2 pb-2.5 pt-1.5 font-display text-base font-semibold transition-colors duration-quick
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
-              ${attiva ? "border-brass-400 text-ink-bright" : "border-transparent text-ink-muted hover:text-ink-bright"}`}
-          >
-            {voce.etichetta}
-          </Link>
-        );
-      })}
-
-      {soloTelefono &&
-        altre.map((voce) => {
+      <div className="no-scrollbar sfuma-destra -mb-px flex min-w-0 flex-1 items-end gap-5 overflow-x-auto pr-6">
+        {voci.map((voce) => {
           const attiva = eAttiva(voce.percorso, percorso);
 
           return (
@@ -476,61 +443,22 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
               key={voce.id}
               to={voce.percorso}
               aria-current={attiva ? "page" : undefined}
-              className={`-mb-px hidden shrink-0 whitespace-nowrap border-b-2 pb-2.5 pt-1.5 font-display text-base font-semibold transition-colors duration-quick md:inline-block
+              className={`shrink-0 whitespace-nowrap border-b-2 pb-2.5 pt-1.5 font-display text-[0.95rem] font-semibold transition-colors duration-quick sm:text-base
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
-                ${attiva ? "border-brass-400 text-ink-bright" : "border-transparent text-ink-muted hover:text-ink-bright"}`}
+                ${attiva ? "border-brass-400 text-ink-bright [box-shadow:0_6px_12px_-8px_rgb(var(--c-accento))]" : "border-transparent text-ink-muted hover:text-ink-bright"}`}
             >
               {voce.etichetta}
             </Link>
           );
         })}
-
-      {altre.length > 0 && (
-        <>
-          <button
-            ref={tastoAltro}
-            type="button"
-            onClick={apriAltro}
-            aria-label={altraAttiva ? altraAttiva.etichetta : "Altre sezioni"}
-            aria-haspopup="menu"
-            aria-expanded={Boolean(posizione)}
-            className={`${soloTelefono ? "md:hidden" : ""} -mb-px inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border-b-2 pb-2.5 pt-1.5 font-display text-base font-semibold transition-colors duration-quick
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
-              ${altraAttiva ? "border-brass-400 text-ink-bright" : "border-transparent px-1 text-ink-muted hover:text-ink-bright"}`}
-          >
-            {altraAttiva ? altraAttiva.etichetta : <Icon nome="puntini" dimensione={18} />}
-          </button>
-
-          {posizione && (
-            <ul
-              role="menu"
-              data-menu-altro
-              style={{ top: posizione.top, left: posizione.sinistra }}
-              className="fixed z-overlay min-w-40 overflow-hidden rounded-card border border-hairline bg-alcove py-1 shadow-float animate-rise-in"
-            >
-              {altre.map((voce) => (
-                <li key={voce.id} role="none">
-                  <Link
-                    role="menuitem"
-                    to={voce.percorso}
-                    onClick={() => setPosizione(null)}
-                    className="block px-4 py-3 text-sm font-medium text-ink hover:bg-glass-2 hover:text-ink-bright"
-                  >
-                    {voce.etichetta}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
+      </div>
 
       {aggiungi && (
         <button
           type="button"
           onClick={aggiungi}
-          className="mb-2 ml-auto hidden shrink-0 items-center gap-1.5 rounded-full bg-brass-400 px-3.5 py-2 text-sm font-semibold text-void transition-transform duration-quick active:scale-95 md:inline-flex
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf"
+          className="mb-2 hidden shrink-0 items-center gap-1.5 rounded-full border border-viola/60 px-3.5 py-2 text-sm font-semibold text-ink-bright transition-colors duration-quick hover:bg-viola/10 active:scale-95 md:inline-flex
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
         >
           <Icon nome="plus" dimensione={16} />
           Aggiungi
@@ -539,15 +467,13 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
     </nav>
 
     {/* Sul telefono «Aggiungi» è il tondo in basso a destra, lo stesso
-        della Collezione: una pillola in più nella riga delle linguette
-        non ci stava, e i due mondi chiedevano la stessa cosa in due
-        posti diversi. */}
+        della Collezione — viola, il colore del mondo degli anime. */}
     {aggiungi && (
       <button
         type="button"
         onClick={aggiungi}
         aria-label="Aggiungi un titolo"
-        className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full bg-brass-400 text-void shadow-float transition-transform duration-quick active:scale-95 md:hidden
+        className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full bg-viola text-void shadow-[0_8px_30px_-8px_rgb(var(--c-viola)/0.7)] transition-transform duration-quick active:scale-95 md:hidden
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf"
       >
         <Icon nome="plus" dimensione={24} />
