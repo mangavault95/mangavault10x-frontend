@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import useRisorsa from "../dati/useRisorsa";
 import { getCalendarioAnime, urlCopertina } from "../services/api";
@@ -41,6 +41,18 @@ export default function CalendarioPage() {
   const { passati, prossimi, daRecuperare } = useMemo(
     () => raggruppaPerGiorno(dati ?? []),
     [dati]
+  );
+
+  const [recuperoAperto, setRecuperoAperto] = useState(false);
+
+  // Le sole puntate perse, dalla più recente: quella che pesa di più è
+  // l'ultima uscita, non la prima di due settimane fa.
+  const elencoRecupero = useMemo(
+    () =>
+      passati
+        .flatMap((g) => g.uscite.filter(daRecuperareQuesta))
+        .sort((a, b) => new Date(b.uscita_italia) - new Date(a.uscita_italia)),
+    [passati]
   );
 
   const inizioPassato = useRef(null);
@@ -98,28 +110,59 @@ export default function CalendarioPage() {
 
       {prossimi.length > 0 && (
         <div ref={inizioProssimi} className="scroll-mt-4">
+          {/* La riga resta ferma in cima mentre si scorre: «cosa mi sono
+              perso» è la domanda che la pagina deve poter rispondere da
+              qualunque punto, senza tornare su a cercarla. Toccandola si
+              apre l'elenco delle sole puntate da recuperare, senza
+              passare per le due settimane intere. */}
           {passati.length > 0 && (
-            <button
-              type="button"
-              onClick={() => porta(inizioPassato.current, "smooth")}
-              className="mb-4 flex w-full items-center gap-3 rounded-lg border border-dashed border-quaderno-riga px-3 py-2
-                text-xs text-quaderno-tenue transition-colors duration-quick hover:bg-quaderno-carta
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu"
-            >
-              <span aria-hidden="true">↑</span>
+            <div className="sticky top-0 z-sticky -mx-4 mb-4 bg-quaderno-foglio/95 px-4 py-2 backdrop-blur-md">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={daRecuperare === 0}
+                  aria-expanded={recuperoAperto}
+                  onClick={() => setRecuperoAperto((a) => !a)}
+                  className={`flex min-w-0 flex-1 items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs transition-colors duration-quick
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu ${
+                      daRecuperare > 0
+                        ? "border-quaderno-blu/40 bg-quaderno-blu/10 font-semibold text-quaderno-blu"
+                        : "border-quaderno-riga text-quaderno-tenue"
+                    }`}
+                >
+                  <span className="truncate">
+                    {daRecuperare > 0
+                      ? `${daRecuperare} da recuperare`
+                      : "Sei in pari con le due settimane passate"}
+                  </span>
 
-              <span>
-                Sopra ci sono le due settimane passate
-                {daRecuperare > 0 && (
-                  <>
-                    {" · "}
-                    <span className="font-semibold text-quaderno-blu">
-                      {daRecuperare} da recuperare
+                  {daRecuperare > 0 && (
+                    <span aria-hidden="true" className="ml-auto">
+                      {recuperoAperto ? "▴" : "▾"}
                     </span>
-                  </>
-                )}
-              </span>
-            </button>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => porta(inizioPassato.current, "smooth")}
+                  className="shrink-0 rounded-lg border border-dashed border-quaderno-riga px-3 py-2 text-xs text-quaderno-tenue
+                    hover:bg-quaderno-carta focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu"
+                >
+                  ↑ Passate
+                </button>
+              </div>
+
+              {recuperoAperto && daRecuperare > 0 && (
+                <ul className="mt-2 grid max-h-[50vh] gap-2 overflow-y-auto sm:grid-cols-2 xl:grid-cols-3">
+                  {elencoRecupero.map((u) => (
+                    <li key={`${u.anime_id}-${u.numero}`}>
+                      <Uscita uscita={u} passato />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
 
           <div className="space-y-6">
@@ -195,7 +238,10 @@ function Uscita({ uscita: u, passato }) {
             : "border-quaderno-riga bg-quaderno-foglio"
         }`}
     >
-      <div className="h-16 w-12 shrink-0 overflow-hidden rounded bg-quaderno-carta">
+      {/* Copertina più piccola: con venti uscite in tre settimane la
+          pagina era un muro di schede alte; così ne stanno il doppio
+          per schermata senza perdere la riconoscibilità. */}
+      <div className="h-14 w-10 shrink-0 overflow-hidden rounded bg-quaderno-carta">
         {u.cover_url && (
           <img
             src={urlCopertina(u.cover_url)}
@@ -215,14 +261,12 @@ function Uscita({ uscita: u, passato }) {
           {u.serie}
         </p>
 
+        {/* Ora, episodio e piattaforma sulla stessa riga: erano tre
+            righe, e la piattaforma è un'informazione da colpo d'occhio,
+            non un'etichetta che meriti una pillola. */}
         <p className="truncate text-xs text-quaderno-tenue">
-          episodio {u.numero}
-          {u.titolo ? ` · ${u.titolo}` : ""}
-        </p>
-
-        <div className="mt-1 flex flex-wrap items-center gap-1.5">
           <span
-            className={`font-numeric text-xs font-semibold ${
+            className={`font-numeric font-semibold ${
               passato ? "text-quaderno-tenue" : "text-quaderno-blu"
             }`}
           >
@@ -232,9 +276,12 @@ function Uscita({ uscita: u, passato }) {
               timeZone: "Europe/Rome"
             })}
           </span>
+          {" · ep. "}
+          {u.numero}
+          {u.piattaforma ? ` · ${u.piattaforma}` : ""}
+        </p>
 
-          {u.piattaforma && <Pillola tono="contorno">{u.piattaforma}</Pillola>}
-
+        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
           {/* L'unica cosa che nel passato resta accesa: è la ragione per
               cui il passato sta in questa pagina. */}
           {recuperare && <Pillola tono="blu">da recuperare</Pillola>}
