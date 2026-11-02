@@ -395,8 +395,13 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
   // Kachinuki, che si aprono ogni tanto, stanno dietro «Altro». Cinque
   // pillole in 375 pixel finivano tagliate («Numer…»), e una riga che
   // scorre di lato nasconde le sezioni a chi non sa di doverla trascinare.
-  const principali = scheda === "manga" ? voci.slice(0, 3) : voci;
-  const altre = scheda === "manga" ? voci.slice(3) : [];
+  //
+  // Gli anime hanno cinque voci e fanno lo stesso sul telefono, così le
+  // due righe si comportano uguale: tre in vista e il resto dietro «⋮».
+  // Da `md` in su c'è posto e le voci in più tornano in linea.
+  const principali = voci.slice(0, 3);
+  const altre = voci.slice(3);
+  const soloTelefono = scheda !== "manga";
   const altraAttiva = altre.find((v) => eAttiva(v.percorso, percorso)) || null;
 
   const [posizione, setPosizione] = useState(null);
@@ -435,6 +440,7 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
   }
 
   return (
+    <>
     <nav
       aria-label={scheda === "manga" ? "Sezioni dei manga" : "Sezioni degli anime"}
       className="no-scrollbar mx-4 flex items-end gap-5 overflow-x-auto border-b border-hairline pt-3 sm:mx-6 lg:mx-8"
@@ -461,6 +467,24 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
         );
       })}
 
+      {soloTelefono &&
+        altre.map((voce) => {
+          const attiva = eAttiva(voce.percorso, percorso);
+
+          return (
+            <Link
+              key={voce.id}
+              to={voce.percorso}
+              aria-current={attiva ? "page" : undefined}
+              className={`-mb-px hidden shrink-0 whitespace-nowrap border-b-2 pb-2.5 pt-1.5 font-display text-base font-semibold transition-colors duration-quick md:inline-block
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
+                ${attiva ? "border-brass-400 text-ink-bright" : "border-transparent text-ink-muted hover:text-ink-bright"}`}
+            >
+              {voce.etichetta}
+            </Link>
+          );
+        })}
+
       {altre.length > 0 && (
         <>
           <button
@@ -470,7 +494,7 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
             aria-label={altraAttiva ? altraAttiva.etichetta : "Altre sezioni"}
             aria-haspopup="menu"
             aria-expanded={Boolean(posizione)}
-            className={`-mb-px inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border-b-2 pb-2.5 pt-1.5 font-display text-base font-semibold transition-colors duration-quick
+            className={`${soloTelefono ? "md:hidden" : ""} -mb-px inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border-b-2 pb-2.5 pt-1.5 font-display text-base font-semibold transition-colors duration-quick
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
               ${altraAttiva ? "border-brass-400 text-ink-bright" : "border-transparent px-1 text-ink-muted hover:text-ink-bright"}`}
           >
@@ -505,7 +529,7 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
         <button
           type="button"
           onClick={aggiungi}
-          className="mb-2 ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brass-400 px-3.5 py-2 text-sm font-semibold text-void transition-transform duration-quick active:scale-95
+          className="mb-2 ml-auto hidden shrink-0 items-center gap-1.5 rounded-full bg-brass-400 px-3.5 py-2 text-sm font-semibold text-void transition-transform duration-quick active:scale-95 md:inline-flex
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf"
         >
           <Icon nome="plus" dimensione={16} />
@@ -513,6 +537,23 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
         </button>
       )}
     </nav>
+
+    {/* Sul telefono «Aggiungi» è il tondo in basso a destra, lo stesso
+        della Collezione: una pillola in più nella riga delle linguette
+        non ci stava, e i due mondi chiedevano la stessa cosa in due
+        posti diversi. */}
+    {aggiungi && (
+      <button
+        type="button"
+        onClick={aggiungi}
+        aria-label="Aggiungi un titolo"
+        className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full bg-brass-400 text-void shadow-float transition-transform duration-quick active:scale-95 md:hidden
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf"
+      >
+        <Icon nome="plus" dimensione={24} />
+      </button>
+    )}
+    </>
   );
 }
 
