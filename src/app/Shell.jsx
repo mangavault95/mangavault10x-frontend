@@ -437,8 +437,13 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
   return (
     <nav
       aria-label={scheda === "manga" ? "Sezioni dei manga" : "Sezioni degli anime"}
-      className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-3 sm:px-6 lg:px-8"
+      className="no-scrollbar mx-4 flex items-end gap-5 overflow-x-auto border-b border-hairline pt-3 sm:mx-6 lg:mx-8"
     >
+      {/* Linguette con la sottolineatura, e non pillole: le pillole
+          sono già i filtri qui sotto, e due righe della stessa forma si
+          leggevano come due filtri. Questa è la navigazione: testo più
+          grande, in caratteri da titolo, e un filo sotto che porta
+          l'accento sulla voce accesa. */}
       {principali.map((voce) => {
         const attiva = eAttiva(voce.percorso, percorso);
 
@@ -447,9 +452,9 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
             key={voce.id}
             to={voce.percorso}
             aria-current={attiva ? "page" : undefined}
-            className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium transition-colors duration-quick
+            className={`-mb-px shrink-0 whitespace-nowrap border-b-2 pb-2.5 pt-1.5 font-display text-base font-semibold transition-colors duration-quick
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
-              ${attiva ? "bg-ink-bright text-void" : "bg-alcove text-ink hover:text-ink-bright"}`}
+              ${attiva ? "border-brass-400 text-ink-bright" : "border-transparent text-ink-muted hover:text-ink-bright"}`}
           >
             {voce.etichetta}
           </Link>
@@ -465,9 +470,9 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
             aria-label={altraAttiva ? altraAttiva.etichetta : "Altre sezioni"}
             aria-haspopup="menu"
             aria-expanded={Boolean(posizione)}
-            className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full py-2 text-sm font-medium transition-colors duration-quick
+            className={`-mb-px inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border-b-2 pb-2.5 pt-1.5 font-display text-base font-semibold transition-colors duration-quick
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
-              ${altraAttiva ? "bg-ink-bright px-3.5 text-void" : "bg-alcove px-3 text-ink hover:text-ink-bright"}`}
+              ${altraAttiva ? "border-brass-400 text-ink-bright" : "border-transparent px-1 text-ink-muted hover:text-ink-bright"}`}
           >
             {altraAttiva ? altraAttiva.etichetta : <Icon nome="puntini" dimensione={18} />}
           </button>
@@ -500,7 +505,7 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
         <button
           type="button"
           onClick={aggiungi}
-          className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brass-400 px-3.5 py-2 text-sm font-semibold text-void transition-transform duration-quick active:scale-95
+          className="mb-2 ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brass-400 px-3.5 py-2 text-sm font-semibold text-void transition-transform duration-quick active:scale-95
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf"
         >
           <Icon nome="plus" dimensione={16} />
