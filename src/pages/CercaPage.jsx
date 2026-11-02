@@ -5,7 +5,7 @@ import { useCollezione } from "../dati/collezione";
 import { useAccessoProtetto } from "../dati/accesso";
 import { ossoDelTitolo } from "../dati/identita";
 import { interpretaAcquisto, serieDellAcquisto } from "../dati/acquisto";
-import { euro } from "../dati/serie";
+import { euro, totaleDisponibile, volumiMancanti } from "../dati/serie";
 import {
   annullaAcquisti,
   dopoIlRipiego,
@@ -38,6 +38,40 @@ import {
  */
 
 const QUANTI = 8;
+const QUANTI_FILTRATI = 30;
+const CHIAVE_RECENTI = "mangavault:cerca:recenti";
+
+/** Le ultime ricerche, dalla più recente: solo sul telefono, mai sul server. */
+function leggiRecenti() {
+  try {
+    const grezzo = JSON.parse(localStorage.getItem(CHIAVE_RECENTI) || "[]");
+
+    return Array.isArray(grezzo) ? grezzo.filter((t) => typeof t === "string").slice(0, 6) : [];
+  } catch {
+    return [];
+  }
+}
+
+function salvaRecenti(lista) {
+  try {
+    localStorage.setItem(CHIAVE_RECENTI, JSON.stringify(lista));
+  } catch {
+    // Senza memoria locale la ricerca funziona uguale, senza cronologia.
+  }
+}
+
+const SCORCIATOIE = [
+  { a: "/wishlist", etichetta: "Da comprare" },
+  { a: "/lettura", etichetta: "Letture" },
+  { a: "/calendario", etichetta: "Prossime uscite" },
+  { a: "/statistiche", etichetta: "Numeri" }
+];
+
+const TIPI = [
+  { id: "manga", etichetta: "Manga" },
+  { id: "anime", etichetta: "Anime" },
+  { id: "voglio", etichetta: "Desideri" }
+];
 
 /** Ogni parola scritta deve comparire in uno dei nomi: «attacco giganti» trova «L'attacco dei giganti». */
 function corrisponde(nomi, parole) {
@@ -68,15 +102,35 @@ export default function CercaPage() {
   const desideri = useRisorsa(() => getWishlist());
 
   const [scritto, setScritto] = useState(testo);
+  const [recenti, setRecenti] = useState(leggiRecenti);
+  // Quale tipo si guarda (null = tutti) e quali gruppi sono stati aperti
+  // oltre il tetto: il tetto serve a non allungare la pagina, ma
+  // troncare senza dirlo faceva sembrare che il resto non esistesse.
+  const [tipo, setTipo] = useState(null);
+  const [aperti, setAperti] = useState(() => new Set());
 
   // La tastiera si apre da sola: si viene qui per scrivere.
   useEffect(() => {
     casella.current?.focus();
   }, []);
 
+  /** Si ricorda la frase solo quando porta da qualche parte: aprire un risultato. */
+  function ricorda() {
+    const frase = testo.trim();
+
+    if (!frase) return;
+
+    const nuove = [frase, ...recenti.filter((r) => r.toLowerCase() !== frase.toLowerCase())].slice(0, 6);
+
+    setRecenti(nuove);
+    salvaRecenti(nuove);
+  }
+
   function cambia(valore) {
     setScritto(valore);
     setProblema(null);
+    setTipo(null);
+    setAperti(new Set());
 
     const nuovi = new URLSearchParams(parametri);
 
@@ -140,21 +194,41 @@ export default function CercaPage() {
     if (!parole.length) return null;
 
     const manga = (collezione || [])
-      .filter((s) => corrisponde([s.titolo, s.autore, s.disegnatore, s.editore, s.edizione], parole))
-      .slice(0, QUANTI);
+      .filter((s) => corrisponde([s.titolo, s.autore, s.disegnatore, s.editore, s.edizione], parole));
 
     const anime = (videoteca.dati || [])
-      .filter((a) => corrisponde([a.titolo, a.titolo_originale, a.titolo_inglese, a.gruppo_titolo], parole))
-      .slice(0, QUANTI);
+      .filter((a) => corrisponde([a.titolo, a.titolo_originale, a.titolo_inglese, a.gruppo_titolo], parole));
 
     const elencoDesideri = Array.isArray(desideri.dati) ? desideri.dati : desideri.dati?.wishlist || [];
 
-    const voglio = elencoDesideri.filter((d) => corrisponde([d.titolo, d.autori], parole)).slice(0, QUANTI);
+    const voglio = elencoDesideri.filter((d) => corrisponde([d.titolo, d.autori], parole));
 
     return { manga, anime, voglio };
   }, [parole, collezione, videoteca.dati, desideri.dati]);
 
   const vuoto = risultati && !risultati.manga.length && !risultati.anime.length && !risultati.voglio.length;
+
+  // I tipi che hanno almeno un risultato: i filtri compaiono solo se
+  // c'è davvero da scegliere fra due o più.
+  const tipiPresenti = risultati ? TIPI.filter((t) => risultati[t.id].length > 0) : [];
+
+  /** I risultati di un gruppo, tagliati al tetto salvo che lo si sia aperto. */
+  function visibili(id) {
+    const tutti = risultati[id];
+
+    // Con un tipo scelto il tetto sale: si è venuti a scorrere quello,
+    // ma duecento righe di colpo sono comunque troppe.
+    return aperti.has(id) ? tutti : tutti.slice(0, tipo === id ? QUANTI_FILTRATI : QUANTI);
+  }
+
+  const mostra = (id) => !tipo || tipo === id;
+
+  /** «Mostra altri N», o niente se il gruppo sta già tutto in vista. */
+  function altri(id) {
+    const resto = risultati[id].length - visibili(id).length;
+
+    return resto > 0 ? { quanti: resto, apri: () => setAperti((a) => new Set(a).add(id)) } : null;
+  }
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pb-8 pt-6">
@@ -206,40 +280,57 @@ export default function CercaPage() {
 
       {acquisto && <ProposataAcquisto acquisto={acquisto} occupato={registrando} onRegistra={registra} />}
 
-      {risultati?.manga.length > 0 && (
-        <Gruppo titolo="Manga in casa">
-          {risultati.manga.map((s) => (
+      {tipiPresenti.length > 1 && (
+        <div role="group" aria-label="Tipo di risultato" className="mt-4 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <Filtro attivo={!tipo} onClick={() => setTipo(null)}>
+            Tutto
+          </Filtro>
+
+          {tipiPresenti.map((t) => (
+            <Filtro key={t.id} attivo={tipo === t.id} onClick={() => setTipo(tipo === t.id ? null : t.id)}>
+              {t.etichetta} <span className="font-numeric opacity-70">{risultati[t.id].length}</span>
+            </Filtro>
+          ))}
+        </div>
+      )}
+
+      {mostra("manga") && risultati?.manga.length > 0 && (
+        <Gruppo titolo="Manga in casa" altri={altri("manga")}>
+          {visibili("manga").map((s) => (
             <Riga
+              onApri={ricorda}
               key={`m${s.id}`}
               a={`/serie/${s.id}`}
               copertina={s.copertina}
               titolo={s.edizione ? `${s.titolo} · ${s.edizione}` : s.titolo}
-              sotto={[`${s.posseduti} in casa`, s.editore].filter(Boolean).join(" · ")}
+              sotto={[dettaglioManga(s), s.editore].filter(Boolean).join(" · ")}
               etichetta="Manga"
             />
           ))}
         </Gruppo>
       )}
 
-      {risultati?.anime.length > 0 && (
-        <Gruppo titolo="In videoteca">
-          {risultati.anime.map((a) => (
+      {mostra("anime") && risultati?.anime.length > 0 && (
+        <Gruppo titolo="In videoteca" altri={altri("anime")}>
+          {visibili("anime").map((a) => (
             <Riga
+              onApri={ricorda}
               key={`a${a.id}`}
               a={`/videoteca/${a.id}`}
               copertina={a.cover_url}
               titolo={a.titolo}
-              sotto={[STATI_VISIONE[a.stato_visione], a.ultimo_visto ? `ep. ${a.ultimo_visto}` : null].filter(Boolean).join(" · ")}
+              sotto={[STATI_VISIONE[a.stato_visione], dettaglioAnime(a)].filter(Boolean).join(" · ")}
               etichetta="Anime"
             />
           ))}
         </Gruppo>
       )}
 
-      {risultati?.voglio.length > 0 && (
-        <Gruppo titolo="Nei desideri">
-          {risultati.voglio.map((d) => (
+      {mostra("voglio") && risultati?.voglio.length > 0 && (
+        <Gruppo titolo="Nei desideri" altri={altri("voglio")}>
+          {visibili("voglio").map((d) => (
             <Riga
+              onApri={ricorda}
               key={`w${d.id}`}
               a={`/desiderio/${d.id}`}
               copertina={d.coverurl}
@@ -255,36 +346,129 @@ export default function CercaPage() {
 
       {parole.length > 0 && !acquisto && (
         <Gruppo titolo={vuoto ? "Aggiungila" : "Non è quella giusta?"}>
-          <Azione a={`/collezione?nuova=${encodeURIComponent(testo)}`} titolo={`«${testo}» in collezione`} sotto="Apre il modulo della nuova serie, già compilato" />
-          <Azione a={`/videoteca/io?aggiungi=${encodeURIComponent(testo)}`} titolo={`«${testo}» fra gli anime`} sotto="Cerca su AnimeClick per aggiungerla alla videoteca" />
+          <Azione onApri={ricorda} a={`/collezione?nuova=${encodeURIComponent(testo)}`} titolo={`«${testo}» in collezione`} sotto="Apre il modulo della nuova serie, già compilato" />
+          <Azione onApri={ricorda} a={`/videoteca/io?aggiungi=${encodeURIComponent(testo)}`} titolo={`«${testo}» fra gli anime`} sotto="Cerca su AnimeClick per aggiungerla alla videoteca" />
         </Gruppo>
       )}
 
       {!parole.length && (
-        <p className="mt-10 px-6 text-center text-sm leading-relaxed text-ink-muted">
-          Scrivi un titolo, un autore o un editore. Cerca anche nei titoli originali degli anime: «sousou no frieren» trova Frieren.
-        </p>
+        <>
+          {recenti.length > 0 && (
+            <section className="mt-7">
+              <div className="mb-2 flex items-baseline justify-between px-1">
+                <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">Cercati di recente</h2>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecenti([]);
+                    salvaRecenti([]);
+                  }}
+                  className="text-xs font-semibold text-brass-300"
+                >
+                  Svuota
+                </button>
+              </div>
+
+              <ul className="flex flex-wrap gap-2">
+                {recenti.map((r) => (
+                  <li key={r}>
+                    <button
+                      type="button"
+                      onClick={() => cambia(r)}
+                      className="rounded-full bg-alcove px-3.5 py-2 text-sm font-medium text-ink-bright active:scale-95"
+                    >
+                      {r}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <section className="mt-7">
+            <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">Vai a</h2>
+
+            <ul className="grid grid-cols-2 gap-2">
+              {SCORCIATOIE.map((c) => (
+                <li key={c.a}>
+                  <Link to={c.a} className="block rounded-2xl bg-alcove px-4 py-3.5 text-sm font-semibold text-ink-bright">
+                    {c.etichetta}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <p className="mt-8 px-6 text-center text-xs leading-relaxed text-ink-muted">
+            Scrivi un titolo, un autore o un editore. Cerca anche nei titoli originali degli anime: «sousou no frieren» trova Frieren.
+          </p>
+        </>
       )}
     </div>
   );
 }
 
-function Gruppo({ titolo, children }) {
+function Gruppo({ titolo, altri = null, children }) {
   return (
     <section className="mt-7">
       <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">{titolo}</h2>
+
       <ul className="divide-y divide-hairline rounded-2xl bg-alcove px-3.5">{children}</ul>
+
+      {altri && (
+        <button type="button" onClick={altri.apri} className="mt-2 w-full rounded-xl py-2.5 text-sm font-semibold text-brass-300">
+          Mostra altri {altri.quanti}
+        </button>
+      )}
     </section>
   );
 }
 
-function Riga({ a, copertina, titolo, sotto, etichetta }) {
+function Filtro({ attivo, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={attivo}
+      className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-semibold transition-colors duration-quick ${
+        attivo ? "bg-brass-400 text-void" : "bg-alcove text-ink-muted"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** «42 su 45 · mancano 3», oppure «42 in casa» se non si sa quanti ne escano. */
+function dettaglioManga(s) {
+  const totale = totaleDisponibile(s);
+  const mancanti = volumiMancanti(s);
+
+  if (!totale) return `${s.posseduti} in casa`;
+
+  return mancanti > 0
+    ? `${s.posseduti} su ${totale} · mancano ${mancanti}`
+    : `${s.posseduti} su ${totale} · completa`;
+}
+
+/** «ep. 12 su 24»: dove sei arrivato, e su quante. */
+function dettaglioAnime(a) {
+  const visti = Number(a.episodi_visti ?? a.ultimo_visto ?? 0);
+  const su = Number(a.episodi_disponibili || a.episodi_totali || 0);
+
+  if (!visti && !su) return null;
+
+  return su ? `ep. ${visti} su ${su}` : `ep. ${visti}`;
+}
+
+function Riga({ a, copertina, titolo, sotto, etichetta, onApri }) {
   const [rotta, setRotta] = useState(false);
   const indirizzo = urlCopertina(copertina, 128);
 
   return (
     <li>
-      <Link to={a} className="flex items-center gap-3 py-2.5">
+      <Link to={a} onClick={onApri} className="flex items-center gap-3 py-2.5">
         {indirizzo && !rotta ? (
           <img src={indirizzo} alt="" loading="lazy" onError={dopoIlRipiego(() => setRotta(true))} className="h-12 w-8 shrink-0 rounded-md object-cover" />
         ) : (
@@ -302,10 +486,10 @@ function Riga({ a, copertina, titolo, sotto, etichetta }) {
   );
 }
 
-function Azione({ a, titolo, sotto }) {
+function Azione({ a, titolo, sotto, onApri }) {
   return (
     <li>
-      <Link to={a} className="flex items-center gap-3 py-3">
+      <Link to={a} onClick={onApri} className="flex items-center gap-3 py-3">
         <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brass-400 text-void">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14" />
