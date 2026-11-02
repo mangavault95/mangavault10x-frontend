@@ -529,6 +529,9 @@ export default function SeriePage() {
           <Volumi
             serie={serie}
             letti={volumiLetti}
+            // Il segnalibro viene dalla richiesta già fatta in testa
+            // alla pagina: una seconda copia era la stessa chiamata due volte.
+            corrente={Number(sessioneAperta?.volume) || null}
             droppata={droppata}
             // Le letture di un altro si guardano e basta: un click qui
             // riaprirebbe la lettura a NOME DI CHI HA IL TOKEN, cioè
@@ -658,7 +661,7 @@ function Dato({ etichetta, valore }) {
  * Quello che resta qui è il contorno: il titolo della sezione, il
  * conto, e la frase che spiega quando i volumi si possono premere.
  */
-function Volumi({ serie, letti = [], droppata = false, onRiprendi, di = null }) {
+function Volumi({ serie, letti = [], droppata = false, onRiprendi, di = null, corrente = null }) {
   const insiemeLetti = new Set(letti.map(Number));
 
   // Cliccabili solo se la serie è droppata: altrimenti sarebbe un
@@ -669,23 +672,14 @@ function Volumi({ serie, letti = [], droppata = false, onRiprendi, di = null }) 
   // La mensola dice la forma; i numeri si aprono quando servono.
   const [numeri, setNumeri] = useState(false);
 
-  // Il segnalibro, se la serie è sul tavolo di lettura: sulla mensola è
-  // il dorso più alto e chiaro, «sei qui».
-  const sessioni = useRisorsa(() => getReadingSessions());
-  const corrente =
-    Number((sessioni.dati || []).find((s) => String(s.manga_id) === String(serie.id))?.volume) || null;
-
   return (
     <Sezione
       titolo="Volumi"
       extra={
+        // Due numeri con due nomi: prima «0 di 38» non diceva se erano
+        // letti o posseduti, e sopra la mensola ce n'erano due diversi.
         <span className="font-numeric text-sm text-ink-muted">
-          {insiemeLetti.size > 0 && (
-            <span className="text-brass-400">
-              {insiemeLetti.size} letti{di ? ` da ${di}` : ""} ·{" "}
-            </span>
-          )}
-          {serie.posseduti} di {serie.totali}
+          {serie.posseduti} di {serie.totali} nella collezione
         </span>
       }
     >
@@ -702,7 +696,29 @@ function Volumi({ serie, letti = [], droppata = false, onRiprendi, di = null }) 
         corrente={corrente}
         onSelezionaVolume={riprendibile ? onRiprendi : undefined}
         resa={numeri ? "automatica" : "mensola"}
+        // La legenda qui sotto dice già quanti letti: la riga «0 di 6
+        // volumi» della mensola ne era la copia, con un altro significato.
+        riepilogo={numeri}
       />
+
+      {/* La legenda: i tre colori della mensola, con il conto di
+          ciascuno, così la mensola si legge senza passare sui dorsi. */}
+      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-muted">
+        <li className="flex items-center gap-1.5">
+          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm bg-brass-400" />
+          Letti{di ? ` da ${di}` : ""} <span className="font-numeric">{insiemeLetti.size}</span>
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm bg-ink-bright/25" />
+          Da leggere <span className="font-numeric">{Math.max(0, serie.posseduti - [...insiemeLetti].filter((n) => n <= serie.posseduti).length)}</span>
+        </li>
+        {serie.totali > serie.posseduti && (
+          <li className="flex items-center gap-1.5">
+            <span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm bg-ink-bright/[0.06] ring-1 ring-inset ring-hairline" />
+            Mancano <span className="font-numeric">{serie.totali - serie.posseduti}</span>
+          </li>
+        )}
+      </ul>
 
       {!riprendibile && (
         <button
