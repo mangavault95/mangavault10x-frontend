@@ -277,7 +277,7 @@ export default function Shell({ children }) {
           <span className="text-[0.65rem] font-medium tracking-wide">Tu</span>
           {/* La stessa riga del kana delle altre linguette, o «Tu» starebbe
               più in basso di tutte. */}
-          <span aria-hidden="true" className={`-mt-1 h-3 font-pixel text-[0.55rem] leading-3 ${tuAperto || inGestione ? "opacity-70" : "invisible"}`}>
+          <span aria-hidden="true" className={`kana -mt-1 h-3 font-pixel text-[0.55rem] leading-3 ${tuAperto || inGestione ? "opacity-70" : "invisible"}`}>
             あなた
           </span>
         </button>
@@ -348,7 +348,7 @@ function VoceMenu({ sezione, veste, attiva, pallina = 0 }) {
 
       <span className="hidden flex-1 text-sm font-medium lg:inline">{sezione.etichetta}</span>
       {sezione.kana && (
-        <span aria-hidden="true" className={`hidden font-pixel text-[0.65rem] lg:inline ${attiva ? "opacity-80" : "text-ink-faint"}`}>
+        <span aria-hidden="true" className={`kana hidden font-pixel text-[0.65rem] lg:inline ${attiva ? "opacity-80" : "text-ink-faint"}`}>
           {sezione.kana}
         </span>
       )}
@@ -397,7 +397,7 @@ function Linguetta({ sezione, veste, attiva }) {
 
       <span className="text-[0.65rem] font-medium tracking-wide">{sezione.etichetta}</span>
       {sezione.kana && (
-        <span aria-hidden="true" className={`-mt-1 h-3 font-pixel text-[0.55rem] leading-3 ${attiva ? "opacity-70" : "invisible"}`}>
+        <span aria-hidden="true" className={`kana -mt-1 h-3 font-pixel text-[0.55rem] leading-3 ${attiva ? "opacity-70" : "invisible"}`}>
           {sezione.kana}
         </span>
       )}

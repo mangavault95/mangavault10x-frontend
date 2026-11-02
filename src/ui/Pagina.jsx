@@ -32,7 +32,7 @@ export default function Pagina({ titolo, occhiello, sommario, azioni, children }
           <h1 className="flex items-baseline gap-2.5 font-display text-2xl font-bold tracking-tight text-ink-bright sm:text-4xl">
             {titolo}
             {typeof titolo === "string" && KANA[titolo] && (
-              <span aria-hidden="true" className="font-pixel text-sm font-normal text-ink-faint">
+              <span aria-hidden="true" className="kana font-pixel text-sm font-normal text-ink-faint">
                 {KANA[titolo]}
               </span>
             )}

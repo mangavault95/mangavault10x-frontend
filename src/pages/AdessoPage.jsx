@@ -431,7 +431,7 @@ function Testata({ nome }) {
     <header className="px-5 pb-1 pt-6">
       <p className="flex items-center gap-2 font-numeric text-[0.72rem] uppercase tracking-[0.14em] text-ink-muted">
         {oggi}
-        <span aria-hidden="true" className="font-pixel normal-case tracking-normal text-ink-faint">
+        <span aria-hidden="true" className="kana font-pixel normal-case tracking-normal text-ink-faint">
           {KANJI_GIORNO[new Date().getDay()]}
         </span>
       </p>
@@ -456,7 +456,7 @@ function Sezione({ titolo, kana, link, children }) {
       <div className="mb-3 flex items-baseline justify-between px-1">
         <h2 className="flex items-baseline gap-2 font-display text-lg font-semibold tracking-tight text-ink-bright">
           {titolo}
-          {kana && <span aria-hidden="true" className="font-pixel text-xs font-normal text-ink-faint">{kana}</span>}
+          {kana && <span aria-hidden="true" className="kana font-pixel text-xs font-normal text-ink-faint">{kana}</span>}
         </h2>
         {link && (
           <Link to={link.a} className="text-sm font-medium text-ciano hover:underline">

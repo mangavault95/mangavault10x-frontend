@@ -84,8 +84,12 @@
   color-scheme: dark;
 }
 
-/* ---- Notte, accento viola: Sara ----
-   Le stesse notti, col neon di chi guarda: il lilla di sempre, acceso. */
+/* ---- Le palette (02/11/2026) ----
+   Tre, e le sceglie ognuno dalle impostazioni: Sakura (`:root`, il
+   rosa), Glicine (`viola`, il lilla di Sara acceso) e Lanterna (l'ambra
+   delle lanterne di carta). Ognuna ha la sua notte e il suo giorno.
+
+   Glicine, di notte. */
 [data-accento="viola"] {
   --c-brass-50: 245 240 255;
   --c-brass-100: 232 222 255;
@@ -103,6 +107,27 @@
 
   --ombra-accento: 0 0 0 1px rgb(160 124 255 / 0.55), 0 0 22px -4px rgb(160 124 255 / 0.55),
     0 10px 40px -14px rgb(160 124 255 / 0.5);
+}
+
+/* Lanterna, di notte. Con lei anche i prezzi sono ambra: l'accento e i
+   soldi parlano lo stesso colore, e va bene così — è la palette calda. */
+[data-accento="lanterna"] {
+  --c-brass-50: 255 248 235;
+  --c-brass-100: 255 236 200;
+  --c-brass-200: 255 216 150;
+  --c-brass-300: 255 198 110;
+  --c-brass-400: 255 181 71;
+  --c-brass-500: 245 158 40;
+  --c-brass-600: 214 128 20;
+  --c-brass-700: 170 98 10;
+  --c-brass-800: 120 70 10;
+  --c-brass-900: 80 48 8;
+
+  --c-accento: 255 181 71;
+  --c-accento-tenue: 60 42 14;
+
+  --ombra-accento: 0 0 0 1px rgb(255 181 71 / 0.55), 0 0 22px -4px rgb(255 181 71 / 0.5),
+    0 10px 40px -14px rgb(255 181 71 / 0.45);
 }
 
 /* ---- Giorno: neon su carta (02/11/2026) ----
@@ -167,7 +192,7 @@
   color-scheme: light;
 }
 
-/* ---- Giorno, accento viola ---- */
+/* ---- Giorno, Glicine ---- */
 [data-tema="giorno"][data-accento="viola"] {
   --c-brass-50: 40 20 90;
   --c-brass-100: 55 30 120;
@@ -184,6 +209,25 @@
   --c-accento-tenue: 240 234 253;
 
   --ombra-accento: 0 0 0 1px rgb(120 80 220 / 0.35), 0 6px 22px -6px rgb(120 80 220 / 0.45);
+}
+
+/* ---- Giorno, Lanterna ---- */
+[data-tema="giorno"][data-accento="lanterna"] {
+  --c-brass-50: 70 35 0;
+  --c-brass-100: 95 48 0;
+  --c-brass-200: 130 66 0;
+  --c-brass-300: 150 76 0;
+  --c-brass-400: 176 92 0;
+  --c-brass-500: 210 124 20;
+  --c-brass-600: 232 160 64;
+  --c-brass-700: 244 196 126;
+  --c-brass-800: 250 224 178;
+  --c-brass-900: 253 243 225;
+
+  --c-accento: 176 92 0;
+  --c-accento-tenue: 253 243 225;
+
+  --ombra-accento: 0 0 0 1px rgb(176 92 0 / 0.35), 0 6px 22px -6px rgb(176 92 0 / 0.45);
 }
 
 /* =========================================================
@@ -1006,4 +1050,11 @@ html[data-tema="giorno"] body {
 .sfuma-destra {
   mask-image: linear-gradient(90deg, #000 calc(100% - 2.5rem), transparent);
   -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 2.5rem), transparent);
+}
+
+/* I kanji delle micro-etichette si possono spegnere dalle impostazioni
+   (02/11/2026): `data-kana="no"` sull'html. Sono decorazioni, quindi
+   spegnerli non toglie niente da leggere. */
+[data-kana="no"] .kana {
+  display: none !important;
 }

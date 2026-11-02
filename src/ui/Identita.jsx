@@ -114,7 +114,7 @@ export default function Identita({ compatto = false, mondo = "biblioteca" }) {
           />
 
           <div
-            className={`absolute bottom-0 left-full z-toast ml-3 w-64 rounded-panel border p-4 shadow-float ${veste.pannello}`}
+            className={`absolute bottom-0 left-full z-toast ml-3 w-72 rounded-panel border p-4 shadow-float ${veste.pannello}`}
           >
             <p className={veste.nome}>{utente.nickname}</p>
 

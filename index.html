@@ -21,8 +21,14 @@
           document.documentElement.dataset.tema = "giorno";
           document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f6f5fb");
         }
-        if (localStorage.getItem("mangavault:accento") === "viola" || tema === "lilla") {
+        var accento = localStorage.getItem("mangavault:accento");
+        if (accento === "viola" || accento === "lanterna") {
+          document.documentElement.dataset.accento = accento;
+        } else if (tema === "lilla") {
           document.documentElement.dataset.accento = "viola";
+        }
+        if (localStorage.getItem("mangavault:kana") === "no") {
+          document.documentElement.dataset.kana = "no";
         }
       } catch (e) {}
     </script>
