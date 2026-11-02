@@ -9,9 +9,9 @@
    queste variabili, scritte come tre canali RGB perché Tailwind ci
    possa aggiungere la trasparenza (`bg-brass-400/10`).
 
-   Chi è entrato decide quale vale (`dati/tema.js`): «ardesia» per
-   Nicer, «lilla» per Sara. Chi non è entrato vede l'ardesia — che dal
-   02/11/2026 non è più grafite e ottone ma la notte neon.
+   Dal 02/11/2026 (`dati/tema.js`): la modalità — notte, cioè `:root`, o
+   `[data-tema="giorno"]` — la sceglie ognuno; l'accento — sakura, o
+   `[data-accento="viola"]` — è il colore della persona.
 
    I nomi sono ruoli, non colori: `--c-ink-bright` è il testo più forte,
    chiaro su ardesia e scuro su carta. Per lo stesso motivo nel tema
@@ -84,64 +84,106 @@
   color-scheme: dark;
 }
 
-/* ---- Carta e lilla: Sara ----
-   Bianco vero, schede appena velate di lilla, accento lilla scuro
-   abbastanza da reggere il testo bianco sopra (5,7:1). */
-[data-tema="lilla"] {
+/* ---- Notte, accento viola: Sara ----
+   Le stesse notti, col neon di chi guarda: il lilla di sempre, acceso. */
+[data-accento="viola"] {
+  --c-brass-50: 245 240 255;
+  --c-brass-100: 232 222 255;
+  --c-brass-200: 208 190 255;
+  --c-brass-300: 190 165 255;
+  --c-brass-400: 160 124 255;
+  --c-brass-500: 140 100 245;
+  --c-brass-600: 118 78 222;
+  --c-brass-700: 94 58 184;
+  --c-brass-800: 70 42 140;
+  --c-brass-900: 48 30 98;
+
+  --c-accento: 160 124 255;
+  --c-accento-tenue: 40 30 70;
+
+  --ombra-accento: 0 0 0 1px rgb(160 124 255 / 0.55), 0 0 22px -4px rgb(160 124 255 / 0.55),
+    0 10px 40px -14px rgb(160 124 255 / 0.5);
+}
+
+/* ---- Giorno: neon su carta (02/11/2026) ----
+   La modalità chiara. Non il lilla di prima con i caratteri nuovi: una
+   carta appena lavanda, inchiostro blu notte, e gli stessi neon portati
+   abbastanza scuri da reggere il testo su fondo chiaro. Il bagliore
+   resta, più corto: di giorno un'insegna si vede meno.
+
+   Come nel lilla, la scala dell'accento è ROVESCIATA: i numeri bassi
+   sono le tinte scure (testo), gli alti le chiare (fondi). */
+[data-tema="giorno"] {
   --c-void: 255 255 255;
-  --c-shelf: 255 255 255;
-  --c-alcove: 247 244 252;
-  --c-riga: 232 224 245;
+  --c-shelf: 246 245 251;  /* #F6F5FB */
+  --c-alcove: 255 255 255;
+  --c-riga: 227 224 240;
 
-  --c-ink-bright: 31 23 48;
-  --c-ink: 58 49 80;
-  --c-ink-muted: 94 86 112;
-  --c-ink-faint: 152 144 168;
+  --c-ink-bright: 22 20 42;
+  --c-ink: 52 49 78;
+  --c-ink-muted: 98 94 124;
+  --c-ink-faint: 150 146 172;
 
-  /* Rovesciata: i numeri bassi sono i lilla scuri (testo), gli alti i
-     lilla tenui (fondi), come sull'ardesia lo sono gialli chiari e
-     ottoni bruniti. */
-  --c-brass-50: 44 24 87;
-  --c-brass-100: 59 32 117;
-  --c-brass-200: 76 42 150;
-  --c-brass-300: 94 53 184;
-  --c-brass-400: 123 79 214;
-  --c-brass-500: 143 106 224;
-  --c-brass-600: 168 139 234;
-  --c-brass-700: 194 174 241;
-  --c-brass-800: 220 207 247;
-  --c-brass-900: 238 230 251;
+  --c-brass-50: 80 10 40;
+  --c-brass-100: 110 15 55;
+  --c-brass-200: 150 20 75;
+  --c-brass-300: 194 24 91;   /* #C2185B, l'accento come testo */
+  --c-brass-400: 214 36 127;  /* #D6247F, l'accento pieno */
+  --c-brass-500: 230 70 145;
+  --c-brass-600: 240 120 175;
+  --c-brass-700: 248 170 205;
+  --c-brass-800: 252 210 228;
+  --c-brass-900: 254 236 245;
 
-  --c-accento: 123 79 214;
-  --c-accento-tenue: 238 230 251;
+  --c-accento: 214 36 127;
+  --c-accento-tenue: 254 236 245;
   --c-su-accento: 255 255 255;
 
-  --c-jade: 18 120 74;
-  --c-ember: 192 38 38;
-  --c-lapis: 79 70 229;
-  --c-voto-alto: 18 120 74;
-  --c-ciano: 8 122 138;
+  --c-jade: 0 135 80;
+  --c-ember: 214 40 72;
+  --c-lapis: 109 70 214;
+  --c-ciano: 0 122 138;
   --c-ambra: 170 96 0;
   --c-viola: 109 70 214;
-  --c-viola-tenue: 238 233 252;
-  --c-voto-basso: 192 38 38;
+  --c-viola-tenue: 240 234 253;
+  --c-voto-alto: 0 135 80;
+  --c-voto-basso: 214 40 72;
 
-  --superficie-1: rgb(247 244 252 / 0.9);
-  --superficie-2: rgb(240 234 250);
+  --superficie-1: rgb(255 255 255 / 0.85);
+  --superficie-2: rgb(240 238 249);
   --superficie-3: rgb(255 255 255 / 0.97);
 
-  --linea-1: rgb(31 23 48 / 0.08);
-  --linea-2: rgb(31 23 48 / 0.12);
-  --linea-3: rgb(31 23 48 / 0.2);
+  --linea-1: rgb(22 20 42 / 0.08);
+  --linea-2: rgb(22 20 42 / 0.12);
+  --linea-3: rgb(22 20 42 / 0.2);
 
-  --ombra-lift: 0 1px 3px rgb(31 23 48 / 0.08);
-  --ombra-raised: 0 8px 24px -8px rgb(31 23 48 / 0.18);
-  --ombra-float: 0 20px 48px -16px rgb(31 23 48 / 0.25);
-  --ombra-accento: 0 0 0 1px rgb(123 79 214 / 0.35), 0 4px 18px -4px rgb(123 79 214 / 0.3);
+  --ombra-lift: 0 1px 3px rgb(22 20 42 / 0.08);
+  --ombra-raised: 0 8px 24px -8px rgb(22 20 42 / 0.16);
+  --ombra-float: 0 20px 48px -16px rgb(22 20 42 / 0.22);
+  --ombra-accento: 0 0 0 1px rgb(214 36 127 / 0.35), 0 6px 22px -6px rgb(214 36 127 / 0.45);
 
-  --barra: rgb(31 23 48 / 0.18);
+  --barra: rgb(22 20 42 / 0.16);
 
   color-scheme: light;
+}
+
+/* ---- Giorno, accento viola ---- */
+[data-tema="giorno"][data-accento="viola"] {
+  --c-brass-50: 40 20 90;
+  --c-brass-100: 55 30 120;
+  --c-brass-200: 72 42 160;
+  --c-brass-300: 96 60 200;
+  --c-brass-400: 120 80 220;
+  --c-brass-500: 140 106 228;
+  --c-brass-600: 168 140 236;
+  --c-brass-700: 196 176 244;
+  --c-brass-800: 222 210 250;
+  --c-brass-900: 240 234 253;
+
+  --c-accento: 120 80 220;
+  --c-accento-tenue: 240 234 253;
+
+  --ombra-accento: 0 0 0 1px rgb(120 80 220 / 0.35), 0 6px 22px -6px rgb(120 80 220 / 0.45);
 }
 
 /* =========================================================
@@ -944,7 +986,17 @@ html:not([data-tema]) body::after {
   }
 }
 
+/* Di giorno gli aloni restano, più tenui, e la grana no: su carta chiara
+   sarebbe sporco, non atmosfera. */
+html[data-tema="giorno"] body {
+  background-image:
+    radial-gradient(60rem 30rem at 85% -10%, rgb(var(--c-accento) / 0.08), transparent 60%),
+    radial-gradient(50rem 30rem at -10% 110%, rgb(var(--c-ciano) / 0.06), transparent 60%);
+  background-attachment: fixed;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  html[data-tema="giorno"] body,
   html:not([data-tema]) body {
     background-attachment: scroll;
   }

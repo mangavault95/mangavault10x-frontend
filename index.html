@@ -16,9 +16,13 @@
     <script>
       try {
         var tema = localStorage.getItem("mangavault:tema");
-        if (tema === "lilla") {
-          document.documentElement.dataset.tema = tema;
-          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#ffffff");
+        // «lilla» è il vecchio nome del giorno: chi l'aveva lo ritrova.
+        if (tema === "giorno" || tema === "lilla") {
+          document.documentElement.dataset.tema = "giorno";
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f6f5fb");
+        }
+        if (localStorage.getItem("mangavault:accento") === "viola" || tema === "lilla") {
+          document.documentElement.dataset.accento = "viola";
         }
       } catch (e) {}
     </script>

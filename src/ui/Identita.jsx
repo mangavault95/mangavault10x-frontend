@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ModuloAccesso } from "../dati/AccessoProvider";
+import SceltaTema from "./SceltaTema";
 import { useSessione } from "../dati/sessione";
 
 /**
@@ -113,13 +114,17 @@ export default function Identita({ compatto = false, mondo = "biblioteca" }) {
           />
 
           <div
-            className={`absolute bottom-0 left-full z-toast ml-3 w-52 rounded-panel border p-4 shadow-float ${veste.pannello}`}
+            className={`absolute bottom-0 left-full z-toast ml-3 w-64 rounded-panel border p-4 shadow-float ${veste.pannello}`}
           >
             <p className={veste.nome}>{utente.nickname}</p>
 
             <p className={veste.ruolo}>
               {utente.proprietario ? "Padrone di casa" : "Lettore"}
             </p>
+
+            {/* Su schermo largo il foglio «Tu» non c'è: l'interruttore
+                del tema sta qui, nel menu del proprio nome. */}
+            <SceltaTema className="mt-3" />
 
             <button
               type="button"

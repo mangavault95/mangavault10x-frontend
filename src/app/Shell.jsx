@@ -31,7 +31,7 @@ import Identita from "../ui/Identita";
 import AggiungiAnime from "../ui/videoteca/AggiungiAnime";
 import PostaInArrivo from "../ui/videoteca/PostaInArrivo";
 import { useSessione } from "../dati/sessione";
-import { scegliTema, temaDi } from "../dati/tema";
+import SceltaTema from "../ui/SceltaTema";
 
 /**
  * La cornice fissa attorno a ogni pagina.
@@ -494,19 +494,12 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
  */
 function FoglioTu({ richieste, chiudi }) {
   const { utente, esci } = useSessione();
-  const [tema, setTema] = useState(() => temaDi(utente));
-
   // Due voci sole. La sala in 3D non c'è più (05/10/2026) e le due
   // Gestioni sono una: dentro, tre linguette (Manga, Anime, Accessi).
   const voci = [
     { id: "mese", percorso: "/mese", etichetta: "Il vostro mese", icona: "calendario" },
     { ...SEZIONE_GESTIONE, descrizione: "Correggi schede, stagioni e accessi" }
   ];
-
-  function cambiaTema(nuovo) {
-    scegliTema(utente, nuovo);
-    setTema(nuovo);
-  }
 
   return (
     <div className="fixed inset-0 z-modal md:hidden" role="dialog" aria-label="Tu">
@@ -558,28 +551,9 @@ function FoglioTu({ richieste, chiudi }) {
           )}
         </div>
 
-        {/* Il tema. Solo per chi è entrato: la scelta si ricorda per
-            persona, e chi non ha un nome non ha dove ricordarla. */}
-        {utente && (
-          <div role="group" aria-label="Tema" className="mb-3 grid grid-cols-2 gap-1 rounded-card bg-shelf p-1">
-            {[
-              { id: "ardesia", etichetta: "Ardesia e ottone" },
-              { id: "lilla", etichetta: "Carta e lilla" }
-            ].map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => cambiaTema(t.id)}
-                aria-pressed={tema === t.id}
-                className={`rounded-lg py-2.5 text-sm font-semibold transition-colors duration-quick ${
-                  tema === t.id ? VESTE.acceso : "text-ink-muted"
-                }`}
-              >
-                {t.etichetta}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Notte o Giorno (02/11/2026). Anche per chi non è entrato: la
+            scelta si ricorda sul suo dispositivo. */}
+        <SceltaTema className="mb-3" />
 
         <ul className="flex flex-col">
           {voci.map((voce) => (
