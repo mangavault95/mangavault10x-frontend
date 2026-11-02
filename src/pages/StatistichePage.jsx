@@ -38,24 +38,26 @@ export default function StatistichePage() {
 
   /* -------------------- Classifiche -------------------- */
 
-  const editori = useMemo(() => conteggia(serie, (s) => (s.editore ? [s.editore] : [])), [serie]);
   const generi = useMemo(() => conteggia(serie, (s) => s.generi), [serie]);
   const autori = useMemo(() => conteggia(serie, (s) => (s.autore ? [s.autore] : [])), [serie]);
 
-  const spesaPerEditore = useMemo(() => {
+  // Editori e «dove sono finiti i soldi» erano due classifiche degli
+  // stessi nomi, una in serie e una in euro: ora è una lista sola, con
+  // la barra sulle serie e gli euro accanto.
+  const editori = useMemo(() => {
     const mappa = new Map();
 
     for (const s of serie) {
       if (!s.editore) continue;
 
-      mappa.set(s.editore, (mappa.get(s.editore) || 0) + valoreSerie(s));
+      const e = mappa.get(s.editore) || { etichetta: s.editore, valore: 0, spesa: 0 };
+
+      e.valore += 1;
+      e.spesa += valoreSerie(s);
+      mappa.set(s.editore, e);
     }
 
-    return [...mappa]
-      .map(([etichetta, valore]) => ({ etichetta, valore: Math.round(valore) }))
-      .filter((v) => v.valore > 0)
-      .sort((a, b) => b.valore - a.valore)
-      .slice(0, 8);
+    return [...mappa.values()].sort((a, b) => b.valore - a.valore || b.spesa - a.spesa);
   }, [serie]);
 
   /* -------------------- Primati -------------------- */
@@ -85,25 +87,38 @@ export default function StatistichePage() {
       sommario="Quanto hai, quanto vale, quanto manca."
     >
       <div className="space-y-14">
-        {/* ---------- I titoloni ----------
-            Quattro numeri e basta: una fila di venti indicatori non si
-            legge, si scorre. Il resto della pagina li spiega. */}
-        <dl className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <Tessera etichetta="Serie" valore={numeroIt(n.serie)} />
-          <Tessera etichetta="Volumi" valore={numeroIt(n.volumi)} />
-          <Tessera
-            etichetta="Valore in casa"
-            valore={euro(n.valore)}
-            nota={`${euro(n.prezzoMedio)} a volume`}
-          />
-          <Tessera
-            etichetta="Per completare tutto"
-            valore={euro(n.perCompletare)}
-            nota={`${numeroIt(n.volumiMancantiTotali)} volumi`}
-            tono="ember"
-            onClick={() => setMostraDaCompletare(true)}
-          />
-        </dl>
+        {/* ---------- La testata ----------
+            I soldi sono i due numeri che si vengono a cercare qui:
+            stanno in grande in cima. Serie, volumi e voto sono la riga
+            piccola sotto, non tre riquadri alti uguali ai primi. */}
+        <div className="space-y-3">
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <Tessera
+              grande
+              etichetta="Valore in casa"
+              valore={euro(n.valore)}
+              nota={`${euro(n.prezzoMedio)} a volume`}
+            />
+            <Tessera
+              grande
+              etichetta="Per completare tutto"
+              valore={euro(n.perCompletare)}
+              nota={`${numeroIt(n.volumiMancantiTotali)} volumi · tocca per vedere quali`}
+              tono="ember"
+              onClick={() => setMostraDaCompletare(true)}
+            />
+          </dl>
+
+          <dl className="grid grid-cols-3 divide-x divide-hairline rounded-panel border border-hairline bg-glass-1 py-3">
+            <Cifra etichetta="Serie" valore={numeroIt(n.serie)} />
+            <Cifra etichetta="Volumi" valore={numeroIt(n.volumi)} />
+            <Cifra
+              etichetta="Voto medio"
+              valore={n.votoMedio ? `${n.votoMedio.toFixed(1)}★` : "—"}
+              onClick={n.votoMedio ? () => setMostraVoti(true) : undefined}
+            />
+          </dl>
+        </div>
 
         {mostraDaCompletare && (
           <DaCompletare serie={serie} onChiudere={() => setMostraDaCompletare(false)} />
@@ -114,43 +129,39 @@ export default function StatistichePage() {
         )}
 
         {/* ---------- Stato ---------- */}
-        <Sezione titolo="Stato attuale">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Tessera
-              etichetta="Serie complete"
-              valore={numeroIt(n.complete)}
-              nota={`${Math.round((n.complete / n.serie) * 100)}% del totale`}
-              tono="jade"
-            />
-            <Tessera etichetta="Da completare" valore={numeroIt(n.daCompletare)} />
-            <Tessera etichetta="In corso d'uscita" valore={numeroIt(n.inCorsoEditore)} />
-            <Tessera
-              etichetta="Voto medio"
-              valore={n.votoMedio ? n.votoMedio.toFixed(1) : "—"}
-              nota={n.votoMedio ? "su 5 · vedi il dettaglio" : "nessun voto registrato"}
-              onClick={n.votoMedio ? () => setMostraVoti(true) : undefined}
-            />
+        <Sezione
+          titolo="Stato attuale"
+          extra={
+            <span className="font-numeric text-sm text-ink-muted">
+              {Math.round((n.complete / n.serie) * 100)}% complete
+            </span>
+          }
+        >
+          {/* Una barra sola: la quota di serie chiuse. Le altre due
+              categorie si sovrappongono (una serie in corso può anche
+              mancare di qualcosa), quindi non sono pezzi della stessa
+              torta e restano conti accanto, non segmenti. */}
+          <div
+            role="img"
+            aria-label={`${n.complete} serie complete su ${n.serie}`}
+            className="h-3 overflow-hidden rounded-full bg-ink-bright/[0.06]"
+          >
+            <div className="h-full rounded-full bg-jade" style={{ width: `${(n.complete / n.serie) * 100}%` }} />
           </div>
+
+          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-muted">
+            <li className="flex items-center gap-1.5">
+              <span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm bg-jade" />
+              Complete <span className="font-numeric text-ink-bright">{numeroIt(n.complete)}</span>
+            </li>
+            <li>
+              Da completare <span className="font-numeric text-ink-bright">{numeroIt(n.daCompletare)}</span>
+            </li>
+            <li>
+              In corso d'uscita <span className="font-numeric text-ink-bright">{numeroIt(n.inCorsoEditore)}</span>
+            </li>
+          </ul>
         </Sezione>
-
-        {/* ---------- Classifiche ---------- */}
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-          <Sezione titolo="Editori">
-            <Classifica voci={editori.slice(0, 8)} unita="serie" />
-          </Sezione>
-
-          <Sezione titolo="Generi">
-            <Classifica voci={generi.slice(0, 8)} unita="serie" />
-          </Sezione>
-
-          <Sezione titolo="Dove sono finiti i soldi">
-            <Classifica voci={spesaPerEditore} formatta={(v) => euro(v)} />
-          </Sezione>
-
-          <Sezione titolo="Autori con più serie">
-            <Classifica voci={autori.slice(0, 8)} unita="serie" />
-          </Sezione>
-        </div>
 
         {/* ---------- Primati ----------
             Due gruppi, non una lista sola: vedi `primati` in
@@ -163,13 +174,36 @@ export default function StatistichePage() {
               <p className="text-xs text-ink-faint">{gruppo.sommario}</p>
             }
           >
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Sul telefono i primati scorrono di lato, una scheda e un
+                pezzo della successiva: tre schede in colonna erano uno
+                schermo intero per leggere tre record. */}
+            <div
+              className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1
+                         sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-3"
+            >
               {gruppo.voci.map((p) => (
-                <Primato key={p.id} {...p} />
+                <div key={p.id} className="w-[17.5rem] shrink-0 snap-start sm:w-auto">
+                  <Primato {...p} />
+                </div>
               ))}
             </div>
           </Sezione>
         ))}
+
+        {/* ---------- Classifiche ---------- */}
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+          <Sezione titolo="Editori" extra={<span className="text-xs text-ink-faint">serie · spesa</span>}>
+            <ClassificaEditori voci={editori} />
+          </Sezione>
+
+          <Sezione titolo="Generi">
+            <Elenco voci={generi} />
+          </Sezione>
+
+          <Sezione titolo="Autori con più serie">
+            <Elenco voci={autori} />
+          </Sezione>
+        </div>
       </div>
     </Pagina>
   );
@@ -178,6 +212,78 @@ export default function StatistichePage() {
 /* ==================================================
    PEZZI
    ================================================== */
+
+const VISIBILI = 5;
+
+/** Una classifica che ne mostra cinque e si apre su richiesta. */
+function Elenco({ voci, ...resto }) {
+  const [tutte, setTutte] = useState(false);
+
+  return (
+    <div>
+      <Classifica voci={tutte ? voci : voci.slice(0, VISIBILI)} unita="serie" {...resto} />
+      <ApriTutti n={voci.length} aperto={tutte} onClick={() => setTutte((t) => !t)} />
+    </div>
+  );
+}
+
+function ApriTutti({ n, aperto, onClick }) {
+  if (n <= VISIBILI) return null;
+
+  return (
+    <button type="button" onClick={onClick} className="mt-3 text-sm font-medium text-brass-300 hover:underline">
+      {aperto ? "Mostra meno" : `Mostra tutti (${n})`}
+    </button>
+  );
+}
+
+/** Editori: la barra misura le serie, a destra anche quanto ci hai speso. */
+function ClassificaEditori({ voci }) {
+  const [tutte, setTutte] = useState(false);
+  const visibili = tutte ? voci : voci.slice(0, VISIBILI);
+  const massimo = Math.max(...voci.map((v) => v.valore), 1);
+
+  return (
+    <div>
+      <ol className="space-y-2.5">
+        {visibili.map((v) => (
+          <li key={v.etichetta} className="grid grid-cols-[minmax(0,7rem)_1fr_auto] items-center gap-3 sm:grid-cols-[minmax(0,10rem)_1fr_auto] sm:gap-4">
+            <span className="truncate text-sm text-ink">{v.etichetta}</span>
+
+            <span className="h-2.5 w-full overflow-hidden rounded-full bg-ink-bright/[0.05]">
+              <span
+                className="block h-full rounded-full bg-brass-400/85"
+                style={{ width: `${Math.max(1.5, (v.valore / massimo) * 100)}%` }}
+              />
+            </span>
+
+            <span className="min-w-[5.5rem] text-right font-numeric text-sm tabular-nums text-ink-muted">
+              {v.valore} · {v.spesa > 0 ? `${numeroIt(Math.round(v.spesa))} €` : "—"}
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      <ApriTutti n={voci.length} aperto={tutte} onClick={() => setTutte((t) => !t)} />
+    </div>
+  );
+}
+
+/** Un numero piccolo della riga sotto la testata; se ha un dettaglio si tocca. */
+function Cifra({ etichetta, valore, onClick }) {
+  const Contenitore = onClick ? "button" : "div";
+
+  return (
+    <Contenitore
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={`px-2 text-center ${onClick ? "rounded-r-panel hover:bg-glass-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400" : ""}`}
+    >
+      <dd className="font-numeric text-xl font-semibold text-ink-bright">{valore}</dd>
+      <dt className="text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">{etichetta}</dt>
+    </Contenitore>
+  );
+}
 
 // Conta quante serie ricadono in ogni valore di un campo che può
 // contenerne più d'uno (i generi) o uno solo (l'editore).
@@ -209,7 +315,7 @@ function conteggia(serie, estraiValori) {
  * alle altre e l'unico modo di scoprire che due tessere su otto
  * nascondevano un pannello era passarci sopra per caso.
  */
-function Tessera({ etichetta, valore, nota, tono = "neutro", onClick }) {
+function Tessera({ etichetta, valore, nota, tono = "neutro", onClick, grande = false }) {
   const toni = {
     neutro: "text-ink-bright",
     jade: "text-jade",
@@ -253,7 +359,11 @@ function Tessera({ etichetta, valore, nota, tono = "neutro", onClick }) {
         {etichetta}
       </dt>
 
-      <dd className={`relative mt-1.5 font-numeric text-2xl font-semibold sm:text-3xl ${toni[tono]}`}>
+      <dd
+        className={`relative mt-1.5 font-numeric font-semibold ${
+          grande ? "text-3xl sm:text-4xl" : "text-2xl sm:text-3xl"
+        } ${toni[tono]}`}
+      >
         {valore}
       </dd>
 
