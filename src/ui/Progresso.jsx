@@ -10,27 +10,8 @@
  * il resto del sito già usa per "in corso": non una percentuale, ma
  * nemmeno il vuoto.
  */
-export default function Progresso({ valore, etichetta, sottile = false, statica = false }) {
+export default function Progresso({ valore, etichetta, sottile = false }) {
   const misura = sottile ? "h-1" : "h-1.5";
-
-  // Nelle griglie lo shimmer sarebbe una dozzina di barre che brillano
-  // insieme sullo stesso schermo, e su un telefono costa batteria per
-  // un'informazione che non cambia: lì l'indeterminato è un tratteggio
-  // fermo, che dice «aperta» senza muoversi.
-  if ((valore === null || valore === undefined) && statica) {
-    return (
-      <div
-        role="progressbar"
-        aria-valuenow={undefined}
-        aria-valuetext="In corso, volumi totali non ancora noti"
-        aria-label={etichetta || "In corso: il numero finale di volumi non è ancora noto"}
-        title="In corso: il numero finale di volumi non è ancora noto"
-        className={`w-full overflow-hidden rounded-full bg-lapis/15 ${misura}`}
-      >
-        <div className="h-full w-full bg-[repeating-linear-gradient(90deg,rgba(129,140,248,0.55)_0_6px,transparent_6px_11px)]" />
-      </div>
-    );
-  }
 
   if (valore === null || valore === undefined) {
     return (

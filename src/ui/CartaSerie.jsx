@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import Copertina from "./Copertina";
-import Progresso from "./Progresso";
 import { BottonePreferito } from "./AzioniSerie";
 import { useCollezione } from "../dati/collezione";
 import { useSessione } from "../dati/sessione";
@@ -119,11 +118,31 @@ export default function CartaSerie({
           {serie.titolo}
         </h3>
 
-        {/* Quanti ne hai su quanti e cosa manca, con la barra sottile.
-            Il segno a fianco dice cosa vuol dire «finito»: verde se la
+        {/* Quanti ne hai su quanti e cosa manca. L'anello a sinistra c'è
+            su OGNI carta, sempre nello stesso posto: prima la barra
+            compariva solo a certe serie e la griglia sembrava a pezzi.
+            Il segno a destra dice cosa vuol dire «finito»: verde se la
             serie è conclusa e ce l'hai tutta, azzurro se sei solo in
             pari con quello che è uscito. */}
-        <p className="font-numeric text-xs text-ink-muted">
+        <p className="flex items-center gap-1.5 font-numeric text-xs text-ink-muted">
+          <AnelloCompletamento
+            pct={pct}
+            tono={
+              pct === null
+                ? "ignoto"
+                : pct < 100
+                  ? "parziale"
+                  : serie.stato === "conclusa"
+                    ? "conclusa"
+                    : "in-pari"
+            }
+            etichetta={
+              pct === null
+                ? `${serie.titolo}: in corso, volumi totali non ancora noti`
+                : `${serie.titolo}: ${pct}% completa`
+            }
+          />
+          <span>
           {serie.posseduti}
           {mancanti > 0 && totale ? ` / ${totale}` : ""} vol.
           {mancanti === 0 && serie.stato === "conclusa" && (
@@ -135,30 +154,72 @@ export default function CartaSerie({
             </span>
           )}
           {mancanti > 0 && <span className="ml-1.5 text-ember/80">−{mancanti}</span>}
+          </span>
         </p>
-
-        {/* Il posto della barra c'è sempre, anche quando la barra no: una
-            serie conclusa e completa non ne ha bisogno, ma senza lo
-            spazio riservato le carte accanto si disallineavano di quattro
-            pixel. Per tutte le altre la barra c'è SEMPRE — prima spariva
-            sia a serie in pari sia a totale ignoto, e due carte in corso
-            vicine sembravano di tipi diversi senza esserlo. */}
-        <div className="h-1">
-          {!(serie.stato === "conclusa" && pct === 100) && (
-            <Progresso
-              valore={pct}
-              statica
-              etichetta={
-                pct === null
-                  ? `${serie.titolo}: in corso, volumi totali non ancora noti`
-                  : `${serie.titolo}: ${pct}% completa`
-              }
-              sottile
-            />
-          )}
-        </div>
       </div>
     </Link>
+  );
+}
+
+/**
+ * Il completamento di una serie, in quattordici pixel.
+ *
+ * Un anello e non una barra perché sta DENTRO la riga del conteggio: non
+ * aggiunge una riga alla carta e non può mancare a qualcuna, quindi la
+ * griglia resta uniforme. A questa misura una differenza di pochi punti
+ * non si vede — la cifra e il «−N» accanto dicono il resto; l'anello dice
+ * il tipo di situazione: piena, a metà, o aperta.
+ *
+ * Il totale ignoto è un anello tratteggiato e fermo: «ancora aperta» senza
+ * inventare una percentuale, e senza muoversi, perché in griglia ce ne
+ * sono decine insieme.
+ */
+const COLORE_ANELLO = {
+  parziale: "stroke-brass-400",
+  "in-pari": "stroke-lapis",
+  conclusa: "stroke-jade",
+  ignoto: "stroke-lapis"
+};
+
+function AnelloCompletamento({ pct, tono, etichetta }) {
+  const raggio = 5.5;
+  const circonferenza = 2 * Math.PI * raggio;
+
+  return (
+    <svg
+      role="img"
+      aria-label={etichetta}
+      width="14"
+      height="14"
+      viewBox="0 0 14 14"
+      className="shrink-0"
+    >
+      <title>{etichetta}</title>
+      <circle cx="7" cy="7" r={raggio} fill="none" strokeWidth="2" className="stroke-ink-bright/[0.14]" />
+      {pct === null ? (
+        <circle
+          cx="7"
+          cy="7"
+          r={raggio}
+          fill="none"
+          strokeWidth="2"
+          strokeDasharray="2.5 2.5"
+          className={`${COLORE_ANELLO[tono]} opacity-80`}
+        />
+      ) : (
+        <circle
+          cx="7"
+          cy="7"
+          r={raggio}
+          fill="none"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray={`${((circonferenza * pct) / 100).toFixed(1)} ${circonferenza.toFixed(1)}`}
+          transform="rotate(-90 7 7)"
+          className={COLORE_ANELLO[tono]}
+        />
+      )}
+    </svg>
   );
 }
 
