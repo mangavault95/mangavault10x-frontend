@@ -51,7 +51,10 @@ const CHIAVE = "mangavault:collezione";
 // 4 = sono arrivate le note e l'elenco di chi ha letto cosa
 // (`note`, `lettori`). Una copia vecchia mostrerebbe ogni scheda senza
 // note e il filtro "lette da" non selezionerebbe niente.
-const VERSIONE = 4;
+//
+// 5 = QUALI volumi, non solo quanti (`numeri`, migrazione 022). Una copia
+// vecchia non ha l'elenco, e ogni scheda sparsa tornerebbe «dall'1 all'N».
+const VERSIONE = 5;
 
 // Oltre una giornata la copia non si usa più nemmeno come primo
 // disegno: meglio la barra di caricamento di una collezione di ieri

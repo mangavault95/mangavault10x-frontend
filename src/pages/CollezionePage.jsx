@@ -30,6 +30,7 @@ import {
   lettaDa,
   numeroIt,
   ordinamentoPerId,
+  prossimoVolume,
   totaleDisponibile,
   volumiMancanti,
   votoDi,
@@ -475,7 +476,7 @@ export default function CollezionePage() {
   }, [conLettere, risultati]);
 
   async function preso(s) {
-    const numero = s.posseduti + 1;
+    const numero = prossimoVolume(s);
 
     setProblema(null);
     setPrendendo(s.id);
@@ -842,7 +843,7 @@ function RigaSerie({ serie, lettore, occupata, onPreso }) {
   const totale = totaleDisponibile(serie);
   const completa = mancanti === 0;
   const voto = lettore ? votoDi(serie, lettore) : serie.valutazione;
-  const numero = serie.posseduti + 1;
+  const numero = prossimoVolume(serie);
 
   return (
     <li className="flex items-center gap-3 py-2.5">

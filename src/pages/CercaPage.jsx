@@ -5,7 +5,7 @@ import { useCollezione } from "../dati/collezione";
 import { useAccessoProtetto } from "../dati/accesso";
 import { ossoDelTitolo } from "../dati/identita";
 import { interpretaAcquisto, serieDellAcquisto } from "../dati/acquisto";
-import { euro, totaleDisponibile, volumiMancanti } from "../dati/serie";
+import { euro, intervalliVolumi, prossimoVolume, totaleDisponibile, volumiMancanti } from "../dati/serie";
 import {
   annullaAcquisti,
   dopoIlRipiego,
@@ -508,13 +508,16 @@ function Azione({ a, titolo, sotto, onApri }) {
 /** La proposta in cima: «Registra acquisto · DanDaDan 23 · 6,50 €». */
 function ProposataAcquisto({ acquisto, occupato, onRegistra }) {
   const { serie, volumi, prezzo, data } = acquisto;
-  const numeri = volumi ?? [serie.posseduti + 1];
+  const numeri = volumi ?? [prossimoVolume(serie)];
   const unitario = serie.grezzo?.PrezzoCopertina ? Number(serie.grezzo.PrezzoCopertina) : serie.costo;
   const totale = prezzo ?? (unitario ? unitario * numeri.length : null);
 
+  // Dall'elenco vero dei posseduti (022): «già in casa» è avere proprio
+  // quel numero, e il buco sono i volumi sotto il primo che ancora mancano.
+  const presenti = new Set(serie.numeri);
   const primo = numeri[0];
-  const buco = primo > serie.posseduti + 1 ? [serie.posseduti + 1, primo - 1] : null;
-  const giaInCasa = numeri.filter((n) => n <= serie.posseduti);
+  const buco = Array.from({ length: Math.max(0, primo - 1) }, (_, i) => i + 1).filter((n) => !presenti.has(n));
+  const giaInCasa = numeri.filter((n) => presenti.has(n));
 
   const etichettaVolumi =
     numeri.length === 1
@@ -552,11 +555,11 @@ function ProposataAcquisto({ acquisto, occupato, onRegistra }) {
         </button>
       </div>
 
-      {(buco || giaInCasa.length > 0) && (
+      {(buco.length > 0 || giaInCasa.length > 0) && (
         <p className="mt-3 text-[0.8rem] font-medium">
           {giaInCasa.length > 0
-            ? `Attento: in casa ne risultano già ${serie.posseduti}.`
-            : `Prima ti ${buco[0] === buco[1] ? `manca il ${buco[0]}` : `mancano dal ${buco[0]} al ${buco[1]}`}.`}
+            ? `Attento: in casa ${giaInCasa.length === 1 ? `il ${giaInCasa[0]} c'è già` : `ci sono già ${intervalliVolumi(giaInCasa)}`}.`
+            : `Prima ti ${buco.length === 1 ? `manca il ${buco[0]}` : `mancano ${intervalliVolumi(buco)}`}.`}
         </p>
       )}
     </section>

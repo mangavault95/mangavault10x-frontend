@@ -23,7 +23,7 @@ import {
   urlCopertina
 } from "../services/api";
 import { cercaFuori } from "../bibliotecario/esterni";
-import { chiudibile, euro, fraseMancanti, volumiMancanti } from "../dati/serie";
+import { chiudibile, euro, fraseMancanti, prossimoVolume, volumiMancanti } from "../dati/serie";
 
 /**
  * DA COMPRARE — la lista della spesa (04/10/2026).
@@ -94,7 +94,7 @@ export default function WishlistPage() {
     return (collezione || [])
       .filter((s) => !s.droppato && !inUscita.has(Number(s.id)))
       .map((s) => ({ serie: s, mancanti: volumiMancanti(s) }))
-      .filter((c) => c.mancanti > 0 && c.mancanti <= 3 && !presi.has(`${c.serie.id}:${c.serie.posseduti + 1}`))
+      .filter((c) => c.mancanti > 0 && c.mancanti <= 3 && !presi.has(`${c.serie.id}:${prossimoVolume(c.serie)}`))
       // Prima quelle che si chiudono davvero, poi quelle in corso da
       // rimettere in pari; dentro ciascun gruppo, la più vicina.
       .sort(
@@ -166,7 +166,7 @@ export default function WishlistPage() {
   }, []);
 
   const chiaveUscita = (u) => `${u.serie.id}:${u.numero}`;
-  const chiaveChiudere = (c) => `${c.serie.id}:${c.serie.posseduti + 1}`;
+  const chiaveChiudere = (c) => `${c.serie.id}:${prossimoVolume(c.serie)}`;
 
   const daSpendere = {
     uscite: escono.filter((u) => !inAttesa.has(chiaveUscita(u))),
@@ -427,14 +427,14 @@ export default function WishlistPage() {
                       key={`c${s.id}`}
                       a={`/serie/${s.id}`}
                       copertina={s.copertina}
-                      titolo={`${s.titolo} ${s.posseduti + 1}`}
+                      titolo={`${s.titolo} ${prossimoVolume(s)}`}
                       sotto={fraseMancanti(s, mancanti)}
                       sottoColore={mancanti === 1 && chiudibile(s) ? "text-jade" : undefined}
                       prezzo={s.costo}
                       occupato={prendendo === chiaveChiudere(c)}
                       inAttesa={inAttesa.has(chiaveChiudere(c))}
                       onAnnulla={() => annullaSegno(chiaveChiudere(c))}
-                      onPreso={bibliotecaSolaLettura ? null : () => segna(Number(s.id), s.posseduti + 1, s.titolo)}
+                      onPreso={bibliotecaSolaLettura ? null : () => segna(Number(s.id), prossimoVolume(s), s.titolo)}
                     />
                   );
                 })}

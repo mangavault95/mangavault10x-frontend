@@ -4,7 +4,7 @@ import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
 import { useSessione } from "../dati/sessione";
 import { useAccessoProtetto } from "../dati/accesso";
-import { chiudibile, euro, fraseMancanti, tettoLettura, volumiMancanti } from "../dati/serie";
+import { chiudibile, euro, fraseMancanti, prossimoVolume, tettoLettura, volumiMancanti } from "../dati/serie";
 import {
   addReadingHistory,
   dopoIlRipiego,
@@ -394,7 +394,9 @@ function acquistoPiuVicino(collezione) {
 
   const scelta = candidate[0];
 
-  return { ...scelta, volume: scelta.serie.posseduti + 1 };
+  // Il primo che manca, non quello dopo il più alto: per un Yu-gi-oh con
+  // 1-5 e 11 il prossimo acquisto è il 6.
+  return { ...scelta, volume: prossimoVolume(scelta.serie) };
 }
 
 /* ==================================================

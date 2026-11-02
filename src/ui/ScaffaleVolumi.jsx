@@ -34,13 +34,11 @@ import { useId, useState } from "react";
  * sopra gli altri: è un nastro che esce dal libro, non un colore in
  * più da imparare.
  *
- * E una terza resa, la MENSOLA (04/10/2026), che la scheda della serie
- * usa al posto delle altre due: una fila sola di dorsi sottili, larga
- * quanto la pagina, con letti, posseduti e mancanti nello stesso ordine
- * in cui stanno sullo scaffale vero. I 42 quadretti di Berserk
- * occupavano sei righe per dire una cosa che la mensola dice in una —
- * fin dove sei arrivato e cosa manca. I numeri restano a un tocco
- * («Mostra i numeri» nella scheda), per quando servono davvero.
+ * La scheda della serie usa una terza resa, il TABELLONE (02/11/2026):
+ * dieci caselle numerate per riga. Ha preso il posto della MENSOLA dei
+ * dorsi (04/10/2026), bocciata da Carmine: con tanti volumi i dorsi
+ * diventavano un codice a barre, e non si potevano premere per dire
+ * quali volumi si hanno.
  */
 
 // Sopra questo numero i numeri scritti smettono di essere leggibili e
@@ -80,8 +78,16 @@ export default function ScaffaleVolumi({
 
   // `posseduti` a null vuol dire «tutto quello che vedi è roba tua»:
   // è il caso del tavolo di lettura, che disegna solo i volumi in casa.
+  // Un numero vuol dire «dall'1 a lì»; dal 02/11/2026 può essere anche
+  // l'ELENCO dei numeri in casa (022), che è l'unico modo di disegnare
+  // giusto una serie comprata a salti.
+  const inCasa = Array.isArray(posseduti) ? new Set(posseduti) : null;
   const statoDi = (n) =>
-    insieme.has(n) ? "letto" : posseduti === null || n <= posseduti ? "posseduto" : "mancante";
+    insieme.has(n)
+      ? "letto"
+      : posseduti === null || (inCasa ? inCasa.has(n) : n <= posseduti)
+        ? "posseduto"
+        : "mancante";
 
   const descrizioneDi = (n) =>
     `Volume ${n}` +
@@ -116,15 +122,12 @@ export default function ScaffaleVolumi({
     </>
   );
 
-  // La mensola non si preme: i dorsi sono troppo sottili per un dito.
-  // Quando i volumi vanno toccati vale la resa di sempre.
-  if (resa === "mensola" && !interattivo) {
-    return (
-      <div className="space-y-2.5">
-        <Mensola {...comuni} />
-        {riepilogo && <p className="font-numeric text-xs text-ink-faint">{riassunto}</p>}
-      </div>
-    );
+  // Il TABELLONE (02/11/2026), che la scheda usa al posto della mensola:
+  // dieci volumi per riga come le decine, il numero scritto in ogni
+  // casella. Tiene 13 volumi come 110 senza diventare un codice a barre,
+  // mostra i buchi di una serie sparsa e si può premere.
+  if (resa === "tabellone") {
+    return <Tabellone {...comuni} />;
   }
 
   return (
@@ -224,6 +227,40 @@ function Quadretti({
                   ? "cursor-pointer hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf"
                   : ""
               }`}
+          >
+            {n}
+          </Elemento>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ==================================================
+   LA SCHEDA: IL TABELLONE A DECINE
+   ================================================== */
+
+function Tabellone({ quanti, statoDi, descrizioneDi, corrente, interattivo, onSelezionaVolume }) {
+  const Elemento = interattivo ? "button" : "span";
+
+  return (
+    <div role="list" className="grid max-w-md grid-cols-10 gap-1 sm:gap-1.5">
+      {Array.from({ length: quanti }, (_, i) => i + 1).map((n) => {
+        const eCorrente = corrente === n;
+        const aspetto = eCorrente
+          ? "border-brass-300 bg-brass-300 font-semibold text-void shadow-brass"
+          : ASPETTO_QUADRETTO[statoDi(n)];
+
+        return (
+          <Elemento
+            key={n}
+            role="listitem"
+            {...(interattivo ? { type: "button", onClick: () => onSelezionaVolume(n) } : {})}
+            aria-label={descrizioneDi(n)}
+            title={descrizioneDi(n)}
+            aria-current={eCorrente ? "true" : undefined}
+            className={`grid aspect-square place-items-center rounded-md border font-numeric text-[0.7rem] transition-all duration-quick ${aspetto}
+              ${interattivo ? "cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400" : ""}`}
           >
             {n}
           </Elemento>
@@ -339,58 +376,6 @@ function Nastro({
           </span>
         </div>
       ))}
-    </div>
-  );
-}
-
-/* ==================================================
-   LA MENSOLA: UNA FILA DI DORSI
-   ================================================== */
-
-const ASPETTO_DORSO = {
-  letto: "bg-brass-400",
-  posseduto: "bg-ink-bright/25",
-  // Il volume che non c'è è un vuoto basso sulla mensola: si vede come
-  // un buco fra i dorsi, che è quello che è.
-  mancante: "bg-ink-bright/[0.06]"
-};
-
-// Le altezze dei dorsi variano un poco, come quelle dei volumi veri. Il
-// conto dipende solo dal numero, così Berserk 17 è alto uguale ogni
-// volta che si apre la scheda.
-const ALTEZZE = ["86%", "92%", "80%", "96%", "88%", "83%", "94%"];
-
-function Mensola({ quanti, statoDi, descrizioneDi, corrente }) {
-  const numeri = Array.from({ length: quanti }, (_, i) => i + 1);
-
-  return (
-    <div>
-      <div
-        role="list"
-        aria-label={`${quanti} volumi`}
-        className={`flex h-16 items-end border-b-2 border-strong ${quanti > 70 ? "gap-px" : "gap-[2px]"}`}
-      >
-        {numeri.map((n) => {
-          const stato = statoDi(n);
-          const eCorrente = corrente === n;
-
-          return (
-            <span
-              key={n}
-              role="listitem"
-              aria-label={descrizioneDi(n)}
-              title={descrizioneDi(n)}
-              style={{ height: eCorrente ? "100%" : stato === "mancante" ? "38%" : ALTEZZE[(n * 5) % ALTEZZE.length] }}
-              className={`block min-w-[2px] max-w-[12px] flex-1 rounded-t-[2px] ${eCorrente ? "bg-ink-bright" : ASPETTO_DORSO[stato]}`}
-            />
-          );
-        })}
-      </div>
-
-      <div aria-hidden="true" className="mt-1 flex justify-between font-numeric text-[0.65rem] text-ink-faint">
-        <span>1</span>
-        <span>{quanti}</span>
-      </div>
     </div>
   );
 }

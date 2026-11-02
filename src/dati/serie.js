@@ -165,10 +165,24 @@ export function droppataDa(serie, utenteId) {
   return droppate.some((d) => d.proprietario);
 }
 
+/**
+ * QUALI volumi ci sono in casa (022, 02/11/2026), non solo quanti.
+ *
+ * Finché il backend non manda l'elenco — un deploy di Render ancora
+ * indietro, per esempio — si ricava dal conteggio come si è sempre
+ * fatto, dall'1 all'N: è quello che il sito ha sempre dato per scontato.
+ */
+function elencoNumeri(grezzo, conteggio) {
+  if (!Array.isArray(grezzo)) return Array.from({ length: conteggio }, (_, i) => i + 1);
+
+  return [...new Set(grezzo.map(Number).filter((n) => Number.isInteger(n) && n > 0))].sort((a, b) => a - b);
+}
+
 export function normalizzaSerie(riga) {
   if (!riga) return null;
 
-  const posseduti = numero(riga.VolumiPosseduti) ?? 0;
+  const numeri = elencoNumeri(riga.NumeriPosseduti, numero(riga.VolumiPosseduti) ?? 0);
+  const posseduti = numeri.length;
   const totali = numero(riga.VolumiTotali);
   const volumiItalia = numero(riga.VolumiItalia);
 
@@ -192,7 +206,11 @@ export function normalizzaSerie(riga) {
     // novità, cosa che il Kachinuki-sen chiede per sorteggiare i temi.
     anno: numero(riga.AnnoInizio),
 
+    // `posseduti` è quanti, `numeri` quali: [1,2,3,4,5,11] per un
+    // Yu-gi-oh comprato a salti. Il conteggio è sempre la lunghezza
+    // dell'elenco, quindi i due non possono dire cose diverse.
     posseduti,
+    numeri,
     totali,
     volumiItalia,
 
@@ -318,11 +336,52 @@ export function fraseMancanti(serie, mancanti) {
 }
 
 export function volumiMancanti(serie) {
+  return numeriMancanti(serie)?.length ?? null;
+}
+
+/**
+ * I numeri dei volumi che mancano fra quelli usciti: per Yu-gi-oh con
+ * 1-5 e 11 su 13, [6,7,8,9,10,12,13]. `null` se non si sa quanti siano
+ * usciti. Contare «usciti meno posseduti» sbagliava appena un volume in
+ * casa stava oltre il totale noto (Rocky Joe 13 su 12).
+ */
+export function numeriMancanti(serie) {
   const totale = totaleDisponibile(serie);
 
   if (!totale) return null;
 
-  return Math.max(0, totale - serie.posseduti);
+  const presenti = new Set(serie.numeri);
+
+  return Array.from({ length: totale }, (_, i) => i + 1).filter((n) => !presenti.has(n));
+}
+
+/**
+ * Il prossimo volume da comprare: il primo che manca, non quello dopo
+ * il più alto. Con 1-5 e 11 è il 6.
+ */
+export function prossimoVolume(serie) {
+  const presenti = new Set(serie?.numeri ?? []);
+  let n = 1;
+
+  while (presenti.has(n)) n += 1;
+
+  return n;
+}
+
+/** [6,7,8,9,10,12,13] → «6–10, 12, 13»: i buchi si leggono a gruppi. */
+export function intervalliVolumi(numeri) {
+  const gruppi = [];
+
+  for (const n of numeri) {
+    const ultimo = gruppi[gruppi.length - 1];
+
+    if (ultimo && n === ultimo[1] + 1) ultimo[1] = n;
+    else gruppi.push([n, n]);
+  }
+
+  return gruppi
+    .map(([a, b]) => (a === b ? `${a}` : b === a + 1 ? `${a}, ${b}` : `${a}–${b}`))
+    .join(", ");
 }
 
 /** Quanto vale lo scaffale: prezzo di copertina per volumi in casa. */
