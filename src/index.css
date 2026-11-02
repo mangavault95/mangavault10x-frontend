@@ -988,28 +988,59 @@ html {
    foglio chiaro sarebbero sporco, non atmosfera. */
 
 /* Il fondo non è piatto: in alto a destra l'alone dell'insegna, in basso
-   a sinistra il riflesso ciano di un'altra. Fissi, così scorrendo la
-   pagina restano dove sono, come la luce di una strada. */
-html:not([data-tema]) body {
-  background-image:
-    radial-gradient(60rem 30rem at 85% -10%, rgb(var(--c-accento) / 0.07), transparent 60%),
-    radial-gradient(50rem 30rem at -10% 110%, rgb(var(--c-ciano) / 0.05), transparent 60%);
-  background-attachment: fixed;
+   a sinistra il riflesso ciano di un'altra.
+
+   È uno strato `position: fixed` DIETRO la pagina, e non uno sfondo del
+   body con `background-attachment: fixed`: Safari su iPhone quella regola
+   la gestisce ridisegnando il fondo a ogni movimento, e la barra appiccicata
+   della Collezione «ballava» mentre si scorreva (02/11/2026). Un livello
+   fisso invece il telefono lo compone una volta e lo lascia lì.
+
+   Il body diventa trasparente perché il suo fondo verrebbe dipinto SOPRA
+   uno strato con z-index negativo; il colore pieno resta sull'html. */
+html:not([data-tema]) body,
+html[data-tema="giorno"] body {
+  background-color: transparent;
 }
 
-/* La bassa fedeltà: una grana e delle righe di scansione appena
-   percepite, sopra tutto e senza prendere un solo tocco. */
-html:not([data-tema]) body::after {
+html:not([data-tema]) body::before,
+html[data-tema="giorno"] body::before {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: -1;
   pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.5) 0 1px, transparent 1px 3px);
+    radial-gradient(60rem 30rem at 85% -10%, rgb(var(--c-accento) / 0.07), transparent 60%),
+    radial-gradient(50rem 30rem at -10% 110%, rgb(var(--c-ciano) / 0.05), transparent 60%);
+}
+
+html[data-tema="giorno"] body::before {
+  background-image:
+    radial-gradient(60rem 30rem at 85% -10%, rgb(var(--c-accento) / 0.08), transparent 60%),
+    radial-gradient(50rem 30rem at -10% 110%, rgb(var(--c-ciano) / 0.06), transparent 60%);
+}
+
+/* La bassa fedeltà: una grana e delle righe di scansione appena
+   percepite, sopra tutto e senza prendere un solo tocco.
+
+   Solo dove c'è un mouse. Sul telefono uno strato a tutto schermo con un
+   metodo di fusione obbliga a ricomporre la pagina intera a ogni
+   movimento del dito — era l'altra metà del tremolio — e su uno schermo
+   piccolo e denso la grana non si vedeva comunque. */
+@media (hover: hover) {
+  html:not([data-tema]) body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+      repeating-linear-gradient(0deg, rgb(255 255 255 / 0.5) 0 1px, transparent 1px 3px);
+  }
 }
 
 @layer components {
@@ -1030,21 +1061,6 @@ html:not([data-tema]) body::after {
   }
 }
 
-/* Di giorno gli aloni restano, più tenui, e la grana no: su carta chiara
-   sarebbe sporco, non atmosfera. */
-html[data-tema="giorno"] body {
-  background-image:
-    radial-gradient(60rem 30rem at 85% -10%, rgb(var(--c-accento) / 0.08), transparent 60%),
-    radial-gradient(50rem 30rem at -10% 110%, rgb(var(--c-ciano) / 0.06), transparent 60%);
-  background-attachment: fixed;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html[data-tema="giorno"] body,
-  html:not([data-tema]) body {
-    background-attachment: scroll;
-  }
-}
 
 /* Una riga che scorre di lato e lo dice: il bordo destro sfuma. */
 .sfuma-destra {

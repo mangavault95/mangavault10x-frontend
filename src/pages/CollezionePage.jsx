@@ -96,17 +96,35 @@ function useBarraChePare(bloccata) {
 
     // Niente `requestAnimationFrame`: il calcolo è due confronti, e
     // `setNascosta` con lo stesso valore non ridisegna niente.
+    //
+    // ⚠️ Le soglie erano 8 pixel, e sull'iPhone la barra «ballava» (02/11/2026):
+    // l'inerzia e il rimbalzo elastico in fondo alla lista invertono la
+    // direzione da soli per qualche pixel, e ogni inversione la faceva
+    // scattare. Adesso serve un movimento vero (`SOGLIA`), e durante il
+    // rimbalzo — oltre la cima o oltre il fondo — non si decide niente.
+    const SOGLIA = 28;
+
     function alScorrimento() {
       const ora = window.scrollY;
+      const fondo = document.documentElement.scrollHeight - window.innerHeight;
+
+      if (ora < 80) {
+        setNascosta(false);
+        ultimo = ora;
+        return;
+      }
+
+      // Il rimbalzo del fondo: la pagina «torna su» da sola.
+      if (ora >= fondo - 2) return;
+
       const scarto = ora - ultimo;
 
-      if (ora < 80) setNascosta(false);
-      else if (scarto > 8) setNascosta(true);
-      else if (scarto < -8) setNascosta(false);
+      if (scarto > SOGLIA) setNascosta(true);
+      else if (scarto < -SOGLIA) setNascosta(false);
 
-      // Il punto di riferimento si sposta solo se il movimento conta:
-      // i tremolii di un pixel non devono azzerare lo scarto.
-      if (ora < 80 || Math.abs(scarto) > 8) ultimo = ora;
+      // Il punto di riferimento si sposta solo quando ha deciso, o quando
+      // si continua nella stessa direzione: i tremolii non lo azzerano.
+      if (Math.abs(scarto) > SOGLIA) ultimo = ora;
     }
 
     window.addEventListener("scroll", alScorrimento, { passive: true });
@@ -562,7 +580,7 @@ export default function CollezionePage() {
         // toccato resta col fuoco, e la terrebbe ferma anche scorrendo.
         onFocus={(e) => e.target.tagName === "INPUT" && setCampoAttivo(true)}
         onBlur={() => setCampoAttivo(false)}
-        className={`sticky top-0 z-sticky -mx-3 mt-1 space-y-2 bg-shelf/90 px-3 pb-2 pt-2 backdrop-blur-xl transition-transform duration-base ease-settle sm:-mx-8 sm:px-8 md:mt-4 lg:-mx-12 lg:px-12
+        className={`sticky top-0 z-sticky -mx-3 mt-1 space-y-2 bg-shelf/95 px-3 pb-2 pt-2 backdrop-blur-xl transition-transform duration-base ease-settle will-change-transform sm:-mx-8 sm:px-8 md:mt-4 lg:-mx-12 lg:px-12
           ${barraNascosta ? "-translate-y-full" : ""}`}
       >
         <div className="flex items-center gap-2">
