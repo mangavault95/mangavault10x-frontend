@@ -80,8 +80,12 @@ export default function ProfiloVideotecaPage() {
 
   const serie = useMemo(() => raggruppa(videoteca.dati ?? []), [videoteca.dati]);
 
-  const { soloSerie, film, preferiti } = useMemo(
+  const { soloSerie, film, preferiti, inVisione } = useMemo(
     () => ({
+      // Quello che sta guardando adesso: la prima cosa che si vuole
+      // sapere della videoteca di qualcuno, e prima stava dopo l'elenco
+      // alfabetico di tutte le serie.
+      inVisione: serie.filter((s) => s.stato_visione === "in_visione"),
       // Un film è un anime con un episodio solo: cambia la parola
       // sulla scheda, non il modello — ma su un ripiano cambia tutto,
       // perché «cosa sto guardando» e «cosa ho visto al cinema» sono
@@ -159,6 +163,21 @@ export default function ProfiloVideotecaPage() {
               ricarica={videoteca.ricarica}
               puoiScrivere
             />
+          )}
+
+          {/* Sulla propria pagina «in visione» è già la lista di sopra, con
+              i tasti per segnare le puntate: qui serve a chi guarda. */}
+          {!mia && inVisione.length > 0 && (
+            <Fila
+              titolo="In visione"
+              quante={inVisione.length}
+              tutto={`${base}/tutto?filtro=in_visione`}
+              vuoto=""
+            >
+              {inVisione.slice(0, 12).map((s) => (
+                <PostoSerie key={s.chiave} serie={s} />
+              ))}
+            </Fila>
           )}
 
           <Fila
@@ -268,19 +287,22 @@ function Numeri({ statistiche, base }) {
       {/* Due per riga sul telefono e quattro da tablet in su: in fila
           per quattro su uno schermo stretto, «Tempo Totale» andrebbe a
           capo tre volte. */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+      {/* Un riquadro solo con le quattro cifre, e non quattro riquadri
+          alti uguali: occupavano un terzo di schermo per dire quattro
+          numeri. */}
+      <Scheda className="grid grid-cols-2 gap-y-2.5 px-3 py-3 sm:grid-cols-4 sm:py-3.5">
         {caselle.map((c) => (
-          <Scheda key={c.chiave} className="px-3 py-3 text-center sm:py-4" title={c.extra}>
-            <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+          <div key={c.chiave} className="text-center" title={c.extra}>
+            <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
               {c.etichetta}
             </p>
 
-            <p className="mt-1 font-numeric text-lg font-bold leading-tight text-quaderno-inchiostro sm:text-xl">
+            <p className="font-numeric text-base font-bold leading-tight text-quaderno-inchiostro sm:text-lg">
               {c.valore}
             </p>
-          </Scheda>
+          </div>
         ))}
-      </div>
+      </Scheda>
     </section>
   );
 }

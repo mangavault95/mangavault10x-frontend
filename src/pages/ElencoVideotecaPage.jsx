@@ -1,5 +1,7 @@
-import { useCallback, useMemo, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import IndiceLettere from "../ui/IndiceLettere";
+import { idLettera, letteraDi } from "../dati/lettere";
 import useRisorsa from "../dati/useRisorsa";
 import { useSessione } from "../dati/sessione";
 import { paginaDi } from "../dati/cineforum";
@@ -8,12 +10,13 @@ import {
   getIoVideoteca,
   getProfiloVideoteca,
   getVideoteca,
-  preferisciAnime
+  preferisciAnime,
+  urlCopertina
 } from "../services/api";
 import { ModuloAccesso } from "../dati/AccessoProvider";
 import Icon from "../app/Icon";
 import PaginaVideoteca, { Bottone, Caricamento, Errore, Vuoto } from "../ui/videoteca/Foglio";
-import { NOMI_STATO } from "../ui/videoteca/formati";
+import { NOMI_STATO, formattaVoto } from "../ui/videoteca/formati";
 import CartaAnime from "../ui/videoteca/CartaAnime";
 
 /**
@@ -55,6 +58,22 @@ const ORDINI = [
   { id: "episodi", etichetta: "Più viste" }
 ];
 
+// Quattro pillole sempre in vista; «Finita», «In pausa» e «Mollata» si
+// aprono da «Altri». Sette pillole facevano tre righe sul telefono, e
+// quasi sempre se ne usano tre.
+const PRINCIPALI = ["tutti", "in_visione", "da_vedere", "preferiti"];
+
+// Schede (con titolo e barra) o solo copertine, tre per riga.
+const CHIAVE_VISTA = "mangavault:videoteca:vista";
+
+function vistaSalvata() {
+  try {
+    return localStorage.getItem(CHIAVE_VISTA) === "compatta" ? "compatta" : "schede";
+  } catch {
+    return "schede";
+  }
+}
+
 export default function ElencoVideotecaPage() {
   const { nickname } = useParams();
   const { utente } = useSessione();
@@ -63,6 +82,19 @@ export default function ElencoVideotecaPage() {
 
   const [accesso, setAccesso] = useState(false);
   const [segnando, setSegnando] = useState(null);
+  const [vista, setVista] = useState(vistaSalvata);
+  const [menuAperto, setMenuAperto] = useState(false);
+  const [altriAperti, setAltriAperti] = useState(false);
+
+  function scegliVista(v) {
+    setVista(v);
+
+    try {
+      localStorage.setItem(CHIAVE_VISTA, v);
+    } catch {
+      /* senza memoria del browser la scelta vale solo per questa visita */
+    }
+  }
 
   const filtro = parametri.get("filtro") || "tutti";
   const ordina = parametri.get("ordina") || "titolo";
@@ -128,6 +160,26 @@ export default function ElencoVideotecaPage() {
     // rifarlo qui vorrebbe dire due ordinamenti da tenere d'accordo.
     return scelte;
   }, [serie, filtro, ordina, tipo, cerca]);
+
+  // Le lettere si mostrano solo con l'ordine alfabetico, senza ricerca e
+  // su una lista abbastanza lunga da aver bisogno di capitoli.
+  const gruppi = useMemo(() => {
+    if (vista !== "compatta" || ordina !== "titolo" || cerca.trim() || visibili.length <= 24) {
+      return null;
+    }
+
+    const out = [];
+
+    for (const s of visibili) {
+      const l = letteraDi(s.titolo);
+      const ultimo = out[out.length - 1];
+
+      if (ultimo && ultimo.lettera === l) ultimo.serie.push(s);
+      else out.push({ lettera: l, serie: [s] });
+    }
+
+    return out;
+  }, [vista, ordina, cerca, visibili]);
 
   const conteggi = useMemo(() => {
     const per = { tutti: serie.length, preferiti: 0 };
@@ -253,8 +305,10 @@ export default function ElencoVideotecaPage() {
         <>
           <div className="mb-5 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex flex-wrap gap-1.5">
-                {FILTRI.map((f) => {
+              <div className="flex flex-wrap items-center gap-1.5">
+                {FILTRI.filter(
+                  (f) => PRINCIPALI.includes(f.id) || altriAperti || filtro === f.id
+                ).map((f) => {
                   const quante = conteggi[f.id] || 0;
                   const acceso = filtro === f.id;
 
@@ -279,6 +333,17 @@ export default function ElencoVideotecaPage() {
                     </button>
                   );
                 })}
+
+                {FILTRI.some((f) => !PRINCIPALI.includes(f.id)) && (
+                  <button
+                    type="button"
+                    onClick={() => setAltriAperti((a) => !a)}
+                    aria-expanded={altriAperti}
+                    className="rounded-full px-2.5 py-1.5 text-xs font-semibold text-quaderno-tenue hover:text-quaderno-inchiostro"
+                  >
+                    {altriAperti ? "Meno" : "Altri…"}
+                  </button>
+                )}
               </div>
 
               <input
@@ -291,24 +356,22 @@ export default function ElencoVideotecaPage() {
               />
             </div>
 
-            <div className="flex items-center gap-2 text-xs text-quaderno-tenue">
-              <span>Ordina per</span>
+            <div className="flex items-center justify-between gap-2 text-xs text-quaderno-tenue">
+              <span>
+                Ordinati per{" "}
+                <span className="font-semibold text-quaderno-inchiostro">
+                  {ORDINI.find((o) => o.id === ordina)?.etichetta.toLowerCase()}
+                </span>
+              </span>
 
-              {ORDINI.map((o) => (
-                <button
-                  key={o.id}
-                  type="button"
-                  onClick={() => cambia("ordina", o.id)}
-                  aria-pressed={ordina === o.id}
-                  className={`rounded px-1.5 py-0.5 font-semibold transition-colors duration-quick ${
-                    ordina === o.id
-                      ? "text-quaderno-blu underline"
-                      : "hover:text-quaderno-inchiostro"
-                  }`}
-                >
-                  {o.etichetta}
-                </button>
-              ))}
+              <MenuOrdineVista
+                aperto={menuAperto}
+                onApri={setMenuAperto}
+                ordina={ordina}
+                onOrdina={(o) => cambia("ordina", o)}
+                vista={vista}
+                onVista={scegliVista}
+              />
             </div>
           </div>
 
@@ -328,41 +391,38 @@ export default function ElencoVideotecaPage() {
                 </Bottone>
               }
             />
-          ) : (
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-              {visibili.map((serieIntera) => (
-                <li key={serieIntera.chiave} className="relative">
-                  <CartaAnime anime={serieIntera} />
+          ) : gruppi ? (
+            <div className="space-y-6 pr-5">
+              {gruppi.map((g) => (
+                <section
+                  key={g.lettera}
+                  id={idLettera(g.lettera)}
+                  aria-label={`Titoli con ${g.lettera}`}
+                  className="scroll-mt-4"
+                >
+                  <h2 className="mb-2 px-1 font-display text-lg font-bold text-quaderno-tenue">
+                    {g.lettera}
+                  </h2>
 
-                  {/* Il cuore sta SOPRA la scheda e fuori dal
-                      collegamento: un bottone dentro un <a> non è
-                      HTML valido, e il browser sceglierebbe da sé
-                      quale dei due gesti eseguire. */}
-                  {mia && (
-                    <button
-                      type="button"
-                      onClick={() => preferisci(serieIntera)}
-                      disabled={segnando === serieIntera.chiave}
-                      aria-pressed={Boolean(serieIntera.preferito)}
-                      aria-label={
-                        serieIntera.preferito
-                          ? `Togli ${serieIntera.titolo} dai preferiti`
-                          : `Metti ${serieIntera.titolo} fra i preferiti`
-                      }
-                      className={`absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full backdrop-blur-sm transition-colors duration-quick
-                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu
-                        ${
-                          serieIntera.preferito
-                            ? "bg-quaderno-blu text-quaderno-su-blu"
-                            : "bg-quaderno-foglio/85 text-quaderno-tenue hover:text-quaderno-inchiostro"
-                        }`}
-                    >
-                      <Icon nome="cuore" dimensione={16} piena={Boolean(serieIntera.preferito)} />
-                    </button>
-                  )}
-                </li>
+                  <ElencoSerie serie={g.serie} compatta mia={mia} segnando={segnando} onPreferisci={preferisci} />
+                </section>
               ))}
-            </ul>
+
+              <IndiceLettere
+                lettere={gruppi.map((g) => g.lettera)}
+                fondo="bg-quaderno-foglio/80"
+                testo="text-quaderno-tenue"
+                attivo="text-quaderno-blu"
+              />
+            </div>
+          ) : (
+            <ElencoSerie
+              serie={visibili}
+              compatta={vista === "compatta"}
+              mia={mia}
+              segnando={segnando}
+              onPreferisci={preferisci}
+            />
           )}
         </>
       )}
@@ -376,5 +436,196 @@ export default function ElencoVideotecaPage() {
         />
       )}
     </PaginaVideoteca>
+  );
+}
+
+/* ==================================================
+   LA GRIGLIA, IN DUE VISTE
+   ================================================== */
+
+function ElencoSerie({ serie, compatta, mia, segnando, onPreferisci }) {
+  return (
+    <ul
+      className={
+        compatta
+          ? "grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-3 lg:grid-cols-7 xl:grid-cols-9"
+          : "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6"
+      }
+    >
+      {serie.map((s) => (
+        <li key={s.chiave} className="relative">
+          {compatta ? <CartaCompatta anime={s} /> : <CartaAnime anime={s} />}
+
+          {/* Il cuore sta SOPRA la scheda e fuori dal collegamento: un
+              bottone dentro un <a> non è HTML valido, e il browser
+              sceglierebbe da sé quale dei due gesti eseguire. */}
+          {mia && (
+            <button
+              type="button"
+              onClick={() => onPreferisci(s)}
+              disabled={segnando === s.chiave}
+              aria-pressed={Boolean(s.preferito)}
+              aria-label={
+                s.preferito ? `Togli ${s.titolo} dai preferiti` : `Metti ${s.titolo} fra i preferiti`
+              }
+              className={`absolute grid place-items-center rounded-full backdrop-blur-sm transition-colors duration-quick
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu
+                ${compatta ? "right-1 top-1 h-7 w-7" : "right-2 top-2 h-8 w-8"}
+                ${
+                  s.preferito
+                    ? "bg-quaderno-blu text-quaderno-su-blu"
+                    : "bg-quaderno-foglio/85 text-quaderno-tenue hover:text-quaderno-inchiostro"
+                }`}
+            >
+              <Icon nome="cuore" dimensione={compatta ? 14 : 16} piena={Boolean(s.preferito)} />
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Solo la copertina: il titolo si legge aprendola (o tornando alle
+ * schede). Il voto in un angolo e una barra sottile in fondo dicono a
+ * che punto sei, e basta.
+ */
+function CartaCompatta({ anime }) {
+  const visti = Number(anime.episodi_visti || 0);
+  const su = Number(anime.episodi_disponibili || 0) || Number(anime.episodi_totali) || null;
+  const percento = su ? Math.min(100, Math.round((visti / su) * 100)) : null;
+
+  return (
+    <Link
+      to={`/videoteca/${anime.id}`}
+      title={anime.titolo}
+      aria-label={`${anime.titolo}${percento !== null ? `, ${percento}% visto` : ""}`}
+      className="group relative block aspect-[3/4] overflow-hidden rounded-card border border-quaderno-riga bg-quaderno-carta
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu focus-visible:ring-offset-2 focus-visible:ring-offset-quaderno-carta"
+    >
+      {anime.cover_url ? (
+        <img
+          src={urlCopertina(anime.cover_url)}
+          alt=""
+          loading="lazy"
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <span className="grid h-full place-items-center px-2 text-center text-[0.65rem] text-quaderno-tenue">
+          {anime.titolo}
+        </span>
+      )}
+
+      {anime.voto && (
+        <span className="absolute left-1 top-1 rounded-full bg-quaderno-foglio/90 px-1.5 py-0.5 font-numeric text-[0.65rem] font-semibold text-quaderno-blu">
+          ★ {formattaVoto(anime.voto)}
+        </span>
+      )}
+
+      {percento !== null && (
+        <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1 bg-black/30">
+          <span className="block h-full bg-quaderno-blu" style={{ width: `${percento}%` }} />
+        </span>
+      )}
+    </Link>
+  );
+}
+
+/** Ordine e vista dietro un solo tasto, come nella Collezione dei manga. */
+function MenuOrdineVista({ aperto, onApri, ordina, onOrdina, vista, onVista }) {
+  const radice = useRef(null);
+
+  useEffect(() => {
+    if (!aperto) return undefined;
+
+    const fuori = (e) => {
+      if (!radice.current?.contains(e.target)) onApri(false);
+    };
+    const esc = (e) => e.key === "Escape" && onApri(false);
+
+    document.addEventListener("pointerdown", fuori);
+    document.addEventListener("keydown", esc);
+
+    return () => {
+      document.removeEventListener("pointerdown", fuori);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [aperto, onApri]);
+
+  const voce = "flex w-full items-center justify-between rounded-lg px-2.5 py-2.5 text-left text-sm text-quaderno-inchiostro hover:bg-quaderno-carta";
+
+  return (
+    <div ref={radice} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => onApri(!aperto)}
+        aria-label="Ordina e cambia vista"
+        aria-haspopup="menu"
+        aria-expanded={aperto}
+        className={`grid h-9 w-9 place-items-center rounded-full border border-quaderno-riga transition-colors duration-quick
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu
+          ${aperto ? "bg-quaderno-blu text-quaderno-su-blu" : "bg-quaderno-foglio text-quaderno-tenue hover:text-quaderno-inchiostro"}`}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M7 20V4m0 16-3-3m3 3 3-3M17 4v16m0-16-3 3m3-3 3 3" />
+        </svg>
+      </button>
+
+      {aperto && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-overlay mt-2 w-56 rounded-card border border-quaderno-riga bg-quaderno-foglio p-1.5 shadow-lift"
+        >
+          <p className="px-2.5 pb-1 pt-1.5 text-[0.65rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+            Ordina per
+          </p>
+
+          {ORDINI.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              role="menuitemradio"
+              aria-checked={o.id === ordina}
+              onClick={() => {
+                onOrdina(o.id);
+                onApri(false);
+              }}
+              className={voce}
+            >
+              {o.etichetta}
+              {o.id === ordina && <span aria-hidden="true" className="text-quaderno-blu">✓</span>}
+            </button>
+          ))}
+
+          <div className="mx-1 my-1.5 border-t border-quaderno-riga" />
+
+          <div className="grid grid-cols-2 gap-1 p-0.5">
+            {[
+              { id: "schede", etichetta: "Schede" },
+              { id: "compatta", etichetta: "Solo cover" }
+            ].map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={vista === v.id}
+                onClick={() => {
+                  onVista(v.id);
+                  onApri(false);
+                }}
+                className={`rounded-lg py-2.5 text-sm font-semibold transition-colors duration-quick ${
+                  vista === v.id
+                    ? "bg-quaderno-blu text-quaderno-su-blu"
+                    : "text-quaderno-inchiostro hover:bg-quaderno-carta"
+                }`}
+              >
+                {v.etichetta}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -21,6 +21,8 @@ import {
   urlCopertina
 } from "../services/api";
 import { idDa, generiDiSerie, editoreCanonico } from "../dati/generi";
+import IndiceLettere from "../ui/IndiceLettere";
+import { idLettera, letteraDi } from "../dati/lettere";
 import {
   FILTRI,
   ORDINAMENTI,
@@ -74,70 +76,6 @@ function vistaSalvata() {
   } catch {
     return "copertine";
   }
-}
-
-// «A» per «Àncora», «#» per tutto ciò che non è una lettera («20th
-// Century Boys»). Si cambia lettera quando cambia, non per gruppi
-// calcolati prima: se l'ordine avesse un'eccezione il titolo non sparisce.
-function letteraDi(titolo) {
-  const prima = String(titolo || "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .trim()
-    .charAt(0)
-    .toUpperCase();
-
-  return /[A-Z]/.test(prima) ? prima : "#";
-}
-
-const idLettera = (l) => `lettera-${l === "#" ? "num" : l}`;
-
-/**
- * L'indice A–Z sul bordo destro, come la rubrica del telefono: si tocca
- * una lettera, o si trascina il dito lungo la colonna, e la lista salta
- * al capitolo. Con duecento serie è l'unico modo di arrivare alla «T»
- * senza scorrere per dieci schermate.
- */
-function IndiceLettere({ lettere }) {
-  const [attiva, setAttiva] = useState(null);
-
-  function vaiA(l) {
-    setAttiva(l);
-    document.getElementById(idLettera(l))?.scrollIntoView({ block: "start" });
-  }
-
-  function alTrascinamento(e) {
-    if (e.buttons === 0 && e.pointerType === "mouse") return;
-
-    const l = document.elementFromPoint(e.clientX, e.clientY)?.getAttribute?.("data-lettera");
-
-    if (l && l !== attiva) vaiA(l);
-  }
-
-  return (
-    <nav
-      aria-label="Indice alfabetico"
-      onPointerDown={alTrascinamento}
-      onPointerMove={alTrascinamento}
-      onPointerUp={() => setAttiva(null)}
-      onPointerCancel={() => setAttiva(null)}
-      className="fixed right-0.5 top-1/2 z-sticky flex -translate-y-1/2 touch-none select-none flex-col items-center rounded-full bg-void/50 py-1.5 backdrop-blur-sm"
-    >
-      {lettere.map((l) => (
-        <button
-          key={l}
-          type="button"
-          data-lettera={l}
-          onClick={() => vaiA(l)}
-          aria-label={`Vai alla ${l}`}
-          className={`grid h-[1.15rem] w-6 place-items-center font-numeric text-[0.62rem] font-semibold leading-none
-            ${attiva === l ? "text-brass-300" : "text-ink-muted"}`}
-        >
-          {l}
-        </button>
-      ))}
-    </nav>
-  );
 }
 
 /**
