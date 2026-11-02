@@ -95,7 +95,11 @@ function Contenuto() {
   // sezione caduta non deve tenersi il posto quando si prova ad andare
   // altrove.
   return (
-            <RouteErrore key={location.pathname}>
+    // `pagina-entra` (index.css): la cornice resta ferma e a ogni cambio
+    // di indirizzo arriva solo il contenuto, con la stessa curva di tutto
+    // il resto. La chiave rimonta il contenitore e riparte l'animazione.
+    <div key={location.pathname} className="pagina-entra">
+            <RouteErrore>
               <Suspense fallback={<RouteFallback />}>
                 {/* La location come key fa ripartire l'animazione di entrata
                     a ogni cambio pagina, dando continuità spaziale.
@@ -196,5 +200,6 @@ function Contenuto() {
                 </Routes>
               </Suspense>
             </RouteErrore>
+    </div>
   );
 }

@@ -1074,3 +1074,160 @@ html[data-tema="giorno"] body::before {
 [data-kana="no"] .kana {
   display: none !important;
 }
+
+/* =========================================================
+   IL MOVIMENTO (02/11/2026)
+
+   Una regola sola: poco, lento a posarsi, veloce a sparire. Tutto quello
+   che entra decelera con la stessa curva (`--ease-premium`, un'uscita
+   «expo» come quelle delle app di Apple), niente rimbalzi tranne dove c'è
+   una conferma. Pagine, fogli, finestre e carte condividono durate e
+   curve: è questo che le fa sembrare un sistema e non una somma di effetti.
+   ========================================================= */
+
+:root {
+  --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-uscita: cubic-bezier(0.4, 0, 1, 1);
+  --ease-tavolo: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@keyframes pagina-entra {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes velo-entra { from { opacity: 0; } to { opacity: 1; } }
+@keyframes velo-esce  { from { opacity: 1; } to { opacity: 0; } }
+
+@keyframes foglio-entra {
+  from { opacity: 0; transform: translate3d(0, 28px, 0) scale(0.97); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+@keyframes foglio-esce {
+  from { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  to   { opacity: 0; transform: translate3d(0, 20px, 0) scale(0.98); }
+}
+
+@keyframes carta-entra {
+  from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.97); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes barretta-entra {
+  from { opacity: 0; transform: scaleX(0.2); }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes icona-sveglia {
+  0%   { transform: scale(0.82); }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* Il tema che cambia: un cerchio di luce che parte dal punto toccato. */
+@keyframes tema-rivela {
+  from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%)); }
+  to   { clip-path: circle(var(--vt-r, 150vmax) at var(--vt-x, 50%) var(--vt-y, 50%)); }
+}
+@keyframes tema-dissolvi { from { opacity: 0; } to { opacity: 1; } }
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }
+
+html.vt-cerchio::view-transition-new(root) {
+  animation: tema-rivela 720ms var(--ease-premium) both;
+}
+html.vt-dissolvi::view-transition-new(root) {
+  animation: tema-dissolvi 380ms var(--ease-tavolo) both;
+}
+
+/* Dove il browser non sa fare la transizione di vista: i colori si
+   sciolgono da soli per mezzo secondo. */
+html.tema-fluido *,
+html.tema-fluido *::before,
+html.tema-fluido *::after {
+  transition:
+    background-color 480ms var(--ease-tavolo),
+    border-color 480ms var(--ease-tavolo),
+    color 480ms var(--ease-tavolo),
+    fill 480ms var(--ease-tavolo),
+    stroke 480ms var(--ease-tavolo),
+    box-shadow 480ms var(--ease-tavolo) !important;
+}
+
+/* ---- Pagine, veli, fogli (fuori da @layer: Tailwind ne farebbe varianti) ---- */
+/* La pagina che arriva: la cornice resta ferma, cambia solo il contenuto. */
+.pagina-entra { animation: pagina-entra 520ms var(--ease-premium) backwards; }
+
+/* Le carte di una griglia salgono una dopo l'altra: i primi diciotto
+   elementi, non di più — oltre, sono già fuori schermo. */
+.sequenza > :nth-child(-n + 18) {
+  animation: carta-entra 520ms var(--ease-premium) backwards;
+}
+.sequenza > :nth-child(2)  { animation-delay: 30ms; }
+.sequenza > :nth-child(3)  { animation-delay: 60ms; }
+.sequenza > :nth-child(4)  { animation-delay: 90ms; }
+.sequenza > :nth-child(5)  { animation-delay: 120ms; }
+.sequenza > :nth-child(6)  { animation-delay: 150ms; }
+.sequenza > :nth-child(7)  { animation-delay: 180ms; }
+.sequenza > :nth-child(8)  { animation-delay: 210ms; }
+.sequenza > :nth-child(9)  { animation-delay: 240ms; }
+.sequenza > :nth-child(n + 10):nth-child(-n + 18) { animation-delay: 270ms; }
+
+/* Veli e fogli, tutti allo stesso modo senza toccare ogni finestra:
+   il velo sfuma, e il suo primo figlio (il foglio, la finestra) sale e
+   si posa. Un figlio che ha già una sua animazione — la busta della
+   posta, per dire — se la tiene: `:where` porta questa regola a
+   specificità zero, e le utility di Tailwind vincono. */
+.fixed.inset-0:is(.z-modal, .z-overlay, .z-toast) {
+  animation: velo-entra 280ms var(--ease-premium) backwards;
+}
+:where(.fixed.inset-0.z-modal, .fixed.inset-0.z-overlay, .fixed.inset-0.z-toast) > :first-child:not([class*="animate-"], .absolute) {
+  animation: foglio-entra 460ms var(--ease-premium) backwards;
+}
+.fixed.inset-0.z-modal[data-uscita],
+.fixed.inset-0.z-overlay[data-uscita] {
+  animation: velo-esce 220ms var(--ease-uscita) forwards;
+  pointer-events: none;
+}
+:where(.fixed.inset-0.z-modal, .fixed.inset-0.z-overlay)[data-uscita] > :first-child {
+  animation: foglio-esce 220ms var(--ease-uscita) forwards;
+}
+
+/* Il foglio che sale dal bordo basso dello schermo (il foglio «Tu»). */
+.foglio-basso { animation: foglio-basso-entra 520ms var(--ease-premium) backwards; }
+[data-uscita] .foglio-basso { animation: foglio-basso-esce 240ms var(--ease-uscita) forwards; }
+
+.barretta-entra { animation: barretta-entra 360ms var(--ease-premium) backwards; }
+.icona-sveglia  { animation: icona-sveglia 420ms var(--ease-premium) backwards; }
+
+/* Il tocco: ogni controllo si abbassa appena. Con la proprietà `scale` e
+   non con `transform`, che molti bottoni usano già per centrarsi. */
+:where(button:not(:disabled), [role="button"], summary) {
+  transition-property: color, background-color, border-color, box-shadow, opacity, filter, scale, translate;
+  transition-duration: 180ms;
+  transition-timing-function: var(--ease-premium);
+}
+/* Chi ha già il suo `active:scale-*` si tiene quello: due riduzioni
+   sovrapposte lo farebbero sprofondare. */
+:where(button:not(:disabled), [role="button"]):not([class*="active:scale"]):active {
+  scale: 0.97;
+  transition-duration: 90ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

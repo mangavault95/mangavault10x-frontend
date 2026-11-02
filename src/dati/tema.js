@@ -84,20 +84,85 @@ export function kanaDi(utente) {
   return letto("kana", utente) !== "no";
 }
 
-/** Le tre scelte delle impostazioni. */
-export function scegliTema(utente, tema) {
-  if (MODALITA.includes(tema)) scritto("tema", utente, tema);
-  applicaDi(utente);
+/**
+ * Cambia l'aspetto con un movimento invece che con uno scatto.
+ *
+ * Dove il browser sa fare le transizioni di vista (Chrome, Edge, Safari
+ * 18) il nuovo aspetto si apre come un cerchio di luce dal punto toccato
+ * (`origine`), o si dissolve se non c'è un punto; altrove i colori si
+ * sciolgono da soli (`html.tema-fluido`, in index.css). Con «riduci
+ * movimento» attivo cambia e basta.
+ */
+function conMovimento(cambia, origine) {
+  const radice = document.documentElement;
+  const ridotto = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+  if (ridotto) {
+    cambia();
+    return;
+  }
+
+  if (typeof document.startViewTransition === "function") {
+    if (origine) {
+      const raggio = Math.hypot(
+        Math.max(origine.x, window.innerWidth - origine.x),
+        Math.max(origine.y, window.innerHeight - origine.y)
+      );
+
+      radice.style.setProperty("--vt-x", `${origine.x}px`);
+      radice.style.setProperty("--vt-y", `${origine.y}px`);
+      radice.style.setProperty("--vt-r", `${Math.ceil(raggio)}px`);
+    }
+
+    const classe = origine ? "vt-cerchio" : "vt-dissolvi";
+    radice.classList.add(classe);
+
+    const pulisci = () => {
+      radice.classList.remove(classe);
+      for (const p of ["--vt-x", "--vt-y", "--vt-r"]) radice.style.removeProperty(p);
+    };
+
+    // Il cambio deve avvenire UNA volta sola e comunque: se il browser
+    // non disegna (scheda in secondo piano, pagina nascosta) la
+    // transizione non parte mai, e senza questo il tema non cambierebbe.
+    let fatto = false;
+    const una = () => {
+      if (fatto) return;
+      fatto = true;
+      cambia();
+    };
+
+    try {
+      const transizione = document.startViewTransition(una);
+      transizione.finished.then(pulisci, pulisci);
+      setTimeout(una, 300);
+    } catch {
+      pulisci();
+      una();
+    }
+
+    return;
+  }
+
+  radice.classList.add("tema-fluido");
+  cambia();
+  setTimeout(() => radice.classList.remove("tema-fluido"), 600);
 }
 
-export function scegliAccento(utente, accento) {
+/** Le tre scelte delle impostazioni. */
+export function scegliTema(utente, tema, origine) {
+  if (MODALITA.includes(tema)) scritto("tema", utente, tema);
+  conMovimento(() => applicaDi(utente), origine);
+}
+
+export function scegliAccento(utente, accento, origine) {
   if (PALETTE.includes(accento)) scritto("accento", utente, accento);
-  applicaDi(utente);
+  conMovimento(() => applicaDi(utente), origine);
 }
 
 export function scegliKana(utente, acceso) {
   scritto("kana", utente, acceso ? "si" : "no");
-  applicaDi(utente);
+  conMovimento(() => applicaDi(utente));
 }
 
 function applicaDi(utente) {

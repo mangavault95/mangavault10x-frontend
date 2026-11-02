@@ -30,6 +30,14 @@ const PALETTE = [
   { id: "viola", nome: "Glicine", kana: "藤", colore: "#a07cff", detto: "Il viola dei glicini di sera" }
 ];
 
+// Il centro del bottone premuto: da lì parte il cerchio di luce. Dal
+// centro e non dal puntatore, perché da tastiera il puntatore non c'è.
+function centroDi(e) {
+  const r = e.currentTarget.getBoundingClientRect();
+
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+
 function Titoletto({ children }) {
   return <p className="mb-1.5 px-1 font-numeric text-[0.62rem] uppercase tracking-[0.16em] text-ink-muted">{children}</p>;
 }
@@ -52,8 +60,8 @@ export default function SceltaTema({ className = "" }) {
               <button
                 key={v.id}
                 type="button"
-                onClick={() => {
-                  scegliTema(utente, v.id);
+                onClick={(e) => {
+                  scegliTema(utente, v.id, centroDi(e));
                   setTema(v.id);
                 }}
                 aria-pressed={acceso}
@@ -82,8 +90,8 @@ export default function SceltaTema({ className = "" }) {
               <button
                 key={p.id}
                 type="button"
-                onClick={() => {
-                  scegliAccento(utente, p.id);
+                onClick={(e) => {
+                  scegliAccento(utente, p.id, centroDi(e));
                   setAccento(p.id);
                 }}
                 aria-pressed={acceso}

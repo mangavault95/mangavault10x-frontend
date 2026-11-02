@@ -235,8 +235,8 @@ export default {
 
       keyframes: {
         "rise-in": {
-          from: { opacity: "0", transform: "translate3d(0, 12px, 0)" },
-          to: { opacity: "1", transform: "translate3d(0, 0, 0)" }
+          from: { opacity: "0", transform: "translate3d(0, 12px, 0) scale(0.985)" },
+          to: { opacity: "1", transform: "translate3d(0, 0, 0) scale(1)" }
         },
         "glow-pulse": {
           "0%, 100%": { opacity: "0.5" },
@@ -363,7 +363,7 @@ export default {
         // fine restituisce lo stile normale, che è già identico
         // all'ultimo fotogramma. Stessa animazione, niente transform
         // residuo.
-        "rise-in": "rise-in 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards",
+        "rise-in": "rise-in 480ms cubic-bezier(0.22, 1, 0.36, 1) backwards",
         "glow-pulse": "glow-pulse 4s ease-in-out infinite",
         shimmer: "shimmer 1.6s linear infinite",
         battuta: "battuta 380ms cubic-bezier(0.16, 1, 0.3, 1) both",

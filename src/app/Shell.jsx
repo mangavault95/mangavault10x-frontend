@@ -223,7 +223,7 @@ export default function Shell({ children }) {
         id="contenuto"
         ref={contenutoRef}
         tabIndex={-1}
-        className="relative z-raised min-h-dvh pb-24 outline-none md:ml-rail md:pb-0 lg:ml-56 animate-rise-in"
+        className="relative z-raised min-h-dvh pb-24 outline-none md:ml-rail md:pb-0 lg:ml-56"
       >
         <Sottosezioni
           scheda={scheda}
@@ -390,10 +390,12 @@ function Linguetta({ sezione, veste, attiva }) {
       }`}
     >
       {attiva && (
-        <span className={`absolute top-0 h-0.5 w-8 rounded-full ${veste.barretta}`} />
+        <span className={`barretta-entra absolute top-0 h-0.5 w-8 rounded-full ${veste.barretta}`} />
       )}
 
-      <Icon nome={sezione.icona} dimensione={20} />
+      <span className={attiva ? "icona-sveglia" : undefined}>
+        <Icon nome={sezione.icona} dimensione={20} />
+      </span>
 
       <span className="text-[0.65rem] font-medium tracking-wide">{sezione.etichetta}</span>
       {sezione.kana && (
@@ -492,8 +494,18 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
  * restare raggiungibili senza scrivere l'indirizzo a mano ma non
  * meritano una linguetta.
  */
-function FoglioTu({ richieste, chiudi }) {
+function FoglioTu({ richieste, chiudi: chiudiSubito }) {
   const { utente, esci } = useSessione();
+  // Il foglio scende prima di sparire: `data-uscita` (index.css) fa partire
+  // l'animazione di uscita e solo dopo si smonta davvero.
+  const [uscendo, setUscendo] = useState(false);
+
+  function chiudi() {
+    if (uscendo) return;
+    setUscendo(true);
+    setTimeout(chiudiSubito, 200);
+  }
+
   // Due voci sole. La sala in 3D non c'è più (05/10/2026) e le due
   // Gestioni sono una: dentro, tre linguette (Manga, Anime, Accessi).
   const voci = [
@@ -502,7 +514,7 @@ function FoglioTu({ richieste, chiudi }) {
   ];
 
   return (
-    <div className="fixed inset-0 z-modal md:hidden" role="dialog" aria-label="Tu">
+    <div className="fixed inset-0 z-modal md:hidden" role="dialog" aria-label="Tu" data-uscita={uscendo ? "" : undefined}>
       {/* Il velo: toccare fuori chiude, che è il gesto che tutti provano. */}
       <button
         type="button"
@@ -512,7 +524,7 @@ function FoglioTu({ richieste, chiudi }) {
       />
 
       <div
-        className={`absolute inset-x-0 bottom-0 rounded-t-sheet border-t p-4 pb-[calc(env(safe-area-inset-bottom)+5rem)] shadow-float ${VESTE.fogliettoBordo}`}
+        className={`foglio-basso absolute inset-x-0 bottom-0 rounded-t-sheet border-t p-4 pb-[calc(env(safe-area-inset-bottom)+5rem)] shadow-float ${VESTE.fogliettoBordo}`}
       >
         <div className={`mx-auto mb-4 h-1 w-10 rounded-full ${VESTE.barretta} opacity-30`} />
 
