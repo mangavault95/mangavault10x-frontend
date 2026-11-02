@@ -173,7 +173,11 @@ export default function WishlistPage() {
     chiudere: perChiudere.filter((c) => !inAttesa.has(chiaveChiudere(c)))
   };
 
-  const volumiDaPrendere = daSpendere.uscite.length + daSpendere.chiudere.length;
+  // Volumi, non righe: a Servamp ne mancano 2 e la riga è una sola. Il
+  // totale qui sotto li moltiplica già, e contando le righe la pagina
+  // scriveva «56,70 € per 7 volumi» quando i volumi erano 10.
+  const volumiDaPrendere =
+    daSpendere.uscite.length + daSpendere.chiudere.reduce((n, c) => n + c.mancanti, 0);
 
   const totale =
     daSpendere.uscite.reduce((t, u) => t + (u.serie.prezzo_stimato || 0), 0) +
