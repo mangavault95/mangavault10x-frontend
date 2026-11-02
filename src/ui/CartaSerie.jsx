@@ -35,7 +35,8 @@ export default function CartaSerie({
   serie,
   priorita = false,
   riempi = false,
-  lettore = null
+  lettore = null,
+  compatta = false
 }) {
   const { aggiornaLocale } = useCollezione();
   const { lettoriBiblioteca: lettori } = useSessione();
@@ -50,12 +51,55 @@ export default function CartaSerie({
   const letti = lettore ? volumiLettiDa(serie, lettore) : 0;
   const colore = lettore ? coloreDi(lettori, lettore) : null;
 
+  const tono =
+    pct === null ? "ignoto" : pct < 100 ? "parziale" : serie.stato === "conclusa" ? "conclusa" : "in-pari";
+  const etichettaAnello =
+    pct === null
+      ? `${serie.titolo}: in corso, volumi totali non ancora noti`
+      : `${serie.titolo}: ${pct}% completa`;
+  const indirizzo = lettore ? `/serie/${serie.id}?lettore=${lettore}` : `/serie/${serie.id}`;
+
+  // La vista «solo copertine»: nessun testo sotto, quattro colonne, circa
+  // ventiquattro serie per schermata invece di nove. Il completamento e
+  // il «−N» passano sulla copertina, in un angolo; il titolo si legge
+  // aprendo la scheda (o tornando alla vista con le copertine).
+  if (compatta) {
+    return (
+      <Link
+        to={indirizzo}
+        title={serie.titolo}
+        aria-label={`${serie.titolo}, ${serie.posseduti} volumi${mancanti > 0 ? `, ne mancano ${mancanti}` : ""}`}
+        className="group relative block rounded-card outline-none transition-transform duration-quick
+                   focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf active:scale-[0.97]"
+      >
+        <Copertina src={serie.copertina} alt={serie.titolo} priorita={priorita} riempi={riempi} inclina={false} />
+
+        {voto > 0 && (
+          <span
+            className={`absolute left-1.5 top-1.5 rounded-full bg-void/70 px-1.5 py-0.5 font-numeric text-[0.65rem] font-medium backdrop-blur-sm ${
+              colore ? colore.testo : "text-brass-300"
+            }`}
+          >
+            {votoIt(voto)}★
+          </span>
+        )}
+
+        <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-full bg-void/75 p-1 backdrop-blur-sm">
+          <AnelloCompletamento pct={pct} tono={tono} etichetta={etichettaAnello} />
+          {mancanti > 0 && (
+            <span className="pr-1 font-numeric text-[0.65rem] font-medium text-ember">−{mancanti}</span>
+          )}
+        </span>
+      </Link>
+    );
+  }
+
   return (
     <Link
       // La scheda si apre sapendo di chi sono le letture da mostrare:
       // è l'indirizzo a portarselo dietro, come per ogni altro filtro
       // di questa pagina.
-      to={lettore ? `/serie/${serie.id}?lettore=${lettore}` : `/serie/${serie.id}`}
+      to={indirizzo}
       className="group block rounded-panel outline-none transition-transform duration-base ease-settle
                  hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-brass-400
                  focus-visible:ring-offset-4 focus-visible:ring-offset-shelf active:translate-y-0 active:scale-[0.99]"
@@ -125,23 +169,7 @@ export default function CartaSerie({
             serie è conclusa e ce l'hai tutta, azzurro se sei solo in
             pari con quello che è uscito. */}
         <p className="flex items-center gap-1.5 font-numeric text-xs text-ink-muted">
-          <AnelloCompletamento
-            pct={pct}
-            tono={
-              pct === null
-                ? "ignoto"
-                : pct < 100
-                  ? "parziale"
-                  : serie.stato === "conclusa"
-                    ? "conclusa"
-                    : "in-pari"
-            }
-            etichetta={
-              pct === null
-                ? `${serie.titolo}: in corso, volumi totali non ancora noti`
-                : `${serie.titolo}: ${pct}% completa`
-            }
-          />
+          <AnelloCompletamento pct={pct} tono={tono} etichetta={etichettaAnello} />
           {/* Con un «su quanti» il numero si legge da solo («12/13») e
               senza l'unità la riga sta in una colonna da telefono insieme
               al «−N»; senza, va a capo e l'anello resta in mezzo. */}
@@ -240,11 +268,15 @@ function AnelloCompletamento({ pct, tono, etichetta }) {
  * scende a 6.5rem: tre colonne, copertine da 127 pixel — la larghezza a
  * cui un titolo si legge ancora e se ne vedono nove per schermata.
  */
-export function GrigliaSerie({ serie, riempi = false, lettore = null, children }) {
+export function GrigliaSerie({ serie, riempi = false, lettore = null, compatta = false, children }) {
   return (
     <div
-      className="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-x-3 gap-y-5
-                 sm:grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] sm:gap-x-5 sm:gap-y-8"
+      className={
+        compatta
+          ? "grid grid-cols-[repeat(auto-fill,minmax(4.75rem,1fr))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] sm:gap-3"
+          : `grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-x-3 gap-y-5
+             sm:grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] sm:gap-x-5 sm:gap-y-8`
+      }
     >
       {serie
         ? serie.map((s, i) => (
@@ -254,6 +286,7 @@ export function GrigliaSerie({ serie, riempi = false, lettore = null, children }
               priorita={i < 12}
               riempi={riempi}
               lettore={lettore}
+              compatta={compatta}
             />
           ))
         : children}

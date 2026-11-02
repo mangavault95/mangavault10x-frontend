@@ -68,7 +68,9 @@ const CHIAVE_VISTA = "mangavault:collezione:vista";
 
 function vistaSalvata() {
   try {
-    return localStorage.getItem(CHIAVE_VISTA) === "elenco" ? "elenco" : "copertine";
+    const v = localStorage.getItem(CHIAVE_VISTA);
+
+    return v === "elenco" || v === "compatta" ? v : "copertine";
   } catch {
     return "copertine";
   }
@@ -86,6 +88,56 @@ function letteraDi(titolo) {
     .toUpperCase();
 
   return /[A-Z]/.test(prima) ? prima : "#";
+}
+
+const idLettera = (l) => `lettera-${l === "#" ? "num" : l}`;
+
+/**
+ * L'indice A–Z sul bordo destro, come la rubrica del telefono: si tocca
+ * una lettera, o si trascina il dito lungo la colonna, e la lista salta
+ * al capitolo. Con duecento serie è l'unico modo di arrivare alla «T»
+ * senza scorrere per dieci schermate.
+ */
+function IndiceLettere({ lettere }) {
+  const [attiva, setAttiva] = useState(null);
+
+  function vaiA(l) {
+    setAttiva(l);
+    document.getElementById(idLettera(l))?.scrollIntoView({ block: "start" });
+  }
+
+  function alTrascinamento(e) {
+    if (e.buttons === 0 && e.pointerType === "mouse") return;
+
+    const l = document.elementFromPoint(e.clientX, e.clientY)?.getAttribute?.("data-lettera");
+
+    if (l && l !== attiva) vaiA(l);
+  }
+
+  return (
+    <nav
+      aria-label="Indice alfabetico"
+      onPointerDown={alTrascinamento}
+      onPointerMove={alTrascinamento}
+      onPointerUp={() => setAttiva(null)}
+      onPointerCancel={() => setAttiva(null)}
+      className="fixed right-0.5 top-1/2 z-sticky flex -translate-y-1/2 touch-none select-none flex-col items-center rounded-full bg-void/50 py-1.5 backdrop-blur-sm"
+    >
+      {lettere.map((l) => (
+        <button
+          key={l}
+          type="button"
+          data-lettera={l}
+          onClick={() => vaiA(l)}
+          aria-label={`Vai alla ${l}`}
+          className={`grid h-[1.15rem] w-6 place-items-center font-numeric text-[0.62rem] font-semibold leading-none
+            ${attiva === l ? "text-brass-300" : "text-ink-muted"}`}
+        >
+          {l}
+        </button>
+      ))}
+    </nav>
+  );
 }
 
 /**
@@ -200,9 +252,10 @@ function MenuOrdineVista({ aperto, onApri, ordine, onOrdine, vista, onVista }) {
 
           <div className="mx-1 my-1.5 border-t border-hairline" />
 
-          <div className="grid grid-cols-2 gap-1 p-0.5">
+          <div className="grid grid-cols-3 gap-1 p-0.5">
             {[
               { id: "copertine", nome: "grid", etichetta: "Copertine" },
+              { id: "compatta", nome: null, etichetta: "Solo cover" },
               { id: "elenco", nome: "menu", etichetta: "Elenco" }
             ].map((v) => (
               <button
@@ -214,10 +267,18 @@ function MenuOrdineVista({ aperto, onApri, ordine, onOrdine, vista, onVista }) {
                   onVista(v.id);
                   onApri(false);
                 }}
-                className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors duration-quick
+                className={`flex flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-xs font-medium transition-colors duration-quick
                   ${vista === v.id ? "bg-ink-bright text-void" : "text-ink hover:bg-glass-2 hover:text-ink-bright"}`}
               >
-                <Icon nome={v.nome} dimensione={16} />
+                {v.nome ? (
+                  <Icon nome={v.nome} dimensione={18} />
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    {[3, 9.5, 16].flatMap((x) =>
+                      [3, 9.5, 16].map((y) => <rect key={`${x}${y}`} x={x} y={y} width="5" height="5" rx="1.2" />)
+                    )}
+                  </svg>
+                )}
                 {v.etichetta}
               </button>
             ))}
@@ -457,7 +518,7 @@ export default function CollezionePage() {
   // ricerca (che ha un suo ordine) e su una lista abbastanza lunga da
   // aver bisogno di capitoli.
   const conLettere =
-    vista === "copertine" && ordineAttivo === "titolo" && !ricercaTesto.trim() && risultati.length > 24;
+    vista !== "elenco" && ordineAttivo === "titolo" && !ricercaTesto.trim() && risultati.length > 24;
 
   const gruppi = useMemo(() => {
     if (!conLettere) return null;
@@ -740,23 +801,29 @@ export default function CollezionePage() {
             ))}
           </ul>
         ) : gruppi ? (
-          <div className="space-y-7">
+          <div className="space-y-7 pr-5">
             {gruppi.map((g) => (
-              <section key={g.lettera} aria-label={`Titoli con ${g.lettera}`}>
+              <section
+                key={g.lettera}
+                id={idLettera(g.lettera)}
+                aria-label={`Titoli con ${g.lettera}`}
+                className="scroll-mt-28"
+              >
                 <h2 className="mb-3 px-1 font-display text-lg font-bold text-ink-faint sm:px-0">
                   {g.lettera}
                 </h2>
 
-                <GrigliaSerie serie={g.serie} riempi lettore={lettoreAttivo} />
+                <GrigliaSerie serie={g.serie} riempi lettore={lettoreAttivo} compatta={vista === "compatta"} />
               </section>
             ))}
+            <IndiceLettere lettere={gruppi.map((g) => g.lettera)} />
           </div>
         ) : (
           /* Il lettore attivo non filtra soltanto: dice anche di chi
              sono il voto e le letture da disegnare sulle copertine.
              Senza, la selezione era la sua e i dati sopra erano di
              chi guardava. */
-          <GrigliaSerie serie={risultati} riempi lettore={lettoreAttivo} />
+          <GrigliaSerie serie={risultati} riempi lettore={lettoreAttivo} compatta={vista === "compatta"} />
         )
       ) : (
         <Vuoto
