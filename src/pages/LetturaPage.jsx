@@ -825,8 +825,31 @@ export default function LetturaPage() {
         <Sezione
           titolo={mioTurno ? "Sto leggendo" : `Legge ${nomeLettore}`}
           extra={
-            attive.length ? (
-              <span className="font-numeric text-sm text-ink-muted">{attive.length}</span>
+            attive.length || mollate.length ? (
+              <span className="font-numeric text-sm text-ink-muted">
+                {attive.length} in corso
+                {mollate.length > 0 && (
+                  <>
+                    {" · "}
+                    {/* Le mollate stanno chiuse in fondo: il conto qui
+                        le rende visibili e porta a loro con un tocco. */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById("mollate");
+
+                        if (el) {
+                          el.open = true;
+                          el.scrollIntoView({ block: "center" });
+                        }
+                      }}
+                      className="underline decoration-ink-faint decoration-dotted underline-offset-4 hover:text-ink-bright"
+                    >
+                      {mollate.length} mollate
+                    </button>
+                  </>
+                )}
+              </span>
             ) : null
           }
         >
@@ -844,6 +867,7 @@ export default function LetturaPage() {
                     // quella che stai leggendo adesso, e solo lei ha il
                     // tasto pieno.
                     principale={i === 0}
+                    ultima={i === 0 && attive.length > 1}
                     soloLettura={!mioTurno}
                     onAvanti={() => impostaVolume(lettura, { delta: 1 })}
                     onIndietro={() => impostaVolume(lettura, { delta: -1 })}
@@ -903,9 +927,35 @@ export default function LetturaPage() {
         >
           {lette.length ? (
             <div className="space-y-6">
-              {votate.length > 0 && (
+              {/* Di default una striscia di copertine, con il voto
+                  sopra: dieci righe «titolo + 5» non dicevano cosa fosse
+                  quel 5 e non avevano un'immagine da riconoscere. La
+                  lista con i comandi (voto, note, rimetti, togli) si
+                  apre da «Mostra tutte». */}
+              {!tutteLeLette && votate.length > 0 && (
+                <ol className="no-scrollbar -mx-4 flex snap-x gap-2.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+                  {votate.slice(0, 20).map((s) => (
+                    <li key={s.id} className="w-[5.25rem] shrink-0 snap-start">
+                      <Link
+                        to={`/serie/${s.id}`}
+                        title={s.titolo}
+                        aria-label={`${s.titolo}, voto ${votoIt(votoDi(s, lettoreScelto))} su 5`}
+                        className="relative block rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+                      >
+                        <Copertina src={s.copertina} alt="" inclina={false} />
+
+                        <span className="absolute left-1 top-1 rounded-full bg-void/70 px-1.5 py-0.5 font-numeric text-[0.65rem] font-medium text-brass-300 backdrop-blur-sm">
+                          {votoIt(votoDi(s, lettoreScelto))}★
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ol>
+              )}
+
+              {tutteLeLette && votate.length > 0 && (
                 <ol className="space-y-0.5">
-                  {(tutteLeLette ? votate : votate.slice(0, 10)).map((s, posizione) => (
+                  {votate.map((s, posizione) => (
                     <RigaClassifica
                       key={s.id}
                       serie={s}
@@ -921,15 +971,15 @@ export default function LetturaPage() {
                 </ol>
               )}
 
-              {!tutteLeLette && (votate.length > 10 || senzaVoto.length > daVotare.length) && (
-                <button
-                  type="button"
-                  onClick={() => setTutteLeLette(true)}
-                  className="w-full rounded-2xl bg-alcove py-3 text-sm font-semibold text-ink-bright"
-                >
-                  Mostra tutte ({votate.length + senzaVoto.length - daVotare.length})
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setTutteLeLette((t) => !t)}
+                className="w-full rounded-2xl bg-alcove py-3 text-sm font-semibold text-ink-bright"
+              >
+                {tutteLeLette
+                  ? "Torna alle copertine"
+                  : `Mostra tutte in elenco (${votate.length + senzaVoto.length - daVotare.length})`}
+              </button>
 
               {tutteLeLette && senzaVoto.length > daVotare.length && (
                 <div className="space-y-2 border-t border-hairline pt-5">
@@ -966,7 +1016,7 @@ export default function LetturaPage() {
 
         {/* ═══════════ MOLLATE ═══════════ */}
         {mollate.length > 0 && (
-          <details className="group rounded-2xl bg-alcove">
+          <details id="mollate" className="group scroll-mt-24 rounded-2xl bg-alcove">
             <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3.5 text-sm font-semibold text-ink-bright">
               <span>
                 Mollate <span className="font-numeric text-ink-muted">· {mollate.length}</span>
@@ -1559,15 +1609,20 @@ function ModaleCompletamento({ lettura, serie, onVotoCambiato, onChiudi }) {
  * Tutto il resto sta nel foglio dietro i tre puntini (`FoglioLettura`):
  * una riga che porta otto comandi non si legge più.
  */
-function RigaLettura({ lettura, principale, soloLettura, onAvanti, onIndietro, onLetto, onGestisci }) {
+function RigaLettura({ lettura, principale, ultima, soloLettura, onAvanti, onIndietro, onLetto, onGestisci }) {
   const { volume, massimo, titolo } = lettura;
+
+  // Il −/+ sposta il segnalibro senza segnare niente e si usa di rado:
+  // sta chiuso, e si apre toccando il numero del volume. Chiuso, il
+  // tasto «Finito» ha tutta la larghezza della riga.
+  const [segnalibro, setSegnalibro] = useState(false);
   const letti = new Set(lettura.volumiLetti.map(Number)).size;
   const percento = massimo ? Math.min(100, Math.round((letti / massimo) * 100)) : null;
   const eUltimo = massimo ? volume >= massimo : false;
   const giaLetto = lettura.volumiLetti.map(Number).includes(volume);
 
   return (
-    <div className="flex gap-3.5 rounded-2xl bg-alcove p-3.5">
+    <div className="flex gap-3 rounded-2xl bg-alcove p-3">
       <Link to={`/serie/${lettura.mangaId}`} className="w-[3.25rem] shrink-0 self-start">
         <Copertina src={lettura.copertina} alt="" inclina={false} />
       </Link>
@@ -1575,11 +1630,38 @@ function RigaLettura({ lettura, principale, soloLettura, onAvanti, onIndietro, o
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
-            <Link to={`/serie/${lettura.mangaId}`} className="block truncate font-semibold text-ink-bright">
+            {/* Il server le manda dalla più recente: dirlo spiega perché
+                una sola ha il tasto pieno. */}
+            {ultima && (
+              <p className="text-[0.62rem] font-medium uppercase tracking-[0.14em] text-brass-400">
+                Ultima letta
+              </p>
+            )}
+
+            {/* Due righe: «Blood-Crawling Princess of…» perdeva la metà
+                del nome, e il nome è quello che si cerca. */}
+            <Link
+              to={`/serie/${lettura.mangaId}`}
+              className="line-clamp-2 font-semibold leading-snug text-ink-bright"
+            >
               {titolo}
             </Link>
             <p className="mt-0.5 text-[0.8rem] text-ink-muted">
-              Volume <span className="font-numeric font-semibold text-ink-bright">{volume}</span>
+              {!soloLettura ? (
+                <button
+                  type="button"
+                  onClick={() => setSegnalibro((s) => !s)}
+                  aria-expanded={segnalibro}
+                  aria-label={`Volume ${volume}: tocca per spostare il segnalibro`}
+                  className="underline decoration-ink-faint decoration-dotted underline-offset-4"
+                >
+                  Volume <span className="font-numeric font-semibold text-ink-bright">{volume}</span>
+                </button>
+              ) : (
+                <>
+                  Volume <span className="font-numeric font-semibold text-ink-bright">{volume}</span>
+                </>
+              )}
               {massimo ? ` di ${massimo}` : ""}
               {" · "}
               {plurale(letti, "letto", "letti")}
@@ -1605,8 +1687,8 @@ function RigaLettura({ lettura, principale, soloLettura, onAvanti, onIndietro, o
         )}
 
         {!soloLettura && (
-          <div className="mt-3 flex items-center gap-2">
-            <div className="flex shrink-0 items-center rounded-xl bg-glass-2">
+          <div className="mt-2.5 flex items-center gap-2">
+            <div className={`${segnalibro ? "flex" : "hidden"} shrink-0 items-center rounded-xl bg-glass-2`}>
               <button
                 type="button"
                 onClick={onIndietro}
