@@ -119,20 +119,44 @@ export default function CartaSerie({
           {serie.titolo}
         </h3>
 
-        {/* Completa: solo il numero, niente da guardare. Incompleta: quanti
-            ne hai su quanti e cosa manca, con la barra sottile. */}
+        {/* Quanti ne hai su quanti e cosa manca, con la barra sottile.
+            Il segno a fianco dice cosa vuol dire «finito»: verde se la
+            serie è conclusa e ce l'hai tutta, azzurro se sei solo in
+            pari con quello che è uscito. */}
         <p className="font-numeric text-xs text-ink-muted">
           {serie.posseduti}
           {mancanti > 0 && totale ? ` / ${totale}` : ""} vol.
           {mancanti === 0 && serie.stato === "conclusa" && (
             <span className="ml-1.5 text-jade">✓</span>
           )}
+          {mancanti === 0 && serie.stato !== "conclusa" && (
+            <span title="In pari con le uscite" className="ml-1.5 text-lapis">
+              ✓
+            </span>
+          )}
           {mancanti > 0 && <span className="ml-1.5 text-ember/80">−{mancanti}</span>}
         </p>
 
-        {pct !== null && pct < 100 && (
-          <Progresso valore={pct} etichetta={`${serie.titolo}: ${pct}% completa`} sottile />
-        )}
+        {/* Il posto della barra c'è sempre, anche quando la barra no: una
+            serie conclusa e completa non ne ha bisogno, ma senza lo
+            spazio riservato le carte accanto si disallineavano di quattro
+            pixel. Per tutte le altre la barra c'è SEMPRE — prima spariva
+            sia a serie in pari sia a totale ignoto, e due carte in corso
+            vicine sembravano di tipi diversi senza esserlo. */}
+        <div className="h-1">
+          {!(serie.stato === "conclusa" && pct === 100) && (
+            <Progresso
+              valore={pct}
+              statica
+              etichetta={
+                pct === null
+                  ? `${serie.titolo}: in corso, volumi totali non ancora noti`
+                  : `${serie.titolo}: ${pct}% completa`
+              }
+              sottile
+            />
+          )}
+        </div>
       </div>
     </Link>
   );
