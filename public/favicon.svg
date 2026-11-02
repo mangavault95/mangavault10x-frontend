@@ -1,18 +1,13 @@
 <!--
-  Il portale di MangaVault, in versione francobollo.
-
-  Era rimasto il fulmine viola di un altro progetto, cioè il marchio di
-  qualcun altro nella scheda del browser. Qui c'è il torii di volumi
-  (vedi `portale` in `src/app/Icon.jsx`), su fondo pieno e non
-  trasparente: nella barra delle schede un tratto d'ottone su niente
-  sparisce contro i temi chiari.
-
-  Tratti più grossi di quelli dell'icona dell'interfaccia — 2,3 invece di
-  1,6 — perché a sedici pixel un tratto sottile diventa grigio.
+  Il portale di MangaVault, in versione francobollo: il torii di volumi
+  al neon (02/11/2026), sul blu notte del sito. Il disegno grande, con
+  l'alone, è `icona.svg`; qui i tratti sono più grossi — 2,3 invece di
+  1,6 — perché a sedici pixel un tratto sottile diventa grigio, e l'alone
+  a quella misura sarebbe solo una macchia.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <rect width="24" height="24" rx="5.5" fill="#1a1410"/>
-  <g fill="none" stroke="#facc15" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+  <rect width="24" height="24" rx="5.5" fill="#0b0d14"/>
+  <g fill="none" stroke="#ff4fa3" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
     <path d="M3.4 7Q12 5.1 20.6 7"/>
     <path d="M6.2 10.2h11.6"/>
     <path d="M8.1 7.4V19"/>

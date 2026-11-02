@@ -1,0 +1,53 @@
+<!--
+  L'icona dell'app (02/11/2026): il torii di volumi al neon.
+
+  È il disegno da cui escono le PNG della schermata Home (icona-180,
+  icona-192, icona-512 e la maskable): si rigenerano con
+  `node scripts/genera-icone.mjs`. Fondo pieno, perché iOS arrotonda da
+  solo gli angoli e un fondo trasparente lì diventa nero.
+
+  Il neon è fatto come un tubo vero: un alone sfocato, il vetro rosa, e
+  un'anima quasi bianca al centro del tratto.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="alone" cx="50%" cy="46%" r="58%">
+      <stop offset="0" stop-color="#ff4fa3" stop-opacity="0.26"/>
+      <stop offset="0.55" stop-color="#ff4fa3" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#ff4fa3" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fondo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#141826"/>
+      <stop offset="1" stop-color="#0b0d14"/>
+    </linearGradient>
+    <pattern id="righe" width="512" height="6" patternUnits="userSpaceOnUse">
+      <rect width="512" height="1.5" fill="#ffffff" opacity="0.035"/>
+    </pattern>
+    <filter id="bagliore" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="0.8"/>
+    </filter>
+    <!-- Il torii, nella griglia da 24 dell'icona dell'interfaccia:
+         trave curva, architrave, due volumi per colonne, la base. -->
+    <g id="torii" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 6.6c2.8 1.25 5.8 1.75 9 1.75s6.2-.5 9-1.75"/>
+      <path d="M5.4 11h13.2"/>
+      <rect x="7.4" y="9.4" width="3.2" height="11.1" rx="0.5"/>
+      <rect x="13.4" y="9.4" width="3.2" height="11.1" rx="0.5"/>
+      <path d="M8.2 13.4h1.6M8.2 17.4h1.6M14.2 13.4h1.6M14.2 17.4h1.6" stroke-width="0.55"/>
+      <path d="M4.6 20.5h14.8"/>
+    </g>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#fondo)"/>
+  <rect width="512" height="512" fill="url(#alone)"/>
+
+  <!-- 24 unità → 330 pixel, centrato: il torii occupa due terzi
+       dell'icona e resta dentro la zona sicura. -->
+  <g transform="translate(256 262) scale(13.75) translate(-12 -13.5)">
+    <use href="#torii" stroke="#ff4fa3" stroke-width="2.6" filter="url(#bagliore)" opacity="0.85"/>
+    <use href="#torii" stroke="#ff4fa3" stroke-width="1.55"/>
+    <use href="#torii" stroke="#ffe3f0" stroke-width="0.6"/>
+  </g>
+
+  <rect width="512" height="512" fill="url(#righe)"/>
+</svg>

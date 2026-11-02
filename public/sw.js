@@ -14,7 +14,9 @@
 const API = new URL(self.location).searchParams.get("api") || "";
 
 // Il guscio ha la versione: cambiando le regole qui sotto va buttato via.
-const GUSCIO = "mv-guscio-v1";
+// v2 (02/11/2026): l'icona dell'app è diventata il torii al neon, e la
+// copia d'ottone tenuta qui dentro non deve tornare a galla.
+const GUSCIO = "mv-guscio-v2";
 
 // Le risorse no. I nomi dei file di Vite contengono l'impronta del
 // contenuto, quindi una copia vecchia non è mai una copia sbagliata — ed
