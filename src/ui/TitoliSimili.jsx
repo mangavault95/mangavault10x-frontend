@@ -61,14 +61,22 @@ export default function TitoliSimili({ serie }) {
       titolo="Titoli simili"
       extra={
         <span className="text-xs text-ink-faint">
-          per trama e temi, da AniList e dai lettori di AnimeClick
-          {inCasa > 0 && ` · ${inCasa} li hai già`}
+          <span className="hidden sm:inline">per trama e temi, da AniList e dai lettori di AnimeClick</span>
+          {inCasa > 0 && <span className="sm:before:content-['_·_']">{inCasa} li hai già</span>}
         </span>
       }
     >
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-x-5 gap-y-8">
+      {/* Sul telefono una fila che scorre di lato (le carte sono
+          comunque dodici): in griglia erano sei righe da due carte, più
+          alte di tutto il resto della scheda. */}
+      <div
+        className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1
+                   sm:mx-0 sm:grid sm:grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] sm:gap-x-5 sm:gap-y-8 sm:overflow-visible sm:px-0"
+      >
         {simili.map((m) => (
-          <CartaSimile key={m.idEsterno} manga={m} />
+          <div key={m.idEsterno} className="w-32 shrink-0 snap-start sm:w-auto">
+            <CartaSimile manga={m} />
+          </div>
         ))}
 
         {/* Le caselle vuote restano finché una fonte sta arrivando:

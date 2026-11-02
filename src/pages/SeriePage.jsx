@@ -519,9 +519,7 @@ export default function SeriePage() {
       <div className="mx-auto w-full max-w-[80rem] space-y-8 px-4 pb-16 sm:space-y-14 sm:px-8 lg:px-12">
         {serie.trama && (
           <Sezione titolo="Trama">
-            <p className="max-w-3xl whitespace-pre-line text-[0.95rem] leading-relaxed text-ink">
-              {serie.trama}
-            </p>
+            <Trama testo={serie.trama} />
           </Sezione>
         )}
 
@@ -546,8 +544,12 @@ export default function SeriePage() {
         {/* Le note si scrivono dal tavolo di lettura, ma è qui che
             restano: finita o mollata una serie, il libro aperto non
             c'è più e questo diventa l'unico posto dove rileggerle. */}
-        <Sezione
+        <SezioneChiudibile
           titolo="Note"
+          // Aperta solo se ce n'è almeno una: «Nessuna nota» non merita
+          // lo spazio di una sezione intera, il bottone per scriverne
+          // una resta a un tocco.
+          apertaDiPartenza={Boolean(serie.note?.length)}
           extra={
             serie.note?.length ? (
               <span className="font-numeric text-sm text-ink-muted">
@@ -559,7 +561,7 @@ export default function SeriePage() {
           <div className="max-w-3xl">
             <NoteSerie serie={serie} />
           </div>
-        </Sezione>
+        </SezioneChiudibile>
 
         <QuotazioneMercato serie={serie} sorelle={sorelle} />
 
@@ -773,7 +775,7 @@ function QuotazioneMercato({ serie, sorelle }) {
   const scartati = dati?.campioneGrezzo > dati?.campione ? dati.campioneGrezzo - dati.campione : 0;
 
   return (
-    <Sezione titolo="Prezzo su eBay">
+    <SezioneChiudibile titolo="Prezzo su eBay" apertaDiPartenza={false}>
       <div className="flex flex-wrap items-center gap-4 rounded-panel border border-hairline bg-glass-1 p-5 backdrop-blur-xl">
         {stato === "fatto" && dati ? (
           <div className="space-y-1">
@@ -824,7 +826,70 @@ function QuotazioneMercato({ serie, sorelle }) {
           </Bottone>
         )}
       </div>
-    </Sezione>
+    </SezioneChiudibile>
+  );
+}
+
+/**
+ * Una sezione che si apre e si chiude dal titolo.
+ *
+ * Note ed eBay sono cose che si cercano di rado: aperte per tutte le
+ * serie allungavano la scheda di due schermi su qualunque telefono. Il
+ * titolo resta, con la freccia, così si sa che c'è e dove.
+ */
+function SezioneChiudibile({ titolo, extra, apertaDiPartenza = false, children }) {
+  const [aperta, setAperta] = useState(apertaDiPartenza);
+
+  return (
+    <section className="space-y-4">
+      <button
+        type="button"
+        onClick={() => setAperta((a) => !a)}
+        aria-expanded={aperta}
+        className="flex w-full items-center justify-between gap-4 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+      >
+        <h2 className="font-display text-xl font-semibold text-ink-bright">{titolo}</h2>
+
+        <span className="flex items-center gap-3">
+          {extra}
+          <Icon
+            nome="back"
+            dimensione={18}
+            className={`text-ink-faint transition-transform duration-quick ${aperta ? "rotate-90" : "-rotate-90"}`}
+          />
+        </span>
+      </button>
+
+      {aperta && children}
+    </section>
+  );
+}
+
+/** La trama, raccolta in quattro righe quando è lunga. */
+function Trama({ testo }) {
+  const [aperta, setAperta] = useState(false);
+  const lunga = testo.length > 280;
+
+  return (
+    <div className="max-w-3xl">
+      <p
+        className={`whitespace-pre-line text-[0.95rem] leading-relaxed text-ink ${
+          lunga && !aperta ? "line-clamp-4" : ""
+        }`}
+      >
+        {testo}
+      </p>
+
+      {lunga && (
+        <button
+          type="button"
+          onClick={() => setAperta((a) => !a)}
+          className="mt-2 text-sm font-medium text-brass-300 hover:underline"
+        >
+          {aperta ? "Mostra meno" : "Leggi tutto"}
+        </button>
+      )}
+    </div>
   );
 }
 
