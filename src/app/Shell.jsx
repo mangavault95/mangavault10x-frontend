@@ -391,14 +391,55 @@ function Linguetta({ sezione, veste, attiva }) {
 function Sottosezioni({ scheda, percorso, aggiungi }) {
   const voci = sottosezioniDi(scheda);
 
+  // Nei manga le tre che si usano ogni giorno restano in vista; Numeri e
+  // Kachinuki, che si aprono ogni tanto, stanno dietro «Altro». Cinque
+  // pillole in 375 pixel finivano tagliate («Numer…»), e una riga che
+  // scorre di lato nasconde le sezioni a chi non sa di doverla trascinare.
+  const principali = scheda === "manga" ? voci.slice(0, 3) : voci;
+  const altre = scheda === "manga" ? voci.slice(3) : [];
+  const altraAttiva = altre.find((v) => eAttiva(v.percorso, percorso)) || null;
+
+  const [posizione, setPosizione] = useState(null);
+  const tastoAltro = useRef(null);
+
+  // Si chiude da sola: toccando altrove, con Esc, o cambiando pagina.
+  useEffect(() => {
+    if (!posizione) return undefined;
+
+    const fuori = (e) => {
+      if (!tastoAltro.current?.contains(e.target) && !e.target.closest?.("[data-menu-altro]")) {
+        setPosizione(null);
+      }
+    };
+    const esc = (e) => e.key === "Escape" && setPosizione(null);
+
+    document.addEventListener("pointerdown", fuori);
+    document.addEventListener("keydown", esc);
+
+    return () => {
+      document.removeEventListener("pointerdown", fuori);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [posizione]);
+
   if (!voci.length) return null;
+
+  // Il menu è `fixed` e non `absolute`: la riga scorre di lato, e un
+  // elemento assoluto dentro un contenitore che scorre verrebbe tagliato.
+  function apriAltro() {
+    if (posizione) return setPosizione(null);
+
+    const r = tastoAltro.current.getBoundingClientRect();
+
+    setPosizione({ top: r.bottom + 6, sinistra: Math.max(12, Math.min(r.left, window.innerWidth - 180)) });
+  }
 
   return (
     <nav
       aria-label={scheda === "manga" ? "Sezioni dei manga" : "Sezioni degli anime"}
-      className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-4 sm:px-6 lg:px-8"
+      className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-3 sm:px-6 lg:px-8"
     >
-      {voci.map((voce) => {
+      {principali.map((voce) => {
         const attiva = eAttiva(voce.percorso, percorso);
 
         return (
@@ -414,6 +455,46 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
           </Link>
         );
       })}
+
+      {altre.length > 0 && (
+        <>
+          <button
+            ref={tastoAltro}
+            type="button"
+            onClick={apriAltro}
+            aria-label={altraAttiva ? altraAttiva.etichetta : "Altre sezioni"}
+            aria-haspopup="menu"
+            aria-expanded={Boolean(posizione)}
+            className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full py-2 text-sm font-medium transition-colors duration-quick
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
+              ${altraAttiva ? "bg-ink-bright px-3.5 text-void" : "bg-alcove px-3 text-ink hover:text-ink-bright"}`}
+          >
+            {altraAttiva ? altraAttiva.etichetta : <Icon nome="puntini" dimensione={18} />}
+          </button>
+
+          {posizione && (
+            <ul
+              role="menu"
+              data-menu-altro
+              style={{ top: posizione.top, left: posizione.sinistra }}
+              className="fixed z-overlay min-w-40 overflow-hidden rounded-card border border-hairline bg-alcove py-1 shadow-float animate-rise-in"
+            >
+              {altre.map((voce) => (
+                <li key={voce.id} role="none">
+                  <Link
+                    role="menuitem"
+                    to={voce.percorso}
+                    onClick={() => setPosizione(null)}
+                    className="block px-4 py-3 text-sm font-medium text-ink hover:bg-glass-2 hover:text-ink-bright"
+                  >
+                    {voce.etichetta}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
 
       {aggiungi && (
         <button

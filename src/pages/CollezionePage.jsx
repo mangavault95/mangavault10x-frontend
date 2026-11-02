@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Fuse from "fuse.js";
 import { GrigliaSerie } from "../ui/CartaSerie";
 import { CaricamentoGriglia, Errore, Vuoto } from "../ui/Stati";
-import { CampoRicerca, Tendina, Bottone } from "../ui/Controlli";
+import { CampoRicerca, Bottone } from "../ui/Controlli";
 import FiltriCollezione from "../ui/FiltriCollezione";
 import Copertina from "../ui/Copertina";
 import Icon from "../app/Icon";
@@ -62,7 +62,7 @@ import {
 
 // Le scorciatoie di stato sempre in vista. Le altre (sospese, brevi,
 // autoconclusive…) restano nel foglio dei filtri.
-const SCORCIATOIE = ["tutte", "mancanti", "in-corso", "concluse", "preferiti"];
+const SCORCIATOIE = ["tutte", "mancanti", "in-corso", "preferiti"];
 
 const CHIAVE_VISTA = "mangavault:collezione:vista";
 
@@ -88,6 +88,146 @@ function letteraDi(titolo) {
   return /[A-Z]/.test(prima) ? prima : "#";
 }
 
+/**
+ * Vero quando la barra in cima va tolta di mezzo: si scorre verso il
+ * basso, quindi si sta leggendo la lista e non cercando. Torna da sola
+ * appena si risale (il gesto di chi vuole cercare) o si è in cima.
+ *
+ * `bloccata` la tiene ferma mentre la si sta usando — il cursore nel
+ * campo, il menu aperto — perché sparire sotto le dita sarebbe peggio
+ * che occupare spazio.
+ */
+function useBarraChePare(bloccata) {
+  const [nascosta, setNascosta] = useState(false);
+
+  useEffect(() => {
+    let ultimo = window.scrollY;
+
+    // Niente `requestAnimationFrame`: il calcolo è due confronti, e
+    // `setNascosta` con lo stesso valore non ridisegna niente.
+    function alScorrimento() {
+      const ora = window.scrollY;
+      const scarto = ora - ultimo;
+
+      if (ora < 80) setNascosta(false);
+      else if (scarto > 8) setNascosta(true);
+      else if (scarto < -8) setNascosta(false);
+
+      // Il punto di riferimento si sposta solo se il movimento conta:
+      // i tremolii di un pixel non devono azzerare lo scarto.
+      if (ora < 80 || Math.abs(scarto) > 8) ultimo = ora;
+    }
+
+    window.addEventListener("scroll", alScorrimento, { passive: true });
+
+    return () => window.removeEventListener("scroll", alScorrimento);
+  }, []);
+
+  return nascosta && !bloccata;
+}
+
+/**
+ * Ordine e vista, dietro un solo tasto.
+ *
+ * Si cambiano di rado, e come due controlli fissi occupavano una fascia
+ * intera sopra le copertine. Qui sono due scelte brevi in un menu piccolo
+ * che si chiude da sé appena se ne fa una.
+ */
+function MenuOrdineVista({ aperto, onApri, ordine, onOrdine, vista, onVista }) {
+  const radice = useRef(null);
+
+  useEffect(() => {
+    if (!aperto) return undefined;
+
+    const fuori = (e) => {
+      if (!radice.current?.contains(e.target)) onApri(false);
+    };
+    const esc = (e) => e.key === "Escape" && onApri(false);
+
+    document.addEventListener("pointerdown", fuori);
+    document.addEventListener("keydown", esc);
+
+    return () => {
+      document.removeEventListener("pointerdown", fuori);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [aperto, onApri]);
+
+  return (
+    <div ref={radice} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => onApri(!aperto)}
+        aria-label="Ordina e cambia vista"
+        aria-haspopup="menu"
+        aria-expanded={aperto}
+        className={`grid h-9 w-9 place-items-center rounded-full transition-colors duration-quick active:scale-95
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
+          ${aperto ? "bg-ink-bright text-void" : "bg-alcove text-ink hover:text-ink-bright"}`}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M7 20V4m0 16-3-3m3 3 3-3M17 4v16m0-16-3 3m3-3 3 3" />
+        </svg>
+      </button>
+
+      {aperto && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-overlay mt-2 w-60 rounded-card border border-hairline bg-alcove p-1.5 shadow-float animate-rise-in"
+        >
+          <p className="px-2.5 pb-1 pt-1.5 text-xs font-medium uppercase tracking-wider text-ink-faint">Ordina per</p>
+
+          {ORDINAMENTI.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              role="menuitemradio"
+              aria-checked={o.id === ordine}
+              onClick={() => {
+                onOrdine(o.id);
+                onApri(false);
+              }}
+              className="flex w-full items-center justify-between rounded-lg px-2.5 py-2.5 text-left text-sm text-ink hover:bg-glass-2 hover:text-ink-bright"
+            >
+              {o.etichetta}
+              {o.id === ordine && (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M5 12.5l4.5 4.5L19 7.5" />
+                </svg>
+              )}
+            </button>
+          ))}
+
+          <div className="mx-1 my-1.5 border-t border-hairline" />
+
+          <div className="grid grid-cols-2 gap-1 p-0.5">
+            {[
+              { id: "copertine", nome: "grid", etichetta: "Copertine" },
+              { id: "elenco", nome: "menu", etichetta: "Elenco" }
+            ].map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={vista === v.id}
+                onClick={() => {
+                  onVista(v.id);
+                  onApri(false);
+                }}
+                className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors duration-quick
+                  ${vista === v.id ? "bg-ink-bright text-void" : "text-ink hover:bg-glass-2 hover:text-ink-bright"}`}
+              >
+                <Icon nome={v.nome} dimensione={16} />
+                {v.etichetta}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CollezionePage() {
   const { serie, inCorso, errore, ricarica } = useCollezione();
   const { bibliotecaSolaLettura } = useSessione();
@@ -101,6 +241,9 @@ export default function CollezionePage() {
   const [prendendo, setPrendendo] = useState(null);
   const [registrato, setRegistrato] = useState(null);
   const [problema, setProblema] = useState(null);
+  const [menuVistaAperto, setMenuVistaAperto] = useState(false);
+  const [campoAttivo, setCampoAttivo] = useState(false);
+  const barraNascosta = useBarraChePare(menuVistaAperto || campoAttivo);
 
   const ricercaTesto = parametri.get("q") || "";
   const filtroAttivo = filtroPerId(parametri.get("filtro")).id;
@@ -365,7 +508,7 @@ export default function CollezionePage() {
   }
 
   const cornice = (corpo) => (
-    <div className="mx-auto w-full max-w-[110rem] px-3 pb-10 pt-4 sm:px-8 lg:px-12">{corpo}</div>
+    <div className="mx-auto w-full max-w-[110rem] px-3 pb-10 pt-1 sm:px-8 md:pt-4 lg:px-12">{corpo}</div>
   );
 
   if (errore) {
@@ -374,7 +517,12 @@ export default function CollezionePage() {
 
   return cornice(
     <>
-      <header className="flex items-end justify-between gap-4 px-1 sm:px-0">
+      {/* Titolo e conteggio solo da computer. Sul telefono dire «Collezione»
+          è ripetere la linguetta accesa qui sopra e la barra in basso, e
+          costava un quarto di schermo prima della prima copertina: il
+          numero di serie sta nel segnaposto della ricerca, e «Aggiungi»
+          è il tondo in basso. */}
+      <header className="hidden items-end justify-between gap-4 md:flex">
         <div className="min-w-0">
           <h1 className="font-display text-[2.1rem] font-extrabold leading-none tracking-tight text-ink-bright">
             Collezione
@@ -405,13 +553,24 @@ export default function CollezionePage() {
 
       {/* La barra che resta in cima mentre si scorre: cercare e restringere
           sono le cose che si fanno a metà lista, non solo all'inizio. */}
-      <div className="sticky top-0 z-sticky -mx-3 mt-4 space-y-2.5 bg-shelf/90 px-3 pb-2.5 pt-2 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12">
+      {/* Due fasce, non cinque: la ricerca col tasto dei filtri, e sotto le
+          scorciatoie di stato con in fondo ordine e vista. Scorrendo verso
+          il basso si ritira (vedi `useBarraChePare`), e le copertine
+          prendono tutto lo schermo; risalendo ritorna. */}
+      <div
+        // Solo il campo di ricerca blocca la barra: un pulsante appena
+        // toccato resta col fuoco, e la terrebbe ferma anche scorrendo.
+        onFocus={(e) => e.target.tagName === "INPUT" && setCampoAttivo(true)}
+        onBlur={() => setCampoAttivo(false)}
+        className={`sticky top-0 z-sticky -mx-3 mt-1 space-y-2 bg-shelf/90 px-3 pb-2 pt-2 backdrop-blur-xl transition-transform duration-base ease-settle sm:-mx-8 sm:px-8 md:mt-4 lg:-mx-12 lg:px-12
+          ${barraNascosta ? "-translate-y-full" : ""}`}
+      >
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1 sm:max-w-lg">
             <CampoRicerca
               valore={ricercaTesto}
               onCambia={(v) => aggiornaParametro("q", v)}
-              segnaposto="Titolo, autore, editore…"
+              segnaposto={serie.length ? `Cerca tra ${numeroIt(serie.length)} serie` : "Cerca…"}
               risultati={risultati.length}
               larghezzaPiena
             />
@@ -420,12 +579,13 @@ export default function CollezionePage() {
           <button
             type="button"
             onClick={() => setFiltriAperti(true)}
-            className="inline-flex shrink-0 items-center gap-2 rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm font-semibold text-ink-bright transition-colors duration-quick hover:border-soft active:scale-95
+            aria-label={filtriFini > 0 ? `Filtri, ${filtriFini} attivi` : "Filtri"}
+            className="relative grid h-11 w-11 shrink-0 place-items-center rounded-card border border-hairline bg-glass-1 text-ink-bright transition-colors duration-quick hover:border-soft active:scale-95
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
           >
             <svg
-              width="16"
-              height="16"
+              width="18"
+              height="18"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -437,42 +597,52 @@ export default function CollezionePage() {
               <circle cx="15" cy="7" r="2" />
               <circle cx="9" cy="17" r="2" />
             </svg>
-            Filtri
             {filtriFini > 0 && (
-              <span className="rounded-full bg-brass-400 px-1.5 py-0.5 font-numeric text-[0.65rem] leading-none text-void">
+              <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-brass-400 px-1 font-numeric text-[0.65rem] font-bold leading-none text-void">
                 {filtriFini}
               </span>
             )}
           </button>
         </div>
 
-        <div
-          role="group"
-          aria-label="Stato"
-          className="no-scrollbar -mx-3 flex gap-2 overflow-x-auto px-3 sm:mx-0 sm:px-0"
-        >
-          {scorciatoie.map((f) => {
-            const accesa = f.id === filtroAttivo;
+        <div className="flex items-center gap-2">
+          <div
+            role="group"
+            aria-label="Stato"
+            className="no-scrollbar -ml-0 flex min-w-0 flex-1 gap-1.5 overflow-x-auto"
+          >
+            {scorciatoie.map((f) => {
+              const accesa = f.id === filtroAttivo;
 
-            return (
-              <button
-                key={f.id}
-                type="button"
-                aria-pressed={accesa}
-                onClick={() => aggiornaParametro("filtro", f.id)}
-                className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium transition-colors duration-quick active:scale-95
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
-                  ${accesa ? "bg-ink-bright text-void" : "bg-alcove text-ink hover:text-ink-bright"}`}
-              >
-                {f.etichetta}
-                <span
-                  className={`ml-1.5 font-numeric text-xs ${accesa ? "text-void/60" : "text-ink-faint"}`}
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  aria-pressed={accesa}
+                  onClick={() => aggiornaParametro("filtro", f.id)}
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors duration-quick active:scale-95
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
+                    ${accesa ? "bg-ink-bright text-void" : "bg-alcove text-ink hover:text-ink-bright"}`}
                 >
-                  {conteggi[f.id]}
-                </span>
-              </button>
-            );
-          })}
+                  {f.etichetta}
+                  <span
+                    className={`ml-1.5 font-numeric text-xs ${accesa ? "text-void/60" : "text-ink-faint"}`}
+                  >
+                    {conteggi[f.id]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <MenuOrdineVista
+            aperto={menuVistaAperto}
+            onApri={setMenuVistaAperto}
+            ordine={ordineAttivo}
+            onOrdine={(v) => aggiornaParametro("ordine", v)}
+            vista={vista}
+            onVista={scegliVista}
+          />
         </div>
       </div>
 
@@ -514,52 +684,39 @@ export default function CollezionePage() {
         />
       )}
 
-      <div className="mb-4 mt-1 flex items-center justify-between gap-3 px-1 sm:px-0">
-        <p className="whitespace-nowrap text-sm text-ink-muted" aria-live="polite">
-          {filtroPulito ? null : (
-            <>
-              <span className="font-numeric">{numeroIt(risultati.length)}</span>{" "}
-              serie
-            </>
-          )}
-        </p>
+      {/* Una riga sola, e solo quando c'è qualcosa da dire: con ricerca o
+          filtri attivi, quante serie restano e come tornare a tutte. Con la
+          lista intera non c'è niente da spiegare. */}
+      {!filtroPulito && (
+        <div className="mb-3 mt-1 flex items-center justify-between gap-3 px-1 text-sm text-ink-muted sm:px-0" aria-live="polite">
+          <p>
+            <span className="font-numeric text-ink-bright">{numeroIt(risultati.length)}</span>{" "}
+            serie
+          </p>
 
-        <div className="flex items-center gap-2">
-          <Tendina
-            etichetta="Ordina"
-            mostraEtichetta={false}
-            className="w-36 sm:w-44"
-            valore={ordineAttivo}
-            opzioni={ORDINAMENTI}
-            onCambia={(v) => aggiornaParametro("ordine", v)}
-          />
-
-          <div
-            role="group"
-            aria-label="Vista"
-            className="flex rounded-card border border-hairline bg-glass-1 p-0.5"
+          <button
+            type="button"
+            onClick={() => setParametri({}, { replace: true })}
+            className="rounded-lg px-2 py-1 font-medium text-brass-300 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
           >
-            {[
-              { id: "copertine", nome: "grid", etichetta: "Copertine" },
-              { id: "elenco", nome: "menu", etichetta: "Elenco" }
-            ].map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                aria-pressed={vista === v.id}
-                aria-label={v.etichetta}
-                title={v.etichetta}
-                onClick={() => scegliVista(v.id)}
-                className={`grid h-9 w-9 place-items-center rounded-[0.6rem] transition-colors duration-quick
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
-                  ${vista === v.id ? "bg-ink-bright text-void" : "text-ink-muted hover:text-ink-bright"}`}
-              >
-                <Icon nome={v.nome} dimensione={16} />
-              </button>
-            ))}
-          </div>
+            Azzera
+          </button>
         </div>
-      </div>
+      )}
+
+      {/* «Aggiungi» sul telefono è un tondo fisso sopra la barra in basso,
+          dove arriva il pollice, e non una voce dell'intestazione. */}
+      {!bibliotecaSolaLettura && (
+        <button
+          type="button"
+          onClick={() => setModaleAperto(true)}
+          aria-label="Aggiungi una serie"
+          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full bg-brass-400 text-void shadow-float transition-transform duration-quick active:scale-90
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf md:hidden"
+        >
+          <Icon nome="plus" dimensione={24} />
+        </button>
+      )}
 
       {problema && (
         <p role="alert" className="mb-3 rounded-xl bg-ember/10 px-3.5 py-2.5 text-sm text-ember">

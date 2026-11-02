@@ -142,18 +142,21 @@ export default function CartaSerie({
                 : `${serie.titolo}: ${pct}% completa`
             }
           />
-          <span>
-          {serie.posseduti}
-          {mancanti > 0 && totale ? ` / ${totale}` : ""} vol.
-          {mancanti === 0 && serie.stato === "conclusa" && (
-            <span className="ml-1.5 text-jade">✓</span>
-          )}
-          {mancanti === 0 && serie.stato !== "conclusa" && (
-            <span title="In pari con le uscite" className="ml-1.5 text-lapis">
-              ✓
-            </span>
-          )}
-          {mancanti > 0 && <span className="ml-1.5 text-ember/80">−{mancanti}</span>}
+          {/* Con un «su quanti» il numero si legge da solo («12/13») e
+              senza l'unità la riga sta in una colonna da telefono insieme
+              al «−N»; senza, va a capo e l'anello resta in mezzo. */}
+          <span className="whitespace-nowrap">
+            {serie.posseduti}
+            {mancanti > 0 && totale ? `/${totale}` : " vol."}
+            {mancanti === 0 && serie.stato === "conclusa" && (
+              <span className="ml-1.5 text-jade">✓</span>
+            )}
+            {mancanti === 0 && serie.stato !== "conclusa" && (
+              <span title="In pari con le uscite" className="ml-1.5 text-lapis">
+                ✓
+              </span>
+            )}
+            {mancanti > 0 && <span className="ml-1.5 text-ember/80">−{mancanti}</span>}
           </span>
         </p>
       </div>
