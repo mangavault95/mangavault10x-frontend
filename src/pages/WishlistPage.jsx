@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Pagina from "../ui/Pagina";
 import Copertina from "../ui/Copertina";
+import Icon from "../app/Icon";
 import { Bottone, CampoRicerca } from "../ui/Controlli";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
 import Menu from "../ui/Menu";
@@ -105,9 +106,84 @@ export default function WishlistPage() {
       .slice(0, 8);
   }, [collezione, escono, presi]);
 
+  // «Preso» non scrive subito: la riga si segna e per cinque secondi c'è
+  // «Annulla». Un tocco sbagliato mentre si scorre la lista non registra
+  // un acquisto che poi andrebbe tolto a mano dalla scheda.
+  const [inAttesa, setInAttesa] = useState(() => new Set());
+  const coda = useRef(new Map());
+
+  const segna = (serieId, numero, titolo) => {
+    const chiave = `${serieId}:${numero}`;
+
+    if (coda.current.has(chiave)) return;
+
+    setNota(null);
+    setProblema(null);
+
+    const esegui = async () => {
+      coda.current.delete(chiave);
+      await preso(serieId, numero, titolo);
+      setInAttesa((a) => {
+        const n = new Set(a);
+
+        n.delete(chiave);
+
+        return n;
+      });
+    };
+
+    coda.current.set(chiave, { timer: setTimeout(esegui, 5000), esegui });
+    setInAttesa((a) => new Set(a).add(chiave));
+  };
+
+  const annullaSegno = (chiave) => {
+    const voce = coda.current.get(chiave);
+
+    if (!voce) return;
+
+    clearTimeout(voce.timer);
+    coda.current.delete(chiave);
+    setInAttesa((a) => {
+      const n = new Set(a);
+
+      n.delete(chiave);
+
+      return n;
+    });
+  };
+
+  // Lasciando la pagina con un «Preso» in sospeso lo registro subito:
+  // perderlo in silenzio sarebbe peggio che anticiparlo di qualche secondo.
+  useEffect(() => {
+    const voci = coda.current;
+
+    return () => {
+      for (const voce of voci.values()) {
+        clearTimeout(voce.timer);
+        voce.esegui();
+      }
+    };
+  }, []);
+
+  const chiaveUscita = (u) => `${u.serie.id}:${u.numero}`;
+  const chiaveChiudere = (c) => `${c.serie.id}:${c.serie.posseduti + 1}`;
+
+  const daSpendere = {
+    uscite: escono.filter((u) => !inAttesa.has(chiaveUscita(u))),
+    chiudere: perChiudere.filter((c) => !inAttesa.has(chiaveChiudere(c)))
+  };
+
+  const volumiDaPrendere = daSpendere.uscite.length + daSpendere.chiudere.length;
+
   const totale =
-    escono.reduce((t, u) => t + (u.serie.prezzo_stimato || 0), 0) +
-    perChiudere.reduce((t, c) => t + (c.serie.costo || 0) * c.mancanti, 0);
+    daSpendere.uscite.reduce((t, u) => t + (u.serie.prezzo_stimato || 0), 0) +
+    daSpendere.chiudere.reduce((t, c) => t + (c.serie.costo || 0) * c.mancanti, 0);
+
+  // Le due specie di «ti mancano»: chiudere una serie e rimettersi in
+  // pari su una in corso non sono la stessa spesa, e da dove si comincia
+  // dipende da quale delle due si ha voglia di fare.
+  const perCompletare = perChiudere.filter((c) => chiudibile(c.serie));
+  const perEssereInPari = perChiudere.filter((c) => !chiudibile(c.serie));
 
   async function preso(serieId, numero, titolo) {
     const chiave = `${serieId}:${numero}`;
@@ -230,13 +306,56 @@ export default function WishlistPage() {
             risultati={visibili.length}
           />
 
+          {/* Sul telefono «Aggiungi» è il tondo in basso a destra, come
+              nella Collezione e negli Anime: qui occupava una riga sua. */}
           {!bibliotecaSolaLettura && (
-            <Bottone onClick={() => setModulo(VUOTO)}>Aggiungi</Bottone>
+            <Bottone onClick={() => setModulo(VUOTO)} className="hidden md:inline-flex">
+              Aggiungi
+            </Bottone>
           )}
         </div>
       }
     >
+      {!bibliotecaSolaLettura && (
+        <button
+          type="button"
+          onClick={() => setModulo(VUOTO)}
+          aria-label="Aggiungi un desiderio"
+          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full bg-brass-400 text-void shadow-float transition-transform duration-quick active:scale-95 md:hidden
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf"
+        >
+          <Icon nome="plus" dimensione={24} />
+        </button>
+      )}
+
       <div className="space-y-8">
+        {/* Il riepilogo sta in cima: i soldi sono la prima cosa che si
+            vuole sapere prima di entrare in fumetteria, e i desideri
+            stavano sotto tutto senza nessun segno che esistessero. */}
+        {!ricercaTesto && (volumiDaPrendere > 0 || (dati || []).length > 0) && (
+          <p className="-mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 px-1 text-sm text-ink-muted">
+            {volumiDaPrendere > 0 && (
+              <>
+                <span className="font-numeric text-xl font-semibold text-ink-bright">{euro(totale)}</span>
+                <span>per {volumiDaPrendere === 1 ? "1 volume" : `${volumiDaPrendere} volumi`}</span>
+              </>
+            )}
+
+            {(dati || []).length > 0 && (
+              <>
+                {volumiDaPrendere > 0 && <span aria-hidden="true">·</span>}
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("desideri")?.scrollIntoView({ block: "start" })}
+                  className="underline decoration-ink-faint decoration-dotted underline-offset-4 hover:text-ink-bright"
+                >
+                  {(dati || []).length === 1 ? "1 desiderio" : `${(dati || []).length} desideri`}
+                </button>
+              </>
+            )}
+          </p>
+        )}
+
         {problema && (
           <p
             role="alert"
@@ -284,39 +403,47 @@ export default function WishlistPage() {
                 avviso={u.stato === "manca" ? `prima te ne ${u.mancanti === 1 ? "manca 1" : `mancano ${u.mancanti}`}` : null}
                 prezzo={u.serie.prezzo_stimato}
                 occupato={prendendo === `${u.serie.id}:${u.numero}`}
-                onPreso={bibliotecaSolaLettura ? null : () => preso(u.serie.id, u.numero, u.serie.titolo)}
+                inAttesa={inAttesa.has(chiaveUscita(u))}
+                onAnnulla={() => annullaSegno(chiaveUscita(u))}
+                onPreso={bibliotecaSolaLettura ? null : () => segna(u.serie.id, u.numero, u.serie.titolo)}
               />
             ))}
           </Mucchio>
         )}
 
-        {!ricercaTesto && perChiudere.length > 0 && (
-          <Mucchio titolo="Ti mancano">
-            {perChiudere.map(({ serie: s, mancanti }) => (
-              <RigaSpesa
-                key={`c${s.id}`}
-                a={`/serie/${s.id}`}
-                copertina={s.copertina}
-                titolo={`${s.titolo} ${s.posseduti + 1}`}
-                sotto={fraseMancanti(s, mancanti)}
-                sottoColore={mancanti === 1 && chiudibile(s) ? "text-jade" : undefined}
-                prezzo={s.costo}
-                occupato={prendendo === `${s.id}:${s.posseduti + 1}`}
-                onPreso={bibliotecaSolaLettura ? null : () => preso(Number(s.id), s.posseduti + 1, s.titolo)}
-              />
-            ))}
-          </Mucchio>
-        )}
+        {[
+          { titolo: "Per completare", voci: perCompletare },
+          { titolo: "Per essere in pari", voci: perEssereInPari }
+        ].map(
+          ({ titolo, voci }) =>
+            !ricercaTesto &&
+            voci.length > 0 && (
+              <Mucchio key={titolo} titolo={titolo}>
+                {voci.map((c) => {
+                  const { serie: s, mancanti } = c;
 
-        {!ricercaTesto && totale > 0 && (
-          <div className="flex items-center justify-between rounded-2xl border border-dashed border-strong px-4 py-3.5">
-            <span className="text-sm text-ink-muted">Uscite e ultimi volumi</span>
-            <span className="font-numeric text-lg font-semibold text-ink-bright">{euro(totale)}</span>
-          </div>
+                  return (
+                    <RigaSpesa
+                      key={`c${s.id}`}
+                      a={`/serie/${s.id}`}
+                      copertina={s.copertina}
+                      titolo={`${s.titolo} ${s.posseduti + 1}`}
+                      sotto={fraseMancanti(s, mancanti)}
+                      sottoColore={mancanti === 1 && chiudibile(s) ? "text-jade" : undefined}
+                      prezzo={s.costo}
+                      occupato={prendendo === chiaveChiudere(c)}
+                      inAttesa={inAttesa.has(chiaveChiudere(c))}
+                      onAnnulla={() => annullaSegno(chiaveChiudere(c))}
+                      onPreso={bibliotecaSolaLettura ? null : () => segna(Number(s.id), s.posseduti + 1, s.titolo)}
+                    />
+                  );
+                })}
+              </Mucchio>
+            )
         )}
 
         {!ricercaTesto && (dati || []).length > 0 && (
-          <h2 className="-mb-4 px-1 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">Desideri</h2>
+          <h2 id="desideri" className="-mb-4 scroll-mt-4 px-1 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">Desideri</h2>
         )}
 
         {errore ? (
@@ -411,16 +538,18 @@ function Miniatura({ src, ripiego = null }) {
   );
 }
 
-function RigaSpesa({ a, copertina, ripiego, titolo, sotto, sottoColore = "text-ink-muted", avviso, prezzo, occupato, onPreso }) {
+function RigaSpesa({ a, copertina, ripiego, titolo, sotto, sottoColore = "text-ink-muted", avviso, prezzo, occupato, inAttesa = false, onAnnulla, onPreso }) {
   return (
     <li className="flex items-center gap-3 py-2.5">
-      <Link to={a} className="flex min-w-0 flex-1 items-center gap-3">
+      <Link to={a} className={`flex min-w-0 flex-1 items-center gap-3 transition-opacity duration-quick ${inAttesa ? "opacity-50" : ""}`}>
         <Miniatura src={copertina} ripiego={ripiego} />
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[0.95rem] font-semibold text-ink-bright">{titolo}</p>
-          <p className={`truncate text-xs ${sottoColore}`}>{sotto}</p>
-          {avviso && <p className="truncate text-xs text-ember">{avviso}</p>}
+          <p className={`line-clamp-2 text-[0.95rem] font-semibold leading-snug text-ink-bright ${inAttesa ? "line-through" : ""}`}>{titolo}</p>
+          {/* Due righe e non una: «l'ultimo uscito, poi sei in p…» e «te ne
+              mancano 2 per esse…» perdevano la parte che serve. */}
+          <p className={`line-clamp-2 text-xs ${sottoColore}`}>{inAttesa ? "Preso: lo registro tra poco" : sotto}</p>
+          {avviso && !inAttesa && <p className="line-clamp-2 text-xs text-ember">{avviso}</p>}
         </div>
       </Link>
 
@@ -429,11 +558,13 @@ function RigaSpesa({ a, copertina, ripiego, titolo, sotto, sottoColore = "text-i
       {onPreso && (
         <button
           type="button"
-          onClick={onPreso}
+          onClick={inAttesa ? onAnnulla : onPreso}
           disabled={occupato}
-          className="shrink-0 rounded-xl bg-glass-2 px-3 py-2 text-sm font-semibold text-ink-bright transition-transform duration-quick active:scale-95 disabled:opacity-60"
+          className={`shrink-0 rounded-xl px-3 py-2 text-sm font-semibold transition-transform duration-quick active:scale-95 disabled:opacity-60 ${
+            inAttesa ? "bg-brass-400 text-void" : "bg-glass-2 text-ink-bright"
+          }`}
         >
-          {occupato ? "…" : "Preso"}
+          {occupato ? "…" : inAttesa ? "Annulla" : "Preso"}
         </button>
       )}
     </li>
