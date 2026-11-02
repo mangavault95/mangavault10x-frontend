@@ -35,6 +35,7 @@ import {
   droppataDa,
   euro,
   plurale,
+  tettoLettura,
   totaleDisponibile,
   valoreSerie,
   volumiMancanti,
@@ -101,6 +102,11 @@ export default function SeriePage() {
     primoLettore.current = lettoreVisto;
     ricaricaStorico();
   }, [lettoreVisto, ricaricaStorico]);
+
+  // Se la serie è già sul tavolo di lettura, il tasto principale
+  // dice «continua» e non «inizia»: stessa richiesta che fa `Volumi`
+  // per il segnalibro, e serve prima dei ritorni anticipati qui sotto.
+  const sessioni = useRisorsa(() => getReadingSessions());
 
   const volumiLetti = useMemo(() => {
     const riga = (storico.dati || []).find(
@@ -206,6 +212,62 @@ export default function SeriePage() {
     }
   }
 
+  /* -------------------- Il gesto principale --------------------
+   *
+   * Cosa si vuole fare, aprendo la scheda di una serie, è quasi sempre
+   * una cosa sola: leggerla. Il tasto sta in cima e cambia parole
+   * secondo lo stato, ma la regola per scegliere il volume è quella di
+   * `LetturaPage.primoNonLetto`: il primo non letto, fermandosi al tetto
+   * di quelli che si hanno in casa.
+   */
+  const tetto = tettoLettura(serie.posseduti, serie.totali);
+  const insiemeLetti = new Set(volumiLetti);
+
+  let prossimoVolume = 1;
+  while (insiemeLetti.has(prossimoVolume) && (!tetto || prossimoVolume < tetto)) prossimoVolume += 1;
+
+  const tuttoLetto = Boolean(tetto) && insiemeLetti.has(tetto) && prossimoVolume === tetto;
+  const sessioneAperta = (sessioni.dati || []).find((s) => String(s.manga_id) === String(serie.id));
+
+  // Chi guarda le letture di un altro, o sta solo guardando la
+  // biblioteca, non ha niente da avviare: il tasto non c'è, come non ci
+  // sono i comandi sui volumi.
+  const puoiLeggere = !diUnAltro && !bibliotecaSolaLettura && serie.posseduti > 0 && !tuttoLetto;
+
+  async function iniziaLettura() {
+    try {
+      await eseguiProtetto(() =>
+        saveReadingSession({
+          manga_id: serie.id,
+          titolo: serie.titolo,
+          autore: serie.autore || "",
+          coverurl: serie.copertina || "",
+          volume: prossimoVolume,
+          volumitotali: serie.totali ?? null
+        })
+      );
+
+      sessioni.ricarica();
+      navigate("/lettura");
+    } catch {
+      // Come in `riprendi`: un tentativo andato a vuoto non merita un
+      // banner, il tasto resta lì e si può ripremere.
+    }
+  }
+
+  // Una frase sola per «come sto messo con questa serie»: prima erano
+  // quattro pillole («In corso», «Serie completa», «mancano 2 volumi»,
+  // «Non letto») che si contraddicevano senza dire a cosa si riferivano.
+  const fraseVolumi = !serie.posseduti
+    ? "Non ne hai ancora"
+    : mancanti > 0
+      ? mancanti === 1
+        ? "Ti manca 1 volume"
+        : `Ti mancano ${mancanti} volumi`
+      : totaleAttuale
+        ? `Hai tutti i ${serie.posseduti} volumi`
+        : `${plurale(serie.posseduti, "volume", "volumi")} in casa`;
+
   return (
     <article>
       {/* ---------- Testata con la copertina come sfondo ----------
@@ -261,46 +323,76 @@ export default function SeriePage() {
             </p>
           )}
 
-          <div className="grid gap-5 sm:gap-8 md:grid-cols-[minmax(0,15rem)_1fr] lg:gap-12">
-            {/* Sul telefono la copertina è più piccola: a 176 pixel di
-                larghezza è alta 264, e insieme al titolo e alle etichette
-                si mangiava tutta la prima schermata prima della trama. */}
-            <div className="mx-auto w-32 sm:w-44 md:mx-0 md:w-full">
+          {/* Sul telefono copertina e titolo stanno affiancati e tutto il
+              resto scende a larghezza piena: prima la copertina da sola,
+              centrata, alta 190 pixel, spingeva il titolo e ogni comando
+              sotto la piega. Da `md` si torna alla colonna a sinistra, con
+              la copertina che occupa le due righe. */}
+          <div className="grid grid-cols-[7rem_1fr] gap-x-4 gap-y-5 sm:grid-cols-[11rem_1fr] sm:gap-x-8 md:grid-cols-[minmax(0,15rem)_1fr] lg:gap-x-12">
+            <div className="md:row-span-2">
               <Copertina src={serie.copertina} alt={serie.titolo} priorita />
             </div>
 
-            <div className="min-w-0 space-y-4 sm:space-y-6">
+            <div className="min-w-0 space-y-2 sm:space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="font-display text-xl font-semibold leading-tight tracking-tight text-ink-bright sm:text-4xl lg:text-5xl">
+                  {serie.titolo}
+                </h1>
+
+                {/* Preferito e voto qui: è il posto dove prima
+                    servivano il pannello Gestione, adesso bastano
+                    un click e — se serve — un accesso al volo. */}
+                <BottonePreferito
+                  serie={serie}
+                  dimensione={26}
+                  className="mt-0.5 shrink-0 [@media(hover:none)]:h-10 [@media(hover:none)]:w-10"
+                  onCambiato={(nuovo) => aggiornaLocale(serie.id, { preferito: nuovo })}
+                />
+              </div>
+
+              <Autori serie={serie} onScegli={setAutoreAperto} />
+
+              {/* Come sta messa la serie, in una frase: i volumi in casa
+                  e, accanto, se esce ancora. Il verde è «niente da
+                  comprare», il rosso «manca qualcosa». */}
+              <p className="text-sm">
+                <span className={mancanti > 0 ? "text-ember" : "text-jade"}>{fraseVolumi}</span>
+                {serie.stato && (
+                  <span className="text-ink-muted"> · {ETICHETTE_STATO[serie.stato] || serie.stato}</span>
+                )}
+              </p>
+            </div>
+
+            <div className="col-span-2 min-w-0 space-y-4 sm:space-y-6 md:col-span-1">
               <div className="space-y-3">
-                <div className="flex items-start justify-between gap-4">
-                  <h1 className="font-display text-2xl font-semibold leading-tight tracking-tight text-ink-bright sm:text-4xl lg:text-5xl">
-                    {serie.titolo}
-                  </h1>
-
-                  {/* Preferito e voto qui: è il posto dove prima
-                      servivano il pannello Gestione, adesso bastano
-                      un click e — se serve — un accesso al volo. */}
-                  <BottonePreferito
-                    serie={serie}
-                    dimensione={26}
-                    className="mt-1 shrink-0"
-                    onCambiato={(nuovo) => aggiornaLocale(serie.id, { preferito: nuovo })}
-                  />
-                </div>
-
-                <Autori serie={serie} onScegli={setAutoreAperto} />
+                {/* Il gesto che si fa più spesso aprendo una scheda:
+                    leggerla. Largo quanto lo schermo, raggiungibile col
+                    pollice. */}
+                {puoiLeggere &&
+                  (droppata ? (
+                    <Bottone onClick={() => riprendi(prossimoVolume)} className="min-h-12 w-full sm:w-auto">
+                      Riprendi dal vol. {prossimoVolume}
+                    </Bottone>
+                  ) : sessioneAperta ? (
+                    <Bottone onClick={() => navigate("/lettura")} className="min-h-12 w-full sm:w-auto">
+                      Continua dal vol. {Number(sessioneAperta.volume) || prossimoVolume}
+                    </Bottone>
+                  ) : (
+                    <Bottone onClick={iniziaLettura} className="min-h-12 w-full sm:w-auto">
+                      Inizia a leggere · vol. {prossimoVolume}
+                    </Bottone>
+                  ))}
 
                 {/* Un voto per persona, con il nome accanto: sulla
                     stessa serie ci sono due giudizi e nessuno dei due
                     è "il" voto. Il proprio si tocca, l'altro si legge. */}
                 <VotiPersone serie={serie} />
 
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  {serie.stato && (
-                    <Etichetta tono={serie.stato === "conclusa" ? "jade" : "lapis"}>
-                      {ETICHETTE_STATO[serie.stato] || serie.stato}
-                    </Etichetta>
-                  )}
-
+                {/* Sul telefono le etichette scorrono in orizzontale su
+                    una riga sola invece di andare a capo su tre: erano
+                    il blocco più alto della testata e dicono cose di
+                    secondo piano (pubblico, generi). */}
+                <div className="no-scrollbar -mx-4 flex items-center gap-2 overflow-x-auto px-4 pt-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&>*]:shrink-0">
                   {serie.edizione && <Etichetta tono="brass">{serie.edizione}</Etichetta>}
 
                   {/* Il pubblico dell'opera. Sta prima dei generi e non
@@ -319,19 +411,11 @@ export default function SeriePage() {
                     </Link>
                   )}
 
-                  {pct === 100 && <Etichetta tono="jade">Serie completa</Etichetta>}
-
                   {droppata ? (
                     <Etichetta tono="ember">Droppato{chi}</Etichetta>
                   ) : (
                     <Etichetta tono={ETICHETTE_LETTURA[statoLettura].tono}>
                       {ETICHETTE_LETTURA[statoLettura].testo}
-                    </Etichetta>
-                  )}
-
-                  {mancanti > 0 && (
-                    <Etichetta tono="ember">
-                      {mancanti === 1 ? "manca 1 volume" : `mancano ${mancanti} volumi`}
                     </Etichetta>
                   )}
 
