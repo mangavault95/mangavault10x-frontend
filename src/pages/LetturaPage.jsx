@@ -63,7 +63,7 @@ const MASSIME_IN_SCELTA = 60;
  *                   foglio, dietro i tre puntini.
  *   Da votare     — le serie finite che non hanno ancora un voto, con le
  *                   stelle sulla riga.
- *   Le tue lette  — la classifica, dal voto più alto.
+ *   Le tue letture — la classifica, dal voto più alto.
  *
  * E in fondo le mollate, chiuse, con «Riprendi»: prima una serie
  * droppata spariva, e per ritrovarla bisognava passare dalla sua scheda.
@@ -920,13 +920,34 @@ export default function LetturaPage() {
           </Sezione>
         )}
 
-        {/* ═══════════ LE TUE LETTE ═══════════ */}
+        {/* ═══════════ LE TUE LETTURE ═══════════ */}
+        <div id="letture" className="scroll-mt-4">
         <Sezione
-          titolo={mioTurno ? "Le tue lette" : `Le lette di ${nomeLettore}`}
+          titolo={mioTurno ? "Le tue letture" : `Le letture di ${nomeLettore}`}
           extra={<SceltaLettore lettori={lettori} scelto={lettoreScelto} onScegli={setSceltaLettore} />}
         >
           {lette.length ? (
             <div className="space-y-6">
+              {/* Con l'elenco aperto il modo di richiuderlo resta in vista
+                  mentre si scorre: prima il tasto stava in fondo a cento
+                  righe, e riaccorciare la pagina voleva dire scorrerle
+                  tutte. */}
+              {tutteLeLette && (
+                <div className="sticky top-0 z-sticky -mx-4 bg-shelf/90 px-4 py-2 backdrop-blur-md sm:-mx-0 sm:px-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTutteLeLette(false);
+                      document.getElementById("letture")?.scrollIntoView({ block: "start" });
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-alcove py-2.5 text-sm font-semibold text-ink-bright shadow-float"
+                  >
+                    <Icon nome="back" dimensione={16} className="rotate-90" />
+                    Riduci l'elenco
+                  </button>
+                </div>
+              )}
+
               {/* Di default una striscia di copertine, con il voto
                   sopra: dieci righe «titolo + 5» non dicevano cosa fosse
                   quel 5 e non avevano un'immagine da riconoscere. La
@@ -971,15 +992,15 @@ export default function LetturaPage() {
                 </ol>
               )}
 
-              <button
-                type="button"
-                onClick={() => setTutteLeLette((t) => !t)}
-                className="w-full rounded-2xl bg-alcove py-3 text-sm font-semibold text-ink-bright"
-              >
-                {tutteLeLette
-                  ? "Torna alle copertine"
-                  : `Mostra tutte in elenco (${votate.length + senzaVoto.length - daVotare.length})`}
-              </button>
+              {!tutteLeLette && (
+                <button
+                  type="button"
+                  onClick={() => setTutteLeLette(true)}
+                  className="w-full rounded-2xl bg-alcove py-3 text-sm font-semibold text-ink-bright"
+                >
+                  Mostra tutte in elenco ({votate.length + senzaVoto.length - daVotare.length})
+                </button>
+              )}
 
               {tutteLeLette && senzaVoto.length > daVotare.length && (
                 <div className="space-y-2 border-t border-hairline pt-5">
@@ -1013,11 +1034,14 @@ export default function LetturaPage() {
             />
           )}
         </Sezione>
+        </div>
 
         {/* ═══════════ MOLLATE ═══════════ */}
         {mollate.length > 0 && (
           <details id="mollate" className="group scroll-mt-24 rounded-2xl bg-alcove">
-            <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3.5 text-sm font-semibold text-ink-bright">
+            {/* L'intestazione resta attaccata in alto finché la sezione è
+                aperta: per chiuderla non serve tornare su a cercarla. */}
+            <summary className="sticky top-0 z-sticky flex cursor-pointer list-none items-center justify-between rounded-2xl bg-alcove px-4 py-3.5 text-sm font-semibold text-ink-bright group-open:shadow-float">
               <span>
                 Mollate <span className="font-numeric text-ink-muted">· {mollate.length}</span>
               </span>
@@ -1634,7 +1658,7 @@ function RigaLettura({ lettura, principale, ultima, soloLettura, onAvanti, onInd
                 una sola ha il tasto pieno. */}
             {ultima && (
               <p className="text-[0.62rem] font-medium uppercase tracking-[0.14em] text-brass-400">
-                Ultima letta
+                Ultima lettura
               </p>
             )}
 

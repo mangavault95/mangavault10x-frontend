@@ -846,7 +846,11 @@ function SezioneChiudibile({ titolo, extra, apertaDiPartenza = false, children }
         type="button"
         onClick={() => setAperta((a) => !a)}
         aria-expanded={aperta}
-        className="flex w-full items-center justify-between gap-4 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+        // Aperta, l'intestazione resta attaccata in alto: per richiudere
+        // la sezione non serve tornare su a cercarla.
+        className={`flex w-full items-center justify-between gap-4 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 ${
+          aperta ? "sticky top-0 z-sticky -mx-4 bg-shelf/90 px-4 py-2 backdrop-blur-md sm:-mx-0 sm:px-0" : ""
+        }`}
       >
         <h2 className="font-display text-xl font-semibold text-ink-bright">{titolo}</h2>
 
