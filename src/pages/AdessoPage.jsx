@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
@@ -449,10 +449,26 @@ function Sezione({ titolo, link, children }) {
 
 function DaRiprendere({ anime, occupato, onVisto }) {
   return (
-    <section className="mx-4 mt-5 overflow-hidden rounded-3xl bg-alcove shadow-raised">
-      <div className="flex gap-4 p-4">
+    <section className="relative mx-4 mt-5 overflow-hidden rounded-3xl bg-alcove shadow-raised">
+      {/* La copertina stessa, sfocata, fa da fondo: la card prende il
+          colore della serie invece di essere la stessa lastra per tutte.
+          Sfuma verso il fondo della scheda perché il tasto resti su una
+          superficie uniforme e il testo mantenga il contrasto. */}
+      {urlCopertina(anime.cover_url, 256) && (
+        <>
+          <img
+            src={urlCopertina(anime.cover_url, 256)}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            className="pointer-events-none absolute inset-0 h-full w-full scale-125 object-cover opacity-35 blur-2xl"
+          />
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-b from-alcove/20 via-alcove/60 to-alcove" />
+        </>
+      )}
+      <div className="relative flex gap-4 p-4">
         <Link to={`/videoteca/${anime.id}`} className="shrink-0">
-          <Immagine src={anime.cover_url} alt={`Copertina di ${anime.titolo}`} className="h-[132px] w-[92px] rounded-xl shadow-raised" />
+          <Immagine src={anime.cover_url} alt={`Copertina di ${anime.titolo}`} className="h-[156px] w-[108px] rounded-xl shadow-float" />
         </Link>
         <div className="flex min-w-0 flex-col gap-1.5">
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-brass-300">Da riprendere</p>
@@ -466,7 +482,7 @@ function DaRiprendere({ anime, occupato, onVisto }) {
           </p>
         </div>
       </div>
-      <div className="px-4 pb-4">
+      <div className="relative px-4 pb-4">
         <button
           type="button"
           onClick={onVisto}
@@ -549,21 +565,52 @@ function RichiamoMese({ adesso }) {
   );
 }
 
-/** Una copertina con il suo ripiego: un riquadro del colore della scheda. */
+/**
+ * Una copertina con il suo ripiego: un riquadro del colore della scheda.
+ *
+ * Finché non è arrivata il riquadro respira (shimmer) e poi l'immagine
+ * ci sfuma sopra: prima compariva di colpo, e su telefono, con le
+ * copertine che passano dal ridimensionatore, la home restava qualche
+ * secondo fatta di rettangoli neri tutti uguali.
+ */
 function Immagine({ src, alt, className = "", larghezza = 256 }) {
   const [rotta, setRotta] = useState(false);
+  const [caricata, setCaricata] = useState(false);
+  const immagine = useRef(null);
   const indirizzo = urlCopertina(src, larghezza);
 
-  if (!indirizzo || rotta) return <div aria-hidden="true" className={`bg-glass-2 ${className}`} />;
+  // Un'immagine già in cache può essere completa prima che React le
+  // attacchi `onLoad`: senza questo controllo resterebbe invisibile.
+  useEffect(() => {
+    if (immagine.current?.complete && immagine.current.naturalWidth > 0) setCaricata(true);
+  }, [indirizzo]);
+
+  if (!indirizzo || rotta) {
+    return <div aria-hidden="true" className={`bg-gradient-to-br from-alcove to-shelf ${className}`} />;
+  }
 
   return (
-    <img
-      src={indirizzo}
-      alt={alt}
-      loading="lazy"
-      decoding="async"
-      onError={dopoIlRipiego(() => setRotta(true))}
-      className={`object-cover ${className}`}
-    />
+    <div
+      className={`relative overflow-hidden bg-glass-2 ${className}`}
+    >
+      {!caricata && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 animate-shimmer bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent)] bg-[length:200%_100%]"
+        />
+      )}
+      <img
+        ref={immagine}
+        src={indirizzo}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setCaricata(true)}
+        onError={dopoIlRipiego(() => setRotta(true))}
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-slow ease-settle ${
+          caricata ? "opacity-100" : "opacity-0"
+        }`}
+      />
+    </div>
   );
 }
