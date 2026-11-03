@@ -35,7 +35,6 @@ import {
   CATEGORIE,
   ETICHETTE_STATO,
   completamento,
-  dataIt,
   droppataDa,
   euro,
   intervalliVolumi,
@@ -522,8 +521,17 @@ export default function SeriePage() {
                   etichetta="Valore in casa"
                   valore={serie.costo ? euro(valoreSerie(serie)) : null}
                 />
-                <Dato etichetta="Aggiunta il" valore={dataIt(serie.dataAggiunta)} />
               </dl>
+
+              {!bibliotecaSolaLettura && (
+                <Link
+                  to={`/gestione?sezione=manga&serie=${serie.id}`}
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brass-300"
+                >
+                  <Icon nome="matita" dimensione={16} />
+                  Correggi nella gestione
+                </Link>
+              )}
             </div>
           </div>
         </div>

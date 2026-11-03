@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Copertina from "../Copertina";
 import Icon from "../../app/Icon";
 import { Bottone, CampoRicerca } from "../Controlli";
@@ -29,7 +30,8 @@ import { CATEGORIE, ETICHETTE_STATO } from "../../dati/serie";
 export default function GestioneManga() {
   const { serie, inCorso, errore, ricarica, aggiornaLocale, rimuoviLocale } = useCollezione();
 
-  const [selezionataId, setSelezionataId] = useState(null);
+  const [parametri] = useSearchParams();
+  const [selezionataId, setSelezionataId] = useState(() => Number(parametri.get("serie")) || null);
   const [ricercaTesto, setRicerca] = useState("");
   const [soloDaFinire, setSoloDaFinire] = useState(false);
   // L'esito dell'eliminazione non può stare nella scheda: quella
