@@ -1,5 +1,13 @@
-import { lazy, Suspense } from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigationType,
+  UNSAFE_LocationContext as ContestoPosizione
+} from "react-router-dom";
+import { PaginaViva, ripristino } from "../dati/paginaViva";
 import Shell from "./Shell";
 import RouteFallback from "./RouteFallback";
 import RouteErrore from "./RouteErrore";
@@ -86,7 +94,82 @@ export default function AppRoutes() {
  */
 function Contenuto() {
   const location = useLocation();
+  const tipoNavigazione = useNavigationType();
   const { idVisto } = useSessione();
+
+  /**
+   * La Collezione che resta in vita sotto la scheda di una serie.
+   *
+   * Aprire una scheda la smontava, e chiuderla voleva dire ricostruire
+   * duecento copertine (circa 4.500 elementi) nel momento esatto in cui
+   * partiva il volo di ritorno: sul telefono era lo scatto che si vedeva.
+   * Adesso, dal momento in cui si è stati sulla Collezione e finché si
+   * resta su di lei o su una scheda, la pagina rimane montata e si nasconde.
+   * Tornare è istantaneo, e filtri, ricerca e posizione sono quelli di prima.
+   *
+   * Tre accorgimenti, tutti necessari:
+   *  - la pagina nascosta legge un indirizzo CONGELATO (l'ultimo suo): se
+   *    vedesse quello della scheda si ripulirebbe i filtri e si
+   *    ridisegnerebbe tutta mentre non la guarda nessuno;
+   *  - uscendo da Collezione e schede (Wishlist, Home…) viene smontata come
+   *    prima, e tornando riparte pulita: non è una cache, è una pausa;
+   *  - lo scorrimento si salva mentre la si guarda e si rimette quando
+   *    si torna da una scheda — da un link della barra riparte dall'alto.
+   */
+  const percorso = location.pathname;
+  const inCollezione = percorso === "/collezione";
+  const inScheda = percorso.startsWith("/serie/");
+  const scorrimento = useRef(0);
+
+  const posizioneAttuale = useMemo(
+    () => ({ location, navigationType: tipoNavigazione }),
+    [location, tipoNavigazione]
+  );
+
+  // Cosa ricordare fra un cambio di indirizzo e l'altro: lo si calcola
+  // qui e lo si scrive nello stato durante il render (il modo previsto da
+  // React per derivare uno stato dalle props), così a ogni render vale
+  // già il valore nuovo e non uno rimasto indietro di una pagina.
+  const [ricordo, setRicordo] = useState({ viva: false, posizione: null, percorso: null, precedente: null });
+
+  let viva = ricordo.viva;
+  let posizione = ricordo.posizione;
+
+  if (inCollezione) {
+    viva = true;
+    posizione = posizioneAttuale;
+  } else if (!inScheda) {
+    viva = false;
+    posizione = null;
+  }
+
+  if (viva !== ricordo.viva || posizione !== ricordo.posizione || percorso !== ricordo.percorso) {
+    setRicordo({
+      viva,
+      posizione,
+      percorso,
+      precedente: percorso !== ricordo.percorso ? ricordo.percorso : ricordo.precedente
+    });
+  }
+
+  const tornaDaScheda = inCollezione && Boolean(ricordo.precedente?.startsWith("/serie/"));
+
+  useEffect(() => {
+    if (!inCollezione) return undefined;
+
+    const salva = () => (scorrimento.current = window.scrollY);
+
+    window.addEventListener("scroll", salva, { passive: true });
+
+    return () => window.removeEventListener("scroll", salva);
+  }, [inCollezione]);
+
+  useLayoutEffect(() => {
+    if (!tornaDaScheda) return;
+
+    window.scrollTo({ top: scorrimento.current, behavior: "instant" });
+    ripristino.fatto = true;
+  }, [percorso, tornaDaScheda]);
 
   // Il tema segue chi è entrato: ardesia per Nicer, lilla per Sara.
   useTema();
@@ -94,6 +177,28 @@ function Contenuto() {
   // La chiave rimette in piedi il muro a ogni cambio di pagina: una
   // sezione caduta non deve tenersi il posto quando si prova ad andare
   // altrove.
+  return (
+    <>
+      {viva && posizione && (
+        <div style={inCollezione ? undefined : { display: "none" }} aria-hidden={inCollezione ? undefined : true}>
+          <PaginaViva.Provider value={inCollezione}>
+            <ContestoPosizione.Provider value={posizione}>
+              <RouteErrore key={idVisto ?? "ospite"}>
+                <Suspense fallback={<RouteFallback />}>
+                  <Collezione />
+                </Suspense>
+              </RouteErrore>
+            </ContestoPosizione.Provider>
+          </PaginaViva.Provider>
+        </div>
+      )}
+
+      <ContenutoRotte location={location} idVisto={idVisto} />
+    </>
+  );
+}
+
+function ContenutoRotte({ location, idVisto }) {
   return (
     // ⚠️ Prima (02/11/2026) qui c'era un'animazione di `transform` sull'intero
     // contenitore. Su una collezione di 188 copertine è alto migliaia di
@@ -117,7 +222,8 @@ function Contenuto() {
                   <Route path="/gestione" element={<Gestione />} />
                   <Route path="/cerca" element={<Cerca />} />
                   <Route path="/mese" element={<Mese />} />
-                  <Route path="/collezione" element={<Collezione />} />
+                  {/* La Collezione sta sopra, tenuta in vita (vedi `Contenuto`). */}
+                  <Route path="/collezione" element={null} />
                   <Route path="/biblioteca" element={<Navigate to="/collezione" replace />} />
                   <Route path="/serie/:id" element={<Serie />} />
                   <Route path="/wishlist" element={<Wishlist />} />

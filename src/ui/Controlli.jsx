@@ -36,8 +36,12 @@ export function CampoRicerca({
       const dentroCampo = /^(input|textarea|select)$/i.test(e.target.tagName);
       if (dentroCampo || e.target.isContentEditable) return;
 
+      // Una pagina tenuta in memoria ma nascosta (la Collezione sotto una
+      // scheda) ha il campo spento: non deve mangiarsi il tasto.
+      if (!campo.current || campo.current.offsetParent === null) return;
+
       e.preventDefault();
-      campo.current?.focus();
+      campo.current.focus();
     }
 
     window.addEventListener("keydown", alTasto);

@@ -32,6 +32,7 @@ import AggiungiAnime from "../ui/videoteca/AggiungiAnime";
 import PostaInArrivo from "../ui/videoteca/PostaInArrivo";
 import { useSessione } from "../dati/sessione";
 import SceltaTema from "../ui/SceltaTema";
+import { ripristino } from "../dati/paginaViva";
 
 /**
  * La cornice fissa attorno a ogni pagina.
@@ -149,7 +150,10 @@ export default function Shell({ children }) {
   // dovrebbe ripercorrere tutto il menu a ogni spostamento.
   useEffect(() => {
     contenutoRef.current?.focus({ preventScroll: true });
-    window.scrollTo({ top: 0, behavior: "instant" });
+
+    // La Collezione che torna da una scheda si è già rimessa dov'era.
+    if (ripristino.fatto) ripristino.fatto = false;
+    else window.scrollTo({ top: 0, behavior: "instant" });
   }, [location.pathname]);
 
   // Scorciatoie: 1-4 sono le linguette della barra, nello stesso ordine.

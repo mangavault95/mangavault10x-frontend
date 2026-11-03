@@ -10,6 +10,7 @@ import Icon from "../app/Icon";
 import Sovrapposizione from "../ui/Sovrapposizione";
 import useChiusuraVelo from "../ui/useChiusuraVelo";
 import { useCollezione } from "../dati/collezione";
+import { usePaginaViva } from "../dati/paginaViva";
 import { useSessione } from "../dati/sessione";
 import { useAccessoProtetto } from "../dati/accesso";
 import {
@@ -90,8 +91,13 @@ function vistaSalvata() {
  */
 function useBarraChePare(bloccata) {
   const [nascosta, setNascosta] = useState(false);
+  // Nascosta sotto una scheda (routes.jsx) non ascolta lo scorrimento della
+  // scheda: ogni cambio di stato qui ridisegnerebbe duecento copertine.
+  const inVista = usePaginaViva();
 
   useEffect(() => {
+    if (!inVista) return undefined;
+
     let ultimo = window.scrollY;
 
     // Niente `requestAnimationFrame`: il calcolo è due confronti, e
@@ -130,7 +136,7 @@ function useBarraChePare(bloccata) {
     window.addEventListener("scroll", alScorrimento, { passive: true });
 
     return () => window.removeEventListener("scroll", alScorrimento);
-  }, []);
+  }, [inVista]);
 
   return nascosta && !bloccata;
 }
