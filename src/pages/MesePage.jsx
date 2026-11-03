@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import Sovrapposizione from "../ui/Sovrapposizione";
+import useChiusuraVelo from "../ui/useChiusuraVelo";
 import useRisorsa from "../dati/useRisorsa";
 import { coloreLettore } from "../dati/lettori";
 import { euro } from "../dati/serie";
@@ -9,8 +11,9 @@ import { dopoIlRipiego, getMese, urlCopertina } from "../services/api";
  * IL VOSTRO MESE (04/10/2026).
  *
  * Il riassunto di un mese di casa: quanti volumi sono entrati e quanto
- * sono costati, QUALI sono (serie per serie, i più numerosi in cima),
- * quanto ha letto e guardato ciascuno, e la serie più guardata. I numeri
+ * sono costati, quanto ha letto e guardato ciascuno, e la serie più guardata.
+ * Cosa è entrato nello specifico (serie per serie, i più numerosi in cima)
+ * sta in un popup che si apre dalla pila di copertine. I numeri
  * li fa il server (`routes/mese.js`); qui si mettono in fila, grandi — è
  * una cosa da guardare a inizio mese, non da consultare.
  *
@@ -125,13 +128,18 @@ export default function MesePage() {
 }
 
 /**
- * Il cuore della pagina: quanti volumi, quanto sono costati, e l'elenco
- * di cosa è entrato, serie per serie. Le serie con più volumi stanno in
- * cima e hanno la barra più lunga; una riga dice i numeri («vol. 3-5, 8»).
+ * Il cuore della pagina: quanti volumi, quanto sono costati, e una pila
+ * di copertine che si tocca per vedere cosa è entrato nello specifico.
+ *
+ * L'elenco non sta in pagina: lungo com'era, allungava tutto il resto
+ * (letture e puntate finivano fuori schermo). Sta in un popup, serie per
+ * serie, le più numerose in cima, con i numeri («vol. 3-5, 8»).
  */
 function Acquisti({ acquisti }) {
   const elenco = acquisti.elenco || [];
-  const massimo = Math.max(1, ...elenco.map((s) => s.volumi));
+  const [aperto, setAperto] = useState(false);
+  const inPila = elenco.slice(0, 6);
+  const altre = elenco.length - inPila.length;
 
   return (
     <section className="mt-7">
@@ -147,20 +155,80 @@ function Acquisti({ acquisti }) {
         </p>
 
         {elenco.length > 0 && (
-          <ul aria-hidden="true" className="mt-5 flex -space-x-3">
-            {elenco.slice(0, 6).map((s) => (
-              <li key={s.id}>
-                <Copertina src={s.copertina} piccola />
-              </li>
-            ))}
-          </ul>
+          <button
+            type="button"
+            onClick={() => setAperto(true)}
+            aria-label="Mostra cosa è entrato nel mese"
+            aria-haspopup="dialog"
+            className="mt-5 flex w-full items-center justify-between gap-3 rounded-2xl text-left transition-opacity duration-quick active:opacity-80"
+          >
+            <span className="flex -space-x-3">
+              {inPila.map((s) => (
+                <Copertina key={s.id} src={s.copertina} piccola />
+              ))}
+              {altre > 0 && (
+                <span className="z-0 grid h-20 w-14 place-items-center rounded-xl border-2 border-alcove bg-glass-2 font-numeric text-sm font-semibold text-ink-bright">
+                  +{altre}
+                </span>
+              )}
+            </span>
+
+            <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-brass-300">
+              Dettaglio
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </span>
+          </button>
         )}
       </div>
 
-      {elenco.length > 0 && (
-        <>
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-brass-300">Cosa è entrato</h2>
-          <ul className="space-y-2.5">
+      {aperto && <DettaglioAcquisti elenco={elenco} volumi={acquisti.volumi} spesa={acquisti.spesa} onChiudi={() => setAperto(false)} />}
+    </section>
+  );
+}
+
+/** Il popup: cosa è entrato, serie per serie, con barra, numeri e spesa. */
+function DettaglioAcquisti({ elenco, volumi, spesa, onChiudi }) {
+  const velo = useChiusuraVelo(onChiudi);
+  const massimo = Math.max(1, ...elenco.map((s) => s.volumi));
+
+  return (
+    <Sovrapposizione>
+      <div
+        className="fixed inset-0 z-modal grid place-items-end overflow-y-auto bg-void/70 p-0 backdrop-blur-sm animate-rise-in sm:place-items-center sm:p-4"
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onChiudi();
+        }}
+        {...velo}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Cosa è entrato nel mese"
+          className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-[28px] border border-hairline bg-glass-3 p-5 shadow-float backdrop-blur-2xl sm:rounded-panel sm:p-6"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-display text-xl font-bold text-ink-bright">Cosa è entrato</h2>
+              <p className="mt-0.5 text-sm text-ink-muted">
+                {volumi} {volumi === 1 ? "volume" : "volumi"} · <span className="font-numeric">{euro(spesa)}</span>
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onChiudi}
+              aria-label="Chiudi"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-alcove text-ink-bright"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+
+          <ul className="mt-4 space-y-2.5">
             {elenco.map((s) => (
               <li key={s.id}>
                 <Link to={`/serie/${s.id}`} className="flex items-center gap-3.5 rounded-2xl bg-alcove p-3 transition-colors duration-quick active:bg-glass-2">
@@ -169,7 +237,7 @@ function Acquisti({ acquisti }) {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-display text-base font-bold leading-tight text-ink-bright">{s.titolo}</p>
                     {s.edizione && <p className="truncate text-xs text-ink-muted">{s.edizione}</p>}
-                    {s.numeri.length > 0 && <p className="mt-0.5 truncate font-numeric text-[0.8rem] text-ink">vol. {numeriInFila(s.numeri)}</p>}
+                    {s.numeri.length > 0 && <p className="mt-0.5 font-numeric text-[0.8rem] text-ink">vol. {numeriInFila(s.numeri)}</p>}
 
                     <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-ink-bright/[0.07]">
                       <span className="block h-full rounded-full bg-brass-400" style={{ width: `${Math.max(8, (s.volumi / massimo) * 100)}%` }} />
@@ -184,9 +252,9 @@ function Acquisti({ acquisti }) {
               </li>
             ))}
           </ul>
-        </>
-      )}
-    </section>
+        </div>
+      </div>
+    </Sovrapposizione>
   );
 }
 
