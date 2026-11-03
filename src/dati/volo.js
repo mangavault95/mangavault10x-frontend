@@ -25,6 +25,8 @@
  * altro cambio di pagina. Mai un tocco morto.
  */
 
+import { flushSync } from "react-dom";
+
 const TEMPO_MAX_MS = 700;
 
 let percorsoPrima = null;
@@ -55,7 +57,7 @@ async function attendiCarta(idSerie) {
   return null;
 }
 
-function avviaVolo(idSerie, parti) {
+function avviaVolo(idSerie, parti, alTermine) {
   inVolo = true;
 
   let carta = null;
@@ -64,6 +66,7 @@ function avviaVolo(idSerie, parti) {
     if (carta) carta.style.viewTransitionName = "";
     if (contenitore) contenitore.style.contentVisibility = "";
     inVolo = false;
+    alTermine?.();
   };
 
   const callback = async () => {
@@ -98,20 +101,83 @@ function avviaVolo(idSerie, parti) {
   }
 }
 
+/**
+ * La Collezione tenuta in vita sotto la scheda (`app/routes.jsx`): il suo
+ * indirizzo e la posizione che occupa nella cronologia del browser.
+ * Serve al ritorno "sincrono" qui sotto.
+ */
+let collezione = null;
+
+export function ricordaCollezione(dati) {
+  collezione = dati;
+}
+
+/**
+ * Il pulsante «Indietro» della scheda.
+ *
+ * Il modo ovvio, `navigate(-1)`, è asincrono: il browser torna indietro
+ * quando vuole, con un `popstate` che può arrivare dopo parecchio — su
+ * iPhone, mentre una transizione di vista tiene ferma la pagina, anche
+ * oltre il tempo che la transizione aspetta. Risultato: la carta di
+ * arrivo non c'è ancora quando serve, e la copertina sfuma sul posto.
+ *
+ * Quando la voce precedente della cronologia è proprio la Collezione tenuta
+ * in vita (il caso normale: si è appena aperta una scheda da lì), il ritorno
+ * si fa a mano e in modo SINCRONO: dentro la transizione si sostituisce la
+ * voce della scheda con quella della Collezione, e a transizione finita si
+ * fa un passo indietro nella cronologia per ripulirla — alla fine la
+ * cronologia è quella di prima, con in più una voce in avanti identica.
+ * Se la voce precedente è un'altra (si è passati da una scheda all'altra, o
+ * si è arrivati da Home), vale il vecchio modo.
+ */
 export function tornaIndietroConVolo(navigate, idSerie) {
   if (typeof document.startViewTransition !== "function" || ridotto()) {
     navigate(-1);
     return;
   }
 
-  avviaVolo(idSerie, async () => {
-    navigate(-1);
-  });
+  const c = collezione;
+  const sincrono = Boolean(c) && c.idx != null && window.history.state?.idx === c.idx + 1;
 
-  // Se la transizione non parte (scheda in secondo piano) il tocco non deve
-  // restare morto: tornare indietro si fa comunque, una volta sola.
+  if (!sincrono) {
+    avviaVolo(idSerie, async () => {
+      navigate(-1);
+    });
+
+    // Se la transizione non parte (scheda in secondo piano) il tocco non deve
+    // restare morto: tornare indietro si fa comunque, una volta sola.
+    setTimeout(() => {
+      if (inVolo && idDaPercorso(window.location.pathname)) navigate(-1);
+    }, 900);
+
+    return;
+  }
+
+  let fatto = false;
+  let ripulita = false;
+
+  const torna = () => {
+    if (fatto) return;
+    fatto = true;
+    flushSync(() => navigate(c.url, { replace: true }));
+  };
+
+  const ripulisci = () => {
+    if (ripulita) return;
+    ripulita = true;
+    window.history.go(-1);
+  };
+
+  avviaVolo(
+    idSerie,
+    async () => torna(),
+    () => ripulisci()
+  );
+
   setTimeout(() => {
-    if (inVolo && idDaPercorso(window.location.pathname)) navigate(-1);
+    if (fatto) return;
+    torna();
+    ripulisci();
   }, 900);
 }
 

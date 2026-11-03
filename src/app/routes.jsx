@@ -8,7 +8,7 @@ import {
   UNSAFE_LocationContext as ContestoPosizione
 } from "react-router-dom";
 import { PaginaViva, ripristino } from "../dati/paginaViva";
-import { ricordaPercorso } from "../dati/volo";
+import { ricordaCollezione, ricordaPercorso } from "../dati/volo";
 import Shell from "./Shell";
 import RouteFallback from "./RouteFallback";
 import RouteErrore from "./RouteErrore";
@@ -159,6 +159,13 @@ function Contenuto() {
   // In `useLayoutEffect`: deve essere scritto nel momento stesso in cui la pagina
   // cambia, non quando React trova tempo per gli effetti passivi.
   useLayoutEffect(() => ricordaPercorso(percorso), [percorso]);
+
+  // Dove sta la Collezione nella cronologia, per il ritorno sincrono di volo.js.
+  const { pathname: pc, search: sc } = location;
+  useLayoutEffect(() => {
+    if (pc === "/collezione") ricordaCollezione({ url: pc + sc, idx: window.history.state?.idx ?? null });
+    else if (!pc.startsWith("/serie/")) ricordaCollezione(null);
+  }, [pc, sc]);
 
   useLayoutEffect(() => {
     if (!tornaDaScheda) return;
