@@ -95,10 +95,14 @@ function Contenuto() {
   // sezione caduta non deve tenersi il posto quando si prova ad andare
   // altrove.
   return (
-    // `pagina-entra` (index.css): la cornice resta ferma e a ogni cambio
-    // di indirizzo arriva solo il contenuto, con la stessa curva di tutto
-    // il resto. La chiave rimonta il contenitore e riparte l'animazione.
-    <div key={location.pathname} className="pagina-entra">
+    // ⚠️ Prima (02/11/2026) qui c'era un'animazione di `transform` sull'intero
+    // contenitore. Su una collezione di 188 copertine è alto migliaia di
+    // pixel, e l'iPhone prova a tenerlo tutto in un unico strato in
+    // memoria: passando da una scheda all'altra la pagina a volte
+    // crashava. Adesso l'entrata è un velo grande quanto lo schermo che
+    // sfuma (`pagina-velo`, index.css): stesso effetto, uno strato piccolo.
+    <div key={location.pathname}>
+      <div aria-hidden="true" className="pagina-velo" />
             <RouteErrore>
               <Suspense fallback={<RouteFallback />}>
                 {/* La location come key fa ripartire l'animazione di entrata

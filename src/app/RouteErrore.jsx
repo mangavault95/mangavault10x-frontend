@@ -22,8 +22,44 @@ export default class RouteErrore extends Component {
     return { caduta: true };
   }
 
+  componentDidMount() {
+    // Se la pagina è rimasta in piedi per qualche secondo, il ricaricamento
+    // automatico ha funzionato: il segno si toglie e vale per il prossimo deploy.
+    this.dimentica = setTimeout(() => {
+      try {
+        sessionStorage.removeItem("mangavault:ricaricato");
+      } catch {
+        /* niente */
+      }
+    }, 5000);
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.dimentica);
+  }
+
   componentDidCatch(errore) {
     console.error("Pagina non caricata:", errore);
+
+    // Dopo un deploy una scheda rimasta aperta chiede un pezzo di codice
+    // che sul server non c'è più: ricaricare una volta sola risolve da sé,
+    // senza mostrare la schermata d'errore. Il segno in sessionStorage
+    // impedisce il giro infinito se il problema è un altro.
+    const pezzoMancante = /dynamically imported module|Importing a module script failed|Loading chunk|error loading dynamically/i.test(
+      String(errore?.message || errore)
+    );
+
+    try {
+      if (pezzoMancante && navigator.onLine && !sessionStorage.getItem("mangavault:ricaricato")) {
+        sessionStorage.setItem("mangavault:ricaricato", "1");
+        window.location.reload();
+        return;
+      }
+
+      if (!pezzoMancante) sessionStorage.removeItem("mangavault:ricaricato");
+    } catch {
+      /* senza sessionStorage si vede la schermata, nient'altro */
+    }
   }
 
   render() {

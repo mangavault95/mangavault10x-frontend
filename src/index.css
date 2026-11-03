@@ -1162,7 +1162,18 @@ html.tema-fluido *::after {
 
 /* ---- Pagine, veli, fogli (fuori da @layer: Tailwind ne farebbe varianti) ---- */
 /* La pagina che arriva: la cornice resta ferma, cambia solo il contenuto. */
-.pagina-entra { animation: pagina-entra 520ms var(--ease-premium) backwards; }
+.pagina-velo {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-color: rgb(var(--c-shelf));
+  animation: pagina-svela 460ms var(--ease-premium) forwards;
+}
+@keyframes pagina-svela {
+  from { opacity: 0.9; }
+  to   { opacity: 0; visibility: hidden; }
+}
 
 /* Le carte di una griglia salgono una dopo l'altra: i primi diciotto
    elementi, non di più — oltre, sono già fuori schermo. */
