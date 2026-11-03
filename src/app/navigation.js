@@ -348,8 +348,7 @@ export function titoloPer(percorso) {
 
   if (percorso.startsWith("/cerca")) return "Cerca · MangaVault";
   if (percorso.startsWith("/mese")) return "Il vostro mese · MangaVault";
-  if (percorso.startsWith("/uscite")) return "Uscite manga · MangaVault";
-  if (percorso.startsWith("/spesa")) return "La spesa · MangaVault";
+  if (percorso.startsWith("/uscite")) return "Uscite e spesa · MangaVault";
 
   if (percorso.startsWith("/gestione")) return "Gestione · MangaVault";
 

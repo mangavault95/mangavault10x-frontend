@@ -27,6 +27,8 @@ const TRACCIATI = {
     "M4 5h16v14H4zM7.6 5v14M16.4 5v14M4 8.6h3.6M4 12h3.6M4 15.4h3.6M16.4 8.6H20M16.4 12H20M16.4 15.4H20",
   // Il calendario delle uscite: il mese, con i due anelli in cima.
   calendario: "M4 6h16v14H4zM4 10h16M8.5 4v3.6M15.5 4v3.6",
+  // Uscite e spesa: un volume con il «più» di quello nuovo.
+  uscite: "M5 4.5A1.5 1.5 0 0 1 6.5 3H18v15H6.5A1.5 1.5 0 0 0 5 19.5zM5 19.5A1.5 1.5 0 0 0 6.5 21H18v-3M12 6.5v6M9 9.5h6",
   close: "M6 6l12 12M18 6L6 18",
   // Le quattro linguette della barra unica (04/10/2026): l'orologio di
   // «Adesso», i volumi in piedi, lo schermo con il tasto play, la persona.

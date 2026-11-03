@@ -3,7 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import useRisorsa from "../dati/useRisorsa";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
 import { euro } from "../dati/serie";
-import { dopoIlRipiego, getUsciteArchivio, urlCopertina } from "../services/api";
+import { useAccessoProtetto } from "../dati/accesso";
+import { annullaAcquisti, dopoIlRipiego, getUsciteArchivio, registraAcquisto, urlCopertina } from "../services/api";
 
 /**
  * USCITE — i volumi che escono (e sono usciti) delle tue serie (03/11/2026).
@@ -22,6 +23,11 @@ import { dopoIlRipiego, getUsciteArchivio, urlCopertina } from "../services/api"
  * settimana. La data è quella del giovedì: vedi `usciteFumettologica.js`.
  *
  * Filtro «Da prendere»: nasconde i volumi che hai già.
+ *
+ * Qui c'è anche la spesa (prima era una pagina a parte): ogni volume ha un
+ * tondino a destra. Toccarlo chiede conferma e poi segna il volume come
+ * comprato (stessa registrazione del bot); i volumi segnati da qui restano
+ * annullabili, sempre con conferma. Quelli che avevi già non si toccano.
  */
 
 const NOME_MESE = new Intl.DateTimeFormat("it-IT", { month: "long", year: "numeric", timeZone: "UTC" });
@@ -52,6 +58,12 @@ function UsciteDelMese({ richiesto }) {
   const [oggi] = useState(() => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Rome" }).format(new Date()));
   const mese = richiesto || meseDi(new Date());
   const [soloDaPrendere, setSoloDaPrendere] = useState(false);
+  const eseguiProtetto = useAccessoProtetto();
+  // Gli acquisti fatti da questa pagina (chiave → id delle righe): servono per annullarli.
+  const [fattiOra, setFattiOra] = useState({});
+  const [inConferma, setInConferma] = useState(null);
+  const [occupato, setOccupato] = useState(false);
+  const [problema, setProblema] = useState(null);
 
   const { dati, errore, inCorso, ricarica } = useRisorsa(() => getUsciteArchivio(mese));
 
@@ -69,8 +81,37 @@ function UsciteDelMese({ richiesto }) {
     return [...perGiorno.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [dati, soloDaPrendere]);
 
+  const chiaveDi = (u) => `${u.serie.id}:${u.numero}`;
+
+  async function conferma(u) {
+    const k = chiaveDi(u);
+
+    setProblema(null);
+    setOccupato(true);
+
+    try {
+      if (fattiOra[k]) {
+        await eseguiProtetto(() => annullaAcquisti(fattiOra[k]));
+        setFattiOra((prima) => Object.fromEntries(Object.entries(prima).filter(([chiave]) => chiave !== k)));
+      } else {
+        const esito = await eseguiProtetto(() => registraAcquisto(u.serie.id, { volumi: [u.numero] }));
+        setFattiOra((prima) => ({ ...prima, [k]: esito.acquisti }));
+      }
+
+      setInConferma(null);
+      ricarica();
+    } catch (e) {
+      if (!e?.annullato) setProblema("Non sono riuscito a salvare. Riprova.");
+    } finally {
+      setOccupato(false);
+    }
+  }
+
   const totale = dati?.uscite?.length || 0;
-  const daPrendere = (dati?.uscite || []).filter((u) => u.stato !== "gia").length;
+  const daPrendereElenco = (dati?.uscite || []).filter((u) => u.stato !== "gia");
+  const daPrendere = daPrendereElenco.length;
+  // La spesa: quanto costa quello che è già uscito e ti manca (prezzo stimato).
+  const spesa = daPrendereElenco.filter((u) => u.data <= oggi).reduce((t, u) => t + (u.serie.prezzo_stimato || 0), 0);
 
   // Nel mese corrente la pagina si apre dove sei: sul primo giorno da oggi in poi.
   const oggiRef = useRef(null);
@@ -113,6 +154,7 @@ function UsciteDelMese({ richiesto }) {
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <p className="text-sm text-ink-muted">
             {totale} {totale === 1 ? "volume" : "volumi"} · <span className="text-ink-bright">{daPrendere} da prendere</span>
+            {spesa > 0 && <> · {euro(spesa)} già usciti</>}
           </p>
 
           <button
@@ -127,6 +169,8 @@ function UsciteDelMese({ richiesto }) {
           </button>
         </div>
       )}
+
+      {problema && <p className="mt-4 text-sm text-ember">{problema}</p>}
 
       {inCorso && !dati && (
         <div className="mt-6">
@@ -166,7 +210,16 @@ function UsciteDelMese({ richiesto }) {
             <ul className="space-y-2">
               {uscite.map((u) => (
                 <li key={`${data}-${u.serie.id}-${u.numero}`}>
-                  <Volume u={u} passato={data < oggi} />
+                  <Volume
+                    u={u}
+                    passato={data < oggi}
+                    fattoOra={Boolean(fattiOra[chiaveDi(u)])}
+                    inConferma={inConferma === chiaveDi(u)}
+                    occupato={occupato}
+                    chiedi={() => setInConferma(chiaveDi(u))}
+                    rinuncia={() => setInConferma(null)}
+                    conferma={() => conferma(u)}
+                  />
                 </li>
               ))}
             </ul>
@@ -182,32 +235,76 @@ function UsciteDelMese({ richiesto }) {
   );
 }
 
-/** Un volume: copertina, titolo, editore, e a che punto sei. */
-function Volume({ u, passato }) {
-  const nota =
-    u.stato === "gia"
-      ? { testo: "ce l'hai", colore: "text-jade" }
-      : u.stato === "prossimo"
-        ? { testo: "è il prossimo", colore: "text-brass-300" }
-        : { testo: `prima te ne ${u.mancanti === 1 ? "manca 1" : `mancano ${u.mancanti}`}`, colore: "text-ember" };
+/** Un volume: copertina, titolo, editore, a che punto sei, e il tondino «comprato». */
+function Volume({ u, passato, fattoOra, inConferma, occupato, chiedi, rinuncia, conferma }) {
+  const comprato = u.stato === "gia";
+  const nota = comprato
+    ? { testo: fattoOra ? "comprato" : "ce l'hai", colore: "text-jade" }
+    : u.stato === "prossimo"
+      ? { testo: "è il prossimo", colore: "text-brass-300" }
+      : { testo: `prima te ne ${u.mancanti === 1 ? "manca 1" : `mancano ${u.mancanti}`}`, colore: "text-ember" };
+  const annullabile = comprato && fattoOra;
 
   return (
-    <Link
-      to={`/serie/${u.serie.id}`}
-      className={`flex items-center gap-3 rounded-2xl bg-alcove p-2.5 transition-colors duration-quick active:bg-glass-2 ${passato && u.stato === "gia" ? "opacity-60" : ""}`}
+    <div
+      className={`rounded-2xl p-2.5 transition-colors duration-quick ${
+        comprato ? "bg-jade/10 ring-1 ring-jade/40" : "bg-alcove"
+      } ${passato && comprato && !fattoOra ? "opacity-60" : ""}`}
     >
-      <Copertina src={u.copertina || u.serie.copertina} />
+      <div className="flex items-center gap-3">
+        <Link to={`/serie/${u.serie.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+          <Copertina src={u.copertina || u.serie.copertina} />
 
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-display text-base font-bold leading-tight text-ink-bright">
-          {u.serie.titolo} {u.numero}
-        </p>
-        <p className="truncate text-xs text-ink-muted">
-          {[u.editore, u.serie.edizione, u.serie.prezzo_stimato ? euro(u.serie.prezzo_stimato) : null].filter(Boolean).join(" · ")}
-        </p>
-        <p className={`mt-0.5 text-xs font-semibold ${nota.colore}`}>{nota.testo}</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-base font-bold leading-tight text-ink-bright">
+              {u.serie.titolo} {u.numero}
+            </p>
+            <p className="truncate text-xs text-ink-muted">
+              {[u.editore, u.serie.edizione, u.serie.prezzo_stimato ? euro(u.serie.prezzo_stimato) : null].filter(Boolean).join(" · ")}
+            </p>
+            <p className={`mt-0.5 text-xs font-semibold ${nota.colore}`}>{nota.testo}</p>
+          </div>
+        </Link>
+
+        {(!comprato || annullabile) && !inConferma && (
+          <button
+            type="button"
+            onClick={chiedi}
+            aria-label={comprato ? "Annulla l'acquisto" : "Segna come comprato"}
+            className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border text-sm ${
+              comprato ? "border-jade bg-jade text-void" : "border-hairline text-transparent"
+            }`}
+          >
+            ✓
+          </button>
+        )}
+
+        {comprato && !annullabile && (
+          <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-jade/30 text-sm text-jade">
+            ✓
+          </span>
+        )}
       </div>
-    </Link>
+
+      {inConferma && (
+        <div className="mt-2 flex items-center gap-2 border-t border-hairline pt-2">
+          <p className="min-w-0 flex-1 text-xs text-ink-bright">
+            {comprato ? "Rimetto questo volume da comprare?" : "Segno questo volume come comprato?"}
+          </p>
+          <button type="button" onClick={rinuncia} disabled={occupato} className="rounded-full border border-hairline px-3 py-1 text-xs font-semibold text-ink-muted">
+            No
+          </button>
+          <button
+            type="button"
+            onClick={conferma}
+            disabled={occupato}
+            className="rounded-full bg-brass-400 px-3 py-1 text-xs font-bold text-void disabled:opacity-60"
+          >
+            {occupato ? "…" : "Sì"}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
