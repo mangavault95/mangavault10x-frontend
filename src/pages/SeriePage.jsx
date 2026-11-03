@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import Copertina from "../ui/Copertina";
+import { tornaIndietroConVolo } from "../dati/volo";
 import Progresso from "../ui/Progresso";
 import ScaffaleVolumi from "../ui/ScaffaleVolumi";
 import TitoliSimili from "../ui/TitoliSimili";
@@ -300,7 +301,7 @@ export default function SeriePage() {
 
         <div className="relative mx-auto w-full max-w-[80rem] px-4 py-5 sm:px-8 sm:py-8 lg:px-12 lg:py-12">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => tornaIndietroConVolo(navigate, id)}
             className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-ink-muted transition-colors duration-quick hover:text-ink-bright sm:mb-8"
           >
             <Icon nome="back" dimensione={16} />

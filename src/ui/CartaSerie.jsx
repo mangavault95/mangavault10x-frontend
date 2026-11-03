@@ -72,6 +72,10 @@ function useVolo(indirizzo) {
     if (!copertina) return;
 
     e.preventDefault();
+
+    // Un nome rimasto addosso a un'altra carta (una transizione interrotta)
+    // farebbe annullare la nuova: due elementi non possono averlo insieme.
+    document.querySelectorAll("[data-copertina]").forEach((c) => (c.style.viewTransitionName = ""));
     copertina.style.viewTransitionName = "copertina-serie";
 
     // Si naviga UNA volta, e comunque: se il browser non disegna (scheda in
