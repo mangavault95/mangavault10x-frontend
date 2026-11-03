@@ -48,6 +48,7 @@ const Confronto = lazy(() => import("../pages/ConfrontoPage"));
 const Anime = lazy(() => import("../pages/AnimePage"));
 const Calendario = lazy(() => import("../pages/CalendarioPage"));
 const Uscite = lazy(() => import("../pages/UscitePage"));
+const Spesa = lazy(() => import("../pages/SpesaPage"));
 
 
 /**
@@ -281,6 +282,7 @@ function ContenutoRotte({ location, idVisto }) {
                   <Route path="/visione" element={<Navigate to="/videoteca/io" replace />} />
                   <Route path="/calendario" element={<Calendario />} />
                   <Route path="/uscite" element={<Uscite />} />
+                  <Route path="/spesa" element={<Spesa />} />
 
                   {/* Il gioco e le partite già giocate. Una partita ha
                       un indirizzo suo perché è una cosa che si manda a

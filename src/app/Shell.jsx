@@ -515,6 +515,7 @@ function FoglioTu({ richieste, chiudi: chiudiSubito }) {
   const voci = [
     { id: "mese", percorso: "/mese", etichetta: "Il vostro mese", icona: "calendario" },
     { id: "uscite", percorso: "/uscite", etichetta: "Uscite manga", icona: "calendario" },
+    { id: "spesa", percorso: "/spesa", etichetta: "La spesa", icona: "calendario" },
     { ...SEZIONE_GESTIONE, descrizione: "Correggi schede, stagioni e accessi" }
   ];
 
