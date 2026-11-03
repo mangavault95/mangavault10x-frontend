@@ -59,8 +59,10 @@ function avviaVolo(idSerie, parti) {
   inVolo = true;
 
   let carta = null;
+  let contenitore = null;
   const pulisci = () => {
     if (carta) carta.style.viewTransitionName = "";
+    if (contenitore) contenitore.style.contentVisibility = "";
     inVolo = false;
   };
 
@@ -73,6 +75,12 @@ function avviaVolo(idSerie, parti) {
     // Una pagina riportata in vista dal ripristino dello scorrimento ha di
     // solito la carta dov'era; se invece è fuori schermo, la si porta al centro
     // o la copertina volerebbe verso un punto che nessuno vede.
+    // Le carte fuori schermo non sono disegnate (`content-visibility`, in
+    // index.css) e una carta non disegnata non può volare: questa la si
+    // forza visibile per la durata del volo.
+    contenitore = carta.closest(".sequenza > *");
+    if (contenitore) contenitore.style.contentVisibility = "visible";
+
     const r = carta.getBoundingClientRect();
     if (r.bottom < 0 || r.top > window.innerHeight) {
       carta.scrollIntoView({ block: "center", behavior: "instant" });

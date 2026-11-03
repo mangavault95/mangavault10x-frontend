@@ -1,4 +1,5 @@
 import { flushSync } from "react-dom";
+import { ripristino } from "../dati/paginaViva";
 import { Link, useNavigate } from "react-router-dom";
 import Copertina from "./Copertina";
 import { BottonePreferito } from "./AzioniSerie";
@@ -64,6 +65,12 @@ function useVolo(indirizzo) {
   const navigate = useNavigate();
 
   return function apriConVolo(e) {
+    // La posizione della griglia si segna QUI, nel momento del tocco: se la
+    // si leggesse dopo, il cambio di pagina l'avrebbe già riportata a zero
+    // (la Collezione nascosta non occupa più spazio) e il ritorno
+    // ripartirebbe dall'alto, lontano dalla carta da cui è partito il volo.
+    ripristino.scorrimento = window.scrollY;
+
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     if (typeof document.startViewTransition !== "function") return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;

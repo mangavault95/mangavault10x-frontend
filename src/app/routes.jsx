@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useLayoutEffect, useMemo, useState } from "react";
 import {
   Routes,
   Route,
@@ -120,7 +120,6 @@ function Contenuto() {
   const percorso = location.pathname;
   const inCollezione = percorso === "/collezione";
   const inScheda = percorso.startsWith("/serie/");
-  const scorrimento = useRef(0);
 
   const posizioneAttuale = useMemo(
     () => ({ location, navigationType: tipoNavigazione }),
@@ -155,16 +154,6 @@ function Contenuto() {
 
   const tornaDaScheda = inCollezione && Boolean(ricordo.precedente?.startsWith("/serie/"));
 
-  useEffect(() => {
-    if (!inCollezione) return undefined;
-
-    const salva = () => (scorrimento.current = window.scrollY);
-
-    window.addEventListener("scroll", salva, { passive: true });
-
-    return () => window.removeEventListener("scroll", salva);
-  }, [inCollezione]);
-
   // Il volo di ritorno della copertina (dati/volo.js) deve sapere da quale
   // scheda si sta uscendo nel momento in cui il browser va indietro.
   // In `useLayoutEffect`: deve essere scritto nel momento stesso in cui la pagina
@@ -174,7 +163,7 @@ function Contenuto() {
   useLayoutEffect(() => {
     if (!tornaDaScheda) return;
 
-    window.scrollTo({ top: scorrimento.current, behavior: "instant" });
+    window.scrollTo({ top: ripristino.scorrimento, behavior: "instant" });
     ripristino.fatto = true;
   }, [percorso, tornaDaScheda]);
 

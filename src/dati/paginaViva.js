@@ -20,4 +20,4 @@ export function usePaginaViva() {
  * segno, e la cornice (`Shell.jsx`) — che altrimenti rimetterebbe lo
  * scorrimento in cima a ogni cambio di indirizzo — lo legge e si astiene.
  */
-export const ripristino = { fatto: false };
+export const ripristino = { fatto: false, scorrimento: 0 };
