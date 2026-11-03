@@ -181,23 +181,31 @@ export default function Copertina({
           </>
         )}
 
-        {/* Alone che segue il puntatore: la luce viene da dove guardi. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-base group-hover/cop:opacity-100 [@media(hover:none)]:hidden"
-          style={{
-            background:
-              "radial-gradient(220px circle at var(--luce-x) var(--luce-y), rgba(250,204,21,0.16), transparent 62%)"
-          }}
-        />
+        {/* Alone e riflesso esistono solo dove c'è un puntatore (`interattiva`):
+            sul telefono sono due nodi in più per ogni copertina, cioè
+            quattrocento su una collezione, da creare ogni volta che la
+            griglia torna in vista. */}
+        {interattiva && (
+          <>
+            {/* Alone che segue il puntatore: la luce viene da dove guardi. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-base group-hover/cop:opacity-100"
+              style={{
+                background:
+                  "radial-gradient(220px circle at var(--luce-x) var(--luce-y), rgba(250,204,21,0.16), transparent 62%)"
+              }}
+            />
 
-        {/* Riflesso che attraversa la copertina all'ingresso del mouse */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -left-1/2 -top-1/3 h-[180%] w-2/5 rotate-[20deg] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 blur-md [@media(hover:none)]:hidden
-                     transition-[transform,opacity] duration-[900ms] ease-settle
-                     group-hover/cop:translate-x-[260%] group-hover/cop:opacity-100"
-        />
+            {/* Riflesso che attraversa la copertina all'ingresso del mouse */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -left-1/2 -top-1/3 h-[180%] w-2/5 rotate-[20deg] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 blur-md
+                         transition-[transform,opacity] duration-[900ms] ease-settle
+                         group-hover/cop:translate-x-[260%] group-hover/cop:opacity-100"
+            />
+          </>
+        )}
 
         {/* Bordo interno chiaro: senza, su fondo scuro la copertina
             sembra ritagliata male invece che stampata. */}

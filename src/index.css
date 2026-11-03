@@ -1205,6 +1205,17 @@ html.tema-fluido *::after {
 
 /* Le carte di una griglia salgono una dopo l'altra: i primi diciotto
    elementi, non di più — oltre, sono già fuori schermo. */
+/* Le carte fuori schermo non si disegnano né si impaginano: quando la
+   griglia torna (chiudendo una scheda) il telefono lavora solo su quelle che
+   si vedono, non su duecento. Il margine negativo con lo stesso riempimento
+   serve a lasciare spazio all'ombra e al sollevamento, che altrimenti
+   la contenzione di disegno taglierebbe. */
+.sequenza > * {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 16rem;
+  padding: 0.75rem;
+  margin: -0.75rem;
+}
 .sequenza > :nth-child(-n + 18) {
   animation: carta-entra 520ms var(--ease-premium) backwards;
 }
