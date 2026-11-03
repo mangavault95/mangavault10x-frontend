@@ -8,6 +8,7 @@ import {
   UNSAFE_LocationContext as ContestoPosizione
 } from "react-router-dom";
 import { PaginaViva, ripristino } from "../dati/paginaViva";
+import { ricordaPercorso } from "../dati/volo";
 import Shell from "./Shell";
 import RouteFallback from "./RouteFallback";
 import RouteErrore from "./RouteErrore";
@@ -163,6 +164,12 @@ function Contenuto() {
 
     return () => window.removeEventListener("scroll", salva);
   }, [inCollezione]);
+
+  // Il volo di ritorno della copertina (dati/volo.js) deve sapere da quale
+  // scheda si sta uscendo nel momento in cui il browser va indietro.
+  // In `useLayoutEffect`: deve essere scritto nel momento stesso in cui la pagina
+  // cambia, non quando React trova tempo per gli effetti passivi.
+  useLayoutEffect(() => ricordaPercorso(percorso), [percorso]);
 
   useLayoutEffect(() => {
     if (!tornaDaScheda) return;
