@@ -241,7 +241,7 @@ export default function AdessoPage() {
       )}
 
       {settimana.length > 0 && (
-        <Sezione titolo="Esce questa settimana" kana="今週" link={{ a: "/calendario", testo: "Calendario" }}>
+        <Sezione titolo="Esce questa settimana" kana="今週" link={{ a: "/uscite", testo: "Tutte le uscite" }}>
           <ul className="divide-y divide-hairline rounded-2xl bg-alcove px-3.5">
             {settimana.map((u) => (
               <li key={u.chiave}>
@@ -261,7 +261,7 @@ export default function AdessoPage() {
             ))}
           </ul>
           {uscite.dati?.errore && (
-            <p className="mt-2 px-1 text-xs text-ink-muted">Le uscite dei volumi non sono arrivate: AnimeClick non risponde.</p>
+            <p className="mt-2 px-1 text-xs text-ink-muted">Le uscite dei volumi non sono arrivate: riprova fra un attimo.</p>
           )}
         </Sezione>
       )}

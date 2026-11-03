@@ -243,6 +243,9 @@ export const getManga = () => request("/api/manga");
  */
 export const getUsciteManga = (giorni = 7) => request(`/api/manga/uscite?giorni=${giorni}`);
 
+/** Le uscite di un mese (AAAA-MM), passato o futuro, delle serie in collezione. */
+export const getUsciteArchivio = (mese) => request(`/api/manga/uscite/archivio?mese=${mese}`);
+
 /**
  * Un acquisto registrato dal sito, con le regole del bot di Telegram
  * (vedi `services/acquisti.js` sul backend). `volumi` vuoto = il

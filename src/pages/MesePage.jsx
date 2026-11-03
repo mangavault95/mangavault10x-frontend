@@ -31,9 +31,20 @@ function spostaMese(mese, di) {
   return new Date(Date.UTC(anno, numero - 1 + di, 1)).toISOString().slice(0, 7);
 }
 
+/**
+ * Il mese sta nell'indirizzo ma `useRisorsa` carica solo al montaggio, e le
+ * rotte si rimontano solo se cambia il percorso, non il `?m=`: senza questa
+ * chiave le frecce cambiavano l'indirizzo e lasciavano i dati del mese di prima.
+ */
 export default function MesePage() {
-  const [parametri, setParametri] = useSearchParams();
+  const [parametri] = useSearchParams();
   const richiesto = parametri.get("m");
+
+  return <MeseDi key={richiesto || "scorso"} richiesto={richiesto} />;
+}
+
+function MeseDi({ richiesto }) {
+  const [, setParametri] = useSearchParams();
 
   const { dati, errore, inCorso } = useRisorsa(() => getMese(richiesto));
 
@@ -129,7 +140,8 @@ export default function MesePage() {
 
 /**
  * Il cuore della pagina: quanti volumi, quanto sono costati, e una pila
- * di copertine che si tocca per vedere cosa è entrato nello specifico.
+ * di copertine: toccandone una qualsiasi si apre il popup con cosa è
+ * entrato nello specifico.
  *
  * L'elenco non sta in pagina: lungo com'era, allungava tutto il resto
  * (letture e puntate finivano fuori schermo). Sta in un popup, serie per
@@ -160,24 +172,17 @@ function Acquisti({ acquisti }) {
             onClick={() => setAperto(true)}
             aria-label="Mostra cosa è entrato nel mese"
             aria-haspopup="dialog"
-            className="mt-5 flex w-full items-center justify-between gap-3 rounded-2xl text-left transition-opacity duration-quick active:opacity-80"
+            className="mt-5 flex rounded-2xl text-left transition-opacity duration-quick active:opacity-80"
           >
             <span className="flex -space-x-3">
               {inPila.map((s) => (
                 <Copertina key={s.id} src={s.copertina} piccola />
               ))}
               {altre > 0 && (
-                <span className="z-0 grid h-20 w-14 place-items-center rounded-xl border-2 border-alcove bg-glass-2 font-numeric text-sm font-semibold text-ink-bright">
+                <span className="grid h-20 w-14 place-items-center rounded-xl border-2 border-alcove bg-glass-2 font-numeric text-sm font-semibold text-ink-bright">
                   +{altre}
                 </span>
               )}
-            </span>
-
-            <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-brass-300">
-              Dettaglio
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="m9 18 6-6-6-6" />
-              </svg>
             </span>
           </button>
         )}
