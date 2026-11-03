@@ -341,7 +341,7 @@ export default function SeriePage() {
               la copertina che occupa le due righe. */}
           <div className="grid grid-cols-[7rem_1fr] gap-x-4 gap-y-5 sm:grid-cols-[11rem_1fr] sm:gap-x-8 md:grid-cols-[minmax(0,15rem)_1fr] lg:gap-x-12">
             <div className="md:row-span-2">
-              <Copertina src={serie.copertina} alt={serie.titolo} priorita />
+              <Copertina src={serie.copertina} alt={serie.titolo} priorita nomeTransizione="copertina-serie" />
             </div>
 
             <div className="min-w-0 space-y-2 sm:space-y-3">

@@ -35,7 +35,8 @@ export default function Copertina({
   className = "",
   inclina = true,
   priorita = false,
-  riempi = false
+  riempi = false,
+  nomeTransizione = undefined
 }) {
   const contenitore = useRef(null);
   const fotogramma = useRef(0);
@@ -108,7 +109,18 @@ export default function Copertina({
       onPointerMove={alMovimento}
       onPointerLeave={allUscita}
       ref={contenitore}
-      style={{ "--rot-x": "0deg", "--rot-y": "0deg", "--luce-x": "50%", "--luce-y": "50%" }}
+      // `data-copertina` e `nomeTransizione`: la copertina che si ingrandisce
+      // nella scheda della serie (vedi `apriConVolo` in CartaSerie). Il nome
+      // lo stesso lo portano la carta cliccata e la copertina della scheda,
+      // e il browser le unisce in un solo movimento.
+      data-copertina=""
+      style={{
+        "--rot-x": "0deg",
+        "--rot-y": "0deg",
+        "--luce-x": "50%",
+        "--luce-y": "50%",
+        viewTransitionName: nomeTransizione
+      }}
     >
       <div
         className="relative h-full w-full overflow-hidden rounded-card border border-hairline bg-void shadow-raised

@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { flushSync } from "react-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Copertina from "./Copertina";
 import { BottonePreferito } from "./AzioniSerie";
 import { useCollezione } from "../dati/collezione";
@@ -31,6 +32,70 @@ import {
  * dati di chi guardava sopra: schede senza voto e senza letture, cioè
  * l'aria di una griglia rotta.
  */
+/**
+ * Il volo della copertina (03/11/2026).
+ *
+ * Aprendo una serie la copertina cliccata non sparisce per lasciare il
+ * posto a un'altra pagina: si stacca dalla griglia, si avvicina e si
+ * ingrandisce fino a diventare la copertina della scheda, mentre il
+ * resto della scheda si fa strada sotto di lei. Lo fa il browser (View
+ * Transitions): basta dare lo stesso `view-transition-name` alla
+ * copertina di partenza e a quella d'arrivo, e lui calcola il percorso.
+ *
+ * Il nome si scrive sulla carta SOLO al momento del tocco: due elementi
+ * con lo stesso nome nella stessa pagina annullerebbero la transizione.
+ *
+ * Dove il browser non sa farlo, o chi guarda ha scelto «riduci
+ * movimento», non si intercetta niente e il collegamento si comporta
+ * come sempre. Il pezzo di codice della scheda si scarica già al passaggio
+ * del dito o del mouse, così al tocco c'è e la copertina ha dove atterrare.
+ */
+let schedaPronta = false;
+
+function precaricaScheda() {
+  if (schedaPronta) return;
+  schedaPronta = true;
+  import("../pages/SeriePage").catch(() => {
+    schedaPronta = false;
+  });
+}
+
+function useVolo(indirizzo) {
+  const navigate = useNavigate();
+
+  return function apriConVolo(e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (typeof document.startViewTransition !== "function") return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+
+    const copertina = e.currentTarget.querySelector("[data-copertina]");
+    if (!copertina) return;
+
+    e.preventDefault();
+    copertina.style.viewTransitionName = "copertina-serie";
+
+    // Si naviga UNA volta, e comunque: se il browser non disegna (scheda in
+    // secondo piano) la transizione non parte e il tocco sembrerebbe morto.
+    let fatto = false;
+    const vai = () => {
+      if (fatto) return;
+      fatto = true;
+      flushSync(() => navigate(indirizzo));
+    };
+    const pulisci = () => (copertina.style.viewTransitionName = "");
+
+    try {
+      const volo = document.startViewTransition(vai);
+
+      volo.finished.then(pulisci, pulisci);
+      setTimeout(vai, 400);
+    } catch {
+      pulisci();
+      vai();
+    }
+  };
+}
+
 export default function CartaSerie({
   serie,
   priorita = false,
@@ -58,6 +123,7 @@ export default function CartaSerie({
       ? `${serie.titolo}: in corso, volumi totali non ancora noti`
       : `${serie.titolo}: ${pct}% completa`;
   const indirizzo = lettore ? `/serie/${serie.id}?lettore=${lettore}` : `/serie/${serie.id}`;
+  const apriConVolo = useVolo(indirizzo);
 
   // La vista «solo copertine»: nessun testo sotto, quattro colonne, circa
   // ventiquattro serie per schermata invece di nove. Il completamento e
@@ -67,6 +133,9 @@ export default function CartaSerie({
     return (
       <Link
         to={indirizzo}
+        onClick={apriConVolo}
+        onPointerEnter={precaricaScheda}
+        onTouchStart={precaricaScheda}
         title={serie.titolo}
         aria-label={`${serie.titolo}, ${serie.posseduti} volumi${mancanti > 0 ? `, ne mancano ${mancanti}` : ""}`}
         className="group relative block rounded-card outline-none transition-transform duration-quick
@@ -100,6 +169,9 @@ export default function CartaSerie({
       // è l'indirizzo a portarselo dietro, come per ogni altro filtro
       // di questa pagina.
       to={indirizzo}
+      onClick={apriConVolo}
+      onPointerEnter={precaricaScheda}
+      onTouchStart={precaricaScheda}
       className="group block rounded-panel outline-none transition-transform duration-base ease-settle
                  hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-brass-400
                  focus-visible:ring-offset-4 focus-visible:ring-offset-shelf active:translate-y-0 active:scale-[0.99]"

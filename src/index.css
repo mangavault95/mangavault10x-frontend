@@ -1139,6 +1139,34 @@ html[data-tema="giorno"] body::before {
 ::view-transition-old(root) { z-index: 1; }
 ::view-transition-new(root) { z-index: 2; }
 
+/* Il volo della copertina verso la scheda: più lento del resto, perché è
+   l'unico movimento che va guardato. Il browser sposta e ridimensiona il
+   gruppo; qui si aggiungono la dissolvenza ben dosata e un respiro (la
+   copertina si avvicina un poco più del necessario e si posa), con un
+   alone che segue il colore del tema. */
+::view-transition-group(copertina-serie) {
+  animation-duration: 820ms;
+  animation-timing-function: var(--ease-premium);
+  z-index: 10;
+}
+::view-transition-image-pair(copertina-serie) {
+  animation: copertina-respiro 820ms var(--ease-premium) both;
+  filter: drop-shadow(0 18px 36px rgb(var(--c-accento) / 0.32));
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+::view-transition-old(copertina-serie),
+::view-transition-new(copertina-serie) {
+  mix-blend-mode: normal;
+  animation-duration: 820ms;
+  animation-timing-function: var(--ease-tavolo);
+}
+@keyframes copertina-respiro {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.045); }
+  100% { transform: scale(1); }
+}
+
 html.vt-cerchio::view-transition-new(root) {
   animation: tema-rivela 720ms var(--ease-premium) both;
 }
