@@ -149,7 +149,7 @@ export default function CartaSerie({
 
         {voto > 0 && (
           <span
-            className={`absolute left-1.5 top-1.5 rounded-full bg-void/70 px-1.5 py-0.5 font-numeric text-[0.65rem] font-medium backdrop-blur-sm ${
+            className={`absolute left-1.5 top-1.5 rounded-full bg-void/80 px-1.5 py-0.5 font-numeric text-[0.65rem] font-medium ${
               colore ? colore.testo : "text-brass-300"
             }`}
           >
@@ -157,7 +157,7 @@ export default function CartaSerie({
           </span>
         )}
 
-        <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-full bg-void/75 p-1 backdrop-blur-sm">
+        <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-full bg-void/85 p-1">
           <AnelloCompletamento pct={pct} tono={tono} etichetta={etichettaAnello} />
           {mancanti > 0 && (
             <span className="pr-1 font-numeric text-[0.65rem] font-medium text-ember">−{mancanti}</span>
@@ -191,7 +191,7 @@ export default function CartaSerie({
         <BottonePreferito
           serie={serie}
           onCambiato={(nuovo) => aggiornaLocale(serie.id, { preferito: nuovo })}
-          className={`absolute right-2 top-2 h-7 w-7 bg-void/70 backdrop-blur-sm transition-opacity duration-quick
+          className={`absolute right-2 top-2 h-7 w-7 bg-void/80 transition-opacity duration-quick
                       ${
                         serie.preferito
                           ? "opacity-100"
@@ -205,7 +205,7 @@ export default function CartaSerie({
             ancora votato", e un "0.0" in bella vista sembra una stroncatura. */}
         {voto > 0 && (
           <span
-            className={`absolute left-2 top-2 rounded-full bg-void/70 px-2 py-0.5 font-numeric text-xs font-medium backdrop-blur-sm ${
+            className={`absolute left-2 top-2 rounded-full bg-void/80 px-2 py-0.5 font-numeric text-xs font-medium ${
               colore ? colore.testo : "text-brass-300"
             }`}
           >
@@ -220,7 +220,7 @@ export default function CartaSerie({
         {lettore && letti > 0 && (
           <span
             title={`${letti} volumi letti`}
-            className={`absolute bottom-2 right-2 rounded-full bg-void/70 px-2 py-0.5 font-numeric text-xs font-medium backdrop-blur-sm ${colore.testo}`}
+            className={`absolute bottom-2 right-2 rounded-full bg-void/80 px-2 py-0.5 font-numeric text-xs font-medium ${colore.testo}`}
           >
             {letti} letti
           </span>

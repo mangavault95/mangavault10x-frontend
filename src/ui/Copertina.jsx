@@ -42,6 +42,11 @@ export default function Copertina({
   const fotogramma = useRef(0);
 
   const [caricata, setCaricata] = useState(false);
+  // Il fondo sfocato serve solo se l'immagine NON ha il rapporto 2:3 e
+  // lascia bande ai lati. Prima c'era sempre: una collezione di 200
+  // copertine voleva dire 200 filtri `blur` accesi insieme, che sono
+  // la cosa più cara che si possa chiedere a un telefono mentre scorre.
+  const [serveFondo, setServeFondo] = useState(false);
   const [rotta, setRotta] = useState(false);
 
   // La decisione si prende una volta sola al primo render, non dentro
@@ -105,7 +110,7 @@ export default function Copertina({
 
   return (
     <div
-      className={`group/cop relative aspect-cover w-full [perspective:1000px] ${className}`}
+      className={`group/cop relative aspect-cover w-full [@media(hover:hover)_and_(pointer:fine)]:[perspective:1000px] ${className}`}
       onPointerMove={alMovimento}
       onPointerLeave={allUscita}
       ref={contenitore}
@@ -124,7 +129,7 @@ export default function Copertina({
     >
       <div
         className="relative h-full w-full overflow-hidden rounded-card border border-hairline bg-void shadow-raised
-                   transition-[transform,box-shadow] duration-base ease-settle will-change-transform
+                   transition-[transform,box-shadow] duration-base ease-settle group-hover/cop:will-change-transform
                    [transform:rotateX(var(--rot-x))_rotateY(var(--rot-y))]
                    group-hover/cop:shadow-float"
       >
@@ -138,7 +143,7 @@ export default function Copertina({
                 Con `riempi` l'immagine sopra copre già tutto il riquadro,
                 quindi il fondo non servirebbe a niente: costerebbe una
                 seconda richiesta di rete per uno strato che nessuno vede. */}
-            {!riempi && (
+            {!riempi && serveFondo && (
               <img
                 src={indirizzo}
                 alt=""
@@ -157,7 +162,12 @@ export default function Copertina({
               // Minuscolo di proposito: React 18 non conosce la forma
               // camelCase e la scarterebbe con un avviso in console.
               fetchpriority={priorita ? "high" : "auto"}
-              onLoad={() => setCaricata(true)}
+              onLoad={(e) => {
+                const { naturalWidth: l, naturalHeight: a } = e.currentTarget;
+
+                if (l && a && Math.abs(l / a - 2 / 3) > 0.04) setServeFondo(true);
+                setCaricata(true);
+              }}
               onError={dopoIlRipiego(() => setRotta(true))}
               // `riempi` ritaglia invece di contenere: in una griglia
               // fitta ogni copertina deve occupare esattamente lo stesso
@@ -174,7 +184,7 @@ export default function Copertina({
         {/* Alone che segue il puntatore: la luce viene da dove guardi. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-base group-hover/cop:opacity-100"
+          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-base group-hover/cop:opacity-100 [@media(hover:none)]:hidden"
           style={{
             background:
               "radial-gradient(220px circle at var(--luce-x) var(--luce-y), rgba(250,204,21,0.16), transparent 62%)"
@@ -184,7 +194,7 @@ export default function Copertina({
         {/* Riflesso che attraversa la copertina all'ingresso del mouse */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -left-1/2 -top-1/3 h-[180%] w-2/5 rotate-[20deg] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 blur-md
+          className="pointer-events-none absolute -left-1/2 -top-1/3 h-[180%] w-2/5 rotate-[20deg] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 blur-md [@media(hover:none)]:hidden
                      transition-[transform,opacity] duration-[900ms] ease-settle
                      group-hover/cop:translate-x-[260%] group-hover/cop:opacity-100"
         />
