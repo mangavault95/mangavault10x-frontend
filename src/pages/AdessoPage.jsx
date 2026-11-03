@@ -126,6 +126,12 @@ export default function AdessoPage() {
 
   const prossimoAcquisto = useMemo(() => acquistoPiuVicino(collezione), [collezione]);
 
+  // La collezione arriva dalla cache e si disegna subito; il resto aspetta
+  // il server, che a volte si sveglia in 5-6 secondi. In quel tempo la home
+  // mostrava solo il «Prossimo acquisto» e sembrava vuota o rotta.
+  const caricamentoIniziale = [videoteca, calendario, sessioni, uscite].some((r) => r.inCorso && r.dati === null && !r.errore);
+  const lento = useDopo(caricamentoIniziale, 2500);
+
   async function vistoProssimo(a) {
     setProblema(null);
     setInCorso(`anime:${a.id}`);
@@ -179,6 +185,8 @@ export default function AdessoPage() {
           {problema}
         </p>
       )}
+
+      {caricamentoIniziale && <CaricamentoHome lento={lento} />}
 
       {daRiprendere && (
         <DaRiprendere anime={daRiprendere} occupato={inCorso === `anime:${daRiprendere.id}`} onVisto={() => vistoProssimo(daRiprendere)} />
@@ -447,6 +455,61 @@ function Testata({ nome }) {
         </span>
       </h1>
     </header>
+  );
+}
+
+/** Vero dopo `ms` millisecondi di `attivo` di fila; torna falso appena `attivo` finisce. */
+function useDopo(attivo, ms) {
+  const [passato, setPassato] = useState(false);
+
+  useEffect(() => {
+    if (!attivo) return undefined;
+
+    const t = setTimeout(() => setPassato(true), ms);
+
+    return () => {
+      clearTimeout(t);
+      setPassato(false);
+    };
+  }, [attivo, ms]);
+
+  return attivo && passato;
+}
+
+/**
+ * Lo scheletro delle sezioni che stanno arrivando: una scheda grande
+ * (cosa riprendere) e una fila di copertine (da guardare / leggere).
+ * Dopo qualche secondo dice anche perché ci vuole: il server gratuito
+ * che dorme si sveglia alla prima richiesta.
+ */
+function CaricamentoHome({ lento }) {
+  const ombra =
+    "animate-shimmer bg-[linear-gradient(90deg,transparent,rgb(var(--c-viola)/0.14),transparent)] bg-[length:200%_100%]";
+
+  return (
+    <div role="status" aria-label="Caricamento in corso">
+      <div className="px-4 pt-5">
+        <div className={`h-44 rounded-2xl bg-alcove ${ombra}`} />
+      </div>
+
+      <div className="px-4 pt-7">
+        <div className="mb-3 h-5 w-32 rounded bg-glass-2" />
+        <div className="flex gap-3 overflow-hidden">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="w-32 shrink-0 space-y-2">
+              <div className={`aspect-[2/3] w-32 rounded-2xl bg-alcove ${ombra}`} />
+              <div className="h-3 w-4/5 rounded bg-glass-1" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <p className="px-5 pt-4 text-center text-xs text-ink-muted" aria-live="polite">
+        {lento ? "Il server si sta svegliando, ancora qualche secondo…" : " "}
+      </p>
+
+      <span className="sr-only">Caricamento della home in corso</span>
+    </div>
   );
 }
 

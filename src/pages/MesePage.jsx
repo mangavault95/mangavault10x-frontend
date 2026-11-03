@@ -9,10 +9,13 @@ import { dopoIlRipiego, getMese, urlCopertina } from "../services/api";
  * IL VOSTRO MESE (04/10/2026).
  *
  * Il riassunto di un mese di casa: quanti volumi sono entrati e quanto
- * sono costati, la serie che vi ha preso di più, quanto ha letto e
- * guardato ciascuno. I numeri li fa il server (`routes/mese.js`); qui si
- * mettono in fila, grandi, uno per riquadro — è una cosa da guardare a
- * inizio mese, non da consultare.
+ * sono costati, QUALI sono (serie per serie, i più numerosi in cima),
+ * quanto ha letto e guardato ciascuno, e la serie più guardata. I numeri
+ * li fa il server (`routes/mese.js`); qui si mettono in fila, grandi — è
+ * una cosa da guardare a inizio mese, non da consultare.
+ *
+ * (03/11/2026: tolta «la serie che vi ha preso»: i volumi si comprano e
+ * basta, non è che una serie «prenda». Al suo posto l'elenco completo.)
  *
  * Il mese sta nell'indirizzo (`?m=2026-09`); senza, vale quello scorso.
  * Le frecce in cima vanno avanti e indietro, mai oltre il mese in corso.
@@ -39,6 +42,8 @@ export default function MesePage() {
   const titolo = mese ? NOME_MESE.format(new Date(`${mese}-01T00:00:00Z`)) : "";
   const massimoLetti = Math.max(1, ...(dati?.letti || []).map((l) => l.volumi));
   const massimoPuntate = Math.max(1, ...(dati?.puntate || []).map((p) => p.puntate));
+  const totaleLetti = (dati?.letti || []).reduce((t, l) => t + l.volumi, 0);
+  const totalePuntate = (dati?.puntate || []).reduce((t, p) => t + p.puntate, 0);
 
   const vuoto =
     dati && !dati.acquisti.volumi && !(dati.letti || []).length && !(dati.puntate || []).length;
@@ -79,30 +84,13 @@ export default function MesePage() {
       {inCorso && !dati && <p className="mt-6 text-sm text-ink-muted">Faccio i conti…</p>}
       {vuoto && <p className="mt-6 text-sm text-ink-muted">Nessun acquisto, nessuna lettura, nessuna puntata segnata in questo mese.</p>}
 
-      {dati && dati.acquisti.volumi > 0 && (
-        <section className="mt-8">
-          <p className="font-display text-[5rem] font-extrabold leading-[0.85] text-ink-bright">{dati.acquisti.volumi}</p>
-          <p className="font-display text-2xl font-bold text-ink-bright">{dati.acquisti.volumi === 1 ? "volume comprato" : "volumi comprati"}</p>
-          <p className="mt-2 text-[0.95rem] text-ink">
-            per <span className="font-numeric font-semibold text-ink-bright">{euro(dati.acquisti.spesa)}</span>
-          </p>
+      {dati && dati.acquisti.volumi > 0 && <Acquisti acquisti={dati.acquisti} />}
 
-          {dati.acquisti.serie && (
-            <Link
-              to={`/serie/${dati.acquisti.serie.id}`}
-              className="mt-6 flex items-center gap-4 rounded-3xl bg-alcove p-4"
-            >
-              <Copertina src={dati.acquisti.serie.copertina} />
-              <div className="min-w-0">
-                <p className="text-xs text-brass-300">La serie che vi ha preso</p>
-                <p className="font-display text-lg font-bold leading-tight text-ink-bright">{dati.acquisti.serie.titolo}</p>
-                <p className="mt-1 text-sm text-ink-muted">
-                  {dati.acquisti.serie.volumi} {dati.acquisti.serie.volumi === 1 ? "volume" : "volumi"} in un mese
-                </p>
-              </div>
-            </Link>
-          )}
-        </section>
+      {(totaleLetti > 0 || totalePuntate > 0) && (
+        <div className="mt-9 grid grid-cols-2 gap-3">
+          <Totale numero={totaleLetti} etichetta={totaleLetti === 1 ? "volume letto" : "volumi letti"} />
+          <Totale numero={totalePuntate} etichetta={totalePuntate === 1 ? "puntata vista" : "puntate viste"} />
+        </div>
       )}
 
       {dati?.letti?.length > 0 && (
@@ -114,10 +102,13 @@ export default function MesePage() {
           <Barre titolo="Puntate viste" righe={dati.puntate.map((p) => ({ ...p, valore: p.puntate }))} massimo={massimoPuntate} />
 
           {dati.anime && (
-            <Link to={`/videoteca/${dati.anime.id}`} className="mt-4 flex items-center gap-4 rounded-3xl bg-alcove p-4">
+            <Link
+              to={`/videoteca/${dati.anime.id}`}
+              className="mt-5 flex items-center gap-4 rounded-3xl border border-hairline bg-gradient-to-br from-viola/15 to-alcove p-4"
+            >
               <Copertina src={dati.anime.copertina} />
               <div className="min-w-0">
-                <p className="text-xs text-brass-300">La serie più guardata</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-brass-300">La serie più guardata</p>
                 <p className="font-display text-lg font-bold leading-tight text-ink-bright">{dati.anime.titolo}</p>
                 <p className="mt-1 text-sm text-ink-muted">{dati.anime.puntate} puntate</p>
               </div>
@@ -129,6 +120,95 @@ export default function MesePage() {
       {dati && dati.puntate?.length === 0 && (dati.letti?.length > 0 || dati.acquisti.volumi > 0) && (
         <p className="mt-8 text-sm leading-relaxed text-ink-muted">Nessuna puntata segnata in questo mese.</p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Il cuore della pagina: quanti volumi, quanto sono costati, e l'elenco
+ * di cosa è entrato, serie per serie. Le serie con più volumi stanno in
+ * cima e hanno la barra più lunga; una riga dice i numeri («vol. 3-5, 8»).
+ */
+function Acquisti({ acquisti }) {
+  const elenco = acquisti.elenco || [];
+  const massimo = Math.max(1, ...elenco.map((s) => s.volumi));
+
+  return (
+    <section className="mt-7">
+      <div className="relative overflow-hidden rounded-[28px] border border-hairline bg-gradient-to-br from-brass-400/25 via-alcove to-alcove p-6">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-brass-400/15 blur-3xl" />
+
+        <p className="font-display text-[5rem] font-extrabold leading-[0.85] text-ink-bright">{acquisti.volumi}</p>
+        <p className="font-display text-2xl font-bold text-ink-bright">{acquisti.volumi === 1 ? "volume comprato" : "volumi comprati"}</p>
+
+        <p className="mt-3 inline-flex items-center rounded-full bg-void/40 px-3 py-1 text-[0.95rem] text-ink">
+          per&nbsp;<span className="font-numeric font-semibold text-ink-bright">{euro(acquisti.spesa)}</span>
+          {elenco.length > 1 && <span className="text-ink-muted">&nbsp;· {elenco.length} serie</span>}
+        </p>
+
+        {elenco.length > 0 && (
+          <ul aria-hidden="true" className="mt-5 flex -space-x-3">
+            {elenco.slice(0, 6).map((s) => (
+              <li key={s.id}>
+                <Copertina src={s.copertina} piccola />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {elenco.length > 0 && (
+        <>
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-brass-300">Cosa è entrato</h2>
+          <ul className="space-y-2.5">
+            {elenco.map((s) => (
+              <li key={s.id}>
+                <Link to={`/serie/${s.id}`} className="flex items-center gap-3.5 rounded-2xl bg-alcove p-3 transition-colors duration-quick active:bg-glass-2">
+                  <Copertina src={s.copertina} media />
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-display text-base font-bold leading-tight text-ink-bright">{s.titolo}</p>
+                    {s.edizione && <p className="truncate text-xs text-ink-muted">{s.edizione}</p>}
+                    {s.numeri.length > 0 && <p className="mt-0.5 truncate font-numeric text-[0.8rem] text-ink">vol. {numeriInFila(s.numeri)}</p>}
+
+                    <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-ink-bright/[0.07]">
+                      <span className="block h-full rounded-full bg-brass-400" style={{ width: `${Math.max(8, (s.volumi / massimo) * 100)}%` }} />
+                    </span>
+                  </div>
+
+                  <div className="shrink-0 text-right">
+                    <p className="font-numeric text-2xl font-semibold leading-none text-ink-bright">×{s.volumi}</p>
+                    {s.spesa > 0 && <p className="mt-1 font-numeric text-xs text-ambra">{euro(s.spesa)}</p>}
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
+}
+
+/** [1,2,3,5,8,9] → «1-3, 5, 8-9». */
+function numeriInFila(numeri) {
+  const gruppi = [];
+
+  for (const n of numeri) {
+    const ultimo = gruppi[gruppi.length - 1];
+
+    if (ultimo && n === ultimo[1] + 1) ultimo[1] = n;
+    else gruppi.push([n, n]);
+  }
+
+  return gruppi.map(([da, a]) => (da === a ? String(da) : `${da}-${a}`)).join(", ");
+}
+
+function Totale({ numero, etichetta }) {
+  return (
+    <div className="rounded-3xl border border-hairline bg-alcove p-4">
+      <p className="font-display text-4xl font-extrabold leading-none text-ink-bright">{numero}</p>
+      <p className="mt-1.5 text-sm text-ink-muted">{etichetta}</p>
     </div>
   );
 }
@@ -156,13 +236,16 @@ function Barre({ titolo, righe, massimo }) {
   );
 }
 
-function Copertina({ src }) {
+function Copertina({ src, piccola = false, media = false }) {
   const [rotta, setRotta] = useState(false);
   const indirizzo = urlCopertina(src, 256);
 
+  // Piccola: la pila di copertine in cima. Media: le righe dell'elenco.
+  const misura = piccola ? "h-20 w-14 border-2 border-alcove" : media ? "h-[84px] w-14" : "h-24 w-[68px]";
+
   return indirizzo && !rotta ? (
-    <img src={indirizzo} alt="" onError={dopoIlRipiego(() => setRotta(true))} className="h-24 w-[68px] shrink-0 rounded-xl object-cover" />
+    <img src={indirizzo} alt="" onError={dopoIlRipiego(() => setRotta(true))} className={`${misura} shrink-0 rounded-xl object-cover`} />
   ) : (
-    <span aria-hidden="true" className="h-24 w-[68px] shrink-0 rounded-xl bg-glass-2" />
+    <span aria-hidden="true" className={`${misura} shrink-0 rounded-xl bg-glass-2`} />
   );
 }
