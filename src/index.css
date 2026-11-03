@@ -1191,11 +1191,12 @@ html.tema-fluido *::after {
   animation: foglio-entra 460ms var(--ease-premium) backwards;
 }
 .fixed.inset-0.z-modal[data-uscita],
-.fixed.inset-0.z-overlay[data-uscita] {
+.fixed.inset-0.z-overlay[data-uscita],
+.fixed.inset-0.z-toast[data-uscita] {
   animation: velo-esce 220ms var(--ease-uscita) forwards;
   pointer-events: none;
 }
-:where(.fixed.inset-0.z-modal, .fixed.inset-0.z-overlay)[data-uscita] > :first-child {
+:where(.fixed.inset-0.z-modal, .fixed.inset-0.z-overlay, .fixed.inset-0.z-toast)[data-uscita] > :first-child {
   animation: foglio-esce 220ms var(--ease-uscita) forwards;
 }
 

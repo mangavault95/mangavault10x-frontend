@@ -1,4 +1,4 @@
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 /**
@@ -98,7 +98,47 @@ function liberaLaPagina() {
   window.scrollTo({ top: scorrimentoSalvato, left: 0, behavior: "instant" });
 }
 
+/**
+ * ---------------------------------------------------------------
+ * 3. L'USCITA
+ *
+ * Chiudere una finestra vuol dire smontarla, e un componente smontato
+ * sparisce di colpo. Per non toccare le quindici finestre del sito, qui
+ * si fa un trucco: mentre React toglie il velo, ne resta una copia
+ * inerte (`data-uscita`, `pointer-events: none`) che sfuma e scende in
+ * 220 millisecondi — le regole sono in index.css — e poi si toglie da
+ * sola. È solo un'immagine: non risponde a niente e non porta focus.
+ */
+const USCITA_MS = 220;
+
+function lasciaUnaCopia(contenitore) {
+  if (!contenitore || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+
+  for (const velo of contenitore.children) {
+    if (!velo.matches?.(".fixed.inset-0")) continue;
+
+    const copia = velo.cloneNode(true);
+
+    copia.setAttribute("data-uscita", "");
+    copia.setAttribute("aria-hidden", "true");
+    copia.removeAttribute("role");
+    copia.inert = true;
+    copia.querySelectorAll("[id]").forEach((e) => e.removeAttribute("id"));
+
+    document.body.appendChild(copia);
+    setTimeout(() => copia.remove(), USCITA_MS + 60);
+  }
+}
+
 export default function Sovrapposizione({ children, blocca = true }) {
+  const contenitore = useRef(null);
+
+  useLayoutEffect(() => {
+    const nodo = contenitore.current;
+
+    return () => lasciaUnaCopia(nodo);
+  }, []);
+
   useLayoutEffect(() => {
     if (!blocca) return undefined;
 
@@ -107,5 +147,12 @@ export default function Sovrapposizione({ children, blocca = true }) {
     return liberaLaPagina;
   }, [blocca]);
 
-  return createPortal(children, document.body);
+  // `display: contents`: il contenitore serve solo a ritrovare il velo
+  // quando si smonta, e non deve cambiare nessuna misura.
+  return createPortal(
+    <div ref={contenitore} style={{ display: "contents" }}>
+      {children}
+    </div>,
+    document.body
+  );
 }
