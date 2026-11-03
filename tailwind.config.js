@@ -39,6 +39,13 @@ const v = (nome) => `rgb(var(--${nome}) / <alpha-value>)`;
 
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+
+  // ⚠️ Fondamentale sul telefono (03/11/2026). Senza questo ogni `hover:` e
+  // `group-hover:` vale anche col dito, e iOS reagisce al primo tocco
+  // «passando il mouse» — l'alone, il sollevamento, il riflesso della
+  // copertina — e il click vero arriva solo al secondo. Con questa riga gli
+  // stili hover esistono solo dove c'è un puntatore che può passare sopra.
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       colors: {
