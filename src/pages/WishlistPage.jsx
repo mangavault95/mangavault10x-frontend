@@ -23,7 +23,9 @@ import {
   urlCopertina
 } from "../services/api";
 import { cercaFuori } from "../bibliotecario/esterni";
-import { chiudibile, euro, fraseMancanti, prossimoVolume, volumiMancanti } from "../dati/serie";
+import Sovrapposizione from "../ui/Sovrapposizione";
+import useChiusuraVelo from "../ui/useChiusuraVelo";
+import { chiudibile, euro, intervalliVolumi, numeriMancantiUsciti, plurale } from "../dati/serie";
 
 /**
  * DA COMPRARE — la lista della spesa (04/10/2026).
@@ -88,23 +90,25 @@ export default function WishlistPage() {
     [uscite.dati, presi]
   );
 
+  // Una carta per serie, con i numeri che mancano FRA QUELLI GIÀ USCITI.
+  // I volumi in arrivo stanno solo in «Escono ora»: qui non compaiono,
+  // né come mancanti né nel conto.
   const perChiudere = useMemo(() => {
-    const inUscita = new Set(escono.map((u) => u.serie.id));
+    const inUscita = new Set(escono.map((u) => `${u.serie.id}:${u.numero}`));
 
     return (collezione || [])
-      .filter((s) => !s.droppato && !inUscita.has(Number(s.id)))
-      .map((s) => ({ serie: s, mancanti: volumiMancanti(s) }))
-      .filter((c) => c.mancanti > 0 && c.mancanti <= 3 && !presi.has(`${c.serie.id}:${prossimoVolume(c.serie)}`))
-      // Prima quelle che si chiudono davvero, poi quelle in corso da
-      // rimettere in pari; dentro ciascun gruppo, la più vicina.
-      .sort(
-        (a, b) =>
-          Number(chiudibile(b.serie)) - Number(chiudibile(a.serie)) ||
-          a.mancanti - b.mancanti ||
-          b.serie.posseduti - a.serie.posseduti
-      )
-      .slice(0, 8);
+      .filter((s) => !s.droppato)
+      .map((s) => ({
+        serie: s,
+        numeri: numeriMancantiUsciti(s).filter((n) => !presi.has(`${s.id}:${n}`) && !inUscita.has(`${s.id}:${n}`))
+      }))
+      .filter((c) => c.numeri.length > 0)
+      // Le più vicine alla fine per prime, a parità quelle più avanti.
+      .sort((a, b) => a.numeri.length - b.numeri.length || b.serie.posseduti - a.serie.posseduti);
   }, [collezione, escono, presi]);
+
+  // La serie di cui è aperto il riquadro con i numeri da segnare.
+  const [apertaId, setApertaId] = useState(null);
 
   // «Preso» non scrive subito: la riga si segna e per cinque secondi c'è
   // «Annulla». Un tocco sbagliato mentre si scorre la lista non registra
@@ -166,28 +170,27 @@ export default function WishlistPage() {
   }, []);
 
   const chiaveUscita = (u) => `${u.serie.id}:${u.numero}`;
-  const chiaveChiudere = (c) => `${c.serie.id}:${prossimoVolume(c.serie)}`;
+  // I numeri già segnati «preso» (in attesa dei 5 secondi) non contano più.
+  const ancoraDaPrendere = (c) => c.numeri.filter((n) => !inAttesa.has(`${c.serie.id}:${n}`));
 
   const daSpendere = {
     uscite: escono.filter((u) => !inAttesa.has(chiaveUscita(u))),
-    chiudere: perChiudere.filter((c) => !inAttesa.has(chiaveChiudere(c)))
+    chiudere: perChiudere.map((c) => ({ ...c, numeri: ancoraDaPrendere(c) }))
   };
 
-  // Volumi, non righe: a Servamp ne mancano 2 e la riga è una sola. Il
-  // totale qui sotto li moltiplica già, e contando le righe la pagina
-  // scriveva «56,70 € per 7 volumi» quando i volumi erano 10.
+  // Volumi, non righe: una carta può valerne molti.
   const volumiDaPrendere =
-    daSpendere.uscite.length + daSpendere.chiudere.reduce((n, c) => n + c.mancanti, 0);
+    daSpendere.uscite.length + daSpendere.chiudere.reduce((n, c) => n + c.numeri.length, 0);
 
   const totale =
     daSpendere.uscite.reduce((t, u) => t + (u.serie.prezzo_stimato || 0), 0) +
-    daSpendere.chiudere.reduce((t, c) => t + (c.serie.costo || 0) * c.mancanti, 0);
+    daSpendere.chiudere.reduce((t, c) => t + (c.serie.costo || 0) * c.numeri.length, 0);
 
   // Le due specie di «ti mancano»: chiudere una serie e rimettersi in
-  // pari su una in corso non sono la stessa spesa, e da dove si comincia
-  // dipende da quale delle due si ha voglia di fare.
+  // pari su una in corso non sono la stessa spesa.
   const perCompletare = perChiudere.filter((c) => chiudibile(c.serie));
   const perEssereInPari = perChiudere.filter((c) => !chiudibile(c.serie));
+  const serieAperta = perChiudere.find((c) => Number(c.serie.id) === apertaId) || null;
 
   async function preso(serieId, numero, titolo) {
     const chiave = `${serieId}:${numero}`;
@@ -423,27 +426,24 @@ export default function WishlistPage() {
             !ricercaTesto &&
             voci.length > 0 && (
               <Mucchio key={titolo} titolo={titolo}>
-                {voci.map((c) => {
-                  const { serie: s, mancanti } = c;
-
-                  return (
-                    <RigaSpesa
-                      key={`c${s.id}`}
-                      a={`/serie/${s.id}`}
-                      copertina={s.copertina}
-                      titolo={`${s.titolo} ${prossimoVolume(s)}`}
-                      sotto={fraseMancanti(s, mancanti)}
-                      sottoColore={mancanti === 1 && chiudibile(s) ? "text-jade" : undefined}
-                      prezzo={s.costo}
-                      occupato={prendendo === chiaveChiudere(c)}
-                      inAttesa={inAttesa.has(chiaveChiudere(c))}
-                      onAnnulla={() => annullaSegno(chiaveChiudere(c))}
-                      onPreso={bibliotecaSolaLettura ? null : () => segna(Number(s.id), prossimoVolume(s), s.titolo)}
-                    />
-                  );
-                })}
+                {voci.map((c) => (
+                  <CartaMancanti key={`c${c.serie.id}`} serie={c.serie} numeri={c.numeri} onApri={() => setApertaId(Number(c.serie.id))} />
+                ))}
               </Mucchio>
             )
+        )}
+
+        {serieAperta && (
+          <PopupVolumi
+            serie={serieAperta.serie}
+            numeri={serieAperta.numeri}
+            inAttesa={inAttesa}
+            prendendo={prendendo}
+            soloLettura={bibliotecaSolaLettura}
+            onSegna={(n) => segna(Number(serieAperta.serie.id), n, serieAperta.serie.titolo)}
+            onAnnulla={annullaSegno}
+            onChiudere={() => setApertaId(null)}
+          />
         )}
 
         {!ricercaTesto && (dati || []).length > 0 && (
@@ -572,6 +572,103 @@ function RigaSpesa({ a, copertina, ripiego, titolo, sotto, sottoColore = "text-i
         </button>
       )}
     </li>
+  );
+}
+
+/**
+ * Una serie, una riga: copertina, titolo e quanti/quali volumi mancano.
+ * Il tocco apre il riquadro con i numeri da segnare.
+ */
+function CartaMancanti({ serie, numeri, onApri }) {
+  const tutti = numeri.length;
+
+  return (
+    <li>
+      <button type="button" onClick={onApri} className="flex w-full items-center gap-3 py-2.5 text-left">
+        <Miniatura src={serie.copertina} />
+
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-2 text-[0.95rem] font-semibold leading-snug text-ink-bright">{serie.titolo}</p>
+          <p className="text-xs text-ink-muted">
+            {tutti === 1 ? "Manca" : "Mancano"} {plurale(tutti, "volume", "volumi")}
+            {": "}
+            <span className="font-numeric text-ink-bright">{intervalliVolumi(numeri)}</span>
+          </p>
+        </div>
+
+        {serie.costo ? (
+          <span className="shrink-0 font-numeric text-sm font-semibold text-ambra">{euro(serie.costo * tutti)}</span>
+        ) : null}
+      </button>
+    </li>
+  );
+}
+
+/** Il riquadro con un tondino per numero: toccarlo vuol dire «preso». */
+function PopupVolumi({ serie, numeri, inAttesa, prendendo, soloLettura, onSegna, onAnnulla, onChiudere }) {
+  const velo = useChiusuraVelo(onChiudere);
+
+  useEffect(() => {
+    const alTasto = (e) => e.key === "Escape" && onChiudere();
+
+    window.addEventListener("keydown", alTasto);
+
+    return () => window.removeEventListener("keydown", alTasto);
+  }, [onChiudere]);
+
+  return (
+    <Sovrapposizione>
+      <div
+        className="fixed inset-0 z-overlay flex items-end justify-center bg-void/70 p-0 backdrop-blur-sm animate-rise-in sm:items-center sm:p-5"
+        {...velo}
+      >
+        <div className="w-full max-w-sm rounded-t-sheet border border-hairline bg-glass-3 p-5 backdrop-blur-2xl sm:rounded-sheet">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="truncate font-display text-lg font-semibold text-ink-bright">{serie.titolo}</h2>
+              <p className="text-sm text-ink-muted">
+                {soloLettura ? "Volumi che mancano" : "Tocca i volumi che hai preso"}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onChiudere}
+              aria-label="Chiudi"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-muted hover:bg-glass-1 hover:text-ink-bright"
+            >
+              <Icon nome="close" dimensione={18} />
+            </button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {numeri.map((n) => {
+              const chiave = `${serie.id}:${n}`;
+              const inCoda = inAttesa.has(chiave);
+
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  disabled={soloLettura || prendendo === chiave}
+                  onClick={() => (inCoda ? onAnnulla(chiave) : onSegna(n))}
+                  title={inCoda ? "Annulla" : `Ho preso il ${n}`}
+                  className={`grid h-11 min-w-11 place-items-center rounded-xl px-2 font-numeric text-sm font-semibold transition-transform duration-quick active:scale-95 disabled:opacity-60 ${
+                    inCoda ? "bg-brass-400 text-void line-through" : "bg-glass-2 text-ink-bright"
+                  }`}
+                >
+                  {n}
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="mt-3 text-xs text-ink-faint">
+            Il segno si registra dopo 5 secondi: tocca di nuovo il numero per annullare.
+          </p>
+        </div>
+      </div>
+    </Sovrapposizione>
   );
 }
 

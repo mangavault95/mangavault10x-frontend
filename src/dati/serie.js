@@ -297,6 +297,35 @@ export function totaleDisponibile(serie) {
   return serie?.volumiItalia ?? serie?.totali ?? null;
 }
 
+/**
+ * Quanti volumi sono GIÀ USCITI in Italia, e quindi comprabili oggi.
+ *
+ * Diverso da `totaleDisponibile`, che senza il dato italiano ripiega sul
+ * totale giapponese: bene per le percentuali, sbagliato per «cosa manca»,
+ * perché proponeva da comprare volumi che l'editore non ha ancora
+ * pubblicato. Senza `volumiItalia` ci si fida del totale solo per le
+ * serie concluse; per quelle in corso, meglio dire «non so» (null) che
+ * proporre un volume che non esiste in libreria.
+ */
+export function totaleUscito(serie) {
+  // Un volume che hai in mano è uscito per forza: il numero più alto
+  // posseduto è un minimo sicuro, anche se il controllo settimanale è
+  // indietro o la serie non è ancora mai stata controllata. Così non si
+  // scrive niente a mano, e quando esce un volume nuovo basta il
+  // controllo (che il numero lo alza soltanto) senza conflitti.
+  const piuAlto = Math.max(0, ...(serie?.numeri ?? []));
+  const italia = serie?.volumiItalia ?? null;
+
+  if (italia != null) return Math.max(italia, piuAlto);
+
+  // «In corso» vuol dire che il totale giapponese non è definitivo: senza
+  // dato italiano si conoscono solo i buchi sotto il volume più alto che
+  // hai. Le altre (concluse e senza stato, come Yu-gi-oh) hanno un totale vero.
+  if (serie?.stato === "in_corso") return piuAlto || null;
+
+  return serie?.totali ?? null;
+}
+
 /** Percentuale 0-100, oppure null se non sappiamo quanti volumi siano. */
 export function completamento(serie) {
   const totale = totaleDisponibile(serie);
@@ -346,7 +375,7 @@ export function volumiMancanti(serie) {
  * casa stava oltre il totale noto (Rocky Joe 13 su 12).
  */
 export function numeriMancanti(serie) {
-  const totale = totaleDisponibile(serie);
+  const totale = totaleUscito(serie);
 
   if (!totale) return null;
 
@@ -354,6 +383,9 @@ export function numeriMancanti(serie) {
 
   return Array.from({ length: totale }, (_, i) => i + 1).filter((n) => !presenti.has(n));
 }
+
+/** Come `numeriMancanti`, ma `[]` invece di `null` quando non si sa. */
+export const numeriMancantiUsciti = (serie) => numeriMancanti(serie) ?? [];
 
 /**
  * Il prossimo volume da comprare: il primo che manca, non quello dopo

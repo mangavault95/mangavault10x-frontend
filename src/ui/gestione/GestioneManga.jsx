@@ -183,8 +183,15 @@ export default function GestioneManga() {
   );
 }
 
-/** Una scheda è da finire quando le manca una delle tre cose che servono a una serie. */
-const daFinire = (s) => !s.trama || !s.editore || !s.totali;
+/**
+ * Una scheda è da finire quando le manca una delle tre cose che servono a una serie.
+ *
+ * Il totale non conta per le serie IN CORSO: finché l'autore non ha
+ * finito non esiste, e chiederlo (o accettare uno 0) le lasciava per
+ * sempre «da finire». Quanti ne sono usciti in Italia non si scrive a
+ * mano: lo tiene aggiornato da solo il controllo settimanale.
+ */
+const daFinire = (s) => !s.trama || !s.editore || (s.stato !== "in_corso" && !s.totali);
 
 /* ==================================================
    MODULO DI UNA SCHEDA
