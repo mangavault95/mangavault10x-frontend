@@ -12,7 +12,9 @@ import { useSessione } from "../dati/sessione";
 import { useAccessoProtetto } from "../dati/accesso";
 import { eliminaTorneo, getTorneo } from "../services/api";
 import { dataIt } from "../dati/serie";
-import { strada, turniPer } from "../dati/kachinuki";
+import { strada, turniPer } from "../dati/kachinuki";
+import { chiedi } from "../dati/conferme";
+import { avvisa } from "../dati/avvisi";
 
 /**
  * Una partita già giocata, per intero.
@@ -56,7 +58,14 @@ export default function PartitaPage() {
   );
 
   const cancella = useCallback(async () => {
-    if (!window.confirm("Cancellare questa partita dalla cronologia?")) return;
+    const sicuro = await chiedi({
+      titolo: "Cancellare questa partita?",
+      testo: "Sparisce dalla cronologia e non si può recuperare.",
+      conferma: "Cancella",
+      pericolo: true
+    });
+
+    if (!sicuro) return;
 
     setCancellando(true);
 
@@ -64,7 +73,7 @@ export default function PartitaPage() {
       await eseguiProtetto(() => eliminaTorneo(partita.id));
       navigate("/kachinuki", { replace: true });
     } catch (e) {
-      if (!e?.annullato) window.alert(`Non sono riuscito a cancellarla: ${e.message}`);
+      if (!e?.annullato) avvisa({ testo: `Non sono riuscito a cancellarla: ${e.message}`, tono: "errore" });
       setCancellando(false);
     }
   }, [partita, eseguiProtetto, navigate]);

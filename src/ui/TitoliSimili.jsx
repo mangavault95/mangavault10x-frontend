@@ -85,8 +85,8 @@ export default function TitoliSimili({ serie }) {
         {inCorso &&
           Array.from({ length: Math.max(0, 6 - simili.length) }).map((_, i) => (
             <div key={`attesa-${i}`} className="space-y-2">
-              <div className="aspect-cover w-full animate-pulse rounded-card border border-hairline bg-glass-1" />
-              <div className="h-3 w-4/5 animate-pulse rounded bg-glass-1" />
+              <div className="aspect-cover w-full scheletro rounded-card border border-hairline bg-glass-1" />
+              <div className="h-3 w-4/5 scheletro rounded bg-glass-1" />
             </div>
           ))}
       </div>
@@ -124,7 +124,7 @@ function CartaSimile({ manga }) {
         )}
 
         <span
-          className={`absolute right-2 top-2 rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium uppercase tracking-wide backdrop-blur-sm ${targhetta.stile}`}
+          className={`absolute right-2 top-2 rounded-full px-1.5 py-0.5 text-micro font-medium uppercase tracking-wide backdrop-blur-sm ${targhetta.stile}`}
         >
           {targhetta.testo}
         </span>
@@ -134,7 +134,7 @@ function CartaSimile({ manga }) {
             scaffale — e schiacciarle in un'etichetta sola costringeva a
             nascondere la fonte proprio sulle carte che porti a casa. */}
         {posseduta && (
-          <span className="absolute bottom-2 left-2 rounded-full bg-jade/25 px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-wide text-jade backdrop-blur-sm">
+          <span className="absolute bottom-2 left-2 rounded-full bg-jade/25 px-2 py-0.5 text-micro font-medium uppercase tracking-wide text-jade backdrop-blur-sm">
             ce l'hai
           </span>
         )}
@@ -189,7 +189,7 @@ function Motivo({ manga }) {
         {manga.temiInComune.slice(0, 2).map((t) => (
           <span
             key={t}
-            className="rounded-full border border-hairline bg-glass-1 px-1.5 py-0.5 text-[0.62rem] text-ink-muted"
+            className="rounded-full border border-hairline bg-glass-1 px-1.5 py-0.5 text-micro text-ink-muted"
           >
             {t}
           </span>
@@ -203,7 +203,7 @@ function Motivo({ manga }) {
   if (!quanti) return null;
 
   return (
-    <p className="text-[0.65rem] italic text-ink-faint">
+    <p className="text-micro italic text-ink-faint">
       {quanti === 1 ? "segnalato da un lettore" : `segnalato da ${quanti} lettori`}
     </p>
   );

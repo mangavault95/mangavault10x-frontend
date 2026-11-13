@@ -264,7 +264,7 @@ function Paragone({ etichetta, a, b }) {
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="mb-1 text-center text-[0.7rem] uppercase tracking-wider text-quaderno-tenue">
+        <p className="mb-1 text-center text-micro uppercase tracking-wider text-quaderno-tenue">
           {etichetta}
         </p>
 
@@ -317,12 +317,12 @@ function Intestazione({ a, b }) {
     <div className="flex items-center gap-3 rounded-t-card bg-quaderno-carta px-3 py-1.5 sm:px-4">
       <span aria-hidden="true" className="w-10 shrink-0" />
 
-      <span className="min-w-0 flex-1 text-[0.65rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+      <span className="min-w-0 flex-1 text-micro font-semibold uppercase tracking-wider text-quaderno-tenue">
         Serie
       </span>
 
       <span className="flex shrink-0 items-center gap-1.5 font-numeric text-sm">
-        <span className={`${COLONNA} truncate text-[0.65rem] font-semibold uppercase tracking-wider text-quaderno-tenue`}>
+        <span className={`${COLONNA} truncate text-micro font-semibold uppercase tracking-wider text-quaderno-tenue`}>
           {a?.nickname}
         </span>
 
@@ -330,7 +330,7 @@ function Intestazione({ a, b }) {
           /
         </span>
 
-        <span className={`${COLONNA} truncate text-[0.65rem] font-semibold uppercase tracking-wider text-quaderno-tenue`}>
+        <span className={`${COLONNA} truncate text-micro font-semibold uppercase tracking-wider text-quaderno-tenue`}>
           {b?.nickname}
         </span>
       </span>

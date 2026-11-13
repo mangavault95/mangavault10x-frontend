@@ -180,6 +180,21 @@ export default {
         "spine-r": "inset -8px 0 12px -8px rgba(0, 0, 0, 0.9)"
       },
 
+      // La scala dei caratteri sotto il `text-xs` di Tailwind (13/11/2026).
+      // Prima c'erano quindici misure scritte a mano — 0.6, 0.62, 0.65,
+      // 0.68, 0.7, 0.72… — cioè sei modi di dire «piccolo», quasi tutti
+      // sotto gli 11 px, che su un telefono non si leggono.
+      // Solo la misura, senza interlinea: chi le usa ha già la sua.
+      fontSize: {
+        kana: "0.625rem", // 10 px: i kana a pixel, decorazioni e basta
+        micro: "0.6875rem", // 11 px: il più piccolo testo che si legge
+        fine: "0.8125rem", // 13 px: fra `text-xs` e `text-sm`
+        corpo: "0.9375rem" // 15 px: i titoli delle righe negli elenchi
+      },
+
+      // I raggi sono quattro, più il cerchio: `rounded-lg` per i controlli
+      // piccoli, poi carta, pannello, foglio. `xl`, `2xl` e `3xl` non si
+      // usano più: stavano a un paio di pixel da questi e basta.
       borderRadius: {
         card: "0.875rem",
         panel: "1.25rem",

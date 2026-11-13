@@ -43,7 +43,7 @@ export function RigaSerie({ serie, lettore, occupata, onPreso }) {
         <Miniatura src={serie.copertina} />
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[0.95rem] font-semibold text-ink-bright">
+          <p className="truncate text-corpo font-semibold text-ink-bright">
             {serie.titolo}
             {serie.edizione && <span className="font-normal text-ink-muted"> · {serie.edizione}</span>}
           </p>
@@ -79,7 +79,7 @@ export function RigaSerie({ serie, lettore, occupata, onPreso }) {
           onClick={onPreso}
           disabled={occupata}
           aria-label={`Segna come preso il volume ${numero} di ${serie.titolo}`}
-          className="shrink-0 rounded-xl bg-glass-2 px-3 py-2 font-numeric text-sm font-semibold text-ink-bright transition-transform duration-quick active:scale-95 disabled:opacity-60"
+          className="shrink-0 rounded-card bg-glass-2 px-3 py-2 font-numeric text-sm font-semibold text-ink-bright transition-transform duration-quick active:scale-95 disabled:opacity-60"
         >
           {occupata ? "…" : `+ ${numero}`}
         </button>

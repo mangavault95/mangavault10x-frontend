@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import Sovrapposizione from "../ui/Sovrapposizione";
-import useChiusuraVelo from "../ui/useChiusuraVelo";
+import Foglio from "../ui/Foglio";
 import useRisorsa from "../dati/useRisorsa";
 import { coloreLettore } from "../dati/lettori";
 import { euro } from "../dati/serie";
@@ -118,7 +117,7 @@ function MeseDi({ richiesto }) {
           {dati.anime && (
             <Link
               to={`/videoteca/${dati.anime.id}`}
-              className="mt-5 flex items-center gap-4 rounded-3xl border border-hairline bg-gradient-to-br from-viola/15 to-alcove p-4"
+              className="mt-5 flex items-center gap-4 rounded-panel border border-hairline bg-gradient-to-br from-viola/15 to-alcove p-4"
             >
               <Copertina src={dati.anime.copertina} />
               <div className="min-w-0">
@@ -161,7 +160,7 @@ function Acquisti({ acquisti }) {
         <p className="font-display text-[5rem] font-extrabold leading-[0.85] text-ink-bright">{acquisti.volumi}</p>
         <p className="font-display text-2xl font-bold text-ink-bright">{acquisti.volumi === 1 ? "volume comprato" : "volumi comprati"}</p>
 
-        <p className="mt-3 inline-flex items-center rounded-full bg-void/40 px-3 py-1 text-[0.95rem] text-ink">
+        <p className="mt-3 inline-flex items-center rounded-full bg-void/40 px-3 py-1 text-corpo text-ink">
           per&nbsp;<span className="font-numeric font-semibold text-ink-bright">{euro(acquisti.spesa)}</span>
           {elenco.length > 1 && <span className="text-ink-muted">&nbsp;· {elenco.length} serie</span>}
         </p>
@@ -172,14 +171,14 @@ function Acquisti({ acquisti }) {
             onClick={() => setAperto(true)}
             aria-label="Mostra cosa è entrato nel mese"
             aria-haspopup="dialog"
-            className="mt-5 flex rounded-2xl text-left transition-opacity duration-quick active:opacity-80"
+            className="mt-5 flex rounded-card text-left transition-opacity duration-quick active:opacity-80"
           >
             <span className="flex -space-x-3">
               {inPila.map((s) => (
                 <Copertina key={s.id} src={s.copertina} piccola />
               ))}
               {altre > 0 && (
-                <span className="grid h-20 w-14 place-items-center rounded-xl border-2 border-alcove bg-glass-2 font-numeric text-sm font-semibold text-ink-bright">
+                <span className="grid h-20 w-14 place-items-center rounded-card border-2 border-alcove bg-glass-2 font-numeric text-sm font-semibold text-ink-bright">
                   +{altre}
                 </span>
               )}
@@ -195,24 +194,11 @@ function Acquisti({ acquisti }) {
 
 /** Il popup: cosa è entrato, serie per serie, con barra, numeri e spesa. */
 function DettaglioAcquisti({ elenco, volumi, spesa, onChiudi }) {
-  const velo = useChiusuraVelo(onChiudi);
   const massimo = Math.max(1, ...elenco.map((s) => s.volumi));
 
   return (
-    <Sovrapposizione>
-      <div
-        className="fixed inset-0 z-modal grid place-items-end overflow-y-auto bg-void/70 p-0 animate-rise-in sm:place-items-center sm:p-4"
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onChiudi();
-        }}
-        {...velo}
-      >
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Cosa è entrato nel mese"
-          className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-[28px] border border-hairline bg-glass-3 p-5 shadow-float backdrop-blur-2xl sm:rounded-panel sm:p-6"
-        >
+    <Foglio titolo="Cosa è entrato nel mese" titoloNascosto senzaMargini larghezza="sm:max-w-md" onChiudere={onChiudi}>
+      <div className="px-5 pb-1">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="font-display text-xl font-bold text-ink-bright">Cosa è entrato</h2>
@@ -236,13 +222,13 @@ function DettaglioAcquisti({ elenco, volumi, spesa, onChiudi }) {
           <ul className="mt-4 space-y-2.5">
             {elenco.map((s) => (
               <li key={s.id}>
-                <Link to={`/serie/${s.id}`} className="flex items-center gap-3.5 rounded-2xl bg-alcove p-3 transition-colors duration-quick active:bg-glass-2">
+                <Link to={`/serie/${s.id}`} className="flex items-center gap-3.5 rounded-card bg-alcove p-3 transition-colors duration-quick active:bg-glass-2">
                   <Copertina src={s.copertina} media />
 
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-display text-base font-bold leading-tight text-ink-bright">{s.titolo}</p>
                     {s.edizione && <p className="truncate text-xs text-ink-muted">{s.edizione}</p>}
-                    {s.numeri.length > 0 && <p className="mt-0.5 font-numeric text-[0.8rem] text-ink">vol. {numeriInFila(s.numeri)}</p>}
+                    {s.numeri.length > 0 && <p className="mt-0.5 font-numeric text-fine text-ink">vol. {numeriInFila(s.numeri)}</p>}
 
                     <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-ink-bright/[0.07]">
                       <span className="block h-full rounded-full bg-brass-400" style={{ width: `${Math.max(8, (s.volumi / massimo) * 100)}%` }} />
@@ -257,9 +243,8 @@ function DettaglioAcquisti({ elenco, volumi, spesa, onChiudi }) {
               </li>
             ))}
           </ul>
-        </div>
       </div>
-    </Sovrapposizione>
+    </Foglio>
   );
 }
 
@@ -279,7 +264,7 @@ function numeriInFila(numeri) {
 
 function Totale({ numero, etichetta }) {
   return (
-    <div className="rounded-3xl border border-hairline bg-alcove p-4">
+    <div className="rounded-panel border border-hairline bg-alcove p-4">
       <p className="font-display text-4xl font-extrabold leading-none text-ink-bright">{numero}</p>
       <p className="mt-1.5 text-sm text-ink-muted">{etichetta}</p>
     </div>
@@ -317,8 +302,8 @@ function Copertina({ src, piccola = false, media = false }) {
   const misura = piccola ? "h-20 w-14 border-2 border-alcove" : media ? "h-[84px] w-14" : "h-24 w-[68px]";
 
   return indirizzo && !rotta ? (
-    <img src={indirizzo} alt="" onError={dopoIlRipiego(() => setRotta(true))} className={`${misura} shrink-0 rounded-xl object-cover`} />
+    <img src={indirizzo} alt="" onError={dopoIlRipiego(() => setRotta(true))} className={`${misura} shrink-0 rounded-card object-cover`} />
   ) : (
-    <span aria-hidden="true" className={`${misura} shrink-0 rounded-xl bg-glass-2`} />
+    <span aria-hidden="true" className={`${misura} shrink-0 rounded-card bg-glass-2`} />
   );
 }

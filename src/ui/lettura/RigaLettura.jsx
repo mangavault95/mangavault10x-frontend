@@ -6,8 +6,6 @@ import { Bottone } from "../Controlli";
 import { VotoStelle } from "../AzioniSerie";
 import NoteSerie from "../NoteSerie";
 import Foglio from "../Foglio";
-import Sovrapposizione from "../Sovrapposizione";
-import useChiusuraVelo from "../useChiusuraVelo";
 import { plurale } from "../../dati/serie";
 
 /* ==================================================
@@ -71,7 +69,7 @@ export function RigaLettura({ lettura, principale, ultima, soloLettura, onAvanti
   const giaLetto = lettura.volumiLetti.map(Number).includes(volume);
 
   return (
-    <div className="flex gap-3 rounded-2xl bg-alcove p-3">
+    <div className="flex gap-3 rounded-card bg-alcove p-3">
       <Link to={`/serie/${lettura.mangaId}`} className="w-[3.25rem] shrink-0 self-start">
         <Copertina src={lettura.copertina} alt="" inclina={false} />
       </Link>
@@ -82,7 +80,7 @@ export function RigaLettura({ lettura, principale, ultima, soloLettura, onAvanti
             {/* Il server le manda dalla più recente: dirlo spiega perché
                 una sola ha il tasto pieno. */}
             {ultima && (
-              <p className="text-[0.62rem] font-medium uppercase tracking-[0.14em] text-brass-400">
+              <p className="text-micro font-medium uppercase tracking-[0.14em] text-brass-400">
                 Ultima lettura
               </p>
             )}
@@ -95,7 +93,7 @@ export function RigaLettura({ lettura, principale, ultima, soloLettura, onAvanti
             >
               {titolo}
             </Link>
-            <p className="mt-0.5 text-[0.8rem] text-ink-muted">
+            <p className="mt-0.5 text-fine text-ink-muted">
               {!soloLettura ? (
                 <button
                   type="button"
@@ -137,7 +135,7 @@ export function RigaLettura({ lettura, principale, ultima, soloLettura, onAvanti
 
         {!soloLettura && (
           <div className="mt-2.5 flex items-center gap-2">
-            <div className={`${segnalibro ? "flex" : "hidden"} shrink-0 items-center rounded-xl bg-glass-2`}>
+            <div className={`${segnalibro ? "flex" : "hidden"} shrink-0 items-center rounded-card bg-glass-2`}>
               <button
                 type="button"
                 onClick={onIndietro}
@@ -163,7 +161,7 @@ export function RigaLettura({ lettura, principale, ultima, soloLettura, onAvanti
               type="button"
               onClick={onLetto}
               disabled={giaLetto && eUltimo}
-              className={`h-10 min-w-0 flex-1 truncate rounded-xl px-3 text-sm font-semibold transition-transform duration-quick active:scale-[0.98] disabled:opacity-50 ${
+              className={`h-10 min-w-0 flex-1 truncate rounded-card px-3 text-sm font-semibold transition-transform duration-quick active:scale-[0.98] disabled:opacity-50 ${
                 principale ? "insegna" : "border border-hairline bg-glass-2 text-ink-bright hover:border-brass-400/40"
               }`}
             >
@@ -199,7 +197,6 @@ export function FoglioLettura({
   onDroppa,
   onVotoCambiato
 }) {
-  const velo = useChiusuraVelo(onChiudi);
   const [confermando, setConfermando] = useState(null);
   const [noteAperte, setNoteAperte] = useState(false);
   const [salto, setSalto] = useState("");
@@ -267,20 +264,8 @@ export function FoglioLettura({
   ].filter(Boolean);
 
   return (
-    <Sovrapposizione>
-      <div
-        className="fixed inset-0 z-modal flex items-end justify-center bg-void/60 sm:items-center sm:p-4"
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onChiudi();
-        }}
-        {...velo}
-      >
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Gestisci ${lettura.titolo}`}
-          className="max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-sheet bg-alcove p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] shadow-float animate-rise-in sm:rounded-sheet"
-        >
+    <Foglio titolo={`Gestisci ${lettura.titolo}`} titoloNascosto senzaMargini larghezza="sm:max-w-md" onChiudere={onChiudi}>
+      <div className="px-5 pb-1">
           <div className="flex items-center gap-3.5">
             <div className="w-11 shrink-0">
               <Copertina src={lettura.copertina} alt="" inclina={false} />
@@ -305,7 +290,7 @@ export function FoglioLettura({
           {/* Il voto: sta in cima perché è la cosa che si viene a fare
               più spesso dopo «finito». */}
           {serie && (
-            <div className="mt-5 flex items-center justify-between rounded-2xl bg-shelf px-4 py-3">
+            <div className="mt-5 flex items-center justify-between rounded-card bg-shelf px-4 py-3">
               <span className="text-sm font-medium text-ink-bright">Il tuo voto</span>
               <VotoStelle serie={serie} dimensione={22} onCambiato={(nuovo) => onVotoCambiato(lettura, nuovo)} />
             </div>
@@ -313,7 +298,7 @@ export function FoglioLettura({
 
           {/* Il salto: per spostare il segnalibro lontano senza premere
               «+» venti volte. Non segna niente come letto. */}
-          <form onSubmit={vai} className="mt-3 flex items-center gap-2 rounded-2xl bg-shelf px-4 py-2.5">
+          <form onSubmit={vai} className="mt-3 flex items-center gap-2 rounded-card bg-shelf px-4 py-2.5">
             <label htmlFor="salto-volume" className="flex-1 text-sm font-medium text-ink-bright">
               Vai al volume
             </label>
@@ -333,7 +318,7 @@ export function FoglioLettura({
             </button>
           </form>
 
-          <ul className="mt-3 divide-y divide-hairline rounded-2xl bg-shelf">
+          <ul className="mt-3 divide-y divide-hairline rounded-card bg-shelf">
             {serie && (
               <li>
                 <button
@@ -375,8 +360,7 @@ export function FoglioLettura({
               );
             })}
           </ul>
-        </div>
       </div>
-    </Sovrapposizione>
+    </Foglio>
   );
 }

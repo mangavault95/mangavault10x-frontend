@@ -75,7 +75,7 @@ export function CampoRicerca({
       />
 
       {!valore && (
-        <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-soft bg-glass-1 px-1.5 py-0.5 font-numeric text-[0.65rem] text-ink-faint sm:block">
+        <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-soft bg-glass-1 px-1.5 py-0.5 font-numeric text-micro text-ink-faint sm:block">
           /
         </kbd>
       )}

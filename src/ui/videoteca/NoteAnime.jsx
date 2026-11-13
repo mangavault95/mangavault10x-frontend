@@ -147,7 +147,7 @@ export default function NoteAnime({ animeId, note, utente, alCambio }) {
                     <Pillola tono="blu">ep {nota.numero_episodio}</Pillola>
                   )}
 
-                  <span className="font-numeric text-[0.7rem] text-quaderno-tenue">
+                  <span className="font-numeric text-micro text-quaderno-tenue">
                     {new Date(nota.creata_il).toLocaleDateString("it-IT", {
                       day: "numeric",
                       month: "short",
@@ -159,7 +159,7 @@ export default function NoteAnime({ animeId, note, utente, alCambio }) {
                     <button
                       type="button"
                       onClick={() => elimina(nota.id)}
-                      className="ml-auto text-[0.7rem] text-quaderno-tenue hover:text-quaderno-inchiostro"
+                      className="ml-auto text-micro text-quaderno-tenue hover:text-quaderno-inchiostro"
                     >
                       elimina
                     </button>

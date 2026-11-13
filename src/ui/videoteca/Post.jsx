@@ -136,7 +136,7 @@ export default function Post({ post, alCambio }) {
           <>
             {/* `whitespace-pre-wrap`: chi va a capo scrivendo si
                 aspetta di trovare quell'a capo. */}
-            <p className="whitespace-pre-wrap text-[0.95rem] leading-relaxed text-quaderno-inchiostro">
+            <p className="whitespace-pre-wrap text-corpo leading-relaxed text-quaderno-inchiostro">
               {post.testo}
             </p>
 

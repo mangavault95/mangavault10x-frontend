@@ -3,8 +3,7 @@ import { Link } from "react-router-dom";
 import Icon from "../../app/Icon";
 import { giornoPerEsteso, quandoBreveDa, quandoPerEsteso } from "../../dati/cineforum";
 import { getAvvisi, segnaAvvisiLetti } from "../../services/api";
-import Sovrapposizione from "../Sovrapposizione";
-import useChiusuraVelo from "../useChiusuraVelo";
+import Foglio from "../Foglio";
 import Tondino from "./Tondino";
 
 /**
@@ -103,7 +102,7 @@ export default function Campanella() {
             «ne hai sette» sono due notizie diverse. Sopra il nove
             diventa «9+», o il numero non ci sta dentro. */}
         {quanti > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-quaderno-blu px-1 font-numeric text-[0.65rem] font-bold text-quaderno-su-blu">
+          <span className="absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-quaderno-blu px-1 font-numeric text-micro font-bold text-quaderno-su-blu">
             {quanti > 9 ? "9+" : quanti}
           </span>
         )}
@@ -128,19 +127,12 @@ export default function Campanella() {
    ================================================== */
 
 function Foglietto({ dati, primaDi, chiudi }) {
-  const velo = useChiusuraVelo(chiudi);
 
   const avvisi = dati?.avvisi ?? [];
 
   return (
-    <Sovrapposizione>
-      <div
-        {...velo}
-        role="dialog"
-        aria-label="Avvisi"
-        className="fixed inset-0 z-modal flex items-end justify-center bg-black/40 sm:items-start sm:justify-end sm:p-4"
-      >
-        <div className="flex max-h-[80vh] w-full flex-col rounded-t-sheet border-t border-quaderno-riga bg-quaderno-foglio shadow-float sm:max-w-sm sm:rounded-panel sm:border">
+    <Foglio titolo="Avvisi" titoloNascosto senzaMargini larghezza="sm:max-w-sm" onChiudere={chiudi}>
+      <div>
           <header className="flex items-center gap-3 border-b border-quaderno-riga px-4 py-3">
             <h2 className="min-w-0 flex-1 font-display text-base font-semibold text-quaderno-inchiostro">
               Avvisi
@@ -173,9 +165,8 @@ function Foglietto({ dati, primaDi, chiudi }) {
               </ul>
             )}
           </div>
-        </div>
       </div>
-    </Sovrapposizione>
+    </Foglio>
   );
 }
 
@@ -264,7 +255,7 @@ function Contenuto({ avviso, nuovo }) {
           </p>
         )}
 
-        <p className="mt-0.5 font-numeric text-[0.7rem] text-quaderno-tenue" title={quandoPerEsteso(avviso.quando)}>
+        <p className="mt-0.5 font-numeric text-micro text-quaderno-tenue" title={quandoPerEsteso(avviso.quando)}>
           {quandoBreveDa(avviso.quando)}
         </p>
       </div>

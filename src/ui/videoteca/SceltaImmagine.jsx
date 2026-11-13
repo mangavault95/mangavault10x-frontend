@@ -3,8 +3,7 @@ import Icon from "../../app/Icon";
 import { MISURE, pesoDi, riduci } from "../../dati/immagini";
 import { raggruppa } from "../../dati/videoteca";
 import { getVideoteca, urlCopertina } from "../../services/api";
-import Sovrapposizione from "../Sovrapposizione";
-import useChiusuraVelo from "../useChiusuraVelo";
+import Foglio from "../Foglio";
 
 /**
  * Da dove viene un'immagine di profilo.
@@ -31,7 +30,6 @@ import useChiusuraVelo from "../useChiusuraVelo";
  */
 
 export default function SceltaImmagine({ misura = "faccia", titolo, chiudi, alScelto }) {
-  const velo = useChiusuraVelo(chiudi);
   const [strada, setStrada] = useState("copertine");
   const [inCorso, setInCorso] = useState(false);
   const [errore, setErrore] = useState(null);
@@ -51,14 +49,8 @@ export default function SceltaImmagine({ misura = "faccia", titolo, chiudi, alSc
   }
 
   return (
-    <Sovrapposizione>
-      <div
-        {...velo}
-        role="dialog"
-        aria-label={titolo}
-        className="fixed inset-0 z-modal flex items-end justify-center bg-black/45 sm:items-center sm:p-6"
-      >
-        <div className="flex max-h-[85vh] w-full flex-col rounded-t-sheet border-t border-quaderno-riga bg-quaderno-foglio shadow-float sm:max-w-lg sm:rounded-panel sm:border">
+    <Foglio titolo={titolo} titoloNascosto senzaMargini larghezza="sm:max-w-lg" onChiudere={chiudi}>
+      <div>
           <header className="flex items-center gap-3 border-b border-quaderno-riga px-4 py-3">
             <h2 className="min-w-0 flex-1 font-display text-lg font-semibold text-quaderno-inchiostro">
               {titolo}
@@ -101,9 +93,8 @@ export default function SceltaImmagine({ misura = "faccia", titolo, chiudi, alSc
               <DaFile usa={usa} setErrore={setErrore} />
             )}
           </div>
-        </div>
       </div>
-    </Sovrapposizione>
+    </Foglio>
   );
 }
 

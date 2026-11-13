@@ -512,13 +512,13 @@ function CartaCompatta({ anime }) {
           className="h-full w-full object-cover"
         />
       ) : (
-        <span className="grid h-full place-items-center px-2 text-center text-[0.65rem] text-quaderno-tenue">
+        <span className="grid h-full place-items-center px-2 text-center text-micro text-quaderno-tenue">
           {anime.titolo}
         </span>
       )}
 
       {anime.voto && (
-        <span className="absolute left-1 top-1 rounded-full bg-quaderno-foglio/90 px-1.5 py-0.5 font-numeric text-[0.65rem] font-semibold text-quaderno-blu">
+        <span className="absolute left-1 top-1 rounded-full bg-quaderno-foglio/90 px-1.5 py-0.5 font-numeric text-micro font-semibold text-quaderno-blu">
           ★ {formattaVoto(anime.voto)}
         </span>
       )}
@@ -577,7 +577,7 @@ function MenuOrdineVista({ aperto, onApri, ordina, onOrdina, vista, onVista }) {
           role="menu"
           className="absolute right-0 top-full z-overlay mt-2 w-56 rounded-card border border-quaderno-riga bg-quaderno-foglio p-1.5 shadow-lift"
         >
-          <p className="px-2.5 pb-1 pt-1.5 text-[0.65rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+          <p className="px-2.5 pb-1 pt-1.5 text-micro font-semibold uppercase tracking-wider text-quaderno-tenue">
             Ordina per
           </p>
 

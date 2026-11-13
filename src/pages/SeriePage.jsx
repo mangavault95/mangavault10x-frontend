@@ -297,7 +297,7 @@ export default function SeriePage() {
         <div className="relative mx-auto w-full max-w-[80rem] px-4 py-5 sm:px-8 sm:py-8 lg:px-12 lg:py-12">
           <button
             onClick={() => tornaIndietroConVolo(navigate, id)}
-            className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-ink-muted transition-colors duration-quick hover:text-ink-bright sm:mb-8"
+            className="bersaglio mb-4 inline-flex items-center gap-2 text-sm font-medium text-ink-muted transition-colors duration-quick hover:text-ink-bright sm:mb-8"
           >
             <Icon nome="back" dimensione={16} />
             Indietro
@@ -528,7 +528,7 @@ export default function SeriePage() {
               {!bibliotecaSolaLettura && (
                 <Link
                   to={`/gestione?sezione=manga&serie=${serie.id}`}
-                  className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brass-300"
+                  className="bersaglio mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brass-300"
                 >
                   <Icon nome="matita" dimensione={16} />
                   Correggi nella gestione

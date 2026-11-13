@@ -31,6 +31,7 @@ import Identita from "../ui/Identita";
 import { useSessione } from "../dati/sessione";
 import SceltaTema from "../ui/SceltaTema";
 import Avvisi from "../ui/Avvisi";
+import Conferme from "../ui/Conferme";
 import Foglio from "../ui/Foglio";
 import TiraPerAggiornare from "../ui/TiraPerAggiornare";
 import { ripristino } from "../dati/paginaViva";
@@ -286,16 +287,16 @@ export default function Shell({ children }) {
             {richieste.length > 0 && (
               <span
                 aria-label={`${richieste.length} in attesa`}
-                className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 font-numeric text-[0.6rem] font-bold text-void"
+                className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 font-numeric text-micro font-bold text-void"
               >
                 {richieste.length}
               </span>
             )}
           </span>
-          <span className="text-[0.65rem] font-medium tracking-wide">Tu</span>
+          <span className="text-micro font-medium tracking-wide">Tu</span>
           {/* La stessa riga del kana delle altre linguette, o «Tu» starebbe
               più in basso di tutte. */}
-          <span aria-hidden="true" className={`kana -mt-1 h-3 font-pixel text-[0.55rem] leading-3 ${tuAperto || inGestione ? "opacity-70" : "invisible"}`}>
+          <span aria-hidden="true" className={`kana -mt-1 h-3 font-pixel text-kana leading-3 ${tuAperto || inGestione ? "opacity-70" : "invisible"}`}>
             あなた
           </span>
         </button>
@@ -336,6 +337,7 @@ export default function Shell({ children }) {
       {/* Gli avvisi («registrato», «Annulla»): uno per tutto il sito, e
           nella cornice perché devono sopravvivere al cambio di pagina. */}
       <Avvisi />
+      <Conferme />
 
       {/* Tirare giù per aggiornare: nell'app sulla Home non c'è altro modo. */}
       <TiraPerAggiornare />
@@ -375,7 +377,7 @@ function VoceMenu({ sezione, veste, attiva, pallina = 0 }) {
 
       <span className="hidden flex-1 text-sm font-medium lg:inline">{sezione.etichetta}</span>
       {sezione.kana && (
-        <span aria-hidden="true" className={`kana hidden font-pixel text-[0.65rem] lg:inline ${attiva ? "opacity-80" : "text-ink-faint"}`}>
+        <span aria-hidden="true" className={`kana hidden font-pixel text-kana lg:inline ${attiva ? "opacity-80" : "text-ink-faint"}`}>
           {sezione.kana}
         </span>
       )}
@@ -383,7 +385,7 @@ function VoceMenu({ sezione, veste, attiva, pallina = 0 }) {
       {pallina > 0 && (
         <span
           aria-label={`${pallina} in attesa`}
-          className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 font-numeric text-[0.6rem] font-bold text-void"
+          className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 font-numeric text-micro font-bold text-void"
         >
           {pallina}
         </span>
@@ -396,7 +398,7 @@ function VoceMenu({ sezione, veste, attiva, pallina = 0 }) {
       >
         {sezione.etichetta}
         {sezione.tasto && (
-          <kbd className="ml-2 rounded border border-current/20 px-1.5 py-0.5 font-numeric text-[0.65rem] opacity-70">
+          <kbd className="ml-2 rounded border border-current/20 px-1.5 py-0.5 font-numeric text-micro opacity-70">
             {sezione.tasto}
           </kbd>
         )}
@@ -424,9 +426,9 @@ function Linguetta({ sezione, veste, attiva }) {
         <Icon nome={sezione.icona} dimensione={20} />
       </span>
 
-      <span className="text-[0.65rem] font-medium tracking-wide">{sezione.etichetta}</span>
+      <span className="text-micro font-medium tracking-wide">{sezione.etichetta}</span>
       {sezione.kana && (
-        <span aria-hidden="true" className={`kana -mt-1 h-3 font-pixel text-[0.55rem] leading-3 ${attiva ? "opacity-70" : "invisible"}`}>
+        <span aria-hidden="true" className={`kana -mt-1 h-3 font-pixel text-kana leading-3 ${attiva ? "opacity-70" : "invisible"}`}>
           {sezione.kana}
         </span>
       )}
@@ -472,7 +474,7 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
               key={voce.id}
               to={voce.percorso}
               aria-current={attiva ? "page" : undefined}
-              className={`shrink-0 whitespace-nowrap border-b-2 pb-2.5 pt-1.5 font-display text-[0.95rem] font-semibold transition-colors duration-quick sm:text-base
+              className={`shrink-0 whitespace-nowrap border-b-2 pb-2.5 pt-1.5 font-display text-corpo font-semibold transition-colors duration-quick sm:text-base
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
                 ${attiva ? "border-brass-400 text-ink-bright [box-shadow:0_6px_12px_-8px_rgb(var(--c-accento))]" : "border-transparent text-ink-muted hover:text-ink-bright"}`}
             >
@@ -595,7 +597,7 @@ function FoglioTu({ richieste, chiudi }) {
                 </span>
 
                 {voce.id === SEZIONE_GESTIONE.id && richieste > 0 && (
-                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ember px-1.5 font-numeric text-[0.7rem] font-bold text-void">
+                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ember px-1.5 font-numeric text-micro font-bold text-void">
                     {richieste}
                   </span>
                 )}

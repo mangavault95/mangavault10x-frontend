@@ -464,7 +464,7 @@ export default function WishlistPage() {
         ) : inCorso && !dati ? (
           <CaricamentoElenco />
         ) : visibili.length ? (
-          <ul className="divide-y divide-hairline rounded-2xl bg-alcove px-3.5">
+          <ul className="divide-y divide-hairline rounded-card bg-alcove px-3.5">
             {visibili.map((e) => (
               <li key={e.id}>
                 <RigaDesiderio

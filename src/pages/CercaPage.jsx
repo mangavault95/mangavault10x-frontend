@@ -234,11 +234,11 @@ export default function CercaPage() {
     <div className="mx-auto w-full max-w-2xl px-4 pb-8 pt-6">
       <h1 className="sr-only">Cerca</h1>
 
-      <label htmlFor="cerca-tutto" className="mb-2 block px-1 text-[0.8rem] text-ink-muted">
+      <label htmlFor="cerca-tutto" className="mb-2 block px-1 text-fine text-ink-muted">
         Manga in casa, anime in videoteca e desideri, tutto insieme
       </label>
 
-      <div className="flex h-14 items-center gap-2.5 rounded-2xl bg-alcove px-4 ring-2 ring-transparent transition-shadow duration-quick focus-within:ring-brass-400">
+      <div className="flex h-14 items-center gap-2.5 rounded-card bg-alcove px-4 ring-2 ring-transparent transition-shadow duration-quick focus-within:ring-brass-400">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className="shrink-0 text-ink-muted">
           <circle cx="11" cy="11" r="7" />
           <path d="m20 20-4-4" />
@@ -253,7 +253,7 @@ export default function CercaPage() {
           placeholder="Berserk, Frieren, Adachi…"
           autoComplete="off"
           enterKeyHint="search"
-          className="min-w-0 flex-1 bg-transparent text-[1.05rem] font-medium text-ink-bright placeholder:text-ink-faint focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink-bright placeholder:text-ink-faint focus:outline-none"
         />
 
         {scritto && (
@@ -392,7 +392,7 @@ export default function CercaPage() {
             <ul className="grid grid-cols-2 gap-2">
               {SCORCIATOIE.map((c) => (
                 <li key={c.a}>
-                  <Link to={c.a} className="block rounded-2xl bg-alcove px-4 py-3.5 text-sm font-semibold text-ink-bright">
+                  <Link to={c.a} className="block rounded-card bg-alcove px-4 py-3.5 text-sm font-semibold text-ink-bright">
                     {c.etichetta}
                   </Link>
                 </li>
@@ -414,10 +414,10 @@ function Gruppo({ titolo, altri = null, children }) {
     <section className="mt-7">
       <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">{titolo}</h2>
 
-      <ul className="divide-y divide-hairline rounded-2xl bg-alcove px-3.5">{children}</ul>
+      <ul className="divide-y divide-hairline rounded-card bg-alcove px-3.5">{children}</ul>
 
       {altri && (
-        <button type="button" onClick={altri.apri} className="mt-2 w-full rounded-xl py-2.5 text-sm font-semibold text-brass-300">
+        <button type="button" onClick={altri.apri} className="mt-2 w-full rounded-card py-2.5 text-sm font-semibold text-brass-300">
           Mostra altri {altri.quanti}
         </button>
       )}
@@ -476,11 +476,11 @@ function Riga({ a, copertina, titolo, sotto, etichetta, onApri }) {
         )}
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[0.95rem] font-semibold text-ink-bright">{titolo}</p>
+          <p className="truncate text-corpo font-semibold text-ink-bright">{titolo}</p>
           {sotto && <p className="truncate text-xs text-ink-muted">{sotto}</p>}
         </div>
 
-        <span className="shrink-0 rounded-full bg-brass-400/12 px-2 py-0.5 text-[0.7rem] font-medium text-brass-300">{etichetta}</span>
+        <span className="shrink-0 rounded-full bg-brass-400/12 px-2 py-0.5 text-micro font-medium text-brass-300">{etichetta}</span>
       </Link>
     </li>
   );
@@ -497,7 +497,7 @@ function Azione({ a, titolo, sotto, onApri }) {
         </span>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[0.95rem] font-semibold text-ink-bright">{titolo}</p>
+          <p className="truncate text-corpo font-semibold text-ink-bright">{titolo}</p>
           <p className="truncate text-xs text-ink-muted">{sotto}</p>
         </div>
       </Link>
@@ -527,7 +527,7 @@ function ProposataAcquisto({ acquisto, occupato, onRegistra }) {
         : numeri.join(", ");
 
   return (
-    <section className="mt-5 rounded-2xl border border-brass-400/40 bg-alcove p-4 text-ink-bright">
+    <section className="mt-5 rounded-card border border-brass-400/40 bg-alcove p-4 text-ink-bright">
       <div className="flex items-center gap-3.5">
         {urlCopertina(serie.copertina) ? (
           <img src={urlCopertina(serie.copertina)} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" />
@@ -535,10 +535,10 @@ function ProposataAcquisto({ acquisto, occupato, onRegistra }) {
 
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold opacity-75">Registra acquisto</p>
-          <p className="truncate text-[1.05rem] font-bold">
+          <p className="truncate text-base font-bold">
             {serie.titolo} {etichettaVolumi}
           </p>
-          <p className="text-[0.8rem] opacity-80">
+          <p className="text-fine opacity-80">
             {totale != null ? `${euro(totale)}${prezzo == null ? " (prezzo della scheda)" : ""}` : "senza prezzo"}
             {" · "}
             {data ? new Date(`${data}T12:00:00`).toLocaleDateString("it-IT", { day: "numeric", month: "long" }) : "oggi"}
@@ -549,14 +549,14 @@ function ProposataAcquisto({ acquisto, occupato, onRegistra }) {
           type="button"
           onClick={onRegistra}
           disabled={occupato}
-          className="insegna shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition-transform duration-quick active:scale-95 disabled:opacity-60"
+          className="insegna shrink-0 rounded-card px-4 py-2.5 text-sm font-semibold transition-transform duration-quick active:scale-95 disabled:opacity-60"
         >
           {occupato ? "Registro…" : "Registra"}
         </button>
       </div>
 
       {(buco.length > 0 || giaInCasa.length > 0) && (
-        <p className="mt-3 text-[0.8rem] font-medium">
+        <p className="mt-3 text-fine font-medium">
           {giaInCasa.length > 0
             ? `Attento: in casa ${giaInCasa.length === 1 ? `il ${giaInCasa[0]} c'è già` : `ci sono già ${intervalliVolumi(giaInCasa)}`}.`
             : `Prima ti ${buco.length === 1 ? `manca il ${buco[0]}` : `mancano ${intervalliVolumi(buco)}`}.`}
@@ -571,7 +571,7 @@ function Registrato({ esito, onAnnulla, onChiudi }) {
   const volumi = esito.volumi.length === 1 ? `${esito.volumi[0]}` : `${esito.volumi[0]}–${esito.volumi[esito.volumi.length - 1]}`;
 
   return (
-    <section role="status" className="mt-5 flex items-center gap-3 rounded-2xl bg-jade/15 px-4 py-3 text-sm">
+    <section role="status" className="mt-5 flex items-center gap-3 rounded-card bg-jade/15 px-4 py-3 text-sm">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-jade">
         <path d="M20 6 9 17l-5-5" />
       </svg>

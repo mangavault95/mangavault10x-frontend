@@ -2,8 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../../app/Icon";
 import Copertina from "../Copertina";
-import Sovrapposizione from "../Sovrapposizione";
-import useChiusuraVelo from "../useChiusuraVelo";
+import Foglio from "../Foglio";
 import Stelle from "./Stelle";
 import {
   impostaVisione,
@@ -204,7 +203,7 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
             ))}
           </ul>
         ) : (
-          <p className="rounded-2xl bg-alcove px-4 py-5 text-sm text-ink-muted">
+          <p className="rounded-card bg-alcove px-4 py-5 text-sm text-ink-muted">
             Niente in visione. Dai «Da vedere» qui sotto, o con «Aggiungi» in alto.
           </p>
         )}
@@ -270,7 +269,7 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
       ]
         .filter((g) => g.elenco.length)
         .map((g) => (
-          <details key={g.titolo} className="group rounded-2xl bg-alcove">
+          <details key={g.titolo} className="group rounded-card bg-alcove">
             <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3.5 text-sm font-semibold text-ink-bright">
               <span>
                 {g.titolo} <span className="font-numeric text-ink-muted">· {g.elenco.length}</span>
@@ -322,7 +321,7 @@ function Sezione({ titolo, conto, children }) {
 }
 
 function Elenco({ children }) {
-  return <ul className="divide-y divide-hairline rounded-2xl bg-alcove px-3.5">{children}</ul>;
+  return <ul className="divide-y divide-hairline rounded-card bg-alcove px-3.5">{children}</ul>;
 }
 
 function Riga({ anime, sotto, posizione, children }) {
@@ -347,7 +346,7 @@ function Piccolo({ onClick, disabilitato, children }) {
       type="button"
       onClick={onClick}
       disabled={disabilitato}
-      className="shrink-0 rounded-xl bg-glass-2 px-3 py-2 text-xs font-semibold text-ink-bright transition-transform duration-quick active:scale-95 disabled:opacity-50"
+      className="shrink-0 rounded-card bg-glass-2 px-3 py-2 text-xs font-semibold text-ink-bright transition-transform duration-quick active:scale-95 disabled:opacity-50"
     >
       {children}
     </button>
@@ -367,7 +366,7 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
         : "in pari";
 
   return (
-    <div className="flex gap-3.5 rounded-2xl bg-alcove p-3.5">
+    <div className="flex gap-3.5 rounded-card bg-alcove p-3.5">
       <Link to={`/videoteca/${anime.id}`} className="w-[3.25rem] shrink-0 self-start">
         <Copertina src={anime.cover_url} alt="" inclina={false} />
       </Link>
@@ -378,7 +377,7 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
             <Link to={`/videoteca/${anime.id}`} className="block truncate font-semibold text-ink-bright">
               {anime.titolo}
             </Link>
-            <p className="mt-0.5 text-[0.8rem] text-ink-muted">
+            <p className="mt-0.5 text-fine text-ink-muted">
               {dove} · <span className={nuovi > 0 ? "font-semibold text-brass-300" : ""}>{stato}</span>
             </p>
           </div>
@@ -404,7 +403,7 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
             type="button"
             onClick={onVisto}
             disabled={occupato}
-            className={`mt-3 h-10 w-full truncate rounded-xl px-3 text-sm font-semibold transition-transform duration-quick active:scale-[0.98] disabled:opacity-60 ${
+            className={`mt-3 h-10 w-full truncate rounded-card px-3 text-sm font-semibold transition-transform duration-quick active:scale-[0.98] disabled:opacity-60 ${
               principale ? "insegna" : "border border-viola/40 bg-glass-2 text-ink-bright hover:bg-viola/10"
             }`}
           >
@@ -426,7 +425,6 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
  * (una pausa si riprende, una «vista» si rimette in visione).
  */
 function FoglioAnime({ anime, onChiudi, onVota, onFinoA, onNonVisto, onStato }) {
-  const velo = useChiusuraVelo(onChiudi);
   const [confermando, setConfermando] = useState(false);
   const [salto, setSalto] = useState("");
 
@@ -467,20 +465,8 @@ function FoglioAnime({ anime, onChiudi, onVota, onFinoA, onNonVisto, onStato }) 
   ].filter(Boolean);
 
   return (
-    <Sovrapposizione>
-      <div
-        className="fixed inset-0 z-modal flex items-end justify-center bg-void/60 sm:items-center sm:p-4"
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onChiudi();
-        }}
-        {...velo}
-      >
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Gestisci ${anime.titolo}`}
-          className="max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-sheet bg-alcove p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] shadow-float animate-rise-in sm:rounded-sheet"
-        >
+    <Foglio titolo={`Gestisci ${anime.titolo}`} titoloNascosto senzaMargini larghezza="sm:max-w-md" onChiudere={onChiudi}>
+      <div className="px-5 pb-1">
           <div className="flex items-center gap-3.5">
             <div className="w-11 shrink-0">
               <Copertina src={anime.cover_url} alt="" inclina={false} />
@@ -502,7 +488,7 @@ function FoglioAnime({ anime, onChiudi, onVota, onFinoA, onNonVisto, onStato }) 
             </button>
           </div>
 
-          <div className="mt-5 flex items-center justify-between rounded-2xl bg-shelf px-4 py-3">
+          <div className="mt-5 flex items-center justify-between rounded-card bg-shelf px-4 py-3">
             <span className="text-sm font-medium text-ink-bright">Il tuo voto</span>
             <Stelle voto={anime.voto} alVoto={onVota} dimensione={22} />
           </div>
@@ -510,7 +496,7 @@ function FoglioAnime({ anime, onChiudi, onVota, onFinoA, onNonVisto, onStato }) 
           {/* Il salto segna come viste TUTTE le puntate fino a quella:
               è il gesto di chi torna dopo una serata, o dopo una
               settimana di arretrati. */}
-          <form onSubmit={vai} className="mt-3 flex items-center gap-2 rounded-2xl bg-shelf px-4 py-2.5">
+          <form onSubmit={vai} className="mt-3 flex items-center gap-2 rounded-card bg-shelf px-4 py-2.5">
             <label htmlFor="salto-episodio" className="flex-1 text-sm font-medium text-ink-bright">
               Viste tutte fino all'ep.
             </label>
@@ -531,7 +517,7 @@ function FoglioAnime({ anime, onChiudi, onVota, onFinoA, onNonVisto, onStato }) 
           </form>
           <p className="mt-1.5 px-1 text-xs text-ink-faint">Il numero è quello di AnimeClick, contato dall'inizio della scheda.</p>
 
-          <ul className="mt-3 divide-y divide-hairline rounded-2xl bg-shelf">
+          <ul className="mt-3 divide-y divide-hairline rounded-card bg-shelf">
             {voci.map((v) => (
               <li key={v.chiave}>
                 <button type="button" onClick={() => fai(v.azione)} className="w-full px-4 py-3 text-left">
@@ -559,8 +545,7 @@ function FoglioAnime({ anime, onChiudi, onVota, onFinoA, onNonVisto, onStato }) 
               </Link>
             </li>
           </ul>
-        </div>
       </div>
-    </Sovrapposizione>
+    </Foglio>
   );
 }

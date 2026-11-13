@@ -142,7 +142,7 @@ export default function ListaEpisodi({ animeId, episodi, spuntati, puoiScrivere,
                 <Pillola tono="blu">{dataPuntata(ep.uscita_italia)}</Pillola>
               ) : (
                 quando && (
-                  <span className="shrink-0 font-numeric text-[0.7rem] text-quaderno-tenue">
+                  <span className="shrink-0 font-numeric text-micro text-quaderno-tenue">
                     {quando}
                   </span>
                 )
@@ -159,7 +159,7 @@ export default function ListaEpisodi({ animeId, episodi, spuntati, puoiScrivere,
                   type="button"
                   onClick={() => finoA(ep.numero)}
                   disabled={inCorso === ep.numero}
-                  className="shrink-0 rounded px-2 py-1 text-[0.7rem] font-medium text-quaderno-tenue opacity-0 transition-opacity hover:text-quaderno-blu focus-visible:opacity-100 group-hover:opacity-100"
+                  className="shrink-0 rounded px-2 py-1 text-micro font-medium text-quaderno-tenue opacity-0 transition-opacity hover:text-quaderno-blu focus-visible:opacity-100 group-hover:opacity-100"
                 >
                   fino a qui
                 </button>

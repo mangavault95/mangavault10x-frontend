@@ -100,7 +100,7 @@ export default function GestionePage() {
       <div
         role="tablist"
         aria-label="Sezioni della gestione"
-        className="mt-5 grid gap-1 rounded-2xl bg-alcove p-1"
+        className="mt-5 grid gap-1 rounded-card bg-alcove p-1"
         style={{ gridTemplateColumns: `repeat(${disponibili.length}, minmax(0, 1fr))` }}
       >
         {disponibili.map((s) => {
@@ -113,7 +113,7 @@ export default function GestionePage() {
               role="tab"
               aria-selected={accesa}
               onClick={() => vai(s.id)}
-              className={`relative rounded-xl py-2.5 text-sm font-semibold transition-colors duration-quick focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 ${
+              className={`relative rounded-card py-2.5 text-sm font-semibold transition-colors duration-quick focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 ${
                 accesa ? "bg-ink-bright text-void" : "text-ink-muted hover:text-ink-bright"
               }`}
             >
@@ -122,7 +122,7 @@ export default function GestionePage() {
               {s.id === "accessi" && richieste.length > 0 && (
                 <span
                   aria-label={`${richieste.length} in attesa`}
-                  className="ml-1.5 inline-grid h-5 min-w-5 place-items-center rounded-full bg-ember px-1.5 align-middle font-numeric text-[0.7rem] font-bold text-void"
+                  className="ml-1.5 inline-grid h-5 min-w-5 place-items-center rounded-full bg-ember px-1.5 align-middle font-numeric text-micro font-bold text-void"
                 >
                   {richieste.length}
                 </span>

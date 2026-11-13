@@ -53,8 +53,8 @@ export default function OpereAutore({ nome, riferimento, onChiudere }) {
               <div className="grid grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-x-4 gap-y-6">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="space-y-2">
-                    <div className="aspect-cover w-full animate-pulse rounded-card border border-hairline bg-glass-1" />
-                    <div className="h-3 w-4/5 animate-pulse rounded bg-glass-1" />
+                    <div className="aspect-cover w-full scheletro rounded-card border border-hairline bg-glass-1" />
+                    <div className="h-3 w-4/5 scheletro rounded bg-glass-1" />
                   </div>
                 ))}
               </div>
@@ -109,7 +109,7 @@ function CartaOpera({ opera, onChiudere }) {
           {titolo}
         </h3>
 
-        <p className="font-numeric text-[0.65rem] text-ink-faint">
+        <p className="font-numeric text-micro text-ink-faint">
           {posseduta
             ? `${posseduta.posseduti}${posseduta.totali ? ` / ${posseduta.totali}` : ""} vol.`
             : opera.anno || ""}

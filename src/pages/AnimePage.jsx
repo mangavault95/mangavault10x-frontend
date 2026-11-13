@@ -26,7 +26,7 @@ import PaginaVideoteca, {
 import Stagione from "../ui/videoteca/Stagione";
 import NoteAnime from "../ui/videoteca/NoteAnime";
 import Simili from "../ui/videoteca/Simili";
-import Sovrapposizione from "../ui/Sovrapposizione";
+import Foglio from "../ui/Foglio";
 import { NOMI_STATO_SERIE, NOMI_TIPO, formattaVoto } from "../ui/videoteca/formati";
 
 /**
@@ -456,7 +456,7 @@ export default function AnimePage() {
 
             {prima.generi?.length > 0 && (
               <div>
-                <p className="mb-1 text-[0.68rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+                <p className="mb-1 text-micro font-semibold uppercase tracking-wider text-quaderno-tenue">
                   Generi
                 </p>
                 <div className="flex flex-wrap gap-1">
@@ -469,7 +469,7 @@ export default function AnimePage() {
 
             {prima.distributori?.length > 0 && (
               <div>
-                <p className="mb-1 text-[0.68rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+                <p className="mb-1 text-micro font-semibold uppercase tracking-wider text-quaderno-tenue">
                   Dove si vede
                 </p>
                 <div className="flex flex-wrap gap-1">
@@ -673,7 +673,7 @@ function Fatto({ etichetta, valore }) {
 
   return (
     <div>
-      <p className="text-[0.68rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+      <p className="text-micro font-semibold uppercase tracking-wider text-quaderno-tenue">
         {etichetta}
       </p>
       <p className="text-sm text-quaderno-inchiostro">{valore}</p>
@@ -701,13 +701,8 @@ function ConfermaParte({ parte, nome, blocchi, inCorso, conferma, annulla }) {
   const viste = (parte.episodi || []).filter((e) => e.visto).length;
 
   return (
-    <Sovrapposizione>
-      <div
-        className="fixed inset-0 z-modal grid place-items-center bg-quaderno-inchiostro/40 p-5"
-        role="dialog"
-        aria-label="Togliere questa parte"
-      >
-        <Scheda className="w-full max-w-sm space-y-4 p-6 shadow-float">
+    <Foglio titolo="Togliere questa parte" titoloNascosto larghezza="sm:max-w-sm" onChiudere={annulla}>
+        <div className="space-y-4 pb-1">
           <h2 className="font-display text-lg font-semibold text-quaderno-inchiostro">
             Togliere «{nome}»?
           </h2>
@@ -730,21 +725,15 @@ function ConfermaParte({ parte, nome, blocchi, inCorso, conferma, annulla }) {
               Annulla
             </Bottone>
           </div>
-        </Scheda>
-      </div>
-    </Sovrapposizione>
+        </div>
+    </Foglio>
   );
 }
 
 function ConfermaRimozione({ titolo, stagioni, inCorso, conferma, annulla }) {
   return (
-    <Sovrapposizione>
-      <div
-        className="fixed inset-0 z-modal grid place-items-center bg-quaderno-inchiostro/40 p-5"
-        role="dialog"
-        aria-label="Togliere la serie"
-      >
-        <Scheda className="w-full max-w-sm space-y-4 p-6 shadow-float">
+    <Foglio titolo="Togliere la serie" titoloNascosto larghezza="sm:max-w-sm" onChiudere={annulla}>
+        <div className="space-y-4 pb-1">
           <h2 className="font-display text-lg font-semibold text-quaderno-inchiostro">
             Togliere «{titolo}»?
           </h2>
@@ -764,8 +753,7 @@ function ConfermaRimozione({ titolo, stagioni, inCorso, conferma, annulla }) {
               Annulla
             </Bottone>
           </div>
-        </Scheda>
-      </div>
-    </Sovrapposizione>
+        </div>
+    </Foglio>
   );
 }

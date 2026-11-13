@@ -293,7 +293,7 @@ function Numeri({ statistiche, base }) {
       <Scheda className="grid grid-cols-2 gap-y-2.5 px-3 py-3 sm:grid-cols-4 sm:py-3.5">
         {caselle.map((c) => (
           <div key={c.chiave} className="text-center" title={c.extra}>
-            <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+            <p className="text-micro font-semibold uppercase tracking-wider text-quaderno-tenue">
               {c.etichetta}
             </p>
 

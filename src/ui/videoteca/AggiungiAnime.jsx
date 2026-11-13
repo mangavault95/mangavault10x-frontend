@@ -285,7 +285,7 @@ function Ricerca({ titolo, setTitolo, righe, per, inCorso, errore, scegli, chiud
                       deve nascondere. Chi cercava proprio la seconda
                       stagione deve vedere che è lì dentro. */}
                   {riga.parti.length > 1 && (
-                    <p className="mt-0.5 truncate text-[0.7rem] text-quaderno-tenue">
+                    <p className="mt-0.5 truncate text-micro text-quaderno-tenue">
                       {riga.parti.map((p) => p.titolo).join(" · ")}
                     </p>
                   )}
@@ -717,7 +717,7 @@ function Anteprima({ guardata, presa, spunta, bloccata, chiudi }) {
 
         {dati?.distributori?.length > 0 && (
           <div>
-            <p className="mb-1 text-[0.68rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+            <p className="mb-1 text-micro font-semibold uppercase tracking-wider text-quaderno-tenue">
               Dove si vede
             </p>
             <div className="flex flex-wrap gap-1">

@@ -612,7 +612,7 @@ export default function CollezionePage() {
               <circle cx="9" cy="17" r="2" />
             </svg>
             {filtriFini > 0 && (
-              <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-brass-400 px-1 font-numeric text-[0.65rem] font-bold leading-none text-void">
+              <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-brass-400 px-1 font-numeric text-micro font-bold leading-none text-void">
                 {filtriFini}
               </span>
             )}
@@ -661,7 +661,7 @@ export default function CollezionePage() {
 
         {/* Cosa vuol dire il colore dell'anello, detto una volta sola:
             prima si leggeva solo se lo si sapeva già. */}
-        <p className="flex flex-wrap items-center gap-x-3.5 gap-y-1 px-1 text-[0.7rem] text-ink-muted sm:px-0">
+        <p className="flex flex-wrap items-center gap-x-3.5 gap-y-1 px-1 text-micro text-ink-muted sm:px-0">
           <span className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border-2 border-jade" />Completa</span>
           <span className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border-2 border-lapis" />In pari con le uscite</span>
           <span className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border-2 border-ember" />Mancano volumi</span>
@@ -741,7 +741,7 @@ export default function CollezionePage() {
       )}
 
       {problema && (
-        <p role="alert" className="mb-3 rounded-xl bg-ember/10 px-3.5 py-2.5 text-sm text-ember">
+        <p role="alert" className="mb-3 rounded-card bg-ember/10 px-3.5 py-2.5 text-sm text-ember">
           {problema}
         </p>
       )}
@@ -750,7 +750,7 @@ export default function CollezionePage() {
         <CaricamentoGriglia />
       ) : risultati.length ? (
         vista === "elenco" ? (
-          <ul className="divide-y divide-hairline rounded-2xl bg-alcove px-3.5">
+          <ul className="divide-y divide-hairline rounded-card bg-alcove px-3.5">
             {risultati.map((s) => (
               <RigaSerie
                 key={s.id}

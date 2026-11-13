@@ -171,7 +171,7 @@ export default function CartaSerie({
 
         {voto > 0 && (
           <span
-            className={`absolute left-1.5 top-1.5 rounded-full bg-void/80 px-1.5 py-0.5 font-numeric text-[0.65rem] font-medium ${
+            className={`absolute left-1.5 top-1.5 rounded-full bg-void/80 px-1.5 py-0.5 font-numeric text-micro font-medium ${
               colore ? colore.testo : "text-brass-300"
             }`}
           >
@@ -182,7 +182,7 @@ export default function CartaSerie({
         <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-full bg-void/85 p-1">
           <AnelloCompletamento pct={pct} tono={tono} etichetta={etichettaAnello} />
           {mancanti > 0 && (
-            <span className="pr-1 font-numeric text-[0.65rem] font-medium text-ember">−{mancanti}</span>
+            <span className="pr-1 font-numeric text-micro font-medium text-ember">−{mancanti}</span>
           )}
         </span>
       </Link>
@@ -259,7 +259,7 @@ export default function CartaSerie({
             lascia la barra di completamento più in alto di quella della
             scheda accanto con un titolo lungo, e la griglia sembra
             storta anche se ogni riga, tecnicamente, è allineata. */}
-        <h3 className="line-clamp-2 min-h-[2.2rem] text-[0.8rem] font-medium leading-snug text-ink-bright transition-colors duration-quick group-hover:text-brass-300 sm:min-h-[2.5rem] sm:text-sm">
+        <h3 className="line-clamp-2 min-h-[2.2rem] text-fine font-medium leading-snug text-ink-bright transition-colors duration-quick group-hover:text-brass-300 sm:min-h-[2.5rem] sm:text-sm">
           {serie.titolo}
         </h3>
 

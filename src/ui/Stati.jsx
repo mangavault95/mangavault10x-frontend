@@ -17,9 +17,9 @@ export function CaricamentoGriglia({ quante = 18 }) {
     >
       {Array.from({ length: quante }).map((_, i) => (
         <div key={i} className="space-y-3">
-          <div className="aspect-cover w-full rounded-card border border-hairline bg-glass-1" />
-          <div className="h-3 w-4/5 rounded bg-glass-1" />
-          <div className="h-3 w-2/5 rounded bg-glass-1" />
+          <div className="scheletro aspect-cover w-full rounded-card border border-hairline bg-glass-1" />
+          <div className="scheletro h-3 w-4/5 rounded bg-glass-1" />
+          <div className="scheletro h-3 w-2/5 rounded bg-glass-1" />
         </div>
       ))}
 
@@ -35,7 +35,7 @@ export function CaricamentoElenco({ quante = 5 }) {
       {Array.from({ length: quante }).map((_, i) => (
         <div
           key={i}
-          className="h-24 rounded-panel border border-hairline bg-glass-1"
+          className="scheletro h-24 rounded-panel border border-hairline bg-glass-1"
         />
       ))}
       <span className="sr-only">Caricamento in corso</span>

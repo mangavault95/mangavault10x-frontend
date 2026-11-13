@@ -39,7 +39,7 @@ function centroDi(e) {
 }
 
 function Titoletto({ children }) {
-  return <p className="mb-1.5 px-1 font-numeric text-[0.62rem] uppercase tracking-[0.16em] text-ink-muted">{children}</p>;
+  return <p className="mb-1.5 px-1 font-numeric text-micro uppercase tracking-[0.16em] text-ink-muted">{children}</p>;
 }
 
 export default function SceltaTema({ className = "" }) {
@@ -73,7 +73,7 @@ export default function SceltaTema({ className = "" }) {
                   <path d={v.segno} />
                 </svg>
                 {v.etichetta}
-                <span aria-hidden="true" className="kana font-pixel text-[0.7rem] font-normal opacity-70">{v.kana}</span>
+                <span aria-hidden="true" className="kana font-pixel text-kana font-normal opacity-70">{v.kana}</span>
               </button>
             );
           })}
@@ -107,7 +107,7 @@ export default function SceltaTema({ className = "" }) {
                 />
                 <span>
                   {p.nome}
-                  <span aria-hidden="true" className="kana ml-1 font-pixel text-[0.65rem] font-normal opacity-70">{p.kana}</span>
+                  <span aria-hidden="true" className="kana ml-1 font-pixel text-kana font-normal opacity-70">{p.kana}</span>
                 </span>
               </button>
             );

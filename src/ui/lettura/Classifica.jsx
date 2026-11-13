@@ -5,8 +5,7 @@ import { Bottone } from "../Controlli";
 import { Stella, VotoStelle } from "../AzioniSerie";
 import Menu from "../Menu";
 import NoteSerie from "../NoteSerie";
-import Sovrapposizione from "../Sovrapposizione";
-import useChiusuraVelo from "../useChiusuraVelo";
+import Foglio from "../Foglio";
 import { useCollezione } from "../../dati/collezione";
 import { useAccessoProtetto } from "../../dati/accesso";
 import { coloreLettore } from "../../dati/lettori";
@@ -220,7 +219,6 @@ export function RigaClassifica({
  * intestazioni avrebbero cominciato a divergere alla prima modifica.
  */
 export function RiquadroSerie({ serie, cosa, onChiudi }) {
-  const velo = useChiusuraVelo(onChiudi);
 
   // La serie può sparire sotto i piedi: succede togliendola dalle
   // lette mentre il riquadro è aperto.
@@ -231,20 +229,8 @@ export function RiquadroSerie({ serie, cosa, onChiudi }) {
   if (!serie) return null;
 
   return (
-    <Sovrapposizione>
-      <div
-        className="fixed inset-0 z-modal grid place-items-center overflow-y-auto bg-void/70 p-4 py-10 animate-rise-in"
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onChiudi();
-        }}
-        {...velo}
-      >
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`${cosa === "voto" ? "Voto" : "Note"}: ${serie.titolo}`}
-          className="w-full max-w-md space-y-5 rounded-panel border border-hairline bg-glass-3 p-5 shadow-float backdrop-blur-2xl sm:p-6"
-        >
+    <Foglio titolo={`${cosa === "voto" ? "Voto" : "Note"}: ${serie.titolo}`} titoloNascosto senzaMargini larghezza="sm:max-w-lg" onChiudere={onChiudi}>
+      <div className="px-5 pb-1">
           <div className="flex items-start gap-3.5">
             <div className="w-12 shrink-0 sm:w-14">
               <Copertina src={serie.copertina} alt="" inclina={false} />
@@ -279,9 +265,8 @@ export function RiquadroSerie({ serie, cosa, onChiudi }) {
               <NoteSerie serie={serie} compatto />
             </div>
           )}
-        </div>
       </div>
-    </Sovrapposizione>
+    </Foglio>
   );
 }
 

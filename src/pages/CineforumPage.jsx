@@ -223,7 +223,7 @@ function Persone({ elenco }) {
                 {p.nickname}
               </span>
 
-              <span className="font-numeric text-[0.65rem] text-quaderno-tenue">
+              <span className="font-numeric text-micro text-quaderno-tenue">
                 {p.serie} serie
               </span>
             </Link>

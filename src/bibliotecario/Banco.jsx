@@ -396,7 +396,7 @@ function DaComprare({ elenco, onChiedi }) {
         ))}
       </ul>
 
-      <p className="text-[0.65rem] uppercase tracking-wider text-ink-faint">
+      <p className="text-micro uppercase tracking-wider text-ink-faint">
         Accostamenti votati dai lettori su AniList
       </p>
     </div>
@@ -515,7 +515,7 @@ function SchedaEsterna({ manga }) {
       </div>
 
       {/* Da dove viene il dato, sempre visibile. */}
-      <p className="text-[0.65rem] uppercase tracking-wider text-ink-faint">
+      <p className="text-micro uppercase tracking-wider text-ink-faint">
         Fonte: AniList{trama ? " · trama tradotta" : manga.trama ? " · trama in inglese" : ""}
       </p>
     </div>

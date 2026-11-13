@@ -8,8 +8,7 @@ import {
   salvaStriscione,
   togliFaccia
 } from "../../services/api";
-import Sovrapposizione from "../Sovrapposizione";
-import useChiusuraVelo from "../useChiusuraVelo";
+import Foglio from "../Foglio";
 import ConsigliaAnime from "./ConsigliaAnime";
 import SceltaImmagine, { TastoModifica, TastoTondo } from "./SceltaImmagine";
 import Striscione from "./Striscione";
@@ -328,7 +327,6 @@ function MenuProfilo({
   chiudi
 }) {
   const navigate = useNavigate();
-  const velo = useChiusuraVelo(chiudi);
   const [scegliendo, setScegliendo] = useState(false);
 
   const candidati = altrePersone.filter((p) => p.id !== persona.id);
@@ -405,15 +403,8 @@ function MenuProfilo({
   }
 
   return (
-    <Sovrapposizione>
-      <div
-        {...velo}
-        role="dialog"
-        aria-label={`Altro su ${persona.nickname}`}
-        className="fixed inset-0 z-modal flex items-end justify-center bg-black/40 sm:items-center"
-      >
-        <div className="w-full rounded-t-sheet border-t border-quaderno-riga bg-quaderno-foglio p-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-float sm:max-w-sm sm:rounded-panel sm:border">
-          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-quaderno-riga sm:hidden" />
+    <Foglio titolo={`Altro su ${persona.nickname}`} titoloNascosto senzaMargini larghezza="sm:max-w-sm" onChiudere={chiudi}>
+      <div className="px-3">
 
           {scegliendo ? (
             <>
@@ -484,8 +475,7 @@ function MenuProfilo({
               })}
             </ul>
           )}
-        </div>
       </div>
-    </Sovrapposizione>
+    </Foglio>
   );
 }

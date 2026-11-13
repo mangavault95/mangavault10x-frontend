@@ -207,7 +207,7 @@ function UsciteDelMese({ richiesto }) {
               <span className={`font-display text-base font-semibold capitalize ${data < oggi ? "text-ink-muted" : "text-ink-bright"}`}>
                 {GIORNO_LUNGO.format(new Date(`${data}T12:00:00`))}
               </span>
-              {data === oggi && <span className="rounded-full bg-brass-400/20 px-2 py-0.5 text-[0.7rem] font-semibold text-brass-300">oggi</span>}
+              {data === oggi && <span className="rounded-full bg-brass-400/20 px-2 py-0.5 text-micro font-semibold text-brass-300">oggi</span>}
             </h2>
 
             <ul className="space-y-2">
@@ -250,7 +250,7 @@ function Volume({ u, passato, fattoOra, inConferma, occupato, chiedi, rinuncia, 
 
   return (
     <div
-      className={`rounded-2xl p-2.5 transition-colors duration-quick ${
+      className={`rounded-card p-2.5 transition-colors duration-quick ${
         comprato ? "bg-jade/10 ring-1 ring-jade/40" : "bg-alcove"
       } ${passato && comprato && !fattoOra ? "opacity-60" : ""}`}
     >

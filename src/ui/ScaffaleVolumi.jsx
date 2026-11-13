@@ -193,11 +193,11 @@ function Quadretti({
   // sprecare mezzo schermo per una serie da dodici volumi.
   const perDito = interattivo
     ? compatto
-      ? " [@media(hover:none)]:h-8 [@media(hover:none)]:w-8 [@media(hover:none)]:text-[0.7rem]"
+      ? " [@media(hover:none)]:h-8 [@media(hover:none)]:w-8 [@media(hover:none)]:text-micro"
       : " [@media(hover:none)]:h-10 [@media(hover:none)]:w-10 [@media(hover:none)]:text-sm"
     : "";
 
-  const misura = (compatto ? "h-6 w-6 text-[0.6rem]" : "h-8 w-8 text-xs") + perDito;
+  const misura = (compatto ? "h-6 w-6 text-micro" : "h-8 w-8 text-xs") + perDito;
 
   return (
     <div
@@ -262,7 +262,7 @@ function Tabellone({ quanti, statoDi, descrizioneDi, corrente, interattivo, onSe
             aria-label={descrizioneDi(n)}
             title={descrizioneDi(n)}
             aria-current={eCorrente ? "true" : undefined}
-            className={`grid aspect-square place-items-center rounded-md border font-numeric text-[0.7rem] transition-all duration-quick ${aspetto}
+            className={`grid aspect-square place-items-center rounded-md border font-numeric text-micro transition-all duration-quick ${aspetto}
               ${interattivo ? "cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400" : ""}`}
           >
             {n}
@@ -373,7 +373,7 @@ function Nastro({
               didascalie invece di una scala. */}
           <span
             aria-hidden="true"
-            className="block font-numeric text-[0.6rem] leading-none text-ink-faint"
+            className="block font-numeric text-micro leading-none text-ink-faint"
           >
             {blocco.inizio}
           </span>

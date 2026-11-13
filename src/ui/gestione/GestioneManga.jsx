@@ -93,7 +93,7 @@ export default function GestioneManga() {
           ))}
         </div>
 
-        <div className="panel-scrollbar max-h-[32rem] overflow-y-auto rounded-2xl bg-alcove lg:max-h-[calc(100dvh-18rem)]">
+        <div className="panel-scrollbar max-h-[32rem] overflow-y-auto rounded-card bg-alcove lg:max-h-[calc(100dvh-18rem)]">
           {inCorso && !serie.length ? (
             <p className="px-4 py-6 text-sm text-ink-muted">Carico le schede…</p>
           ) : visibili.length === 0 ? (
@@ -117,7 +117,7 @@ export default function GestioneManga() {
                     <span className="min-w-0 flex-1 truncate text-sm">{s.titolo}</span>
 
                     {daFinire(s) && (
-                      <span className="shrink-0 rounded-full bg-brass-400/15 px-2 py-0.5 text-[0.7rem] font-medium text-brass-300">
+                      <span className="shrink-0 rounded-full bg-brass-400/15 px-2 py-0.5 text-micro font-medium text-brass-300">
                         da finire
                       </span>
                     )}
@@ -160,7 +160,7 @@ export default function GestioneManga() {
           />
         </div>
       ) : (
-        <div className="hidden place-items-center rounded-2xl border border-dashed border-soft p-12 text-center lg:grid">
+        <div className="hidden place-items-center rounded-card border border-dashed border-soft p-12 text-center lg:grid">
           {eliminata ? (
             <div role="status" className="space-y-1">
               <p className="text-sm text-ink-bright">«{eliminata.eliminata}» è stata eliminata.</p>
@@ -175,7 +175,7 @@ export default function GestioneManga() {
       {/* Su telefono, dove l'elenco ha preso tutto lo schermo, l'esito
           di un'eliminazione compare sopra l'elenco. */}
       {!selezionata && eliminata && (
-        <p role="status" className="rounded-2xl bg-alcove px-4 py-3 text-sm text-ink-muted lg:hidden">
+        <p role="status" className="rounded-card bg-alcove px-4 py-3 text-sm text-ink-muted lg:hidden">
           «{eliminata.eliminata}» è stata eliminata. {riepilogoEliminazione(eliminata.insieme)}
         </p>
       )}
@@ -361,7 +361,7 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
 
   return (
     <div className="space-y-4">
-      <form onSubmit={salva} className="space-y-5 rounded-2xl bg-alcove p-4 sm:p-6">
+      <form onSubmit={salva} className="space-y-5 rounded-card bg-alcove p-4 sm:p-6">
         <div className="flex gap-4 sm:gap-6">
           <div className="w-24 shrink-0 sm:w-32">
             <Copertina src={campi.coverurl} alt={campi.titolo} inclina={false} />
@@ -533,7 +533,7 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
             si accende solo quando c'è davvero qualcosa da salvare. Sopra
             la barra di navigazione del telefono, non dietro. */}
         <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+4.25rem)] z-raised md:bottom-4">
-          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-hairline bg-shelf/95 p-2.5 shadow-raised backdrop-blur-xl">
+          <div className="flex flex-wrap items-center gap-2 rounded-card border border-hairline bg-shelf/95 p-2.5 shadow-raised backdrop-blur-xl">
             <Bottone type="submit" disabled={salvando || !sporco}>
               {salvando ? "Salvo…" : "Salva"}
             </Bottone>

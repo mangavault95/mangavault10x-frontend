@@ -51,7 +51,7 @@ export default function IndiceLettere({
           data-lettera={l}
           onClick={() => vaiA(l)}
           aria-label={`Vai alla ${l}`}
-          className={`grid h-[1.15rem] w-6 place-items-center font-numeric text-[0.62rem] font-semibold leading-none
+          className={`grid h-[1.15rem] w-6 place-items-center font-numeric text-micro font-semibold leading-none
             ${corrente === l ? attivo : testo}`}
         >
           {l}

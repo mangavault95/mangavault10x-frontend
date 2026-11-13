@@ -728,6 +728,37 @@ html.tema-fluido *::after {
 .avviso-tempo { animation: avviso-tempo linear forwards; }
 .avviso-spunta { animation: avviso-spunta var(--d-lento) var(--e-conferma) backwards; }
 
+/* ---- Il bersaglio da 44 px ----
+   Un link di testo o una pastiglia piccola restano piccoli da vedere, ma
+   col dito si prendono in un'area alta (e larga almeno) 44 px: la disegna
+   uno pseudo-elemento invisibile, così l'impaginazione non si sposta di un
+   pixel. Solo dove si tocca: col mouse un'area più grande del bottone
+   ruberebbe i click a ciò che gli sta accanto. */
+@media (hover: none) {
+  .bersaglio { position: relative; }
+  .bersaglio::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 100%;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* ---- Lo scheletro ----
+   Il grigio che tiene il posto di ciò che sta arrivando respira piano,
+   tutti allo stesso modo: fermo sembra un riquadro vuoto, cioè un errore.
+   Solo opacità, niente gradienti che scorrono: costa niente anche con
+   venti scheletri sullo schermo. */
+@keyframes scheletro {
+  from { opacity: 1; }
+  to   { opacity: 0.45; }
+}
+.scheletro { animation: scheletro 900ms ease-in-out infinite alternate; }
+
 /* ---- La conferma sotto il dito ----
    Una stella appena accesa — un voto, un preferito — salta una volta. È
    l'unico rimbalzo del sito, ed è lì apposta: dice «preso» nel punto

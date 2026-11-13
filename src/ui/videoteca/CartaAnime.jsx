@@ -69,12 +69,12 @@ export default function CartaAnime({ anime }) {
             sola e la barra del progresso non cambia quota da una
             scheda all'altra. */}
         {anime.prossima_uscita ? (
-          <span className="absolute left-2 top-2 rounded-full bg-quaderno-blu px-2 py-0.5 font-numeric text-[0.65rem] font-semibold text-quaderno-su-blu">
+          <span className="absolute left-2 top-2 rounded-full bg-quaderno-blu px-2 py-0.5 font-numeric text-micro font-semibold text-quaderno-su-blu">
             ep {anime.prossimo_episodio} · {quandoBreve(anime.prossima_uscita)}
           </span>
         ) : (
           inPari && (
-            <span className="absolute left-2 top-2 rounded-full bg-quaderno-foglio/90 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+            <span className="absolute left-2 top-2 rounded-full bg-quaderno-foglio/90 px-2 py-0.5 text-micro font-semibold uppercase tracking-wider text-quaderno-tenue">
               in pari
             </span>
           )
@@ -83,7 +83,7 @@ export default function CartaAnime({ anime }) {
         {/* Quante stagioni ci sono là dentro. Senza, un pannello solo
             al posto di due sembrerebbe una serie sparita. */}
         {stagioni > 1 && (
-          <span className="absolute bottom-2 right-2 rounded-full bg-quaderno-foglio/90 px-2 py-0.5 font-numeric text-[0.65rem] font-semibold text-quaderno-inchiostro">
+          <span className="absolute bottom-2 right-2 rounded-full bg-quaderno-foglio/90 px-2 py-0.5 font-numeric text-micro font-semibold text-quaderno-inchiostro">
             {stagioni} stagioni
           </span>
         )}

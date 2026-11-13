@@ -15,7 +15,7 @@ export function Mucchio({ titolo, children }) {
   return (
     <section>
       <h2 className="mb-2.5 px-1 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">{titolo}</h2>
-      <ul className="divide-y divide-hairline rounded-2xl bg-alcove px-3.5">{children}</ul>
+      <ul className="divide-y divide-hairline rounded-card bg-alcove px-3.5">{children}</ul>
     </section>
   );
 }
@@ -51,7 +51,7 @@ export function RigaSpesa({ a, copertina, ripiego, titolo, sotto, sottoColore = 
         <Miniatura src={copertina} ripiego={ripiego} />
 
         <div className="min-w-0 flex-1">
-          <p className={`line-clamp-2 text-[0.95rem] font-semibold leading-snug text-ink-bright ${inAttesa ? "line-through" : ""}`}>{titolo}</p>
+          <p className={`line-clamp-2 text-corpo font-semibold leading-snug text-ink-bright ${inAttesa ? "line-through" : ""}`}>{titolo}</p>
           {/* Due righe e non una: «l'ultimo uscito, poi sei in p…» e «te ne
               mancano 2 per esse…» perdevano la parte che serve. */}
           <p className={`line-clamp-2 text-xs ${sottoColore}`}>{inAttesa ? "Preso: lo registro tra poco" : sotto}</p>
@@ -66,7 +66,7 @@ export function RigaSpesa({ a, copertina, ripiego, titolo, sotto, sottoColore = 
           type="button"
           onClick={inAttesa ? onAnnulla : onPreso}
           disabled={occupato}
-          className={`shrink-0 rounded-xl px-3 py-2 text-sm font-semibold transition-transform duration-quick active:scale-95 disabled:opacity-60 ${
+          className={`shrink-0 rounded-card px-3 py-2 text-sm font-semibold transition-transform duration-quick active:scale-95 disabled:opacity-60 ${
             inAttesa ? "bg-brass-400 text-void" : "bg-glass-2 text-ink-bright"
           }`}
         >
@@ -90,7 +90,7 @@ export function CartaMancanti({ serie, numeri, onApri }) {
         <Miniatura src={serie.copertina} />
 
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-[0.95rem] font-semibold leading-snug text-ink-bright">{serie.titolo}</p>
+          <p className="line-clamp-2 text-corpo font-semibold leading-snug text-ink-bright">{serie.titolo}</p>
           <p className="text-xs text-ink-muted">
             {tutti === 1 ? "Manca" : "Mancano"} {plurale(tutti, "volume", "volumi")}
             {": "}
@@ -127,7 +127,7 @@ export function PopupVolumi({ serie, numeri, inAttesa, prendendo, soloLettura, o
                   disabled={soloLettura || prendendo === chiave}
                   onClick={() => (inCoda ? onAnnulla(chiave) : onSegna(n))}
                   title={inCoda ? "Annulla" : `Ho preso il ${n}`}
-                  className={`grid h-11 min-w-11 place-items-center rounded-xl px-2 font-numeric text-sm font-semibold transition-transform duration-quick active:scale-95 disabled:opacity-60 ${
+                  className={`grid h-11 min-w-11 place-items-center rounded-card px-2 font-numeric text-sm font-semibold transition-transform duration-quick active:scale-95 disabled:opacity-60 ${
                     inCoda ? "bg-brass-400 text-void line-through" : "bg-glass-2 text-ink-bright"
                   }`}
                 >
@@ -157,7 +157,7 @@ export function RigaDesiderio({ elemento, onModifica, onElimina, onComprato, sol
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[0.95rem] font-semibold text-ink-bright">{elemento.titolo}</p>
+          <p className="truncate text-corpo font-semibold text-ink-bright">{elemento.titolo}</p>
           <p className="truncate text-xs text-ink-muted">
             {[elemento.volumitotali ? `${elemento.volumitotali} ${Number(elemento.volumitotali) === 1 ? "volume" : "volumi"}` : null, elemento.autori].filter(Boolean).join(" · ")}
           </p>

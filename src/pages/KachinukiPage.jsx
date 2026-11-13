@@ -30,7 +30,8 @@ import {
   temiPossibili,
   turniPer,
   vincitore
-} from "../dati/kachinuki";
+} from "../dati/kachinuki";
+import { chiedi } from "../dati/conferme";
 
 /**
  * Kachinuki-sen — 勝ち抜き戦.
@@ -151,8 +152,15 @@ export default function KachinukiPage() {
     [partita, utente, salva]
   );
 
-  const abbandona = useCallback(() => {
-    if (!window.confirm("Vuoi davvero lasciare questa partita? Non resterà niente.")) return;
+  const abbandona = useCallback(async () => {
+    const sicuro = await chiedi({
+      titolo: "Lasciare questa partita?",
+      testo: "Non resterà niente: né il tabellone né gli scontri già giocati.",
+      conferma: "Lascia la partita",
+      pericolo: true
+    });
+
+    if (!sicuro) return;
 
     mettiDaParte(null);
     setRipresa(null);

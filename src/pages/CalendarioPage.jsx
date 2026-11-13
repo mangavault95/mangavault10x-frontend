@@ -96,7 +96,7 @@ export default function CalendarioPage() {
 
       {passati.length > 0 && (
         <section ref={inizioPassato} className="mb-8">
-          <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-quaderno-tenue">
+          <p className="mb-3 text-micro font-semibold uppercase tracking-[0.18em] text-quaderno-tenue">
             Già uscite · le due settimane passate
           </p>
 

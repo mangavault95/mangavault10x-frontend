@@ -885,7 +885,7 @@ export default function LetturaPage() {
         {/* ═══════════ DA VOTARE ═══════════ */}
         {daVotare.length > 0 && (
           <Sezione titolo="Da votare">
-            <ul className="divide-y divide-hairline rounded-2xl bg-alcove px-3.5">
+            <ul className="divide-y divide-hairline rounded-card bg-alcove px-3.5">
               {daVotare.map((s) => (
                 <li key={s.id} className="flex items-center gap-3 py-2.5">
                   <Link to={`/serie/${s.id}`} className="w-9 shrink-0">
@@ -937,7 +937,7 @@ export default function LetturaPage() {
                       setTutteLeLette(false);
                       document.getElementById("letture")?.scrollIntoView({ block: "start" });
                     }}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-alcove py-2.5 text-sm font-semibold text-ink-bright shadow-float"
+                    className="flex w-full items-center justify-center gap-2 rounded-card bg-alcove py-2.5 text-sm font-semibold text-ink-bright shadow-float"
                   >
                     <Icon nome="back" dimensione={16} className="rotate-90" />
                     Riduci l'elenco
@@ -962,7 +962,7 @@ export default function LetturaPage() {
                       >
                         <Copertina src={s.copertina} alt="" inclina={false} />
 
-                        <span className="absolute left-1 top-1 rounded-full bg-void/70 px-1.5 py-0.5 font-numeric text-[0.65rem] font-medium text-brass-300 backdrop-blur-sm">
+                        <span className="absolute left-1 top-1 rounded-full bg-void/70 px-1.5 py-0.5 font-numeric text-micro font-medium text-brass-300 backdrop-blur-sm">
                           {votoIt(votoDi(s, lettoreScelto))}★
                         </span>
                       </Link>
@@ -993,7 +993,7 @@ export default function LetturaPage() {
                 <button
                   type="button"
                   onClick={() => setTutteLeLette(true)}
-                  className="w-full rounded-2xl bg-alcove py-3 text-sm font-semibold text-ink-bright"
+                  className="w-full rounded-card bg-alcove py-3 text-sm font-semibold text-ink-bright"
                 >
                   Mostra tutte in elenco ({votate.length + senzaVoto.length - daVotare.length})
                 </button>
@@ -1035,10 +1035,10 @@ export default function LetturaPage() {
 
         {/* ═══════════ MOLLATE ═══════════ */}
         {mollate.length > 0 && (
-          <details id="mollate" className="group scroll-mt-24 rounded-2xl bg-alcove">
+          <details id="mollate" className="group scroll-mt-24 rounded-card bg-alcove">
             {/* L'intestazione resta attaccata in alto finché la sezione è
                 aperta: per chiuderla non serve tornare su a cercarla. */}
-            <summary className="sticky top-0 z-sticky flex cursor-pointer list-none items-center justify-between rounded-2xl bg-alcove px-4 py-3.5 text-sm font-semibold text-ink-bright group-open:shadow-float">
+            <summary className="sticky top-0 z-sticky flex cursor-pointer list-none items-center justify-between rounded-card bg-alcove px-4 py-3.5 text-sm font-semibold text-ink-bright group-open:shadow-float">
               <span>
                 Mollate <span className="font-numeric text-ink-muted">· {mollate.length}</span>
               </span>

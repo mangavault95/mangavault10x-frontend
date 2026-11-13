@@ -199,13 +199,13 @@ export default function AdessoPage() {
               <li key={a.id} className="w-32 shrink-0">
                 <Link to={`/videoteca/${a.id}`} className="group block focus-visible:outline-none">
                   <div className="relative">
-                    <Immagine src={a.cover_url} alt="" className="aspect-[2/3] w-32 rounded-2xl" />
+                    <Immagine src={a.cover_url} alt="" className="aspect-[2/3] w-32 rounded-card" />
                     <span className="absolute left-2 top-2 rounded-md border border-viola/40 bg-void/80 px-1.5 py-0.5 font-numeric text-xs font-medium text-viola backdrop-blur">
                       {a.nuovi} {a.nuovi === 1 ? "nuovo" : "nuovi"}
                     </span>
                   </div>
                   <p className="mt-2 line-clamp-2 text-sm font-semibold leading-tight text-ink-bright">{a.titolo}</p>
-                  <p className="mt-0.5 text-[0.8rem] text-ink-muted">Riprendi dall'ep. {a.prossimo}</p>
+                  <p className="mt-0.5 text-fine text-ink-muted">Riprendi dall'ep. {a.prossimo}</p>
                 </Link>
               </li>
             ))}
@@ -223,7 +223,7 @@ export default function AdessoPage() {
                 <Link
                   key={l.idSessione}
                   to={`/serie/${l.mangaId}`}
-                  className="flex items-center gap-2.5 rounded-2xl bg-alcove p-2.5 transition-colors duration-quick active:bg-glass-2"
+                  className="flex items-center gap-2.5 rounded-card bg-alcove p-2.5 transition-colors duration-quick active:bg-glass-2"
                 >
                   <Immagine src={l.copertina} alt="" className="h-12 w-8 shrink-0 rounded-md" larghezza={128} />
                   <div className="min-w-0">
@@ -242,12 +242,12 @@ export default function AdessoPage() {
 
       {settimana.length > 0 && (
         <Sezione titolo="Esce questa settimana" kana="今週" link={{ a: "/uscite", testo: "Tutte le uscite" }}>
-          <ul className="divide-y divide-hairline rounded-2xl bg-alcove px-3.5">
+          <ul className="divide-y divide-hairline rounded-card bg-alcove px-3.5">
             {settimana.map((u) => (
               <li key={u.chiave}>
                 <Link to={u.link} className="flex items-center gap-3 py-2.5">
                   <div className="w-10 shrink-0 text-center">
-                    <p className="text-[0.7rem] uppercase text-ink-muted">{u.giornoSettimana}</p>
+                    <p className="text-micro uppercase text-ink-muted">{u.giornoSettimana}</p>
                     <p className="font-numeric text-lg font-semibold text-ink-bright">{u.giorno}</p>
                   </div>
                   <Immagine src={u.copertina} alt="" className="h-12 w-8 shrink-0 rounded-md" larghezza={128} />
@@ -270,14 +270,14 @@ export default function AdessoPage() {
         <Sezione titolo="Prossimo acquisto" kana="買う" link={{ a: "/wishlist", testo: "Da comprare" }}>
           <Link
             to={`/serie/${prossimoAcquisto.serie.id}`}
-            className="flex items-center gap-3.5 rounded-2xl bg-alcove p-3.5 transition-colors duration-quick active:bg-glass-2"
+            className="flex items-center gap-3.5 rounded-card bg-alcove p-3.5 transition-colors duration-quick active:bg-glass-2"
           >
             <Immagine src={prossimoAcquisto.serie.copertina} alt="" className="h-[70px] w-12 shrink-0 rounded-lg" />
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold text-ink-bright">
                 {prossimoAcquisto.serie.titolo} {prossimoAcquisto.volume}
               </p>
-              <p className="text-[0.8rem] text-ink-muted">
+              <p className="text-fine text-ink-muted">
                 {(() => {
                   const frase = fraseMancanti(prossimoAcquisto.serie, prossimoAcquisto.mancanti);
                   return frase.charAt(0).toUpperCase() + frase.slice(1);
@@ -437,7 +437,7 @@ function Testata({ nome }) {
 
   return (
     <header className="px-5 pb-1 pt-6">
-      <p className="flex items-center gap-2 font-numeric text-[0.72rem] uppercase tracking-[0.14em] text-ink-muted">
+      <p className="flex items-center gap-2 font-numeric text-micro uppercase tracking-[0.14em] text-ink-muted">
         {oggi}
         <span aria-hidden="true" className="kana font-pixel normal-case tracking-normal text-ink-faint">
           {KANJI_GIORNO[new Date().getDay()]}
@@ -450,7 +450,7 @@ function Testata({ nome }) {
           <Icon nome="portale" dimensione={40} />
         </span>
         <span className="min-w-0">
-          <span className="block text-[0.95rem] font-semibold leading-tight text-ink-muted">{saluto()},</span>
+          <span className="block text-corpo font-semibold leading-tight text-ink-muted">{saluto()},</span>
           <span className="block text-[2rem] leading-none">{nome || "MangaVault"}</span>
         </span>
       </h1>
@@ -489,7 +489,7 @@ function CaricamentoHome({ lento }) {
   return (
     <div role="status" aria-label="Caricamento in corso">
       <div className="px-4 pt-5">
-        <div className={`h-44 rounded-2xl bg-alcove ${ombra}`} />
+        <div className={`h-44 rounded-card bg-alcove ${ombra}`} />
       </div>
 
       <div className="px-4 pt-7">
@@ -497,7 +497,7 @@ function CaricamentoHome({ lento }) {
         <div className="flex gap-3 overflow-hidden">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="w-32 shrink-0 space-y-2">
-              <div className={`aspect-[2/3] w-32 rounded-2xl bg-alcove ${ombra}`} />
+              <div className={`aspect-[2/3] w-32 rounded-card bg-alcove ${ombra}`} />
               <div className="h-3 w-4/5 rounded bg-glass-1" />
             </div>
           ))}
@@ -534,7 +534,7 @@ function Sezione({ titolo, kana, link, children }) {
 
 function DaRiprendere({ anime, occupato, onVisto }) {
   return (
-    <section className="relative mx-4 mt-5 overflow-hidden rounded-3xl border border-brass-400/25 bg-alcove shadow-raised">
+    <section className="relative mx-4 mt-5 overflow-hidden rounded-panel border border-brass-400/25 bg-alcove shadow-raised">
       {/* La copertina stessa, sfocata, fa da fondo: la card prende il
           colore della serie invece di essere la stessa lastra per tutte.
           Sfuma verso il fondo della scheda perché il tasto resti su una
@@ -553,7 +553,7 @@ function DaRiprendere({ anime, occupato, onVisto }) {
       )}
       <div className="relative flex gap-4 p-4">
         <Link to={`/videoteca/${anime.id}`} className="shrink-0">
-          <Immagine src={anime.cover_url} alt={`Copertina di ${anime.titolo}`} className="h-[156px] w-[108px] rounded-xl shadow-float" />
+          <Immagine src={anime.cover_url} alt={`Copertina di ${anime.titolo}`} className="h-[156px] w-[108px] rounded-card shadow-float" />
         </Link>
         <div className="flex min-w-0 flex-col gap-1.5">
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-brass-300">Da riprendere</p>
@@ -572,7 +572,7 @@ function DaRiprendere({ anime, occupato, onVisto }) {
           type="button"
           onClick={onVisto}
           disabled={occupato}
-          className="insegna flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[0.95rem] font-semibold transition-all duration-quick active:scale-[0.98] disabled:opacity-60"
+          className="insegna flex h-12 w-full items-center justify-center gap-2 rounded-card text-corpo font-semibold transition-all duration-quick active:scale-[0.98] disabled:opacity-60"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M20 6 9 17l-5-5" />
@@ -589,7 +589,7 @@ function LetturaPrincipale({ lettura, occupato, onPiuUno }) {
   const eUltimo = lettura.massimo ? lettura.volume >= lettura.massimo : false;
 
   return (
-    <div className="flex items-center gap-3.5 rounded-2xl bg-alcove p-3.5">
+    <div className="flex items-center gap-3.5 rounded-card bg-alcove p-3.5">
       <Link to={`/serie/${lettura.mangaId}`} className="shrink-0">
         <Immagine src={lettura.copertina} alt={`Copertina di ${lettura.titolo}`} className="h-[84px] w-[58px] rounded-lg" />
       </Link>
@@ -597,7 +597,7 @@ function LetturaPrincipale({ lettura, occupato, onPiuUno }) {
         <Link to={`/serie/${lettura.mangaId}`} className="block truncate font-semibold text-ink-bright">
           {lettura.titolo}
         </Link>
-        <p className="mt-0.5 text-[0.8rem] text-ink-muted">
+        <p className="mt-0.5 text-fine text-ink-muted">
           Stai leggendo il vol. <span className="font-numeric text-ink-bright">{lettura.volume}</span>
           {lettura.massimo ? ` di ${lettura.massimo}` : ""}
         </p>
@@ -638,7 +638,7 @@ function RichiamoMese({ adesso }) {
   return (
     <Link
       to="/mese"
-      className="mx-4 mt-4 flex items-center justify-between rounded-2xl border border-hairline bg-alcove/60 px-4 py-3 text-sm text-ink-bright transition-colors duration-quick active:bg-alcove"
+      className="mx-4 mt-4 flex items-center justify-between rounded-card border border-hairline bg-alcove/60 px-4 py-3 text-sm text-ink-bright transition-colors duration-quick active:bg-alcove"
     >
       <span>
         Il vostro <span className="font-semibold">{NOME_DEL_MESE.format(scorso)}</span>: com'è andato

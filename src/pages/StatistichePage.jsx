@@ -280,7 +280,7 @@ function Cifra({ etichetta, valore, onClick }) {
       className={`px-2 text-center ${onClick ? "rounded-r-panel hover:bg-glass-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400" : ""}`}
     >
       <dd className="font-numeric text-xl font-semibold text-ink-bright">{valore}</dd>
-      <dt className="text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">{etichetta}</dt>
+      <dt className="text-micro font-medium uppercase tracking-wider text-ink-muted">{etichetta}</dt>
     </Contenitore>
   );
 }
@@ -417,7 +417,7 @@ function Primato({ etichetta, titolo, serie, dettaglio, nota }) {
       </div>
 
       <div className="relative min-w-0 flex-1">
-        <p className="text-[0.65rem] font-medium uppercase tracking-[0.16em] text-brass-500/90">
+        <p className="text-micro font-medium uppercase tracking-[0.16em] text-brass-500/90">
           {etichetta}
         </p>
 

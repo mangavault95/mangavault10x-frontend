@@ -184,9 +184,9 @@ function Casella({ titolo, valore, nota }) {
         {typeof valore === "number" ? valore.toLocaleString("it-IT") : valore}
       </p>
 
-      <p className="text-[0.7rem] uppercase tracking-wider text-quaderno-tenue">{titolo}</p>
+      <p className="text-micro uppercase tracking-wider text-quaderno-tenue">{titolo}</p>
 
-      {nota && <p className="mt-1 text-[0.65rem] text-quaderno-tenue">{nota}</p>}
+      {nota && <p className="mt-1 text-micro text-quaderno-tenue">{nota}</p>}
     </Scheda>
   );
 }

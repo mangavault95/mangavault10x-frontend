@@ -192,7 +192,7 @@ export function BottoneSmessa({ serie, onCambiato }) {
         type="button"
         onClick={() => (serie.smessa ? cambia(false) : setChiedendo(true))}
         disabled={inCorso}
-        className={`rounded-full border px-3 py-1 font-semibold transition-colors duration-quick disabled:opacity-50 ${
+        className={`bersaglio rounded-full border px-3 py-1 font-semibold transition-colors duration-quick disabled:opacity-50 ${
           serie.smessa
             ? "border-brass-400 bg-brass-400/15 text-brass-300 hover:bg-brass-400/25"
             : "border-hairline text-ink-muted hover:border-soft hover:text-ink-bright"
@@ -332,7 +332,7 @@ export function VotoStelle({ serie, onCambiato, dimensione = 20, sospeso = false
               aria-pressed={serie.valutazione === valore}
               onMouseEnter={() => setAnteprima(valore)}
               onClick={(e) => salva(valore, e)}
-              className={`absolute inset-y-0 w-1/2 disabled:pointer-events-none
+              className={`absolute inset-y-0 w-1/2 disabled:pointer-events-none [@media(hover:none)]:-inset-y-2
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
                           ${meta === 0 ? "left-0" : "right-0"}`}
             />

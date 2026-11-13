@@ -186,7 +186,7 @@ function TestoCheCresce({ valore, cambia, manda }) {
       }}
       placeholder="Cosa stai guardando?"
       aria-label="Scrivi un messaggio per tutti"
-      className="w-full resize-none bg-transparent text-[0.95rem] leading-relaxed text-quaderno-inchiostro placeholder:text-quaderno-tenue focus:outline-none"
+      className="w-full resize-none bg-transparent text-corpo leading-relaxed text-quaderno-inchiostro placeholder:text-quaderno-tenue focus:outline-none"
     />
   );
 }

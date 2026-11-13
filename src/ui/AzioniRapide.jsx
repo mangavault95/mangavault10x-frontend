@@ -87,7 +87,7 @@ export default function AzioniRapide({ serie, onChiudere }) {
   }
 
   const riga =
-    "flex min-h-[3.25rem] w-full items-center gap-3 rounded-card px-3 text-left text-[0.95rem] font-medium text-ink-bright transition-colors duration-quick active:bg-glass-2 disabled:opacity-50";
+    "flex min-h-[3.25rem] w-full items-center gap-3 rounded-card px-3 text-left text-corpo font-medium text-ink-bright transition-colors duration-quick active:bg-glass-2 disabled:opacity-50";
 
   return (
     <Foglio

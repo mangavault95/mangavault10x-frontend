@@ -275,7 +275,7 @@ function NomeDellaSerie({ serie, fai, inCorso }) {
       <div className="min-w-0 flex-1 space-y-2">
         {serie.gruppoId ? (
           <>
-            <label className="block text-[0.68rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+            <label className="block text-micro font-semibold uppercase tracking-wider text-quaderno-tenue">
               Nome della serie
             </label>
 
@@ -512,7 +512,7 @@ function Tagli({ stagione, chiave, fai, inCorso }) {
 
   return (
     <div className="space-y-2 border-t border-quaderno-riga pt-3">
-      <label className="block text-[0.68rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+      <label className="block text-micro font-semibold uppercase tracking-wider text-quaderno-tenue">
         Le stagioni cominciano dalla puntata
       </label>
 
@@ -674,7 +674,7 @@ function CollegamentoAlManga({ serie, fai, inCorso }) {
 function Sezione({ titolo, children }) {
   return (
     <section className="space-y-2">
-      <h2 className="text-[0.68rem] font-semibold uppercase tracking-wider text-quaderno-tenue">
+      <h2 className="text-micro font-semibold uppercase tracking-wider text-quaderno-tenue">
         {titolo}
       </h2>
 

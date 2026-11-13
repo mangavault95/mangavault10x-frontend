@@ -136,7 +136,7 @@ function Sfidante({ serie, onScegli, tasto, conVs = false }) {
 
         {/* La scorciatoia si mostra solo dove esiste una tastiera: col
             dito è una riga di rumore sotto ogni copertina. */}
-        <kbd className="mt-1.5 hidden rounded border border-soft bg-glass-1 px-1.5 py-0.5 font-numeric text-[0.65rem] text-ink-faint [@media(hover:hover)]:inline-block">
+        <kbd className="mt-1.5 hidden rounded border border-soft bg-glass-1 px-1.5 py-0.5 font-numeric text-micro text-ink-faint [@media(hover:hover)]:inline-block">
           {tasto}
         </kbd>
       </span>
@@ -238,7 +238,7 @@ export function RigaSfida({ sfida, nomeDi, collegabile, evidenzia }) {
         evidenziata={evidenzia === sfida.casaId}
       />
 
-      <span aria-hidden="true" className="font-numeric text-[0.65rem] text-ink-faint">
+      <span aria-hidden="true" className="font-numeric text-micro text-ink-faint">
         vs
       </span>
 
@@ -315,7 +315,7 @@ export function Strada({ sfide, id, taglia, nomeDi, collegabile }) {
             key={`${s.turno}-${s.posizione}`}
             className="flex items-center justify-between gap-3 rounded-card border border-hairline bg-glass-1 px-3 py-2"
           >
-            <span className="shrink-0 text-[0.65rem] font-medium uppercase tracking-wider text-brass-500/80">
+            <span className="shrink-0 text-micro font-medium uppercase tracking-wider text-brass-500/80">
               {nomeTurno(taglia / 2 ** (s.turno - 1))}
             </span>
 

@@ -31,7 +31,7 @@ export function Autori({ serie, onScegli }) {
             type="button"
             onClick={() => onScegli(nome)}
             title={`Tutte le opere di ${nome}`}
-            className="underline decoration-dotted decoration-ink-faint underline-offset-4 transition-colors duration-quick hover:text-ink-bright hover:decoration-brass-400"
+            className="bersaglio underline decoration-dotted decoration-ink-faint underline-offset-4 transition-colors duration-quick hover:text-ink-bright hover:decoration-brass-400"
           >
             {nome}
           </button>
@@ -113,7 +113,7 @@ export function Trama({ testo }) {
   return (
     <div className="max-w-3xl">
       <p
-        className={`whitespace-pre-line text-[0.95rem] leading-relaxed text-ink ${
+        className={`whitespace-pre-line text-corpo leading-relaxed text-ink ${
           lunga && !aperta ? "line-clamp-4" : ""
         }`}
       >
@@ -124,7 +124,7 @@ export function Trama({ testo }) {
         <button
           type="button"
           onClick={() => setAperta((a) => !a)}
-          className="mt-2 text-sm font-medium text-brass-300 hover:underline"
+          className="bersaglio mt-2 text-sm font-medium text-brass-300 hover:underline"
         >
           {aperta ? "Mostra meno" : "Leggi tutto"}
         </button>

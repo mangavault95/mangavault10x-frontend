@@ -229,7 +229,7 @@ export default function DesiderioPage() {
       <div className="mx-auto w-full max-w-[80rem] space-y-14 px-5 pb-16 sm:px-8 lg:px-12">
         {elemento.trama && (
           <Sezione titolo="Trama">
-            <p className="max-w-3xl whitespace-pre-line text-[0.95rem] leading-relaxed text-ink">
+            <p className="max-w-3xl whitespace-pre-line text-corpo leading-relaxed text-ink">
               {elemento.trama}
             </p>
           </Sezione>

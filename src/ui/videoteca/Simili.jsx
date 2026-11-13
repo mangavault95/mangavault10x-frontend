@@ -99,7 +99,7 @@ export default function Simili({ anime }) {
     <Blocco
       titolo="Se ti è piaciuta"
       extra={
-        <span className="text-right text-[0.7rem] leading-tight text-quaderno-tenue">
+        <span className="text-right text-micro leading-tight text-quaderno-tenue">
           per com'è fatta, non per il genere
           {dati.gia_viste > 0 && (
             <>
@@ -124,7 +124,7 @@ export default function Simili({ anime }) {
 
       {riprendile.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-quaderno-tenue">
+          <h3 className="text-micro font-semibold uppercase tracking-[0.18em] text-quaderno-tenue">
             Ne hai già in videoteca, lasciate a metà
           </h3>
 
@@ -139,7 +139,7 @@ export default function Simili({ anime }) {
       {daScoprire.length > 0 && (
         <div className="space-y-2">
           {riprendile.length > 0 && (
-            <h3 className="pt-2 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-quaderno-tenue">
+            <h3 className="pt-2 text-micro font-semibold uppercase tracking-[0.18em] text-quaderno-tenue">
               Da scoprire
             </h3>
           )}
@@ -201,7 +201,7 @@ function RigaRipresa({ carta }) {
           {carta.titolo}
         </h4>
 
-        <p className="font-numeric text-[0.7rem] text-quaderno-blu">
+        <p className="font-numeric text-micro text-quaderno-blu">
           {v.ultimoVisto
             ? `il prossimo è l'episodio ${v.ultimoVisto + 1}`
             : "non l'hai ancora cominciata"}
@@ -226,14 +226,14 @@ function CartaSimile({ carta, apri }) {
             cosa. Merita di vedersi sulla copertina invece che nella
             riga del motivo insieme a tutto il resto. */}
         {carta.accordo && (
-          <span className="absolute left-1.5 top-1.5 rounded-full bg-quaderno-blu px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-quaderno-su-blu">
+          <span className="absolute left-1.5 top-1.5 rounded-full bg-quaderno-blu px-1.5 py-0.5 text-micro font-semibold uppercase tracking-wider text-quaderno-su-blu">
             doppia
           </span>
         )}
       </div>
 
       <div className="flex flex-1 flex-col gap-1.5 p-2.5 text-left">
-        <h4 className="line-clamp-2 min-h-[2.3rem] text-[0.82rem] font-semibold leading-snug text-quaderno-inchiostro">
+        <h4 className="line-clamp-2 min-h-[2.3rem] text-fine font-semibold leading-snug text-quaderno-inchiostro">
           {carta.titolo}
         </h4>
 
@@ -247,7 +247,7 @@ function CartaSimile({ carta, apri }) {
           </div>
         ) : (
           carta.motivo && (
-            <p className="text-[0.68rem] italic leading-snug text-quaderno-tenue">
+            <p className="text-micro italic leading-snug text-quaderno-tenue">
               {carta.motivo}
             </p>
           )
@@ -464,7 +464,7 @@ function Copertina({ carta, className = "", pigra = true }) {
   if (!carta.copertina) {
     return (
       <div
-        className={`grid place-items-center overflow-hidden rounded bg-quaderno-carta px-2 text-center text-[0.62rem] leading-tight text-quaderno-tenue ${className}`}
+        className={`grid place-items-center overflow-hidden rounded bg-quaderno-carta px-2 text-center text-micro leading-tight text-quaderno-tenue ${className}`}
       >
         {carta.titolo}
       </div>
@@ -495,10 +495,10 @@ function Attesa() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
         {Array.from({ length: 6 }).map((_, i) => (
           <Scheda key={i} className="overflow-hidden">
-            <div className="aspect-[3/4] w-full animate-pulse bg-quaderno-carta" />
+            <div className="aspect-[3/4] w-full scheletro bg-quaderno-carta" />
             <div className="space-y-1.5 p-2.5">
-              <div className="h-3 w-4/5 animate-pulse rounded bg-quaderno-carta" />
-              <div className="h-3 w-2/5 animate-pulse rounded bg-quaderno-carta" />
+              <div className="h-3 w-4/5 scheletro rounded bg-quaderno-carta" />
+              <div className="h-3 w-2/5 scheletro rounded bg-quaderno-carta" />
             </div>
           </Scheda>
         ))}

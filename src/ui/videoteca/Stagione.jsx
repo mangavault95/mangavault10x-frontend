@@ -145,7 +145,7 @@ export default function Stagione({
                 onClick={() => alStato(chiave)}
                 disabled={azione === `stato-${stagione.id}`}
                 aria-pressed={acceso}
-                className={`rounded-full px-2.5 py-1 text-[0.7rem] font-semibold transition-colors duration-quick
+                className={`rounded-full px-2.5 py-1 text-micro font-semibold transition-colors duration-quick
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu
                   ${
                     acceso
@@ -170,7 +170,7 @@ export default function Stagione({
               type="button"
               onClick={alTogli}
               disabled={azione === `togli-${stagione.id}`}
-              className="ml-auto rounded-full px-2.5 py-1 text-[0.7rem] font-semibold text-quaderno-tenue transition-colors duration-quick
+              className="ml-auto rounded-full px-2.5 py-1 text-micro font-semibold text-quaderno-tenue transition-colors duration-quick
                 hover:text-ember focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu
                 disabled:pointer-events-none disabled:opacity-50"
             >

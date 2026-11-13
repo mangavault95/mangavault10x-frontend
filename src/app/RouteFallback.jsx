@@ -13,9 +13,9 @@ export default function RouteFallback() {
       <div className="mt-10 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
         {Array.from({ length: 12 }).map((_, i) => (
           <div key={i} className="space-y-3">
-            <div className="aspect-cover w-full rounded-card bg-glass-1 border border-hairline" />
-            <div className="h-3 w-4/5 rounded bg-glass-1" />
-            <div className="h-3 w-2/5 rounded bg-glass-1" />
+            <div className="scheletro aspect-cover w-full rounded-card bg-glass-1 border border-hairline" />
+            <div className="scheletro h-3 w-4/5 rounded bg-glass-1" />
+            <div className="scheletro h-3 w-2/5 rounded bg-glass-1" />
           </div>
         ))}
       </div>

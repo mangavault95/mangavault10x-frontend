@@ -72,7 +72,7 @@ export default function PaginaVideoteca({
             sul telefono, dove l'angolo non ha una colonna tutta sua. */}
         <div className={`min-w-0 ${angolo ? "pr-12" : ""}`}>
           {occhiello && (
-            <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-quaderno-tenue">
+            <p className="mb-2 text-micro font-semibold uppercase tracking-[0.18em] text-quaderno-tenue">
               {occhiello}
             </p>
           )}
@@ -164,7 +164,7 @@ export function Pillola({ children, tono = "tenue", className = "" }) {
 
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider ${toni[tono]} ${className}`}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-micro font-semibold uppercase tracking-wider ${toni[tono]} ${className}`}
     >
       {children}
     </span>
@@ -183,7 +183,7 @@ export function Progresso({ visti = 0, su = null, className = "" }) {
 
   return (
     <div className={`space-y-1.5 ${className}`}>
-      <div className="flex items-baseline justify-between font-numeric text-[0.7rem] text-quaderno-tenue">
+      <div className="flex items-baseline justify-between font-numeric text-micro text-quaderno-tenue">
         <span>
           {visti}
           {su ? ` / ${su}` : " visti"}
