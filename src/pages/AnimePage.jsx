@@ -148,6 +148,7 @@ export default function AnimePage() {
 
   async function cambiaStato(stagioneId, stato) {
     setAzione(`stato-${stagioneId}`);
+    setGuaio(null);
 
     try {
       await impostaVisione(stagioneId, stato);
@@ -163,6 +164,11 @@ export default function AnimePage() {
             }
           : p
       );
+    } catch (e) {
+      // Senza questo un salvataggio fallito non diceva niente: lo stato
+      // restava quello di prima e sembrava che il tocco non fosse
+      // arrivato.
+      setGuaio(e);
     } finally {
       setAzione(null);
     }
@@ -170,12 +176,15 @@ export default function AnimePage() {
 
   async function cambiaVoto(stagioneId, voto) {
     setAzione(`voto-${stagioneId}`);
+    setGuaio(null);
 
     try {
       if (voto === null) await togliVotoAnime(stagioneId);
       else await votaAnime(stagioneId, voto);
 
       await ricarica();
+    } catch (e) {
+      setGuaio(e);
     } finally {
       setAzione(null);
     }

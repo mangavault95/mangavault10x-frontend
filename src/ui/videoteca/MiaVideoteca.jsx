@@ -386,7 +386,7 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
             type="button"
             onClick={onGestisci}
             aria-label={`Gestisci ${anime.titolo}: voto, salti, pausa e altro`}
-            className="-mr-1 -mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-muted transition-colors duration-quick hover:bg-glass-2 hover:text-ink-bright"
+            className="-mr-1 -mt-1 bersaglio grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-muted transition-colors duration-quick hover:bg-glass-2 hover:text-ink-bright"
           >
             <Icon nome="puntini" dimensione={18} />
           </button>
@@ -482,7 +482,7 @@ function FoglioAnime({ anime, onChiudi, onVota, onFinoA, onNonVisto, onStato }) 
               type="button"
               onClick={onChiudi}
               aria-label="Chiudi"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-glass-2 hover:text-ink-bright"
+              className="bersaglio grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-glass-2 hover:text-ink-bright"
             >
               <Icon nome="close" dimensione={18} />
             </button>

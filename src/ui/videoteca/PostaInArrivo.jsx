@@ -173,7 +173,7 @@ function Cartolina({ consiglio, apriAggiunta, chiudi }) {
           type="button"
           onClick={chiudi}
           aria-label="Chiudi"
-          className="fixed right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-quaderno-foglio/90 text-quaderno-tenue shadow-lift transition-colors duration-quick hover:text-quaderno-inchiostro
+          className="fixed right-3 top-3 z-10 grid h-9 w-9 place-items-center [@media(hover:none)]:h-11 [@media(hover:none)]:w-11 rounded-full bg-quaderno-foglio/90 text-quaderno-tenue shadow-lift transition-colors duration-quick hover:text-quaderno-inchiostro
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
         >
           <Icon nome="close" dimensione={18} />

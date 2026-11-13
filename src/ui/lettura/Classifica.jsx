@@ -252,7 +252,7 @@ export function RiquadroSerie({ serie, cosa, onChiudi }) {
             <button
               onClick={onChiudi}
               aria-label="Chiudi"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+              className="bersaglio grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
             >
               ✕
             </button>

@@ -146,7 +146,7 @@ export default function Pannello({ onChiudi }) {
           <button
             onClick={onChiudi}
             aria-label="Chiudi il banco"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
+            className="bersaglio grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
           >
             <Icon nome="close" dimensione={18} />
           </button>

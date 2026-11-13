@@ -563,7 +563,7 @@ function MenuOrdineVista({ aperto, onApri, ordina, onOrdina, vista, onVista }) {
         aria-label="Ordina e cambia vista"
         aria-haspopup="menu"
         aria-expanded={aperto}
-        className={`grid h-9 w-9 place-items-center rounded-full border border-quaderno-riga transition-colors duration-quick
+        className={`bersaglio grid h-9 w-9 place-items-center rounded-full border border-quaderno-riga transition-colors duration-quick
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu
           ${aperto ? "bg-quaderno-blu text-quaderno-su-blu" : "bg-quaderno-foglio text-quaderno-tenue hover:text-quaderno-inchiostro"}`}
       >

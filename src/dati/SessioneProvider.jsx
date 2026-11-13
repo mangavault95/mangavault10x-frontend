@@ -3,7 +3,8 @@ import {
   esci as buttaViaLaSessione,
   getLettori,
   getRichiesteAccesso,
-  getToken
+  getToken,
+  SESSIONE_CADUTA
 } from "../services/api";
 import {
   ContestoSessione,
@@ -116,6 +117,22 @@ export function SessioneProvider({ children }) {
     buttaViaLaSessione();
     setUtente(null);
     setRichieste([]);
+  }, []);
+
+  // Il server ha rifiutato il token (scaduto dopo trenta giorni, o
+  // accesso tolto dal proprietario): il token è già stato buttato da
+  // `request`, qui si aggiorna quello che il sito crede. Da questo
+  // momento i comandi tornano quelli di chi guarda, e il primo che si
+  // tocca riapre l'accesso invece di fallire.
+  useEffect(() => {
+    const caduta = () => {
+      setUtente(null);
+      setRichieste([]);
+    };
+
+    window.addEventListener(SESSIONE_CADUTA, caduta);
+
+    return () => window.removeEventListener(SESSIONE_CADUTA, caduta);
   }, []);
 
   /**

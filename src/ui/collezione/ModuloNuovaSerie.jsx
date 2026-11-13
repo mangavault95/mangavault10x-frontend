@@ -150,7 +150,7 @@ export function ModuloNuovaSerie({ tutteLeSerie, titoloIniziale = "", onChiuso, 
               type="button"
               onClick={onChiuso}
               aria-label="Chiudi"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
+              className="bersaglio grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
             >
               ✕
             </button>

@@ -889,7 +889,7 @@ function RigaParte({ parte, presa, spunta, bloccata, anteprima }) {
           }}
           aria-label={`Cosa racconta: ${parte.titolo}`}
           title="Tieni premuto sulla riga, o premi qui, per la trama"
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-quaderno-riga font-display text-xs font-semibold text-quaderno-tenue
+          className="bersaglio grid h-7 w-7 shrink-0 place-items-center rounded-full border border-quaderno-riga font-display text-xs font-semibold text-quaderno-tenue
             transition-colors duration-quick hover:border-quaderno-blu hover:text-quaderno-blu
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu"
         >

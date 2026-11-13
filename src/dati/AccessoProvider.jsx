@@ -83,7 +83,12 @@ export function AccessoProvider({ children }) {
         // sempre è scaduto. Si richiede l'accesso e si riprova UNA
         // sola volta — se fallisce ancora, l'errore risale a chi ha
         // chiamato invece di aprire un accesso all'infinito.
-        if (e?.status === 401 || e?.status === 403) {
+        //
+        // Non ogni 403, però: «riservato al proprietario» è un no detto
+        // a chi è entrato benissimo, e riaprire l'accesso lo manderebbe
+        // a riscrivere la password per sentirselo ridire. È la stessa
+        // distinzione che fa `request` prima di buttare il token.
+        if (e?.status === 401 || (e?.status === 403 && /token/i.test(e?.message || ""))) {
           await chiediAccesso();
 
           return await azione();

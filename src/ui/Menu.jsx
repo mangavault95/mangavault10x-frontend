@@ -181,7 +181,7 @@ export default function Menu({ etichetta, voci, larghezza = "16rem" }) {
         }}
         className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors duration-quick
                     hover:bg-glass-2 hover:text-ink-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
-                    [@media(hover:none)]:h-10 [@media(hover:none)]:w-10
+                    [@media(hover:none)]:h-11 [@media(hover:none)]:w-11
                     ${aperto ? "bg-glass-2 text-ink-bright" : "text-ink-faint"}`}
       >
         <Icon nome="puntini" dimensione={16} piena />

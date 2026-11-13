@@ -65,6 +65,9 @@ export class ApiError extends Error {
   }
 }
 
+/** L'evento che avvisa il sito quando il server non riconosce più l'accesso. */
+export const SESSIONE_CADUTA = "mangavault:sessione-caduta";
+
 async function request(path, { method = "GET", body, auth = false, signal } = {}) {
   const headers = {};
 
@@ -112,8 +115,18 @@ async function request(path, { method = "GET", body, auth = false, signal } = {}
     res.status === 401 || (res.status === 403 && /token/i.test(payload?.error || ""));
 
   if (sessioneCaduta) {
+    const eroDentro = Boolean(getToken());
+
     clearToken();
     ricordaUtente(null);
+
+    // Buttare il token non basta: `SessioneProvider` tiene chi sei in
+    // uno stato suo, e senza saperlo continuava a mostrare i comandi
+    // di chi è entrato — ogni tocco dopo era un errore senza motivo
+    // apparente, fino a ricaricare la pagina. Glielo si dice.
+    if (eroDentro && typeof window !== "undefined") {
+      window.dispatchEvent(new Event(SESSIONE_CADUTA));
+    }
   }
 
   if (!res.ok) {

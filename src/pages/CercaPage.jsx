@@ -261,7 +261,7 @@ export default function CercaPage() {
             type="button"
             onClick={() => cambia("")}
             aria-label="Cancella"
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-ink-muted hover:text-ink-bright"
+            className="bersaglio grid h-8 w-8 shrink-0 place-items-center rounded-full text-ink-muted hover:text-ink-bright"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
               <path d="M18 6 6 18M6 6l12 12" />

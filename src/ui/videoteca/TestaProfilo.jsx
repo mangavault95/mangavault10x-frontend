@@ -240,7 +240,7 @@ export default function TestaProfilo({
           onClick={() => setMenu(true)}
           aria-haspopup="dialog"
           aria-label={`Altro su ${persona.nickname}`}
-          className="grid h-9 w-9 place-items-center rounded-full border border-quaderno-riga bg-quaderno-foglio text-quaderno-tenue shadow-sm transition-colors duration-quick hover:text-quaderno-inchiostro
+          className="bersaglio grid h-9 w-9 place-items-center rounded-full border border-quaderno-riga bg-quaderno-foglio text-quaderno-tenue shadow-sm transition-colors duration-quick hover:text-quaderno-inchiostro
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu"
         >
           <Icon nome="menu" dimensione={18} />

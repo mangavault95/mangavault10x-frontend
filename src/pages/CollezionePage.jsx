@@ -166,7 +166,7 @@ function MenuOrdineVista({ aperto, onApri, ordine, onOrdine, vista, onVista }) {
         aria-label="Ordina e cambia vista"
         aria-haspopup="menu"
         aria-expanded={aperto}
-        className={`grid h-9 w-9 place-items-center rounded-full transition-colors duration-quick active:scale-95
+        className={`bersaglio grid h-9 w-9 place-items-center rounded-full transition-colors duration-quick active:scale-95
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
           ${aperto ? "bg-ink-bright text-void" : "bg-alcove text-ink hover:text-ink-bright"}`}
       >

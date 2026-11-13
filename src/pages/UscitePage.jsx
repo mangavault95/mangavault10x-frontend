@@ -274,7 +274,7 @@ function Volume({ u, passato, fattoOra, inConferma, occupato, chiedi, rinuncia, 
             type="button"
             onClick={chiedi}
             aria-label={comprato ? "Annulla l'acquisto" : "Segna come comprato"}
-            className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border text-sm ${
+            className={`bersaglio grid h-9 w-9 shrink-0 place-items-center rounded-full border text-sm ${
               comprato ? "border-jade bg-jade text-void" : "border-hairline text-transparent"
             }`}
           >

@@ -132,6 +132,17 @@ export default function AdessoPage() {
   const caricamentoIniziale = [videoteca, calendario, sessioni, uscite].some((r) => r.inCorso && r.dati === null && !r.errore);
   const lento = useDopo(caricamentoIniziale, 2500);
 
+  // Quello che non è arrivato. Senza dirlo, una richiesta fallita era
+  // indistinguibile da «non hai niente da guardare né da leggere»: la
+  // home si disegnava corta e basta, e l'unico modo di riprovare era
+  // ricaricare la pagina. Le uscite dei volumi hanno già la loro riga
+  // più sotto e qui non compaiono.
+  const mancanti = [
+    { nome: "La videoteca", risorsa: videoteca },
+    { nome: "La settimana degli anime", risorsa: calendario },
+    { nome: "La lettura in corso", risorsa: sessioni }
+  ].filter((m) => m.risorsa.errore && !m.risorsa.inCorso);
+
   async function vistoProssimo(a) {
     setProblema(null);
     setInCorso(`anime:${a.id}`);
@@ -184,6 +195,22 @@ export default function AdessoPage() {
         <p role="alert" className="mx-4 mt-4 rounded-card border border-ember/30 bg-ember/10 px-4 py-3 text-sm text-ember">
           {problema}
         </p>
+      )}
+
+      {mancanti.length > 0 && (
+        <div role="alert" className="mx-4 mt-4 flex items-center gap-3 rounded-card border border-ember/30 bg-ember/10 px-4 py-3">
+          <p className="min-w-0 flex-1 text-sm text-ember">
+            {mancanti.length === 1 ? `${mancanti[0].nome} non è arrivata` : "Una parte della pagina non è arrivata"}: il
+            server non ha risposto.
+          </p>
+          <button
+            type="button"
+            onClick={() => mancanti.forEach((m) => m.risorsa.ricarica())}
+            className="bersaglio shrink-0 rounded-card bg-ember/20 px-3.5 py-2 text-sm font-semibold text-ember transition-colors duration-quick active:bg-ember/30"
+          >
+            Riprova
+          </button>
+        </div>
       )}
 
       {caricamentoIniziale && <CaricamentoHome lento={lento} />}
