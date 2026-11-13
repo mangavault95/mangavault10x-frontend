@@ -3,8 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { getToken, login as accedi, registrazione as chiediAccount } from "../services/api";
 import { ContestoAccesso } from "./accesso";
 import { useSessione } from "./sessione";
-import useChiusuraVelo from "../ui/useChiusuraVelo";
-import Sovrapposizione from "../ui/Sovrapposizione";
+import Foglio from "../ui/Foglio";
 import { mondoDi } from "../app/navigation";
 
 /**
@@ -130,19 +129,12 @@ export function AccessoProvider({ children }) {
  * sì. Un divieto senza la porta accanto è solo un muro.
  */
 function SoloVideoteca({ messaggio, onChiudi }) {
-  const velo = useChiusuraVelo(onChiudi);
   const veste = VESTI.biblioteca;
 
   return (
-    <Sovrapposizione>
+    <Foglio titolo="La biblioteca è di casa" titoloNascosto sopra larghezza="sm:max-w-sm" onChiudere={onChiudi}>
       <div
-        className={`fixed inset-0 z-toast grid place-items-center p-5 animate-rise-in ${veste.velo}`}
-        {...velo}
-      >
-        <div
-          role="alertdialog"
-          aria-label="La biblioteca è di casa"
-          className={`w-full max-w-sm space-y-4 rounded-panel border p-6 shadow-float ${veste.riquadro}`}
+          className="space-y-4 pb-1"
         >
           <h2 className={veste.titolo}>Qui puoi solo guardare</h2>
 
@@ -166,8 +158,7 @@ function SoloVideoteca({ messaggio, onChiudi }) {
             </button>
           </div>
         </div>
-      </div>
-    </Sovrapposizione>
+    </Foglio>
   );
 }
 
@@ -241,7 +232,6 @@ export function ModuloAccesso({
   const [password, setPassword] = useState("");
   const [errore, setErrore] = useState(null);
   const [inCorso, setInCorso] = useState(false);
-  const velo = useChiusuraVelo(onAnnulla);
 
   async function invia(e) {
     e.preventDefault();
@@ -273,12 +263,8 @@ export function ModuloAccesso({
 
   if (modo === "inviata") {
     return (
-      <Sovrapposizione>
-        <div
-          className={`fixed inset-0 z-toast grid place-items-center p-5 animate-rise-in ${veste.velo}`}
-          {...velo}
-        >
-          <div className={`w-full max-w-sm space-y-4 rounded-panel border p-6 shadow-float ${veste.riquadro}`}>
+      <Foglio titolo="Richiesta inviata" titoloNascosto sopra larghezza="sm:max-w-sm" onChiudere={onAnnulla}>
+        <div className="space-y-4 pb-1">
             <h2 className={veste.titolo}>
               Richiesta inviata
             </h2>
@@ -300,22 +286,17 @@ export function ModuloAccesso({
               Ho capito
             </button>
           </div>
-        </div>
-      </Sovrapposizione>
+      </Foglio>
     );
   }
 
   const registrazione = modo === "registrazione";
 
   return (
-    <Sovrapposizione>
-      <div
-        className={`fixed inset-0 z-toast grid place-items-center p-5 animate-rise-in ${veste.velo}`}
-        {...velo}
-      >
-        <form
+    <Foglio titolo="Accesso" titoloNascosto sopra larghezza="sm:max-w-sm" onChiudere={onAnnulla}>
+      <form
           onSubmit={invia}
-          className={`w-full max-w-sm space-y-4 rounded-panel border p-6 shadow-float ${veste.riquadro}`}
+          className="space-y-4 pb-1"
         >
           <div>
             <h2 className={veste.titolo}>
@@ -413,8 +394,7 @@ export function ModuloAccesso({
             </button>
           </p>
         </form>
-      </div>
-    </Sovrapposizione>
+    </Foglio>
   );
 }
 

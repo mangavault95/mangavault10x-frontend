@@ -8,8 +8,8 @@ import {
 } from "../../services/api";
 import { raggruppaCandidati } from "../../dati/videoteca";
 import { NOMI_TIPO } from "./formati";
-import { Bottone, Pillola, Scheda } from "./Foglio";
-import Sovrapposizione from "../Sovrapposizione";
+import { Bottone, Pillola } from "./Foglio";
+import Foglio from "../Foglio";
 
 /**
  * Il pannello che mette una serie in videoteca.
@@ -106,20 +106,8 @@ export default function AggiungiAnime({ chiudi, alFatto, titoloIniziale = "", al
   useEffect(() => () => annulla.current?.abort(), []);
 
   return (
-    <Sovrapposizione>
-      <div
-        className="fixed inset-0 z-modal grid place-items-center p-3"
-        role="dialog"
-        aria-label="Aggiungi un anime"
-      >
-        <button
-          type="button"
-          aria-label="Chiudi"
-          onClick={chiudi}
-          className="absolute inset-0 bg-quaderno-inchiostro/40"
-        />
-
-        <Scheda className="relative flex max-h-[85dvh] w-full max-w-2xl flex-col overflow-hidden shadow-float">
+    <Foglio titolo="Aggiungi un anime" titoloNascosto senzaMargini larghezza="sm:max-w-2xl" onChiudere={chiudi}>
+      <div className="flex flex-col">
           {scelta ? (
             <Proposta
               scelta={scelta}
@@ -145,9 +133,8 @@ export default function AggiungiAnime({ chiudi, alFatto, titoloIniziale = "", al
               chiudi={chiudi}
             />
           )}
-        </Scheda>
-      </div>
-    </Sovrapposizione>
+        </div>
+    </Foglio>
   );
 }
 

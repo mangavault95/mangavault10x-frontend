@@ -110,6 +110,10 @@ export default function Foglio({
   larghezza = "sm:max-w-lg",
   // Per gli elenchi che arrivano fino al bordo con le loro righe.
   senzaMargini = false,
+  // Per i fogli che si aprono SOPRA un altro foglio: l'accesso chiesto a
+  // metà di un'azione, la scelta di una serie. Senza, comparirebbero sotto
+  // quello da cui sono partiti.
+  sopra = false,
   className = "",
   children
 }) {
@@ -135,7 +139,13 @@ export default function Foglio({
   useEffect(() => {
     const prima = document.activeElement;
 
-    pannello.current?.focus({ preventScroll: true });
+    // Se dentro c'è già un campo che ha preso il cursore (`autoFocus`, la
+    // ricerca che si apre pronta a scrivere) lo si lascia dov'è: gli
+    // effetti dei figli girano prima di questo, e spostare il fuoco sul
+    // foglio chiuderebbe la tastiera appena aperta.
+    if (!pannello.current?.contains(document.activeElement)) {
+      pannello.current?.focus({ preventScroll: true });
+    }
 
     function alTasto(e) {
       if (e.key === "Escape") chiudere.current?.();
@@ -146,6 +156,44 @@ export default function Foglio({
     return () => {
       window.removeEventListener("keydown", alTasto);
       if (prima instanceof HTMLElement && prima.isConnected) prima.focus({ preventScroll: true });
+    };
+  }, []);
+
+  /**
+   * La tastiera.
+   *
+   * Su iPhone la tastiera non rimpicciolisce la pagina: le si stende
+   * sopra, e un foglio ancorato al bordo basso finisce per metà lì sotto —
+   * proprio la metà coi bottoni. `visualViewport` è il rettangolo che si
+   * vede davvero: quando si accorcia, il foglio si ancora a quello.
+   * Finché la tastiera è chiusa non si tocca niente, e resta il CSS.
+   */
+  useEffect(() => {
+    const vista = window.visualViewport;
+    const nodo = radice.current;
+
+    if (!vista || !nodo) return undefined;
+
+    function adatta() {
+      const coperta = window.innerHeight - vista.height - vista.offsetTop;
+
+      if (coperta > 80) {
+        nodo.style.top = `${vista.offsetTop}px`;
+        nodo.style.bottom = "auto";
+        nodo.style.height = `${vista.height}px`;
+      } else {
+        nodo.style.top = "";
+        nodo.style.bottom = "";
+        nodo.style.height = "";
+      }
+    }
+
+    vista.addEventListener("resize", adatta);
+    vista.addEventListener("scroll", adatta);
+
+    return () => {
+      vista.removeEventListener("resize", adatta);
+      vista.removeEventListener("scroll", adatta);
     };
   }, []);
 
@@ -340,7 +388,7 @@ export default function Foglio({
     <Sovrapposizione>
       <div
         ref={radice}
-        className={`fixed inset-x-0 inset-y-0 z-overlay flex items-end justify-center sm:items-center sm:p-5 ${className}`}
+        className={`fixed inset-x-0 inset-y-0 flex items-end justify-center sm:items-center sm:p-5 ${sopra ? "z-toast" : "z-overlay"} ${className}`}
       >
         {/* Il velo è un fratello del foglio, non un suo antenato: un
             trascinamento cominciato dentro e finito fuori non può
@@ -363,7 +411,7 @@ export default function Foglio({
           aria-modal="true"
           aria-labelledby={idTitolo}
           tabIndex={-1}
-          className={`foglio-pannello relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-sheet border border-b-0 border-hairline bg-glass-3 shadow-float outline-none sm:max-h-[85dvh] sm:rounded-sheet sm:border-b ${larghezza}`}
+          className={`foglio-pannello relative flex max-h-[92%] w-full flex-col overflow-hidden rounded-t-sheet border border-b-0 border-hairline bg-glass-3 shadow-float outline-none sm:max-h-[85dvh] sm:rounded-sheet sm:border-b ${larghezza}`}
         >
           <div
             data-foglio-testata=""

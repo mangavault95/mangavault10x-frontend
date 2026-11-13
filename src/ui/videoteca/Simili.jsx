@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import useRisorsa from "../../dati/useRisorsa";
 import { useSessione } from "../../dati/sessione";
 import { getAnteprimaConsiglio, getSimiliAnime, urlCopertina } from "../../services/api";
-import Sovrapposizione from "../Sovrapposizione";
+import Foglio from "../Foglio";
 import { Blocco, Bottone, Pillola, Progresso, Scheda } from "./Foglio";
 import { NOMI_TIPO } from "./formati";
 
@@ -325,20 +325,8 @@ function Anteprima({ carta, chiudi, aggiungi }) {
   const altroNome = nomeTrovato && nomeTrovato !== carta.titolo ? nomeTrovato : null;
 
   return (
-    <Sovrapposizione>
-      <div
-        className="fixed inset-0 z-modal grid place-items-center p-3"
-        role="dialog"
-        aria-label={`${carta.titolo} — di cosa parla`}
-      >
-        <button
-          type="button"
-          aria-label="Chiudi"
-          onClick={chiudi}
-          className="absolute inset-0 bg-quaderno-inchiostro/40"
-        />
-
-        <Scheda className="relative flex max-h-[85dvh] w-full max-w-2xl flex-col overflow-hidden shadow-float">
+    <Foglio titolo={`${carta.titolo} — di cosa parla`} titoloNascosto senzaMargini larghezza="sm:max-w-2xl" onChiudere={chiudi}>
+      <div className="flex flex-col">
           <div className="flex-1 overflow-y-auto">
             <div className="flex gap-4 p-5">
               <Copertina
@@ -437,9 +425,8 @@ function Anteprima({ carta, chiudi, aggiungi }) {
               Chiudi
             </Bottone>
           </div>
-        </Scheda>
-      </div>
-    </Sovrapposizione>
+        </div>
+    </Foglio>
   );
 }
 

@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bottone } from "../Controlli";
 import Copertina from "../Copertina";
-import Sovrapposizione from "../Sovrapposizione";
-import useChiusuraVelo from "../useChiusuraVelo";
+import Foglio from "../Foglio";
 import { useAccessoProtetto } from "../../dati/accesso";
 import { creaManga, enrichManga } from "../../services/api";
 
@@ -123,17 +122,11 @@ export function ModuloNuovaSerie({ tutteLeSerie, titoloIniziale = "", onChiuso, 
     }
   }
 
-  const velo = useChiusuraVelo(onChiuso);
-
   return (
-    <Sovrapposizione>
-    <div
-      className="fixed inset-0 z-modal grid place-items-center overflow-y-auto bg-void/70 p-5 py-10 animate-rise-in"
-      {...velo}
-    >
+    <Foglio titolo="Nuova serie" titoloNascosto larghezza="sm:max-w-lg" onChiudere={onChiuso}>
       <form
         onSubmit={salva}
-        className="w-full max-w-lg space-y-5 rounded-panel border border-hairline bg-glass-3 p-6 shadow-float backdrop-blur-2xl"
+        className="space-y-5 pb-1"
       >
         <div className="flex items-start gap-4">
           {/* La copertina si vede da subito, non solo a scheda salvata:
@@ -275,8 +268,7 @@ export function ModuloNuovaSerie({ tutteLeSerie, titoloIniziale = "", onChiuso, 
           </Bottone>
         </div>
       </form>
-    </div>
-    </Sovrapposizione>
+    </Foglio>
   );
 }
 

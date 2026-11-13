@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
 import Copertina from "../Copertina";
 import { Bottone, CampoRicerca } from "../Controlli";
-import Sovrapposizione from "../Sovrapposizione";
-import useChiusuraVelo from "../useChiusuraVelo";
+import Foglio from "../Foglio";
 
 // Quante serie mostrare nella finestra "Cosa apriamo?" prima di
 // rimandare alla ricerca. Erano 24, cioè sei righe su schermo largo:
@@ -28,7 +27,6 @@ const MASSIME_IN_SCELTA = 60;
  */
 export function SceltaSerie({ serie, escludi, onScegli, onAnnulla }) {
   const [cerca, setCerca] = useState("");
-  const velo = useChiusuraVelo(onAnnulla);
 
   const disponibili = useMemo(
     () => serie.filter((m) => !escludi.has(String(m.id))),
@@ -54,19 +52,9 @@ export function SceltaSerie({ serie, escludi, onScegli, onAnnulla }) {
   const nascoste = trovate.length - risultati.length;
 
   return (
-    <Sovrapposizione>
-    <div
-      className="fixed inset-0 z-toast grid place-items-center bg-void/70 p-4 animate-rise-in sm:p-5"
-      onKeyDown={(e) => {
-        if (e.key === "Escape") onAnnulla();
-      }}
-      {...velo}
-    >
+    <Foglio titolo="Scegli la serie da aprire" titoloNascosto sopra larghezza="sm:max-w-2xl" onChiudere={onAnnulla}>
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Scegli la serie da aprire"
-        className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-panel border border-brass-400/20 bg-glass-3 p-5 shadow-float backdrop-blur-2xl"
+        className="flex flex-col pb-1"
       >
       <div className="mb-4 space-y-3">
         <div>
@@ -141,7 +129,6 @@ export function SceltaSerie({ serie, escludi, onScegli, onAnnulla }) {
         </Bottone>
       </div>
       </div>
-    </div>
-    </Sovrapposizione>
+    </Foglio>
   );
 }
