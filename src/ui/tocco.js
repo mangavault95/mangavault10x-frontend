@@ -1,4 +1,5 @@
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
+import { vibra } from "../dati/tatto";
 
 /**
  * Si sta usando un dito o un puntatore?
@@ -69,4 +70,81 @@ export default function useTocco() {
  */
 export function useStretto() {
   return useMedia("(max-width: 1023.98px)");
+}
+
+/**
+ * Tenere premuto: il gesto delle azioni rapide.
+ *
+ * Restituisce i gestori da stendere sull'elemento (`{...tieni}`). Dopo
+ * `ms` di dito fermo chiama `alTieni`; se nel frattempo il dito si
+ * sposta di più di dieci pixel era uno scorrimento, e non succede niente.
+ *
+ * Tre dettagli che fanno la differenza fra un gesto e un incidente:
+ *
+ *   - IL CLICK CHE SEGUE VA MANGIATO. Sollevando il dito dopo un tocco
+ *     lungo il browser manda comunque un click, e la carta — che è un
+ *     link — aprirebbe la scheda sotto il foglio appena comparso. Si
+ *     ferma in fase di cattura, prima che arrivi a chiunque.
+ *   - IL TASTO DESTRO FA LO STESSO. Su un computer non c'è niente da
+ *     tenere premuto: il menu contestuale è lo stesso gesto con un altro
+ *     nome, e così la funzione non esiste solo col dito.
+ *   - `alTocco` è il posto per ciò che l'elemento faceva già al primo
+ *     contatto (la carta precarica la scheda): i gestori sono uno per
+ *     evento, e senza questo l'uno cancellerebbe l'altro.
+ */
+export function useTieniPremuto(alTieni, { ms = 450, attivo = true, alTocco } = {}) {
+  const stato = useRef({ timer: null, x: 0, y: 0, scattato: false });
+
+  const ferma = useCallback(() => {
+    clearTimeout(stato.current.timer);
+    stato.current.timer = null;
+  }, []);
+
+  return {
+    onTouchStart: (e) => {
+      alTocco?.(e);
+
+      if (!attivo || e.touches.length !== 1) return;
+
+      const s = stato.current;
+
+      s.scattato = false;
+      s.x = e.touches[0].clientX;
+      s.y = e.touches[0].clientY;
+
+      clearTimeout(s.timer);
+      s.timer = setTimeout(() => {
+        s.scattato = true;
+        vibra();
+        alTieni();
+      }, ms);
+    },
+    onTouchMove: (e) => {
+      const s = stato.current;
+
+      if (!s.timer) return;
+
+      const t = e.touches[0];
+
+      if (Math.abs(t.clientX - s.x) > 10 || Math.abs(t.clientY - s.y) > 10) ferma();
+    },
+    onTouchEnd: ferma,
+    onTouchCancel: ferma,
+    onContextMenu: (e) => {
+      if (!attivo) return;
+
+      e.preventDefault();
+
+      // Su Android il tocco lungo manda anche questo evento: il foglio è
+      // già aperto, non va aperto due volte.
+      if (!stato.current.scattato) alTieni();
+    },
+    onClickCapture: (e) => {
+      if (!stato.current.scattato) return;
+
+      stato.current.scattato = false;
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
 }

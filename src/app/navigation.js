@@ -47,8 +47,10 @@ export const SCHEDE = [
   { id: "cerca", percorso: "/cerca", etichetta: "Cerca", icona: "search", tasto: "4", kana: "検索" }
 ];
 
+// «/uscite» dal 13/11/2026: prima si raggiungeva solo dal foglio «Tu», e
+// arrivati lì nessuna linguetta in basso era accesa.
 const PAGINE_MANGA = [
-  "/collezione", "/serie/", "/lettura", "/wishlist", "/desiderio/", "/statistiche", "/kachinuki"
+  "/collezione", "/serie/", "/lettura", "/wishlist", "/uscite", "/desiderio/", "/statistiche", "/kachinuki"
 ];
 const PAGINE_ANIME = ["/videoteca", "/calendario"];
 
@@ -146,6 +148,18 @@ export const SEZIONI = [
     descrizione: "Uscite, ultimi volumi e desideri",
     icona: "cartellino",
     tasto: "4"
+  },
+  {
+    // Le uscite del mese e la spesa. Sta subito dopo «Da comprare» perché
+    // è la stessa domanda — cosa prendo — vista dal calendario. Fino al
+    // 13/11/2026 era a due tocchi, dentro il foglio «Tu»: lì resta, ma
+    // adesso è anche qui, a un tocco da ogni pagina dei manga.
+    id: "uscite",
+    mondo: "biblioteca",
+    percorso: "/uscite",
+    etichetta: "Uscite",
+    descrizione: "Cosa esce questo mese e cosa hai già preso",
+    icona: "uscite"
   },
   {
     id: "statistiche",

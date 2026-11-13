@@ -257,7 +257,9 @@ export default function Shell({ children }) {
           hai davanti è peggio di un banco assente. */}
       {/* Solo nelle pagine dei manga: su Adesso e su Cerca il bottone
           tondo copriva l'ultima riga, e di là c'è già da cercare. */}
-      {scheda === "manga" && <Bibliotecario />}
+      {/* Non su Uscite: ogni riga ha la sua spunta sul bordo destro, e il
+          tondo del banco ci finirebbe sopra. */}
+      {scheda === "manga" && !location.pathname.startsWith("/uscite") && <Bibliotecario />}
 
       {/* ---------- Barra inferiore (solo mobile) ---------- */}
       <nav

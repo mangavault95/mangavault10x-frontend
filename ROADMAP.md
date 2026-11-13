@@ -100,5 +100,6 @@ non lo sa, e infatti chiedendo solo quella si sbagliano tutte e due le volte.
   `bibliotecaria.glb` da sola pesa 492 kB, più di tutto l'arredo messo
   insieme; richiede un decoder in più lato client, quindi non è la
   correzione di un pomeriggio come le texture — va valutata a parte.
-- "Più edizioni della stessa serie": idea non ancora progettata, non esiste
-  nessuna colonna né tabella.
+- ~~"Più edizioni della stessa serie"~~: fatta. Ogni edizione è una riga di
+  `"Manga"` con la sua `"Edizione"`, collegata alle gemelle da `"OperaId"`
+  (`sql/005_edizioni.sql` nel backend, `edizioniSorelle` in `dati/collezione.js`).

@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { flushSync } from "react-dom";
 import { ripristino } from "../dati/paginaViva";
 import { Link, useNavigate } from "react-router-dom";
 import Copertina from "./Copertina";
 import { BottonePreferito } from "./AzioniSerie";
+import AzioniRapide from "./AzioniRapide";
+import { useTieniPremuto } from "./tocco";
 import { useCollezione } from "../dati/collezione";
 import { useSessione } from "../dati/sessione";
 import { coloreDi } from "../dati/lettori";
@@ -115,7 +118,18 @@ export default function CartaSerie({
   compatta = false
 }) {
   const { aggiornaLocale } = useCollezione();
-  const { lettoriBiblioteca: lettori } = useSessione();
+  const { lettoriBiblioteca: lettori, bibliotecaSolaLettura } = useSessione();
+
+  // Tenere premuta la carta apre le azioni rapide (`AzioniRapide`): voto,
+  // preferito e «ho preso il prossimo» senza passare dalla scheda. Non per
+  // chi può solo guardare, e non mentre si sfoglia la collezione con gli
+  // occhi di un altro lettore — lì voto e letture non sono i propri.
+  const [azioniAperte, setAzioniAperte] = useState(false);
+  const tieni = useTieniPremuto(() => setAzioniAperte(true), {
+    attivo: !bibliotecaSolaLettura && !lettore,
+    alTocco: precaricaScheda
+  });
+  const azioni = azioniAperte && <AzioniRapide serie={serie} onChiudere={() => setAzioniAperte(false)} />;
 
   const pct = completamento(serie);
   const mancanti = volumiMancanti(serie);
@@ -142,11 +156,12 @@ export default function CartaSerie({
   // aprendo la scheda (o tornando alla vista con le copertine).
   if (compatta) {
     return (
+      <>
       <Link
         to={indirizzo}
         onClick={apriConVolo}
         onPointerEnter={precaricaScheda}
-        onTouchStart={precaricaScheda}
+        {...tieni}
         title={serie.titolo}
         aria-label={`${serie.titolo}, ${serie.posseduti} volumi${mancanti > 0 ? `, ne mancano ${mancanti}` : ""}`}
         className="group relative block rounded-card outline-none transition-transform duration-quick
@@ -171,10 +186,13 @@ export default function CartaSerie({
           )}
         </span>
       </Link>
+      {azioni}
+      </>
     );
   }
 
   return (
+    <>
     <Link
       // La scheda si apre sapendo di chi sono le letture da mostrare:
       // è l'indirizzo a portarselo dietro, come per ogni altro filtro
@@ -182,7 +200,7 @@ export default function CartaSerie({
       to={indirizzo}
       onClick={apriConVolo}
       onPointerEnter={precaricaScheda}
-      onTouchStart={precaricaScheda}
+      {...tieni}
       className="group block rounded-panel outline-none transition-transform duration-base ease-settle
                  hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-brass-400
                  focus-visible:ring-offset-4 focus-visible:ring-offset-shelf active:translate-y-0 active:scale-[0.99]"
@@ -272,6 +290,8 @@ export default function CartaSerie({
         </p>
       </div>
     </Link>
+    {azioni}
+    </>
   );
 }
 
