@@ -97,7 +97,8 @@ export default function WishlistPage() {
     const inUscita = new Set(escono.map((u) => `${u.serie.id}:${u.numero}`));
 
     return (collezione || [])
-      .filter((s) => !s.droppato)
+      // Smessa = non la compriamo più: i buchi restano, ma non sono spesa.
+      .filter((s) => !s.droppato && !s.smessa)
       .map((s) => ({
         serie: s,
         numeri: numeriMancantiUsciti(s).filter((n) => !presi.has(`${s.id}:${n}`) && !inUscita.has(`${s.id}:${n}`))

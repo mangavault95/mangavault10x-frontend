@@ -54,7 +54,10 @@ const CHIAVE = "mangavault:collezione";
 //
 // 5 = QUALI volumi, non solo quanti (`numeri`, migrazione 022). Una copia
 // vecchia non ha l'elenco, e ogni scheda sparsa tornerebbe «dall'1 all'N».
-const VERSIONE = 5;
+//
+// 6 = le serie smesse (`smessa`, migrazione 026). Una copia vecchia le
+// darebbe tutte seguite, e i loro mancanti tornerebbero in wishlist.
+const VERSIONE = 6;
 
 // Oltre una giornata la copia non si usa più nemmeno come primo
 // disegno: meglio la barra di caricamento di una collezione di ieri

@@ -44,7 +44,8 @@ export function riepilogo(serie) {
     (s) => completamento(s) === 100 && s.stato === "conclusa"
   ).length;
   const daCompletare = serie.filter((s) => volumiMancanti(s) > 0).length;
-  const inCorsoEditore = serie.filter((s) => s.stato === "in_corso").length;
+  // Esce ancora E la seguiamo: una serie smessa esce, ma non è più nostra da tenere d'occhio.
+  const inCorsoEditore = serie.filter((s) => s.stato === "in_corso" && !s.smessa).length;
 
   // Quanto costerebbe finire tutto quello che hai cominciato: è il
   // numero che nessun'altra pagina dice, e quello che serve sapere

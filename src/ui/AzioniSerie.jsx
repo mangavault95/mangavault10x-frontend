@@ -112,6 +112,92 @@ export function BottonePreferito({ serie, onCambiato, dimensione = 18, className
 }
 
 /* ==================================================
+   NON LA COMPRIAMO PIÙ (026, 13/11/2026)
+   ================================================== */
+
+/**
+ * Smettere di comprare una serie: sparisce da uscite, home, wishlist,
+ * ricerca su Fumettologica, riepilogo del bot e serie «in corso». È in
+ * comune ai due lettori — la collezione è una — e non tocca la lettura:
+ * per mollare la lettura c'è «Droppa», che è di ciascuno.
+ *
+ * Smettere chiede conferma (fa sparire cose da cinque posti diversi, e
+ * chi la tocca per sbaglio non capirebbe dove sono finite). Riprendere
+ * no: rimette tutto com'era, non c'è niente da perdere.
+ */
+export function BottoneSmessa({ serie, onCambiato }) {
+  const eseguiProtetto = useAccessoProtetto();
+  const { bibliotecaSolaLettura } = useSessione();
+  const [inCorso, setInCorso] = useState(false);
+  const [chiedendo, setChiedendo] = useState(false);
+  const [problema, setProblema] = useState(false);
+
+  async function cambia(nuovo) {
+    setInCorso(true);
+    setProblema(false);
+    onCambiato?.(nuovo);
+
+    try {
+      await eseguiProtetto(() => updateManga(serie.id, { smessa: nuovo }));
+      setChiedendo(false);
+    } catch (err) {
+      if (!err?.annullato) {
+        onCambiato?.(serie.smessa);
+        setProblema(true);
+      }
+    } finally {
+      setInCorso(false);
+    }
+  }
+
+  if (bibliotecaSolaLettura) return null;
+
+  if (chiedendo) {
+    return (
+      <div className="flex flex-wrap items-center gap-2 rounded-card border border-hairline bg-glass-1 p-2 text-xs">
+        <p className="min-w-0 flex-1 text-ink-bright">
+          Non la comprate più? Spariscono le sue uscite e i volumi che mancano. Si può riprendere quando vuoi.
+        </p>
+        <button
+          type="button"
+          onClick={() => setChiedendo(false)}
+          disabled={inCorso}
+          className="rounded-full border border-hairline px-3 py-1 font-semibold text-ink-muted"
+        >
+          No
+        </button>
+        <button
+          type="button"
+          onClick={() => cambia(true)}
+          disabled={inCorso}
+          className="rounded-full bg-ember px-3 py-1 font-bold text-void disabled:opacity-60"
+        >
+          {inCorso ? "…" : "Sì, smetto"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <button
+        type="button"
+        onClick={() => (serie.smessa ? cambia(false) : setChiedendo(true))}
+        disabled={inCorso}
+        className={`rounded-full border px-3 py-1 font-semibold transition-colors duration-quick disabled:opacity-50 ${
+          serie.smessa
+            ? "border-brass-400 bg-brass-400/15 text-brass-300 hover:bg-brass-400/25"
+            : "border-hairline text-ink-muted hover:border-soft hover:text-ink-bright"
+        }`}
+      >
+        {serie.smessa ? "Riprendi a comprarla" : "Non la compro più"}
+      </button>
+      {problema && <span className="text-ember">Non sono riuscito a salvare.</span>}
+    </div>
+  );
+}
+
+/* ==================================================
    VOTO — cinque stelle, a mezze stelle
    ================================================== */
 

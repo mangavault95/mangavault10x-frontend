@@ -9,7 +9,7 @@ import OpereAutore from "../ui/OpereAutore";
 import { Bottone } from "../ui/Controlli";
 import { Errore, Vuoto } from "../ui/Stati";
 import { Sezione } from "../ui/Pagina";
-import { BottonePreferito } from "../ui/AzioniSerie";
+import { BottonePreferito, BottoneSmessa } from "../ui/AzioniSerie";
 import VotiPersone from "../ui/VotiPersone";
 import NoteSerie from "../ui/NoteSerie";
 import Icon from "../app/Icon";
@@ -371,7 +371,13 @@ export default function SeriePage() {
                 {serie.stato && (
                   <span className="text-ink-muted"> · {ETICHETTE_STATO[serie.stato] || serie.stato}</span>
                 )}
+                {serie.smessa && <span className="text-brass-300"> · non la comprate più</span>}
               </p>
+
+              {/* Comprarla o no è della casa, non di chi legge: per
+                  questo sta qui accanto ai volumi e non fra i comandi
+                  della lettura (dove c'è «Droppa»). */}
+              <BottoneSmessa serie={serie} onCambiato={(smessa) => aggiornaLocale(serie.id, { smessa })} />
             </div>
 
             <div className="col-span-2 min-w-0 space-y-4 sm:space-y-6 md:col-span-1">

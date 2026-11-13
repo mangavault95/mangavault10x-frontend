@@ -387,7 +387,7 @@ function usciteDellaSettimana(volumi, puntate, anime, adesso) {
  */
 function acquistoPiuVicino(collezione) {
   const candidate = (collezione || [])
-    .filter((s) => !s.droppato)
+    .filter((s) => !s.droppato && !s.smessa)
     .map((s) => ({ serie: s, mancanti: volumiMancanti(s) }))
     .filter((c) => c.mancanti > 0 && c.mancanti <= 3)
     // Prima le serie che si chiudono davvero (conclusa e tutta uscita in

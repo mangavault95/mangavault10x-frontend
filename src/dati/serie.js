@@ -238,6 +238,15 @@ export function normalizzaSerie(riga) {
 
     preferito: Boolean(riga.Preferito),
 
+    // NON LA COMPRIAMO PIÙ (026, 13/11/2026)
+    //
+    // Al contrario di `droppato` questo È della serie, in comune ai due
+    // lettori: la collezione è una, e smettere di comprare una serie
+    // vale per la casa. Toglie la serie da uscite, mancanti e «in
+    // corso»; leggerla si può ancora.
+    smessa: Boolean(riga.SmessaIl),
+    smessaIl: riga.SmessaIl || null,
+
     // DROPPARE È DI CHI LEGGE
     //
     // Era la colonna `Droppato`, cioè un fatto della serie. Adesso qui
