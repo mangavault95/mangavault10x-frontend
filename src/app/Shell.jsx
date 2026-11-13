@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 /*
  * `Link` e non `NavLink`, ed è una correzione, non una preferenza.
@@ -28,14 +28,23 @@ import {
 import Icon from "./Icon";
 import Bibliotecario from "../bibliotecario/Bibliotecario";
 import Identita from "../ui/Identita";
-import AggiungiAnime from "../ui/videoteca/AggiungiAnime";
-import PostaInArrivo from "../ui/videoteca/PostaInArrivo";
 import { useSessione } from "../dati/sessione";
 import SceltaTema from "../ui/SceltaTema";
 import Avvisi from "../ui/Avvisi";
 import Foglio from "../ui/Foglio";
 import TiraPerAggiornare from "../ui/TiraPerAggiornare";
 import { ripristino } from "../dati/paginaViva";
+
+/*
+ * Due pezzi della videoteca che la cornice ospita ma che non servono per
+ * disegnarla: il pannello «Aggiungi» (novecento righe, si apre quando esce
+ * una serie nuova) e la posta dei consigli. Fino al 13/11/2026 stavano nel
+ * pacchetto iniziale, cioè li scaricava anche chi apriva la Home per
+ * segnare un volume. Adesso arrivano la prima volta che servono; nel
+ * frattempo non si vede niente, che è quello che si vedeva comunque.
+ */
+const AggiungiAnime = lazy(() => import("../ui/videoteca/AggiungiAnime"));
+const PostaInArrivo = lazy(() => import("../ui/videoteca/PostaInArrivo"));
 
 /**
  * La cornice fissa attorno a ogni pagina.
@@ -292,6 +301,7 @@ export default function Shell({ children }) {
 
       {tuAperto && <FoglioTu richieste={richieste.length} chiudi={() => setApertoSu(null)} />}
 
+      <Suspense fallback={null}>
       {aggiunta && (
         <AggiungiAnime
           titoloIniziale={titoloCercato}
@@ -319,6 +329,7 @@ export default function Shell({ children }) {
           entri. Stessa condizione dell'«aggiungi»: serve il mondo
           giusto e serve un nome, o non c'è nessuno a cui consegnarla. */}
       {puoiAggiungere && <PostaInArrivo apriAggiunta={apriAggiunta} />}
+      </Suspense>
 
       {/* Gli avvisi («registrato», «Annulla»): uno per tutto il sito, e
           nella cornice perché devono sopravvivere al cambio di pagina. */}

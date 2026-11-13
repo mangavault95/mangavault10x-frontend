@@ -4,9 +4,9 @@ import { BrowserRouter } from "react-router-dom";
 import "@fontsource-variable/sora";
 import "@fontsource-variable/geist";
 import "@fontsource-variable/jetbrains-mono";
-// Solo i glifi che usano le micro-etichette: il file intero del giapponese
-// peserebbe megabyte per una decina di caratteri.
-import "@fontsource/dotgothic16/japanese-400.css";
+// Il carattere a pixel dei kana non si importa da qui: è dichiarato in
+// `index.css`, ritagliato sui soli segni usati (vedi
+// `scripts/genera-font-kana.mjs`).
 import "./index.css";
 import AppRoutes from "./app/routes";
 import { agganciaServizio } from "./app/servizio";

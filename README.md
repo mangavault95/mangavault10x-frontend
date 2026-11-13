@@ -1,16 +1,34 @@
-# React + Vite
+# MangaVault — frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Il portale di casa per la collezione di manga e la videoteca degli anime.
+React 18 + Vite + Tailwind, installabile come app sull'iPhone. Un push su
+`main` va in produzione su Vercel.
 
-Currently, two official plugins are available:
+## Avvio in locale
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+Con `VITE_API_URL` vuoto in `.env.local` le chiamate passano dall'inoltro di
+Vite (`vite.config.js`) e arrivano al server vero senza problemi di CORS.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Comandi
 
-## Expanding the ESLint configuration
+- `npm run dev` — sviluppo, su http://localhost:5173
+- `npm run build` — rigenera il carattere dei kana e costruisce il sito
+- `npm run lint` — eslint
+- `npm run font-kana` — solo il carattere dei kana (`scripts/genera-font-kana.mjs`)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Dove sta cosa
+
+- `src/app` — la cornice (`Shell.jsx`), le rotte, la mappa di navigazione, le icone
+- `src/pages` — una pagina per file
+- `src/ui` — i componenti; `ui/Foglio.jsx` è l'unico modo di aprire qualcosa
+  sopra una pagina, `ui/Avvisi.jsx` l'unico avviso
+- `src/dati` — dati e stato; le righe del database si traducono una volta
+  sola in `dati/serie.js`
+- `src/index.css`, `tailwind.config.js` — i token: colori, raggi, movimento
+
+Decisioni e cose aperte: `ROADMAP.md`.

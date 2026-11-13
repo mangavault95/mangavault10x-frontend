@@ -146,7 +146,10 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), preconnessione(ambiente.VITE_API_URL), guscioOffline()],
     server: {
-      port: Number(process.env.PORT) || 5173,
+      // `ambiente` e non `process.env`: con il prefisso vuoto `loadEnv`
+      // porta dentro anche le variabili del sistema, e così il file non
+      // nomina un globale di Node che eslint qui non conosce.
+      port: Number(ambiente.PORT) || 5173,
       proxy: {
         ...inoltri,
 
