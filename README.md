@@ -25,8 +25,9 @@ Vite (`vite.config.js`) e arrivano al server vero senza problemi di CORS.
 
 - `src/app` — la cornice (`Shell.jsx`), le rotte, la mappa di navigazione, le icone
 - `src/pages` — una pagina per file
-- `src/ui` — i componenti; `ui/Foglio.jsx` è l'unico modo di aprire qualcosa
-  sopra una pagina, `ui/Avvisi.jsx` l'unico avviso
+- `src/ui` — i componenti; `ui/Foglio.jsx` è il modo di aprire qualcosa
+  sopra una pagina (tre finestre più vecchie non ci passano ancora: sono
+  fra gli «Aperti» di `ROADMAP.md`), `ui/Avvisi.jsx` l'unico avviso
 - `src/dati` — dati e stato; le righe del database si traducono una volta
   sola in `dati/serie.js`
 - `src/index.css`, `tailwind.config.js` — i token: colori, raggi, movimento

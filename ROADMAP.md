@@ -64,17 +64,10 @@ non lo sa, e infatti chiedendo solo quella si sbagliano tutte e due le volte.
 
 ### Come si legge una regola col dito
 
-- **La stanza resta un punta e clicca.** Col mouse si passa sopra un mobile e
-  poi si clicca; col dito il primo tocco *è* il passaggio sopra — accende il
-  contorno e il cartellino — e il secondo tocco sullo stesso mobile fa partire
-  la telecamera. La traduzione sta in `tre/scena.js` (`alClick`, e la mira che
-  al tocco non si insegue da sé), il cartellino in `pages/HomePage.jsx`
-  (`CartellinoOggetto`). Sopra il vetro non è comparso nessun menu, e non ci
-  deve comparire: la ragione per cui non c'è vale col dito quanto col mouse.
-- **In verticale la stanza non ci sta in un'inquadratura sola**: le postazioni
-  sono due (`POSTI_SOGLIA_STRETTO`) e le due frecce per girarsi compaiono da
-  sé. Non sono «la versione mobile»: compaiono quando la scena dichiara più di
-  una postazione, cioè in risposta a una proporzione.
+- **La stanza 3D non c'è più** (tolta il 5 ottobre 2026: la pagina d'ingresso
+  è `pages/AdessoPage.jsx`). Le due regole che la riguardavano — il primo
+  tocco che vale come passaggio sopra, le due postazioni in verticale — sono
+  uscite con lei, insieme a `src/tre/` e a `pages/HomePage.jsx`.
 - **I bersagli crescono al tocco, e solo lì.** Ventotto pixel si prendono al
   primo colpo con una freccia larga un pixel, non con un polpastrello largo un
   centimetro. Su un monitor lo stesso bottone a quaranta pixel urlerebbe.
@@ -87,19 +80,34 @@ non lo sa, e infatti chiedendo solo quella si sbagliano tutte e due le volte.
 
 ## Aperti
 
-- La porta d'ingresso animata vera e propria (oggi è un velo CSS sopra il
-  canvas, non geometria).
+Riscritta il 14 novembre 2026, dopo un controllo dei tre repository. Le voci
+sulla stanza (porta animata, peso dei modelli, compressione dei `.glb`) sono
+decadute con la stanza; `ANTHROPIC_API_KEY` nel frontend non c'è più.
+
+- **Tre finestre fuori dal foglio comune**: `bibliotecario/Banco.jsx`,
+  `ui/videoteca/ConsigliaAnime.jsx`, `ui/videoteca/PostaInArrivo.jsx`. Hanno
+  velo, chiusura e fuoco fatti a mano, e meno di quello che `ui/Foglio.jsx` dà
+  gratis.
+- **Il Tab esce dalle finestre**: `Foglio` dichiara `aria-modal` ma la pagina
+  dietro resta raggiungibile da tastiera. La correzione è `inert` su `#root`
+  in `ui/Sovrapposizione.jsx` — ma gli avvisi (`ui/Avvisi.jsx`) stanno dentro
+  `#root` e diventerebbero intoccabili mentre una finestra è aperta: vanno
+  portati fuori prima.
+- **Contrasto di `text-ink-faint`**: circa 3:1 sullo sfondo, sotto il 4,5:1
+  che serve a un testo piccolo. È usato in un'ottantina di punti, anche per
+  testo vero e non solo per decorazioni.
+- **Il lato anime scrive senza `eseguiProtetto`**: una sessione scaduta ora
+  si vede (il sito torna a «nessuno»), ma la prima azione fallisce invece di
+  riaprire l'accesso e ripartire da sola come fa la biblioteca.
+- **`react-router` 6**: due avvisi di sicurezza moderati che si chiudono solo
+  passando alla 7, che è un cambio incompatibile.
+- **Nessuna prova automatica**: i candidati sono le funzioni pure di
+  `dati/serie.js`, `dati/kachinuki.js`, `bibliotecario/intenti.js`.
+- **Copertine sempre a 384 px**: solo 8 chiamate su 34 a `urlCopertina`
+  dicono quanto è grande il riquadro; le altre scaricano 384 px anche per una
+  miniatura da 44.
 - Pulizia dati: editori duplicati (`Panini` / `Panini S.p.A.`), `DataAggiunta`
   quasi sempre vuoto.
-- Spostare `ANTHROPIC_API_KEY` dal `.env` del frontend a Render.
-- Peso della home: ~1,1 MB fra modelli e texture della stanza (dopo la
-  pulizia del 6/8/2026 — via la scala a pioli non più usata, la pietra
-  delle pareti da 768 a 512px), più fino a 48 copertine scaricate a parte.
-  È la pagina d'ingresso, quindi è il primo scarico di ogni visita.
-- Compressione Draco/meshopt sui `.glb`: il taglio grosso che resta.
-  `bibliotecaria.glb` da sola pesa 492 kB, più di tutto l'arredo messo
-  insieme; richiede un decoder in più lato client, quindi non è la
-  correzione di un pomeriggio come le texture — va valutata a parte.
 - ~~"Più edizioni della stessa serie"~~: fatta. Ogni edizione è una riga di
   `"Manga"` con la sua `"Edizione"`, collegata alle gemelle da `"OperaId"`
   (`sql/005_edizioni.sql` nel backend, `edizioniSorelle` in `dati/collezione.js`).
