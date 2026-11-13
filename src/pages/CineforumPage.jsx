@@ -59,7 +59,7 @@ export default function CineforumPage() {
 
   const { dati, errore, inCorso, ricarica } = useRisorsa(primaPagina);
 
-  const persone = useRisorsa(getPersone);
+  const persone = useRisorsa(getPersone, { chiave: "persone" });
 
   const post = [...(dati?.post ?? []), ...altri];
 

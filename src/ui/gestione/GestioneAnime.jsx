@@ -55,7 +55,7 @@ import { NOMI_TIPO } from "../videoteca/formati";
  * qui dentro resta solo il lavoro.
  */
 export default function GestioneAnime() {
-  const { dati, errore, inCorso, ricarica } = useRisorsa(getVideoteca);
+  const { dati, errore, inCorso, ricarica } = useRisorsa(getVideoteca, { chiave: "videoteca" });
 
   const [sceltaId, setSceltaId] = useState(null);
   const [cerca, setCerca] = useState("");

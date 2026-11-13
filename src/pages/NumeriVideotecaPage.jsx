@@ -33,7 +33,7 @@ export default function NumeriVideotecaPage() {
     { attivo: Boolean(nome) }
   );
 
-  const persone = useRisorsa(getPersone);
+  const persone = useRisorsa(getPersone, { chiave: "persone" });
 
   const persona = profilo.dati?.utente ?? null;
   const s = profilo.dati?.statistiche ?? null;

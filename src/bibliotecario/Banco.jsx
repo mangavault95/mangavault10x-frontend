@@ -19,7 +19,7 @@ import Icon from "../app/Icon";
  */
 export default function Pannello({ onChiudi }) {
   const { serie } = useCollezione();
-  const { dati: sessioni } = useRisorsa(getReadingSessions);
+  const { dati: sessioni } = useRisorsa(getReadingSessions, { chiave: "sessioni" });
 
   const [scambi, setScambi] = useState([]);
   const [domanda, setDomanda] = useState("");

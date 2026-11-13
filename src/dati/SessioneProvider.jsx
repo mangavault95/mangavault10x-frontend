@@ -12,6 +12,7 @@ import {
   utenteDalToken,
   utenteRicordato
 } from "./sessione";
+import { svuotaRisorse } from "./useRisorsa";
 
 /**
  * Chi sta usando il sito, per tutto il sito.
@@ -107,6 +108,9 @@ export function SessioneProvider({ children }) {
   const entra = useCallback((nuovo) => {
     const identita = nuovo?.id ? nuovo : utenteDalToken(getToken());
 
+    // Quello che è in memoria è stato chiesto da un'altra persona (o
+    // da nessuno): chi entra riparte da zero.
+    svuotaRisorse();
     ricordaUtente(identita);
     setUtente(identita);
 
@@ -115,6 +119,7 @@ export function SessioneProvider({ children }) {
 
   const esci = useCallback(() => {
     buttaViaLaSessione();
+    svuotaRisorse();
     setUtente(null);
     setRichieste([]);
   }, []);
@@ -126,6 +131,7 @@ export function SessioneProvider({ children }) {
   // tocca riapre l'accesso invece di fallire.
   useEffect(() => {
     const caduta = () => {
+      svuotaRisorse();
       setUtente(null);
       setRichieste([]);
     };

@@ -95,7 +95,7 @@ export default function LetturaPage() {
   // lavorando e l'azione riparte da sola — vedi `dati/accesso.js`.
   const eseguiProtetto = useAccessoProtetto();
 
-  const sessioni = useRisorsa(getReadingSessions);
+  const sessioni = useRisorsa(getReadingSessions, { chiave: "sessioni" });
   const perSerie = useRisorsa(getStoricoPerSerie);
 
   const [problema, setProblema] = useState(null);

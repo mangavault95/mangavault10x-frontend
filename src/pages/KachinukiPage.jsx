@@ -30,7 +30,8 @@ import {
   temiPossibili,
   turniPer,
   vincitore
-} from "../dati/kachinuki";
+} from "../dati/kachinuki";
+
 import { chiedi } from "../dati/conferme";
 
 /**
@@ -52,7 +53,7 @@ export default function KachinukiPage() {
   const { utente, bibliotecaSolaLettura } = useSessione();
   const eseguiProtetto = useAccessoProtetto();
 
-  const { dati: partite, inCorso: caricoPartite, ricarica } = useRisorsa(getTornei);
+  const { dati: partite, inCorso: caricoPartite, ricarica } = useRisorsa(getTornei, { chiave: "tornei" });
 
   const [partita, setPartita] = useState(null);
 

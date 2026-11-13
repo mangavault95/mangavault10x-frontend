@@ -98,8 +98,8 @@ export default function CercaPage() {
   const [registrando, setRegistrando] = useState(false);
   const [registrato, setRegistrato] = useState(null);
   const [problema, setProblema] = useState(null);
-  const videoteca = useRisorsa(() => getVideoteca());
-  const desideri = useRisorsa(() => getWishlist());
+  const videoteca = useRisorsa(() => getVideoteca(), { chiave: "videoteca" });
+  const desideri = useRisorsa(() => getWishlist(), { chiave: "wishlist" });
 
   const [scritto, setScritto] = useState(testo);
   const [recenti, setRecenti] = useState(leggiRecenti);

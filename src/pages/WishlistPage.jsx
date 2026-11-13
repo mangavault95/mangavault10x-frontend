@@ -64,7 +64,7 @@ const VUOTO = {
 };
 
 export default function WishlistPage() {
-  const { dati, inCorso, errore, ricarica, setDati } = useRisorsa(getWishlist);
+  const { dati, inCorso, errore, ricarica, setDati } = useRisorsa(getWishlist, { chiave: "wishlist" });
 
   // I desideri sono la lista della spesa della collezione di carta:
   // si leggono da fuori, li scrive la casa. Da quando le registrazioni
@@ -87,7 +87,7 @@ export default function WishlistPage() {
   // Le uscite e le serie quasi complete. Quello che si segna «preso»
   // sparisce subito da qui, senza aspettare che tornino le liste.
   const { serie: collezione, ricarica: ricaricaCollezione } = useCollezione();
-  const uscite = useRisorsa(() => getUsciteManga(14));
+  const uscite = useRisorsa(() => getUsciteManga(14), { chiave: "uscite:14" });
   const [presi, setPresi] = useState(() => new Set());
   const [prendendo, setPrendendo] = useState(null);
 

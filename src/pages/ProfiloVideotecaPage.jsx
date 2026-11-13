@@ -76,7 +76,7 @@ export default function ProfiloVideotecaPage() {
     { attivo: Boolean(persona?.id) }
   );
 
-  const persone = useRisorsa(getPersone);
+  const persone = useRisorsa(getPersone, { chiave: "persone" });
 
   const serie = useMemo(() => raggruppa(videoteca.dati ?? []), [videoteca.dati]);
 

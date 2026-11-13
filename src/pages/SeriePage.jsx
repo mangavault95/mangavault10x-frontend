@@ -108,7 +108,7 @@ export default function SeriePage() {
   // Se la serie è già sul tavolo di lettura, il tasto principale
   // dice «continua» e non «inizia»: stessa richiesta che fa `Volumi`
   // per il segnalibro, e serve prima dei ritorni anticipati qui sotto.
-  const sessioni = useRisorsa(() => getReadingSessions());
+  const sessioni = useRisorsa(() => getReadingSessions(), { chiave: "sessioni" });
 
   const volumiLetti = useMemo(() => {
     const riga = (storico.dati || []).find(

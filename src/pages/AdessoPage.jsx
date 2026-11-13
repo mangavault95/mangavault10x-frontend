@@ -47,10 +47,12 @@ export default function AdessoPage() {
   const { utente } = useSessione();
   const eseguiProtetto = useAccessoProtetto();
 
-  const videoteca = useRisorsa(() => getVideoteca());
-  const calendario = useRisorsa(() => getCalendarioAnime(GIORNI_SETTIMANA, 14));
-  const sessioni = useRisorsa(() => getReadingSessions());
-  const uscite = useRisorsa(() => getUsciteManga(GIORNI_SETTIMANA));
+  const videoteca = useRisorsa(() => getVideoteca(), { chiave: "videoteca" });
+  const calendario = useRisorsa(() => getCalendarioAnime(GIORNI_SETTIMANA, 14), {
+    chiave: `calendario:${GIORNI_SETTIMANA}:14`
+  });
+  const sessioni = useRisorsa(() => getReadingSessions(), { chiave: "sessioni" });
+  const uscite = useRisorsa(() => getUsciteManga(GIORNI_SETTIMANA), { chiave: `uscite:${GIORNI_SETTIMANA}` });
 
   const [inCorso, setInCorso] = useState(null);
   const [problema, setProblema] = useState(null);
