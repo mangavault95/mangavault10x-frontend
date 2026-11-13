@@ -164,7 +164,7 @@ function Cartolina({ consiglio, apriAggiunta, chiudi }) {
       <div
         role="dialog"
         aria-label={`${consiglio.da.nickname} ti consiglia ${consiglio.titolo}`}
-        className="fixed inset-0 z-modal grid place-items-center overflow-y-auto bg-quaderno-inchiostro/70 p-4 backdrop-blur-sm"
+        className="fixed inset-0 z-modal grid place-items-center overflow-y-auto bg-quaderno-inchiostro/70 p-4"
       >
         {/* La ✕ c'è da subito, anche mentre la busta vola: un velo a
             schermo intero senza via d'uscita per due secondi è una

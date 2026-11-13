@@ -107,7 +107,7 @@ export default function Pannello({ onChiudi }) {
       {/* Il velo scurisce la pagina e chiude al click: su mobile è
           l'unico modo comodo di uscire da un pannello a tutta altezza. */}
       <div
-        className="fixed inset-0 z-overlay bg-void/60 backdrop-blur-sm animate-rise-in md:bg-void/40"
+        className="fixed inset-0 z-overlay bg-void/60 animate-rise-in md:bg-void/40"
         onClick={onChiudi}
         aria-hidden="true"
       />

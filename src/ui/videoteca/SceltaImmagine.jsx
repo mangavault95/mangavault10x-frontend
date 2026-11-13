@@ -56,7 +56,7 @@ export default function SceltaImmagine({ misura = "faccia", titolo, chiudi, alSc
         {...velo}
         role="dialog"
         aria-label={titolo}
-        className="fixed inset-0 z-modal flex items-end justify-center bg-black/45 backdrop-blur-sm sm:items-center sm:p-6"
+        className="fixed inset-0 z-modal flex items-end justify-center bg-black/45 sm:items-center sm:p-6"
       >
         <div className="flex max-h-[85vh] w-full flex-col rounded-t-sheet border-t border-quaderno-riga bg-quaderno-foglio shadow-float sm:max-w-lg sm:rounded-panel sm:border">
           <header className="flex items-center gap-3 border-b border-quaderno-riga px-4 py-3">

@@ -469,7 +469,7 @@ function FoglioAnime({ anime, onChiudi, onVota, onFinoA, onNonVisto, onStato }) 
   return (
     <Sovrapposizione>
       <div
-        className="fixed inset-0 z-modal flex items-end justify-center bg-void/60 backdrop-blur-sm sm:items-center sm:p-4"
+        className="fixed inset-0 z-modal flex items-end justify-center bg-void/60 sm:items-center sm:p-4"
         onKeyDown={(e) => {
           if (e.key === "Escape") onChiudi();
         }}

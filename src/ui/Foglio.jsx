@@ -99,6 +99,9 @@ function lasciaUscita(radice) {
 
 export default function Foglio({
   titolo,
+  // Per i fogli che non hanno bisogno di presentarsi (il foglio «Tu»): il
+  // titolo resta per i lettori di schermo, la testata è solo la maniglia.
+  titoloNascosto = false,
   sotto,
   azioni,
   onChiudere,
@@ -368,7 +371,7 @@ export default function Foglio({
           >
             <span aria-hidden="true" className="mx-auto mb-3 block h-1.5 w-10 rounded-full bg-ink-faint/60 sm:hidden" />
 
-            <div className="flex items-start justify-between gap-4">
+            <div className={titoloNascosto ? "sr-only" : "flex items-start justify-between gap-4"}>
               <div className="min-w-0">
                 <h2 id={idTitolo} className="font-display text-lg font-semibold text-ink-bright">
                   {titolo}

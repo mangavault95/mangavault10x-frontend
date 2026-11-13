@@ -109,7 +109,9 @@ function liberaLaPagina() {
  * 220 millisecondi — le regole sono in index.css — e poi si toglie da
  * sola. È solo un'immagine: non risponde a niente e non porta focus.
  */
-const USCITA_MS = 220;
+// Lo stesso tempo di `--d-uscita` in index.css, che è la durata delle
+// regole `[data-uscita]`: se cambia là, cambia qua.
+const USCITA_MS = 240;
 
 function lasciaUnaCopia(contenitore) {
   if (!contenitore || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;

@@ -1086,8 +1086,10 @@ html[data-tema="giorno"] body::before {
    ========================================================= */
 
 :root {
-  --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-uscita: cubic-bezier(0.4, 0, 1, 1);
+  /* Dal 13/11/2026 questi due sono soprannomi dei token qui sotto: le
+     regole più vecchie li chiamano ancora così, ma la curva è una. */
+  --ease-premium: var(--e-posa);
+  --ease-uscita: var(--e-uscita);
   --ease-tavolo: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
@@ -1098,18 +1100,22 @@ html[data-tema="giorno"] body::before {
    ha bisogno di un tempo lo prende da qui; se nessuno di questi va bene,
    se ne aggiunge uno con un nome, non un numero in un componente.
 
-   Le animazioni più vecchie in questo file portano ancora i loro numeri
-   scritti a mano (280, 460, 520…): passano di qui man mano che le
-   finestre passano al foglio. */
+   Restano scritti a mano solo i tempi del cambio di tema (un gesto raro,
+   con una coreografia sua) e i ritardi a scaletta delle griglie. */
 :root {
   --d-tocco: 120ms;   /* la risposta a un dito: abbassarsi, accendersi */
   --d-rapido: 180ms;  /* colori, piccoli spostamenti */
   --d-uscita: 240ms;  /* tutto ciò che se ne va */
   --d-foglio: 380ms;  /* un foglio o un avviso che arriva e si posa */
-  --d-lento: 420ms;   /* le conferme con un piccolo rimbalzo */
+  --d-lento: 420ms;   /* le conferme con un piccolo rimbalzo, le pagine */
+  /* Il volo della copertina verso la scheda. Era 820: bello la prima
+     volta, lungo la decima — e la scheda si apre decine di volte al giorno. */
+  --d-volo: 520ms;
 
   --e-posa: cubic-bezier(0.32, 0.72, 0, 1);
   --e-uscita: cubic-bezier(0.4, 0, 1, 1);
+  /* Il piccolo rimbalzo: solo dove c'è una conferma (una stella, una spunta). */
+  --e-conferma: cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
 @keyframes pagina-entra {
@@ -1166,12 +1172,12 @@ html[data-tema="giorno"] body::before {
    copertina si avvicina un poco più del necessario e si posa), con un
    alone che segue il colore del tema. */
 ::view-transition-group(copertina-serie) {
-  animation-duration: 820ms;
+  animation-duration: var(--d-volo);
   animation-timing-function: var(--ease-premium);
   z-index: 10;
 }
 ::view-transition-image-pair(copertina-serie) {
-  animation: copertina-respiro 820ms var(--ease-premium) both;
+  animation: copertina-respiro var(--d-volo) var(--ease-premium) both;
   filter: drop-shadow(0 18px 36px rgb(var(--c-accento) / 0.32));
   border-radius: 0.75rem;
   overflow: hidden;
@@ -1179,7 +1185,7 @@ html[data-tema="giorno"] body::before {
 ::view-transition-old(copertina-serie),
 ::view-transition-new(copertina-serie) {
   mix-blend-mode: normal;
-  animation-duration: 820ms;
+  animation-duration: var(--d-volo);
   animation-timing-function: var(--ease-tavolo);
 }
 @keyframes copertina-respiro {
@@ -1217,7 +1223,7 @@ html.tema-fluido *::after {
   z-index: 1;
   pointer-events: none;
   background-color: rgb(var(--c-shelf));
-  animation: pagina-svela 460ms var(--ease-premium) forwards;
+  animation: pagina-svela var(--d-lento) var(--ease-premium) forwards;
 }
 @keyframes pagina-svela {
   from { opacity: 0.9; }
@@ -1238,7 +1244,7 @@ html.tema-fluido *::after {
   margin: -0.75rem;
 }
 .sequenza > :nth-child(-n + 18) {
-  animation: carta-entra 520ms var(--ease-premium) backwards;
+  animation: carta-entra var(--d-lento) var(--ease-premium) backwards;
 }
 .sequenza > :nth-child(2)  { animation-delay: 30ms; }
 .sequenza > :nth-child(3)  { animation-delay: 60ms; }
@@ -1256,24 +1262,20 @@ html.tema-fluido *::after {
    posta, per dire — se la tiene: `:where` porta questa regola a
    specificità zero, e le utility di Tailwind vincono. */
 .fixed.inset-0:is(.z-modal, .z-overlay, .z-toast) {
-  animation: velo-entra 280ms var(--ease-premium) backwards;
+  animation: velo-entra var(--d-uscita) var(--ease-premium) backwards;
 }
 :where(.fixed.inset-0.z-modal, .fixed.inset-0.z-overlay, .fixed.inset-0.z-toast) > :first-child:not([class*="animate-"], .absolute) {
-  animation: foglio-entra 460ms var(--ease-premium) backwards;
+  animation: foglio-entra var(--d-foglio) var(--ease-premium) backwards;
 }
 .fixed.inset-0.z-modal[data-uscita],
 .fixed.inset-0.z-overlay[data-uscita],
 .fixed.inset-0.z-toast[data-uscita] {
-  animation: velo-esce 220ms var(--ease-uscita) forwards;
+  animation: velo-esce var(--d-uscita) var(--ease-uscita) forwards;
   pointer-events: none;
 }
 :where(.fixed.inset-0.z-modal, .fixed.inset-0.z-overlay, .fixed.inset-0.z-toast)[data-uscita] > :first-child {
-  animation: foglio-esce 220ms var(--ease-uscita) forwards;
+  animation: foglio-esce var(--d-uscita) var(--ease-uscita) forwards;
 }
-
-/* Il foglio che sale dal bordo basso dello schermo (il foglio «Tu»). */
-.foglio-basso { animation: foglio-basso-entra 520ms var(--ease-premium) backwards; }
-[data-uscita] .foglio-basso { animation: foglio-basso-esce 240ms var(--ease-uscita) forwards; }
 
 /* ---- Il foglio (`ui/Foglio.jsx`) ----
    Sul telefono sale dal bordo; da `sm` in su è una finestra che si posa.
@@ -1308,23 +1310,35 @@ html.tema-fluido *::after {
 }
 .avviso-entra { animation: avviso-entra var(--d-foglio) var(--e-posa) backwards; }
 .avviso-tempo { animation: avviso-tempo linear forwards; }
-.avviso-spunta { animation: avviso-spunta var(--d-lento) cubic-bezier(0.34, 1.4, 0.64, 1) backwards; }
+.avviso-spunta { animation: avviso-spunta var(--d-lento) var(--e-conferma) backwards; }
 
-.barretta-entra { animation: barretta-entra 360ms var(--ease-premium) backwards; }
-.icona-sveglia  { animation: icona-sveglia 420ms var(--ease-premium) backwards; }
+/* ---- La conferma sotto il dito ----
+   Una stella appena accesa — un voto, un preferito — salta una volta. È
+   l'unico rimbalzo del sito, ed è lì apposta: dice «preso» nel punto
+   esatto in cui si è toccato. La classe la mette e la toglie il
+   componente (`ui/AzioniSerie.jsx`), così non riparte a ogni disegno. */
+@keyframes salta {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+.salta { animation: salta var(--d-lento) var(--e-conferma); }
+
+.barretta-entra { animation: barretta-entra var(--d-foglio) var(--ease-premium) backwards; }
+.icona-sveglia  { animation: icona-sveglia var(--d-lento) var(--ease-premium) backwards; }
 
 /* Il tocco: ogni controllo si abbassa appena. Con la proprietà `scale` e
    non con `transform`, che molti bottoni usano già per centrarsi. */
 :where(button:not(:disabled), [role="button"], summary) {
   transition-property: color, background-color, border-color, box-shadow, opacity, filter, scale, translate;
-  transition-duration: 180ms;
+  transition-duration: var(--d-rapido);
   transition-timing-function: var(--ease-premium);
 }
 /* Chi ha già il suo `active:scale-*` si tiene quello: due riduzioni
    sovrapposte lo farebbero sprofondare. */
 :where(button:not(:disabled), [role="button"]):not([class*="active:scale"]):active {
   scale: 0.97;
-  transition-duration: 90ms;
+  transition-duration: var(--d-tocco);
 }
 
 @media (prefers-reduced-motion: reduce) {

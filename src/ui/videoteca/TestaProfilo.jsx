@@ -410,7 +410,7 @@ function MenuProfilo({
         {...velo}
         role="dialog"
         aria-label={`Altro su ${persona.nickname}`}
-        className="fixed inset-0 z-modal flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
+        className="fixed inset-0 z-modal flex items-end justify-center bg-black/40 sm:items-center"
       >
         <div className="w-full rounded-t-sheet border-t border-quaderno-riga bg-quaderno-foglio p-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-float sm:max-w-sm sm:rounded-panel sm:border">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-quaderno-riga sm:hidden" />

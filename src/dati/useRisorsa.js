@@ -12,6 +12,13 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
  * @param opzioni.trasforma  normalizzazione applicata al risultato
  * @param opzioni.attivo     se falso non parte (per caricamenti condizionati)
  */
+/**
+ * L'evento con cui la pagina chiede a tutti di ricaricare i propri dati:
+ * lo lancia il gesto «tira per aggiornare» (`ui/TiraPerAggiornare.jsx`).
+ * Sta qui perché qui sta chi lo ascolta.
+ */
+export const AGGIORNA = "mangavault:aggiorna";
+
 export default function useRisorsa(carica, { trasforma, attivo = true } = {}) {
   const [dati, setDati] = useState(null);
   const [errore, setErrore] = useState(null);
@@ -47,12 +54,16 @@ export default function useRisorsa(carica, { trasforma, attivo = true } = {}) {
     };
   }, []);
 
-  const esegui = useCallback(async () => {
+  // `inSilenzio`: i dati si richiedono ma `inCorso` non si accende. Serve
+  // al «tira per aggiornare», dove quello che c'è sullo schermo deve
+  // restare al suo posto finché non arriva il nuovo — far ricomparire gli
+  // scheletri sopra una pagina già piena sarebbe un passo indietro.
+  const esegui = useCallback(async ({ inSilenzio = false } = {}) => {
     if (!attivo) return;
 
     const mia = ++richiestaCorrente.current;
 
-    setInCorso(true);
+    if (!inSilenzio) setInCorso(true);
     setErrore(null);
 
     try {
@@ -84,5 +95,23 @@ export default function useRisorsa(carica, { trasforma, attivo = true } = {}) {
     esegui();
   }, [esegui]);
 
-  return { dati, errore, inCorso, ricarica: esegui, setDati };
+  useEffect(() => {
+    // La promessa finisce in `attese`: chi ha lanciato l'evento sa così
+    // quando l'ultima richiesta ha risposto, e fino ad allora fa girare
+    // il suo indicatore.
+    function alGesto(e) {
+      e.detail?.attese?.push(esegui({ inSilenzio: true }));
+    }
+
+    window.addEventListener(AGGIORNA, alGesto);
+
+    return () => window.removeEventListener(AGGIORNA, alGesto);
+  }, [esegui]);
+
+  // `ricarica` non passa argomenti a `esegui`: è usata spesso come
+  // `onClick={ricarica}`, e l'evento del click non deve arrivarle come
+  // se fosse un'opzione.
+  const ricarica = useCallback(() => esegui(), [esegui]);
+
+  return { dati, errore, inCorso, ricarica, setDati };
 }

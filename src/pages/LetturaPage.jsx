@@ -8,6 +8,7 @@ import { Stella, VotoStelle } from "../ui/AzioniSerie";
 import Menu from "../ui/Menu";
 import NoteSerie from "../ui/NoteSerie";
 import Foglio from "../ui/Foglio";
+import { vibra } from "../dati/tatto";
 import Sovrapposizione from "../ui/Sovrapposizione";
 import useChiusuraVelo from "../ui/useChiusuraVelo";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
@@ -402,6 +403,7 @@ export default function LetturaPage() {
    * qui è un bottone solo.
    */
   async function segnaLetto(lettura) {
+    vibra("conferma");
     setProblema(null);
 
     // All'ultimo volume "Finito" registra la lettura ma non ha dove
@@ -1300,7 +1302,7 @@ function RiquadroSerie({ serie, cosa, onChiudi }) {
   return (
     <Sovrapposizione>
       <div
-        className="fixed inset-0 z-modal grid place-items-center overflow-y-auto bg-void/70 p-4 py-10 backdrop-blur-sm animate-rise-in"
+        className="fixed inset-0 z-modal grid place-items-center overflow-y-auto bg-void/70 p-4 py-10 animate-rise-in"
         onKeyDown={(e) => {
           if (e.key === "Escape") onChiudi();
         }}
@@ -1487,7 +1489,7 @@ function SceltaSerie({ serie, escludi, onScegli, onAnnulla }) {
   return (
     <Sovrapposizione>
     <div
-      className="fixed inset-0 z-toast grid place-items-center bg-void/70 p-4 backdrop-blur-sm animate-rise-in sm:p-5"
+      className="fixed inset-0 z-toast grid place-items-center bg-void/70 p-4 animate-rise-in sm:p-5"
       onKeyDown={(e) => {
         if (e.key === "Escape") onAnnulla();
       }}
@@ -1836,7 +1838,7 @@ function FoglioLettura({
   return (
     <Sovrapposizione>
       <div
-        className="fixed inset-0 z-modal flex items-end justify-center bg-void/60 backdrop-blur-sm sm:items-center sm:p-4"
+        className="fixed inset-0 z-modal flex items-end justify-center bg-void/60 sm:items-center sm:p-4"
         onKeyDown={(e) => {
           if (e.key === "Escape") onChiudi();
         }}

@@ -201,7 +201,7 @@ function DettaglioAcquisti({ elenco, volumi, spesa, onChiudi }) {
   return (
     <Sovrapposizione>
       <div
-        className="fixed inset-0 z-modal grid place-items-end overflow-y-auto bg-void/70 p-0 backdrop-blur-sm animate-rise-in sm:place-items-center sm:p-4"
+        className="fixed inset-0 z-modal grid place-items-end overflow-y-auto bg-void/70 p-0 animate-rise-in sm:place-items-center sm:p-4"
         onKeyDown={(e) => {
           if (e.key === "Escape") onChiudi();
         }}

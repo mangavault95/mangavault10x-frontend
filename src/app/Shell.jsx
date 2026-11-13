@@ -33,6 +33,8 @@ import PostaInArrivo from "../ui/videoteca/PostaInArrivo";
 import { useSessione } from "../dati/sessione";
 import SceltaTema from "../ui/SceltaTema";
 import Avvisi from "../ui/Avvisi";
+import Foglio from "../ui/Foglio";
+import TiraPerAggiornare from "../ui/TiraPerAggiornare";
 import { ripristino } from "../dati/paginaViva";
 
 /**
@@ -321,6 +323,9 @@ export default function Shell({ children }) {
       {/* Gli avvisi («registrato», «Annulla»): uno per tutto il sito, e
           nella cornice perché devono sopravvivere al cambio di pagina. */}
       <Avvisi />
+
+      {/* Tirare giù per aggiornare: nell'app sulla Home non c'è altro modo. */}
+      <TiraPerAggiornare />
     </div>
   );
 }
@@ -503,17 +508,8 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
  * restare raggiungibili senza scrivere l'indirizzo a mano ma non
  * meritano una linguetta.
  */
-function FoglioTu({ richieste, chiudi: chiudiSubito }) {
+function FoglioTu({ richieste, chiudi }) {
   const { utente, esci } = useSessione();
-  // Il foglio scende prima di sparire: `data-uscita` (index.css) fa partire
-  // l'animazione di uscita e solo dopo si smonta davvero.
-  const [uscendo, setUscendo] = useState(false);
-
-  function chiudi() {
-    if (uscendo) return;
-    setUscendo(true);
-    setTimeout(chiudiSubito, 200);
-  }
 
   // Due voci sole. La sala in 3D non c'è più (05/10/2026) e le due
   // Gestioni sono una: dentro, tre linguette (Manga, Anime, Accessi).
@@ -524,19 +520,10 @@ function FoglioTu({ richieste, chiudi: chiudiSubito }) {
   ];
 
   return (
-    <div className="fixed inset-0 z-modal md:hidden" role="dialog" aria-label="Tu" data-uscita={uscendo ? "" : undefined}>
-      {/* Il velo: toccare fuori chiude, che è il gesto che tutti provano. */}
-      <button
-        type="button"
-        aria-label="Chiudi"
-        onClick={chiudi}
-        className="absolute inset-0 bg-black/45 backdrop-blur-sm"
-      />
-
-      <div
-        className={`foglio-basso absolute inset-x-0 bottom-0 rounded-t-sheet border-t p-4 pb-[calc(env(safe-area-inset-bottom)+5rem)] shadow-float ${VESTE.fogliettoBordo}`}
-      >
-        <div className={`mx-auto mb-4 h-1 w-10 rounded-full ${VESTE.barretta} opacity-30`} />
+    // Dal 13/11/2026 è il foglio di tutti (`ui/Foglio.jsx`): si trascina
+    // giù per chiuderlo, come gli altri. Il titolo c'è ma non si vede —
+    // lo dice già la linguetta da cui si apre.
+    <Foglio titolo="Tu" titoloNascosto onChiudere={chiudi} className="md:hidden">
 
         {/* Chi sei, e la porta per diventare qualcuno. */}
         <div className="mb-3 flex items-center gap-3 rounded-card bg-shelf px-3 py-2.5">
@@ -603,7 +590,6 @@ function FoglioTu({ richieste, chiudi: chiudiSubito }) {
             </li>
           ))}
         </ul>
-      </div>
-    </div>
+    </Foglio>
   );
 }

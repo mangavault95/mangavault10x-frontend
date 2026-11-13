@@ -9,6 +9,7 @@ import Copertina from "../ui/Copertina";
 import Icon from "../app/Icon";
 import Sovrapposizione from "../ui/Sovrapposizione";
 import { avvisa } from "../dati/avvisi";
+import { vibra } from "../dati/tatto";
 import useChiusuraVelo from "../ui/useChiusuraVelo";
 import { useCollezione } from "../dati/collezione";
 import { usePaginaViva } from "../dati/paginaViva";
@@ -492,6 +493,8 @@ export default function CollezionePage() {
 
   async function preso(s) {
     const numero = prossimoVolume(s);
+
+    vibra("conferma");
 
     setProblema(null);
     setPrendendo(s.id);
@@ -1022,7 +1025,7 @@ function ModuloNuovaSerie({ tutteLeSerie, titoloIniziale = "", onChiuso, onCreat
   return (
     <Sovrapposizione>
     <div
-      className="fixed inset-0 z-modal grid place-items-center overflow-y-auto bg-void/70 p-5 py-10 backdrop-blur-sm animate-rise-in"
+      className="fixed inset-0 z-modal grid place-items-center overflow-y-auto bg-void/70 p-5 py-10 animate-rise-in"
       {...velo}
     >
       <form

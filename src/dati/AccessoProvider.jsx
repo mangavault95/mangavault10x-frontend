@@ -136,7 +136,7 @@ function SoloVideoteca({ messaggio, onChiudi }) {
   return (
     <Sovrapposizione>
       <div
-        className={`fixed inset-0 z-toast grid place-items-center p-5 backdrop-blur-sm animate-rise-in ${veste.velo}`}
+        className={`fixed inset-0 z-toast grid place-items-center p-5 animate-rise-in ${veste.velo}`}
         {...velo}
       >
         <div
@@ -275,7 +275,7 @@ export function ModuloAccesso({
     return (
       <Sovrapposizione>
         <div
-          className={`fixed inset-0 z-toast grid place-items-center p-5 backdrop-blur-sm animate-rise-in ${veste.velo}`}
+          className={`fixed inset-0 z-toast grid place-items-center p-5 animate-rise-in ${veste.velo}`}
           {...velo}
         >
           <div className={`w-full max-w-sm space-y-4 rounded-panel border p-6 shadow-float ${veste.riquadro}`}>
@@ -310,7 +310,7 @@ export function ModuloAccesso({
   return (
     <Sovrapposizione>
       <div
-        className={`fixed inset-0 z-toast grid place-items-center p-5 backdrop-blur-sm animate-rise-in ${veste.velo}`}
+        className={`fixed inset-0 z-toast grid place-items-center p-5 animate-rise-in ${veste.velo}`}
         {...velo}
       >
         <form

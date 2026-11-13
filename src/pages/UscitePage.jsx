@@ -4,6 +4,7 @@ import useRisorsa from "../dati/useRisorsa";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
 import { euro } from "../dati/serie";
 import { useAccessoProtetto } from "../dati/accesso";
+import { vibra } from "../dati/tatto";
 import { annullaAcquisti, dopoIlRipiego, getUsciteArchivio, registraAcquisto, urlCopertina } from "../services/api";
 
 /**
@@ -85,6 +86,8 @@ function UsciteDelMese({ richiesto }) {
 
   async function conferma(u) {
     const k = chiaveDi(u);
+
+    vibra("conferma");
 
     setProblema(null);
     setOccupato(true);

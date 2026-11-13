@@ -203,11 +203,11 @@ export default {
 
       transitionTimingFunction: {
         // Decelerazione decisa: l'elemento arriva e si posa.
-        settle: "cubic-bezier(0.16, 1, 0.3, 1)",
+        settle: "var(--e-posa)",
         // Piccolo rimbalzo: per conferme e apparizioni.
-        spring: "cubic-bezier(0.34, 1.4, 0.64, 1)",
+        spring: "var(--e-conferma)",
         // Uscita rapida: sparire deve costare meno che apparire.
-        exit: "cubic-bezier(0.4, 0, 1, 1)",
+        exit: "var(--e-uscita)",
         // La posa di un foglio: parte svelto e frena a lungo, come i
         // fogli di iOS. Il valore sta in `index.css` (`--e-posa`) perché
         // lo legge anche il JavaScript del trascinamento.
@@ -378,10 +378,10 @@ export default {
         // fine restituisce lo stile normale, che è già identico
         // all'ultimo fotogramma. Stessa animazione, niente transform
         // residuo.
-        "rise-in": "rise-in 480ms cubic-bezier(0.22, 1, 0.36, 1) backwards",
+        "rise-in": "rise-in var(--d-lento) var(--e-posa) backwards",
         "glow-pulse": "glow-pulse 4s ease-in-out infinite",
         shimmer: "shimmer 1.6s linear infinite",
-        battuta: "battuta 380ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        battuta: "battuta var(--d-foglio) var(--e-posa) both",
 
         /* La posta. Qui `forwards` ci vuole davvero, ed è l'eccezione
            alla nota sopra: la copertina deve RESTARE piegata dentro la

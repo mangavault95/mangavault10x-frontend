@@ -4,6 +4,7 @@ import { useAccessoProtetto } from "../dati/accesso";
 import { useSessione } from "../dati/sessione";
 import { updateManga, updateRating } from "../services/api";
 import useTocco from "./tocco";
+import { vibra } from "../dati/tatto";
 import { votoIt } from "../dati/serie";
 
 /**
@@ -50,6 +51,7 @@ export function BottonePreferito({ serie, onCambiato, dimensione = 18, className
   const eseguiProtetto = useAccessoProtetto();
   const { bibliotecaSolaLettura } = useSessione();
   const [inCorso, setInCorso] = useState(false);
+  const [salta, setSalta] = useState(false);
   const [erroreVisibile, setErroreVisibile] = useState(false);
 
   async function alClick(e) {
@@ -62,6 +64,10 @@ export function BottonePreferito({ serie, onCambiato, dimensione = 18, className
 
     const nuovo = !serie.preferito;
 
+    // Subito, prima di aspettare il server: la conferma è del gesto, e
+    // se il salvataggio fallisce la stella torna indietro da sé.
+    vibra();
+    setSalta(nuovo);
     setInCorso(true);
     setErroreVisibile(false);
     onCambiato?.(nuovo);
@@ -105,7 +111,9 @@ export function BottonePreferito({ serie, onCambiato, dimensione = 18, className
                   ${serie.preferito ? "text-brass-400" : "text-ink-faint hover:text-brass-300"}
                   ${className}`}
     >
-      <Icon nome="star" dimensione={dimensione} piena={serie.preferito} />
+      <span className={salta ? "salta grid" : "grid"} onAnimationEnd={() => setSalta(false)}>
+        <Icon nome="star" dimensione={dimensione} piena={serie.preferito} />
+      </span>
       {erroreVisibile && <span className="sr-only">Salvataggio non riuscito</span>}
     </button>
   );
@@ -253,6 +261,7 @@ export function VotoStelle({ serie, onCambiato, dimensione = 20, sospeso = false
   const tocco = useTocco();
   const [inCorso, setInCorso] = useState(false);
   const [anteprima, setAnteprima] = useState(null);
+  const [saltata, setSaltata] = useState(null);
 
   const misura = tocco ? Math.round(dimensione * 1.5) : dimensione;
   const valoreVisibile = anteprima ?? serie.valutazione ?? 0;
@@ -262,6 +271,10 @@ export function VotoStelle({ serie, onCambiato, dimensione = 20, sospeso = false
     e?.stopPropagation();
 
     if (inCorso) return;
+
+    vibra();
+    // Salta la stella toccata, non tutta la fila: è lì che si guarda.
+    setSaltata(Math.ceil(nuovo));
 
     const precedente = serie.valutazione ?? null;
 
@@ -293,7 +306,10 @@ export function VotoStelle({ serie, onCambiato, dimensione = 20, sospeso = false
       {[1, 2, 3, 4, 5].map((numero) => (
         <span
           key={numero}
-          className="relative inline-grid transition-transform duration-quick ease-spring hover:scale-110"
+          onAnimationEnd={() => setSaltata(null)}
+          className={`relative inline-grid transition-transform duration-quick ease-spring hover:scale-110 ${
+            saltata === numero ? "salta" : ""
+          }`}
         >
           <Stella
             riempimento={Math.min(1, Math.max(0, valoreVisibile - numero + 1))}

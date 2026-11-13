@@ -32,6 +32,8 @@ const TRACCIATI = {
   close: "M6 6l12 12M18 6L6 18",
   // La spunta degli avvisi («fatto»): 13/11/2026.
   spunta: "M5 12.5l4.5 4.5L19 7.5",
+  // Il «tira per aggiornare»: un arco con la sua punta.
+  aggiorna: "M20 12a8 8 0 1 1-2.3-5.6M20 4v4.5h-4.5",
   // Le quattro linguette della barra unica (04/10/2026): l'orologio di
   // «Adesso», i volumi in piedi, lo schermo con il tasto play, la persona.
   adesso: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",

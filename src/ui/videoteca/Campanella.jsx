@@ -138,7 +138,7 @@ function Foglietto({ dati, primaDi, chiudi }) {
         {...velo}
         role="dialog"
         aria-label="Avvisi"
-        className="fixed inset-0 z-modal flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-start sm:justify-end sm:p-4"
+        className="fixed inset-0 z-modal flex items-end justify-center bg-black/40 sm:items-start sm:justify-end sm:p-4"
       >
         <div className="flex max-h-[80vh] w-full flex-col rounded-t-sheet border-t border-quaderno-riga bg-quaderno-foglio shadow-float sm:max-w-sm sm:rounded-panel sm:border">
           <header className="flex items-center gap-3 border-b border-quaderno-riga px-4 py-3">

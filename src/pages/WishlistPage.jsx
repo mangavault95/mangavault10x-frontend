@@ -24,6 +24,7 @@ import {
 } from "../services/api";
 import { cercaFuori } from "../bibliotecario/esterni";
 import Foglio from "../ui/Foglio";
+import { vibra } from "../dati/tatto";
 import { chiudibile, euro, intervalliVolumi, numeriMancantiUsciti, plurale } from "../dati/serie";
 
 /**
@@ -118,6 +119,8 @@ export default function WishlistPage() {
 
   const segna = (serieId, numero, titolo) => {
     const chiave = `${serieId}:${numero}`;
+
+    vibra("conferma");
 
     if (coda.current.has(chiave)) return;
 
