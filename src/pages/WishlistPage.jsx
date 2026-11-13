@@ -23,8 +23,7 @@ import {
   urlCopertina
 } from "../services/api";
 import { cercaFuori } from "../bibliotecario/esterni";
-import Sovrapposizione from "../ui/Sovrapposizione";
-import useChiusuraVelo from "../ui/useChiusuraVelo";
+import Foglio from "../ui/Foglio";
 import { chiudibile, euro, intervalliVolumi, numeriMancantiUsciti, plurale } from "../dati/serie";
 
 /**
@@ -607,42 +606,14 @@ function CartaMancanti({ serie, numeri, onApri }) {
 
 /** Il riquadro con un tondino per numero: toccarlo vuol dire «preso». */
 function PopupVolumi({ serie, numeri, inAttesa, prendendo, soloLettura, onSegna, onAnnulla, onChiudere }) {
-  const velo = useChiusuraVelo(onChiudere);
-
-  useEffect(() => {
-    const alTasto = (e) => e.key === "Escape" && onChiudere();
-
-    window.addEventListener("keydown", alTasto);
-
-    return () => window.removeEventListener("keydown", alTasto);
-  }, [onChiudere]);
-
   return (
-    <Sovrapposizione>
-      <div
-        className="fixed inset-0 z-overlay flex items-end justify-center bg-void/70 p-0 backdrop-blur-sm animate-rise-in sm:items-center sm:p-5"
-        {...velo}
-      >
-        <div className="w-full max-w-sm rounded-t-sheet border border-hairline bg-glass-3 p-5 backdrop-blur-2xl sm:rounded-sheet">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="truncate font-display text-lg font-semibold text-ink-bright">{serie.titolo}</h2>
-              <p className="text-sm text-ink-muted">
-                {soloLettura ? "Volumi che mancano" : "Tocca i volumi che hai preso"}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={onChiudere}
-              aria-label="Chiudi"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-muted hover:bg-glass-1 hover:text-ink-bright"
-            >
-              <Icon nome="close" dimensione={18} />
-            </button>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
+    <Foglio
+      titolo={serie.titolo}
+      sotto={soloLettura ? "Volumi che mancano" : "Tocca i volumi che hai preso"}
+      larghezza="sm:max-w-sm"
+      onChiudere={onChiudere}
+    >
+          <div className="mt-1 flex flex-wrap gap-2">
             {numeri.map((n) => {
               const chiave = `${serie.id}:${n}`;
               const inCoda = inAttesa.has(chiave);
@@ -667,9 +638,7 @@ function PopupVolumi({ serie, numeri, inAttesa, prendendo, soloLettura, onSegna,
           <p className="mt-3 text-xs text-ink-faint">
             Il segno si registra dopo 5 secondi: tocca di nuovo il numero per annullare.
           </p>
-        </div>
-      </div>
-    </Sovrapposizione>
+    </Foglio>
   );
 }
 

@@ -207,14 +207,22 @@ export default {
         // Piccolo rimbalzo: per conferme e apparizioni.
         spring: "cubic-bezier(0.34, 1.4, 0.64, 1)",
         // Uscita rapida: sparire deve costare meno che apparire.
-        exit: "cubic-bezier(0.4, 0, 1, 1)"
+        exit: "cubic-bezier(0.4, 0, 1, 1)",
+        // La posa di un foglio: parte svelto e frena a lungo, come i
+        // fogli di iOS. Il valore sta in `index.css` (`--e-posa`) perché
+        // lo legge anche il JavaScript del trascinamento.
+        posa: "var(--e-posa)"
       },
 
+      // Dal 13/11/2026 le durate sono variabili di `index.css`: le usano
+      // queste classi, le animazioni scritte lì e il JavaScript dei gesti,
+      // e un numero solo non può più andare fuori passo con gli altri.
       transitionDuration: {
-        tap: "120ms",
-        quick: "180ms",
-        base: "240ms",
-        slow: "420ms"
+        tap: "var(--d-tocco)",
+        quick: "var(--d-rapido)",
+        base: "var(--d-uscita)",
+        foglio: "var(--d-foglio)",
+        slow: "var(--d-lento)"
       },
 
       fontFamily: {

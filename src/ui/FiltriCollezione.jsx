@@ -1,12 +1,10 @@
 import { useMemo } from "react";
-import Icon from "../app/Icon";
-import { Pastiglie, Tendina } from "./Controlli";
+import { Bottone, Pastiglie, Tendina } from "./Controlli";
 import { FILTRI, elencoCategorie } from "../dati/serie";
 import { elencoGeneri, elencoEditori } from "../dati/generi";
 import { coloreLettore } from "../dati/lettori";
 import { useSessione } from "../dati/sessione";
-import Sovrapposizione from "./Sovrapposizione";
-import useChiusuraVelo from "./useChiusuraVelo";
+import Foglio from "./Foglio";
 
 /**
  * Il foglio dei filtri, dietro il tasto «Filtri» della Collezione.
@@ -43,7 +41,6 @@ export default function FiltriCollezione({
   const generi = useMemo(() => elencoGeneri(serie), [serie]);
   const editori = useMemo(() => elencoEditori(serie), [serie]);
   const categorie = useMemo(() => elencoCategorie(serie), [serie]);
-  const velo = useChiusuraVelo(onChiudere);
 
   // Un filtro con zero risultati (oggi "Sospese" e "Annullate" non
   // hanno nessuna serie) è solo un bottone morto: si nasconde, a meno
@@ -115,7 +112,7 @@ export default function FiltriCollezione({
                   type="button"
                   aria-pressed={attivo}
                   onClick={() => onCambiaLettore(attivo ? null : String(l.id))}
-                  className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all duration-quick ease-settle active:scale-95
+                  className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all duration-quick ease-settle active:scale-95 [@media(hover:none)]:min-h-11 [@media(hover:none)]:px-3.5 [@media(hover:none)]:text-sm
                     focus-visible:outline-none focus-visible:ring-2 ${colore.anello}
                     ${
                       attivo
@@ -190,7 +187,10 @@ export default function FiltriCollezione({
           {/* Una nuvola, non un elenco: l'ordine per frequenza fa già
               capire cosa domina la collezione, senza bisogno di barre o
               percentuali qui — quelle vivono nell'analisi qui sopra. */}
-          <div className="flex flex-wrap gap-1.5">
+          {/* Col dito ogni pastiglia è alta 44 px (le classi `hover:none` qui
+              sotto) e un poco più distante dalle vicine: a 26 px, fitte
+              così, si prendeva quella accanto. */}
+          <div className="flex flex-wrap gap-1.5 [@media(hover:none)]:gap-2">
             {generi.map((g) => {
               const attivo = generiSelezionati.includes(g.id);
 
@@ -200,7 +200,7 @@ export default function FiltriCollezione({
                   type="button"
                   onClick={() => alternaGenere(g.id)}
                   aria-pressed={attivo}
-                  className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-all duration-quick ease-settle active:scale-95
+                  className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-all duration-quick ease-settle active:scale-95 [@media(hover:none)]:min-h-11 [@media(hover:none)]:px-3.5 [@media(hover:none)]:text-sm
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400
                     ${
                       attivo
@@ -225,47 +225,30 @@ export default function FiltriCollezione({
     </div>
   );
 
+  // Le due azioni stanno in fondo al foglio, sotto il pollice, e non più
+  // in cima (13/11/2026): «Azzera» era accanto alla ×, nel punto più
+  // lontano dalla mano, e il bottone che chiude era in fondo a un elenco
+  // da scorrere tutto. Adesso restano ferme mentre i filtri scorrono, e
+  // «Mostra N serie» dice il risultato prima ancora di chiudere.
   return (
-    <Sovrapposizione>
-      <div
-        className="fixed inset-0 z-overlay flex items-end justify-center bg-void/70 p-0 backdrop-blur-sm animate-rise-in sm:items-center sm:p-5"
-        {...velo}
-      >
-        <div className="max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-t-sheet border border-hairline bg-glass-3 p-6 backdrop-blur-2xl sm:rounded-sheet">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold text-ink-bright">Filtri</h2>
+    <Foglio
+      titolo="Filtri"
+      onChiudere={onChiudere}
+      azioni={
+        <>
+          {onAzzera && (
+            <Bottone variante="secondario" onClick={onAzzera} className="min-h-12">
+              Azzera
+            </Bottone>
+          )}
 
-            {onAzzera && (
-              <button
-                type="button"
-                onClick={onAzzera}
-                className="ml-auto mr-2 text-sm font-medium text-brass-400 hover:text-brass-300"
-              >
-                Azzera
-              </button>
-            )}
-
-            <button
-              onClick={onChiudere}
-              aria-label="Chiudi filtri"
-              className="grid h-9 w-9 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
-            >
-              <Icon nome="close" dimensione={18} />
-            </button>
-          </div>
-
-          {contenuto}
-
-          <div className="mt-6 border-t border-hairline pt-5">
-            <button
-              onClick={onChiudere}
-              className="w-full rounded-card bg-brass-400 px-4 py-2.5 text-sm font-semibold text-void transition-all duration-quick ease-spring hover:brightness-110 active:scale-95"
-            >
-              {risultati != null ? `Mostra ${risultati} serie` : "Mostra i risultati"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Sovrapposizione>
+          <Bottone onClick={onChiudere} className="min-h-12 flex-1">
+            {risultati != null ? `Mostra ${risultati} serie` : "Mostra i risultati"}
+          </Bottone>
+        </>
+      }
+    >
+      {contenuto}
+    </Foglio>
   );
 }

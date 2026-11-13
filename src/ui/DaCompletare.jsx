@@ -1,9 +1,7 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import Icon from "../app/Icon";
 import Copertina from "./Copertina";
-import Sovrapposizione from "./Sovrapposizione";
-import useChiusuraVelo from "./useChiusuraVelo";
+import Foglio from "./Foglio";
 import { euro, numeroIt, plurale, volumiMancanti } from "../dati/serie";
 
 /**
@@ -19,8 +17,6 @@ import { euro, numeroIt, plurale, volumiMancanti } from "../dati/serie";
  * sapere dove andrebbero i soldi, non cercare alfabeticamente.
  */
 export default function DaCompletare({ serie, onChiudere }) {
-  const velo = useChiusuraVelo(onChiudere);
-
   const righe = useMemo(() => {
     return serie
       .map((s) => {
@@ -34,45 +30,15 @@ export default function DaCompletare({ serie, onChiudere }) {
       .sort((a, b) => b.costoTotale - a.costoTotale);
   }, [serie]);
 
-  useEffect(() => {
-    function alTasto(e) {
-      if (e.key === "Escape") onChiudere();
-    }
-
-    window.addEventListener("keydown", alTasto);
-
-    return () => window.removeEventListener("keydown", alTasto);
-  }, [onChiudere]);
-
   const totaleVolumi = righe.reduce((t, r) => t + r.mancanti, 0);
 
   return (
-    <Sovrapposizione>
-      <div
-        className="fixed inset-0 z-overlay flex items-end justify-center bg-void/70 p-0 backdrop-blur-sm animate-rise-in sm:items-center sm:p-5"
-        {...velo}
-      >
-        <div className="flex max-h-[85dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-sheet border border-hairline bg-glass-3 backdrop-blur-2xl sm:rounded-sheet">
-          <div className="flex items-center justify-between gap-4 border-b border-hairline px-6 py-5">
-            <div className="min-w-0">
-              <h2 className="font-display text-lg font-semibold text-ink-bright">
-                Per completare tutto
-              </h2>
-              <p className="mt-0.5 text-sm text-ink-muted">
-                {plurale(righe.length, "serie", "serie")} · {numeroIt(totaleVolumi)} volumi mancanti
-              </p>
-            </div>
-
-            <button
-              onClick={onChiudere}
-              aria-label="Chiudi"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
-            >
-              <Icon nome="close" dimensione={18} />
-            </button>
-          </div>
-
-          <div className="overflow-y-auto px-4 py-2 sm:px-6">
+    <Foglio
+      titolo="Per completare tutto"
+      sotto={`${plurale(righe.length, "serie", "serie")} · ${numeroIt(totaleVolumi)} volumi mancanti`}
+      larghezza="sm:max-w-2xl"
+      onChiudere={onChiudere}
+    >
             {righe.length ? (
               <ul className="divide-y divide-hairline">
                 {righe.map(({ serie: s, mancanti, costoVolume, costoTotale }) => (
@@ -105,9 +71,6 @@ export default function DaCompletare({ serie, onChiudere }) {
                 Nessuna serie da completare.
               </p>
             )}
-          </div>
-        </div>
-      </div>
-    </Sovrapposizione>
+    </Foglio>
   );
 }

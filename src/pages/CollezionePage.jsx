@@ -8,6 +8,7 @@ import FiltriCollezione from "../ui/FiltriCollezione";
 import Copertina from "../ui/Copertina";
 import Icon from "../app/Icon";
 import Sovrapposizione from "../ui/Sovrapposizione";
+import { avvisa } from "../dati/avvisi";
 import useChiusuraVelo from "../ui/useChiusuraVelo";
 import { useCollezione } from "../dati/collezione";
 import { usePaginaViva } from "../dati/paginaViva";
@@ -263,7 +264,6 @@ export default function CollezionePage() {
   const [filtriAperti, setFiltriAperti] = useState(false);
   const [vista, setVista] = useState(vistaSalvata);
   const [prendendo, setPrendendo] = useState(null);
-  const [registrato, setRegistrato] = useState(null);
   const [problema, setProblema] = useState(null);
   const [menuVistaAperto, setMenuVistaAperto] = useState(false);
   const [campoAttivo, setCampoAttivo] = useState(false);
@@ -280,15 +280,6 @@ export default function CollezionePage() {
     () => (parametri.get("generi") || "").split(",").filter(Boolean),
     [parametri]
   );
-
-  // Il «Registrato» si toglie da solo: è una ricevuta, non una pagina.
-  useEffect(() => {
-    if (!registrato) return undefined;
-
-    const t = setTimeout(() => setRegistrato(null), 9000);
-
-    return () => clearTimeout(t);
-  }, [registrato]);
 
   function scegliVista(v) {
     setVista(v);
@@ -508,7 +499,16 @@ export default function CollezionePage() {
     try {
       const esito = await eseguiProtetto(() => registraAcquisto(s.id, { volumi: [numero] }));
 
-      setRegistrato({ titolo: s.titolo, numero, acquisti: esito?.acquisti || [] });
+      const acquisti = esito?.acquisti || [];
+
+      // La ricevuta è un avviso di sistema (`dati/avvisi.js`): si toglie
+      // da sola e porta con sé «Annulla», che sa quali acquisti disfare
+      // senza che la pagina debba ricordarselo in uno stato.
+      avvisa({
+        testo: `${s.titolo} ${numero} registrato`,
+        azione: acquisti.length ? { etichetta: "Annulla", alTocco: () => annulla(acquisti) } : null,
+        durata: 6000
+      });
       ricarica();
     } catch (e) {
       if (!e?.annullato) setProblema(`${s.titolo} ${numero} non è stato registrato.`);
@@ -517,14 +517,13 @@ export default function CollezionePage() {
     }
   }
 
-  async function annulla() {
-    if (!registrato?.acquisti?.length) return;
+  async function annulla(acquisti) {
+    if (!acquisti?.length) return;
 
     setProblema(null);
 
     try {
-      await eseguiProtetto(() => annullaAcquisti(registrato.acquisti));
-      setRegistrato(null);
+      await eseguiProtetto(() => annullaAcquisti(acquisti));
       ricarica();
     } catch (e) {
       if (!e?.annullato) setProblema("Non sono riuscito ad annullarlo: riprova.");
@@ -811,36 +810,6 @@ export default function CollezionePage() {
             </Bottone>
           }
         />
-      )}
-
-      {registrato && (
-        <div
-          role="status"
-          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-1/2 z-toast flex w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 items-center gap-3 rounded-2xl bg-ink-bright px-4 py-3 text-void shadow-lg md:bottom-6"
-        >
-          <p className="min-w-0 flex-1 truncate text-sm font-semibold">
-            {registrato.titolo} {registrato.numero} registrato
-          </p>
-
-          {registrato.acquisti.length > 0 && (
-            <button
-              type="button"
-              onClick={annulla}
-              className="shrink-0 text-sm font-bold underline underline-offset-2"
-            >
-              Annulla
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setRegistrato(null)}
-            aria-label="Chiudi"
-            className="shrink-0 text-void/60"
-          >
-            <Icon nome="close" dimensione={16} />
-          </button>
-        </div>
       )}
     </>
   );

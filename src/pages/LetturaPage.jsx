@@ -7,6 +7,7 @@ import { Bottone, CampoRicerca } from "../ui/Controlli";
 import { Stella, VotoStelle } from "../ui/AzioniSerie";
 import Menu from "../ui/Menu";
 import NoteSerie from "../ui/NoteSerie";
+import Foglio from "../ui/Foglio";
 import Sovrapposizione from "../ui/Sovrapposizione";
 import useChiusuraVelo from "../ui/useChiusuraVelo";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
@@ -1586,39 +1587,28 @@ function SceltaSerie({ serie, escludi, onScegli, onAnnulla }) {
  * c'erano anche i coriandoli: tolti, era scena e basta.)
  */
 function ModaleCompletamento({ lettura, serie, onVotoCambiato, onChiudi }) {
-  const velo = useChiusuraVelo(onChiudi);
-
+  // Un foglio dal basso e non più una finestra al centro (13/11/2026):
+  // le stelle arrivano sotto il pollice, e chi non vuole votare adesso
+  // lo trascina via.
   return (
-    <Sovrapposizione>
-    <div
-      className="fixed inset-0 z-toast grid place-items-center bg-void/70 p-5 backdrop-blur-sm animate-rise-in"
-      {...velo}
-    >
-      <div className="w-full max-w-sm space-y-5 rounded-panel border border-hairline bg-glass-3 p-6 text-center shadow-float backdrop-blur-2xl">
-        <div>
-          <h2 className="font-display text-xl font-semibold text-ink-bright">
-            Finita
-          </h2>
-          <p className="mt-1 text-sm text-ink-muted">
-            Hai finito {lettura.titolo}.
-          </p>
-        </div>
-
-        {serie && (
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-xs uppercase tracking-wider text-ink-faint">
-              Che voto le dai?
-            </p>
-            <VotoStelle serie={serie} onCambiato={onVotoCambiato} dimensione={26} />
-          </div>
-        )}
-
-        <Bottone onClick={onChiudi} className="w-full">
-          Chiudi
+    <Foglio
+      titolo="Finita"
+      sotto={`Hai finito ${lettura.titolo}.`}
+      larghezza="sm:max-w-sm"
+      onChiudere={onChiudi}
+      azioni={
+        <Bottone onClick={onChiudi} className="min-h-12 flex-1">
+          Fatto
         </Bottone>
-      </div>
-    </div>
-    </Sovrapposizione>
+      }
+    >
+      {serie && (
+        <div className="flex flex-col items-center gap-3 py-4">
+          <p className="text-xs uppercase tracking-wider text-ink-faint">Che voto le dai?</p>
+          <VotoStelle serie={serie} onCambiato={onVotoCambiato} dimensione={30} />
+        </div>
+      )}
+    </Foglio>
   );
 }
 

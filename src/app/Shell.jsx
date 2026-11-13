@@ -32,6 +32,7 @@ import AggiungiAnime from "../ui/videoteca/AggiungiAnime";
 import PostaInArrivo from "../ui/videoteca/PostaInArrivo";
 import { useSessione } from "../dati/sessione";
 import SceltaTema from "../ui/SceltaTema";
+import Avvisi from "../ui/Avvisi";
 import { ripristino } from "../dati/paginaViva";
 
 /**
@@ -316,6 +317,10 @@ export default function Shell({ children }) {
           entri. Stessa condizione dell'«aggiungi»: serve il mondo
           giusto e serve un nome, o non c'è nessuno a cui consegnarla. */}
       {puoiAggiungere && <PostaInArrivo apriAggiunta={apriAggiunta} />}
+
+      {/* Gli avvisi («registrato», «Annulla»): uno per tutto il sito, e
+          nella cornice perché devono sopravvivere al cambio di pagina. */}
+      <Avvisi />
     </div>
   );
 }

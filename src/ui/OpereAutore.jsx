@@ -1,9 +1,7 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import Icon from "../app/Icon";
 import Copertina from "./Copertina";
-import Sovrapposizione from "./Sovrapposizione";
-import useChiusuraVelo from "./useChiusuraVelo";
+import Foglio from "./Foglio";
 import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
 import { abbinaOpere, caricaOpereAutore } from "../dati/autore";
@@ -25,7 +23,6 @@ import { abbinaOpere, caricaOpereAutore } from "../dati/autore";
  * costringerebbe a tornare indietro ogni volta.
  */
 export default function OpereAutore({ nome, riferimento, onChiudere }) {
-  const velo = useChiusuraVelo(onChiudere);
   const { serie: collezione } = useCollezione();
 
   const persona = useRisorsa(() => caricaOpereAutore(nome, riferimento), {
@@ -37,50 +34,21 @@ export default function OpereAutore({ nome, riferimento, onChiudere }) {
     [persona.dati, collezione, nome]
   );
 
-  useEffect(() => {
-    function alTasto(e) {
-      if (e.key === "Escape") onChiudere();
-    }
-
-    window.addEventListener("keydown", alTasto);
-
-    return () => window.removeEventListener("keydown", alTasto);
-  }, [onChiudere]);
-
   const inCasa = opere.filter((o) => o.posseduta).length;
 
   return (
-    <Sovrapposizione>
-      <div
-        className="fixed inset-0 z-overlay flex items-end justify-center bg-void/70 p-0 backdrop-blur-sm animate-rise-in sm:items-center sm:p-5"
-        {...velo}
-      >
-        <div className="flex max-h-[85dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-sheet border border-hairline bg-glass-3 backdrop-blur-2xl sm:rounded-sheet">
-          <div className="flex items-center justify-between gap-4 border-b border-hairline px-6 py-5">
-            <div className="min-w-0">
-              <h2 className="font-display text-lg font-semibold text-ink-bright">
-                {persona.dati?.nome || nome}
-              </h2>
-
-              <p className="mt-0.5 text-sm text-ink-muted">
-                {persona.inCorso && !persona.dati
-                  ? "Cerco le sue opere uscite in Italia…"
-                  : opere.length
-                    ? `${inCasa} di ${opere.length} edite in Italia`
-                    : "Nessuna opera edita in Italia"}
-              </p>
-            </div>
-
-            <button
-              onClick={onChiudere}
-              aria-label="Chiudi"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-muted transition-colors duration-quick hover:bg-glass-1 hover:text-ink-bright"
-            >
-              <Icon nome="close" dimensione={18} />
-            </button>
-          </div>
-
-          <div className="overflow-y-auto px-4 py-5 sm:px-6">
+    <Foglio
+      titolo={persona.dati?.nome || nome}
+      sotto={
+        persona.inCorso && !persona.dati
+          ? "Cerco le sue opere uscite in Italia…"
+          : opere.length
+            ? `${inCasa} di ${opere.length} edite in Italia`
+            : "Nessuna opera edita in Italia"
+      }
+      larghezza="sm:max-w-4xl"
+      onChiudere={onChiudere}
+    >
             {persona.inCorso && !persona.dati ? (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-x-4 gap-y-6">
                 {Array.from({ length: 8 }).map((_, i) => (
@@ -103,10 +71,7 @@ export default function OpereAutore({ nome, riferimento, onChiudere }) {
                   : `Di ${nome} AnimeClick non elenca opere uscite in Italia.`}
               </p>
             )}
-          </div>
-        </div>
-      </div>
-    </Sovrapposizione>
+    </Foglio>
   );
 }
 

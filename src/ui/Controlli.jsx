@@ -111,7 +111,7 @@ export function Pastiglie({ opzioni, attiva, onCambia, conteggi }) {
             onClick={() => onCambia(o.id)}
             aria-pressed={accesa}
             title={o.descrizione}
-            className={`rounded-card border px-3.5 py-2 text-sm font-medium transition-all duration-quick ease-settle
+            className={`rounded-card border px-3.5 py-2 text-sm font-medium transition-all duration-quick ease-settle [@media(hover:none)]:min-h-11
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf
               active:scale-95
               ${

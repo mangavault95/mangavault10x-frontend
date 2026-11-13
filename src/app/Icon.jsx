@@ -30,6 +30,8 @@ const TRACCIATI = {
   // Uscite e spesa: un volume con il «più» di quello nuovo.
   uscite: "M5 4.5A1.5 1.5 0 0 1 6.5 3H18v15H6.5A1.5 1.5 0 0 0 5 19.5zM5 19.5A1.5 1.5 0 0 0 6.5 21H18v-3M12 6.5v6M9 9.5h6",
   close: "M6 6l12 12M18 6L6 18",
+  // La spunta degli avvisi («fatto»): 13/11/2026.
+  spunta: "M5 12.5l4.5 4.5L19 7.5",
   // Le quattro linguette della barra unica (04/10/2026): l'orologio di
   // «Adesso», i volumi in piedi, lo schermo con il tasto play, la persona.
   adesso: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",

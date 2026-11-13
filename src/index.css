@@ -1091,6 +1091,27 @@ html[data-tema="giorno"] body::before {
   --ease-tavolo: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
+/* ---- I token di movimento (13/11/2026) ----
+   Cinque durate e due curve con un nome, lette da tre parti: le classi di
+   Tailwind (`duration-quick`, `ease-posa`: vedi tailwind.config.js), le
+   animazioni qui sotto e il JavaScript dei gesti (`ui/Foglio.jsx`). Chi
+   ha bisogno di un tempo lo prende da qui; se nessuno di questi va bene,
+   se ne aggiunge uno con un nome, non un numero in un componente.
+
+   Le animazioni più vecchie in questo file portano ancora i loro numeri
+   scritti a mano (280, 460, 520…): passano di qui man mano che le
+   finestre passano al foglio. */
+:root {
+  --d-tocco: 120ms;   /* la risposta a un dito: abbassarsi, accendersi */
+  --d-rapido: 180ms;  /* colori, piccoli spostamenti */
+  --d-uscita: 240ms;  /* tutto ciò che se ne va */
+  --d-foglio: 380ms;  /* un foglio o un avviso che arriva e si posa */
+  --d-lento: 420ms;   /* le conferme con un piccolo rimbalzo */
+
+  --e-posa: cubic-bezier(0.32, 0.72, 0, 1);
+  --e-uscita: cubic-bezier(0.4, 0, 1, 1);
+}
+
 @keyframes pagina-entra {
   from { opacity: 0; transform: translate3d(0, 14px, 0); }
   to   { opacity: 1; transform: translate3d(0, 0, 0); }
@@ -1253,6 +1274,41 @@ html.tema-fluido *::after {
 /* Il foglio che sale dal bordo basso dello schermo (il foglio «Tu»). */
 .foglio-basso { animation: foglio-basso-entra 520ms var(--ease-premium) backwards; }
 [data-uscita] .foglio-basso { animation: foglio-basso-esce 240ms var(--ease-uscita) forwards; }
+
+/* ---- Il foglio (`ui/Foglio.jsx`) ----
+   Sul telefono sale dal bordo; da `sm` in su è una finestra che si posa.
+   `backwards` e non `both`, per la ragione scritta in tailwind.config.js:
+   un transform rimasto addosso sgancerebbe dallo schermo ogni `fixed`
+   dentro il foglio. L'uscita non è qui: la fa il componente sulla copia
+   che lascia quando si smonta. */
+@keyframes foglio-sale {
+  from { transform: translate3d(0, 100%, 0); }
+  to   { transform: translate3d(0, 0, 0); }
+}
+.foglio-velo { animation: velo-entra var(--d-foglio) var(--e-posa) backwards; }
+.foglio-pannello { animation: foglio-sale var(--d-foglio) var(--e-posa) backwards; }
+@media (min-width: 640px) {
+  .foglio-pannello { animation: foglio-entra var(--d-foglio) var(--e-posa) backwards; }
+}
+
+/* ---- L'avviso (`ui/Avvisi.jsx`) ----
+   Arriva dal basso e si posa; la riga sottile in fondo è il tempo che gli
+   resta, così «Annulla» non sparisce a sorpresa. */
+@keyframes avviso-entra {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes avviso-tempo {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+@keyframes avviso-spunta {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.avviso-entra { animation: avviso-entra var(--d-foglio) var(--e-posa) backwards; }
+.avviso-tempo { animation: avviso-tempo linear forwards; }
+.avviso-spunta { animation: avviso-spunta var(--d-lento) cubic-bezier(0.34, 1.4, 0.64, 1) backwards; }
 
 .barretta-entra { animation: barretta-entra 360ms var(--ease-premium) backwards; }
 .icona-sveglia  { animation: icona-sveglia 420ms var(--ease-premium) backwards; }
