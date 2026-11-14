@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import Icon from "../app/Icon";
 import { avvisoCorrente, iscriviAvvisi, togliAvviso } from "../dati/avvisi";
 
@@ -27,7 +28,10 @@ export default function Avvisi() {
 
   const errore = avviso.tono === "errore";
 
-  return (
+  // Su <body> e non dentro la pagina: mentre una finestra è aperta la
+  // pagina è `inert` (vedi `Sovrapposizione.jsx`), e un avviso rimasto
+  // lì dentro si vedrebbe ma non si potrebbe toccare.
+  return createPortal(
     <div
       // La chiave fa ripartire entrata e tempo quando un avviso ne
       // sostituisce un altro: senza, il secondo erediterebbe la riga già
@@ -76,6 +80,7 @@ export default function Avvisi() {
         style={{ animationDuration: `${avviso.durata}ms` }}
         className={`avviso-tempo absolute inset-x-0 bottom-0 h-0.5 origin-left ${errore ? "bg-ember/70" : "bg-ciano/70"}`}
       />
-    </div>
+    </div>,
+    document.body
   );
 }

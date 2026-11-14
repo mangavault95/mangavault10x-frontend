@@ -60,7 +60,7 @@ export function Etichetta({ tono = "neutro", children }) {
 export function Dato({ etichetta, valore }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wider text-ink-faint">{etichetta}</dt>
+      <dt className="text-xs uppercase tracking-wider text-ink-muted">{etichetta}</dt>
       <dd className="mt-1 text-sm text-ink-bright">{valore || "—"}</dd>
     </div>
   );

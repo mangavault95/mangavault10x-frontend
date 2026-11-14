@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import Icon from "../app/Icon";
 import useRisorsa from "../dati/useRisorsa";
 import { useSessione } from "../dati/sessione";
+import { useAccessoProtetto } from "../dati/accesso";
 import { etichettaStagione, stagioniDi } from "../dati/videoteca";
 import {
   getAnime,
@@ -46,6 +47,7 @@ import { NOMI_STATO_SERIE, NOMI_TIPO, formattaVoto } from "../ui/videoteca/forma
 export default function AnimePage() {
   const { id } = useParams();
   const { utente } = useSessione();
+  const eseguiProtetto = useAccessoProtetto();
   const navigate = useNavigate();
 
   const carica = useCallback(() => getAnime(id), [id]);
@@ -151,7 +153,7 @@ export default function AnimePage() {
     setGuaio(null);
 
     try {
-      await impostaVisione(stagioneId, stato);
+      await eseguiProtetto(() => impostaVisione(stagioneId, stato));
 
       setDati((p) =>
         p
@@ -168,7 +170,7 @@ export default function AnimePage() {
       // Senza questo un salvataggio fallito non diceva niente: lo stato
       // restava quello di prima e sembrava che il tocco non fosse
       // arrivato.
-      setGuaio(e);
+      if (!e?.annullato) setGuaio(e);
     } finally {
       setAzione(null);
     }
@@ -179,12 +181,11 @@ export default function AnimePage() {
     setGuaio(null);
 
     try {
-      if (voto === null) await togliVotoAnime(stagioneId);
-      else await votaAnime(stagioneId, voto);
+      await eseguiProtetto(() => (voto === null ? togliVotoAnime(stagioneId) : votaAnime(stagioneId, voto)));
 
       await ricarica();
     } catch (e) {
-      setGuaio(e);
+      if (!e?.annullato) setGuaio(e);
     } finally {
       setAzione(null);
     }
@@ -205,8 +206,8 @@ export default function AnimePage() {
     setAzione("preferito");
 
     try {
-      await Promise.all(
-        schede.filter((s) => Boolean(s.preferito) !== acceso).map((s) => preferisciAnime(s.id))
+      await eseguiProtetto(() =>
+        Promise.all(schede.filter((s) => Boolean(s.preferito) !== acceso).map((s) => preferisciAnime(s.id)))
       );
 
       setDati((p) =>
@@ -219,7 +220,7 @@ export default function AnimePage() {
           : p
       );
     } catch (e) {
-      setGuaio(e);
+      if (!e?.annullato) setGuaio(e);
     } finally {
       setAzione(null);
     }

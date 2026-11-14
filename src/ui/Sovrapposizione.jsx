@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 /**
@@ -59,8 +59,9 @@ import { createPortal } from "react-dom";
 // tenendo — si sblocca solo quando l'ultimo se ne va.
 let aperti = 0;
 let scorrimentoSalvato = 0;
+let fuocoSalvato = null;
 
-function fermaLaPagina() {
+function fermaLaPagina(origine) {
   if (aperti++ > 0) return;
 
   scorrimentoSalvato = window.scrollY;
@@ -78,12 +79,45 @@ function fermaLaPagina() {
   corpo.style.width = "100%";
 
   if (barra > 0) corpo.style.paddingRight = `${barra}px`;
+
+  // La pagina sotto smette anche di RISPONDERE, non solo di scorrere.
+  // I fogli dichiarano `aria-modal`, cioè promettono che dietro non
+  // c'è niente di raggiungibile; ma finché la pagina resta viva il Tab
+  // esce dal foglio e va a spasso fra i bottoni coperti dal velo, e chi
+  // usa un lettore di schermo li sente tutti. `inert` mantiene la
+  // promessa in un colpo, per ogni finestra che passa di qui.
+  //
+  // Vale per `#root`, e i veli stanno fuori (sono portali su <body>):
+  // restano vivi loro e spenta la pagina. Per lo stesso motivo gli
+  // avvisi (`ui/Avvisi.jsx`) sono un portale anche loro — un «Annulla»
+  // comparso mentre una finestra è aperta deve potersi toccare.
+  //
+  // Chi aveva il fuoco prima di aprire — e `origine` è letta al primo
+  // render, non qui: un campo con `autoFocus` dentro la finestra prende
+  // il fuoco durante il montaggio, e a quel punto `activeElement` è già
+  // lui, non il bottone da cui si è partiti. Rendendo la pagina `inert`
+  // il browser toglie comunque il fuoco, quindi lo si rimette alla
+  // chiusura, in `liberaLaPagina`.
+  fuocoSalvato = origine;
+
+  document.getElementById("root")?.setAttribute("inert", "");
 }
 
 function liberaLaPagina() {
   aperti = Math.max(0, aperti - 1);
 
   if (aperti > 0) return;
+
+  // Prima di tutto: chi chiude il foglio rimette il fuoco sul bottone
+  // da cui era partito, e su un elemento ancora `inert` il fuoco non
+  // attecchisce.
+  document.getElementById("root")?.removeAttribute("inert");
+
+  if (fuocoSalvato instanceof HTMLElement && fuocoSalvato.isConnected) {
+    fuocoSalvato.focus({ preventScroll: true });
+  }
+
+  fuocoSalvato = null;
 
   const corpo = document.body;
 
@@ -135,6 +169,10 @@ function lasciaUnaCopia(contenitore) {
 export default function Sovrapposizione({ children, blocca = true }) {
   const contenitore = useRef(null);
 
+  // Lazy: gira una volta, nel render, prima che qualunque figlio monti
+  // e prenda il fuoco.
+  const [origine] = useState(() => (typeof document === "undefined" ? null : document.activeElement));
+
   useLayoutEffect(() => {
     const nodo = contenitore.current;
 
@@ -144,10 +182,10 @@ export default function Sovrapposizione({ children, blocca = true }) {
   useLayoutEffect(() => {
     if (!blocca) return undefined;
 
-    fermaLaPagina();
+    fermaLaPagina(origine);
 
     return liberaLaPagina;
-  }, [blocca]);
+  }, [blocca, origine]);
 
   // `display: contents`: il contenitore serve solo a ritrovare il velo
   // quando si smonta, e non deve cambiare nessuna misura.

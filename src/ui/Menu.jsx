@@ -236,7 +236,7 @@ export default function Menu({ etichetta, voci, larghezza = "16rem" }) {
                   </span>
 
                   {voce.descrizione && !armata && (
-                    <span className="mt-0.5 block text-xs leading-snug text-ink-faint">
+                    <span className="mt-0.5 block text-xs leading-snug text-ink-muted">
                       {voce.descrizione}
                     </span>
                   )}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { segnaEpisodio, togliEpisodio } from "../../services/api";
+import { useAccessoProtetto } from "../../dati/accesso";
 import { Pillola } from "./Foglio";
 import { dataPuntata } from "./formati";
 
@@ -37,6 +38,11 @@ export default function ListaEpisodi({ animeId, episodi, spuntati, puoiScrivere,
   const [inCorso, setInCorso] = useState(null);
   const [errore, setErrore] = useState(null);
 
+  // Come in biblioteca: se il server non riconosce più l'accesso (il
+  // token dura trenta giorni) si riapre il modulo e la spunta riparte
+  // da sola, invece di tornare indietro con un errore.
+  const eseguiProtetto = useAccessoProtetto();
+
   async function cambia(numero, giaVisto) {
     if (!puoiScrivere) return;
 
@@ -47,10 +53,11 @@ export default function ListaEpisodi({ animeId, episodi, spuntati, puoiScrivere,
     alCambio(giaVisto ? { togli: numero } : { aggiungi: [numero] });
 
     try {
-      if (giaVisto) await togliEpisodio(animeId, numero);
-      else await segnaEpisodio(animeId, numero);
+      await eseguiProtetto(() => (giaVisto ? togliEpisodio(animeId, numero) : segnaEpisodio(animeId, numero)));
     } catch (e) {
-      setErrore(e);
+      // Chi chiude il modulo d'accesso ha deciso di non farlo: la
+      // casella torna com'era, ma non c'è nessun errore da mostrare.
+      if (!e?.annullato) setErrore(e);
       // Rimetto le cose com'erano: la casella non ha diritto di
       // mostrare uno stato che il database non ha.
       alCambio(giaVisto ? { aggiungi: [numero] } : { togli: numero });
@@ -70,9 +77,9 @@ export default function ListaEpisodi({ animeId, episodi, spuntati, puoiScrivere,
     alCambio({ aggiungi: prima });
 
     try {
-      await segnaEpisodio(animeId, numero, { fino: true });
+      await eseguiProtetto(() => segnaEpisodio(animeId, numero, { fino: true }));
     } catch (e) {
-      setErrore(e);
+      if (!e?.annullato) setErrore(e);
       alCambio({ ripristina: true });
     } finally {
       setInCorso(null);

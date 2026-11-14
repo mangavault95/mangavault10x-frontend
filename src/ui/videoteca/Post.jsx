@@ -16,6 +16,7 @@ import {
   urlCopertina
 } from "../../services/api";
 import { useSessione } from "../../dati/sessione";
+import { useAccessoProtetto } from "../../dati/accesso";
 import Tondino from "./Tondino";
 import { Bottone, Scheda } from "./Foglio";
 
@@ -49,6 +50,7 @@ const ANTEPRIMA = 3;
 
 export default function Post({ post, alCambio }) {
   const { utente } = useSessione();
+  const eseguiProtetto = useAccessoProtetto();
 
   // I cuori si aggiornano prima della risposta del server. Un cuore è
   // il gesto più leggero che c'è: aspettare mezzo secondo che Render
@@ -85,7 +87,7 @@ export default function Post({ post, alCambio }) {
     setInCorso(true);
 
     try {
-      await cuoreCineforum(post.chiave);
+      await eseguiProtetto(() => cuoreCineforum(post.chiave));
     } catch {
       setCuori(prima.cuori);
       setMio(prima.mio);

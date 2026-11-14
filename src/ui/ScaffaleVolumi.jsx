@@ -138,7 +138,7 @@ export default function ScaffaleVolumi({
             {guardato ? (
               <span className="text-ink-bright">{descrizioneDi(guardato)}</span>
             ) : (
-              <span className="text-ink-faint">{riassunto}</span>
+              <span className="text-ink-muted">{riassunto}</span>
             )}
           </p>
 
@@ -154,7 +154,7 @@ export default function ScaffaleVolumi({
           <Quadretti {...comuni} compatto={compatto} descritto={idAvviso} />
 
           {riepilogo && !compatto && (
-            <p id={idAvviso} className="font-numeric text-xs text-ink-faint">
+            <p id={idAvviso} className="font-numeric text-xs text-ink-muted">
               {riassunto}
             </p>
           )}

@@ -155,7 +155,14 @@ export default function Foglio({
 
     return () => {
       window.removeEventListener("keydown", alTasto);
-      if (prima instanceof HTMLElement && prima.isConnected) prima.focus({ preventScroll: true });
+      // `Sovrapposizione` ha già riportato il fuoco dov'era PRIMA di
+      // spegnere la pagina (`liberaLaPagina`): qui `prima` è spesso
+      // solo il <body>, perché al montaggio la pagina era già `inert`
+      // e il browser aveva già tolto il fuoco. Rimetterlo lì
+      // cancellerebbe il ripristino giusto.
+      if (prima instanceof HTMLElement && prima !== document.body && prima.isConnected) {
+        prima.focus({ preventScroll: true });
+      }
     };
   }, []);
 

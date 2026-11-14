@@ -11,6 +11,7 @@ import {
   togliVotoAnime,
   votaAnime
 } from "../../services/api";
+import { useAccessoProtetto } from "../../dati/accesso";
 
 /**
  * LA MIA VIDEOTECA — rifatta il 04/10/2026 come «In lettura».
@@ -78,6 +79,7 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
   const [inGestione, setInGestione] = useState(null);
   const [occupato, setOccupato] = useState(null);
   const [problema, setProblema] = useState(null);
+  const eseguiProtetto = useAccessoProtetto();
 
   const tutte = useMemo(() => (righe || []).map((a) => ({ ...a, ...conti(a) })), [righe]);
 
@@ -111,9 +113,12 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
     setOccupato(chiave);
 
     try {
-      await azione();
-    } catch {
-      setProblema(errore);
+      // Se l'accesso è scaduto si riapre il modulo e l'azione riparte.
+      await eseguiProtetto(azione);
+    } catch (e) {
+      // Modulo chiuso senza entrare: niente da dire, solo rimettere
+      // la riga com'era.
+      if (!e?.annullato) setProblema(errore);
       ricarica();
     } finally {
       setOccupato(null);

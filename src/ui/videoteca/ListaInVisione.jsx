@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { segnaEpisodio, urlCopertina } from "../../services/api";
+import { useAccessoProtetto } from "../../dati/accesso";
 import { Bottone, Progresso, Scheda } from "./Foglio";
 import { quandoBreve } from "./formati";
 
@@ -36,6 +37,7 @@ import { quandoBreve } from "./formati";
 const LIMITE = 6;
 
 export default function ListaInVisione({ righe, setRighe, ricarica, puoiScrivere }) {
+  const eseguiProtetto = useAccessoProtetto();
   const [segnando, setSegnando] = useState(null);
   const [espansa, setEspansa] = useState(false);
 
@@ -70,7 +72,7 @@ export default function ListaInVisione({ righe, setRighe, ricarica, puoiScrivere
     setSegnando(anime.id);
 
     try {
-      await segnaEpisodio(anime.id, anime.prossimo);
+      await eseguiProtetto(() => segnaEpisodio(anime.id, anime.prossimo));
 
       // Non ricarico tutta la videoteca per una casella: aggiorno la
       // riga e basta.

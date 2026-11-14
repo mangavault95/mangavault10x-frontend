@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Icon from "../../app/Icon";
 import { useSessione } from "../../dati/sessione";
+import { useAccessoProtetto } from "../../dati/accesso";
 import { corrisponde, raggruppa } from "../../dati/videoteca";
 import { getVideoteca, scriviMessaggio, urlCopertina } from "../../services/api";
 import Tondino from "./Tondino";
@@ -40,6 +41,8 @@ export default function ComponiMessaggio({ alFatto, chiediAccesso }) {
   // propria faccia comparirebbe come iniziale finché non si ricarica.
   const io = lettori.find((l) => l.id === utente?.id) ?? null;
 
+  const eseguiProtetto = useAccessoProtetto();
+
   async function manda(e) {
     e.preventDefault();
 
@@ -51,13 +54,15 @@ export default function ComponiMessaggio({ alFatto, chiediAccesso }) {
     setErrore(null);
 
     try {
-      await scriviMessaggio({ testo: pulito, animeId: serie?.id ?? null });
+      await eseguiProtetto(() => scriviMessaggio({ testo: pulito, animeId: serie?.id ?? null }));
 
       setTesto("");
       setSerie(null);
       alFatto?.();
     } catch (err) {
-      setErrore(err);
+      // Il testo resta nella casella: chi ha chiuso il modulo d'accesso
+      // non deve ritrovarsi a riscriverlo.
+      if (!err?.annullato) setErrore(err);
     } finally {
       setInCorso(false);
     }
