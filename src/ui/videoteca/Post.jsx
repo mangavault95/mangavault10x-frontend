@@ -125,7 +125,7 @@ export default function Post({ post, alCambio }) {
               await eliminaMessaggio(post.id);
               alCambio?.();
             }}
-            className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-quaderno-tenue hover:text-quaderno-inchiostro"
+            className="bersaglio shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-quaderno-tenue hover:text-quaderno-inchiostro"
           >
             Elimina
           </button>
@@ -306,7 +306,7 @@ function Nota({ nota }) {
       <button
         type="button"
         onClick={() => setScoperto(true)}
-        className="mt-1 rounded bg-quaderno-carta px-2 py-1 text-xs font-semibold text-quaderno-tenue hover:text-quaderno-inchiostro"
+        className="bersaglio mt-1 rounded bg-quaderno-carta px-2 py-1 text-xs font-semibold text-quaderno-tenue hover:text-quaderno-inchiostro"
       >
         Contiene spoiler — tocca per leggere
       </button>

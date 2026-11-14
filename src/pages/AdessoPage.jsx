@@ -553,7 +553,7 @@ function Sezione({ titolo, kana, link, children }) {
           {kana && <span aria-hidden="true" className="kana font-pixel text-xs font-normal text-ink-faint">{kana}</span>}
         </h2>
         {link && (
-          <Link to={link.a} className="text-sm font-medium text-ciano hover:underline">
+          <Link to={link.a} className="bersaglio text-sm font-medium text-ciano hover:underline">
             {link.testo}
           </Link>
         )}

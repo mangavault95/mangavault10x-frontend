@@ -1,4 +1,5 @@
 import { useId } from "react";
+import useTocco from "../tocco";
 import { formattaVoto } from "./formati";
 
 /**
@@ -16,6 +17,13 @@ import { formattaVoto } from "./formati";
 export default function Stelle({ voto, alVoto, disabilitato = false, dimensione = 22 }) {
   const attuale = Number(voto) || 0;
 
+  // Col dito una mezza stella larga 11 px non si prende: la stella cresce
+  // di una volta e mezzo (come in collezione, `VotoStelle`) e le due metà
+  // si allungano in altezza fino a 44 px. Col mouse resta com'era.
+  const tocco = useTocco();
+  const misura = tocco ? Math.round(dimensione * 1.5) : dimensione;
+  const alto = tocco ? "-inset-y-[0.4rem]" : "inset-y-0";
+
   function scegli(valore) {
     if (disabilitato) return;
 
@@ -31,7 +39,7 @@ export default function Stelle({ voto, alVoto, disabilitato = false, dimensione 
 
           return (
             <span key={posizione} className="relative inline-flex">
-              <Stella dimensione={dimensione} riempimento={pieno ? 1 : mezzo ? 0.5 : 0} />
+              <Stella dimensione={misura} riempimento={pieno ? 1 : mezzo ? 0.5 : 0} />
 
               {/* Le due metà cliccabili, sopra il disegno */}
               <button
@@ -39,14 +47,14 @@ export default function Stelle({ voto, alVoto, disabilitato = false, dimensione 
                 disabled={disabilitato}
                 onClick={() => scegli(posizione - 0.5)}
                 aria-label={`${posizione - 0.5} stelle`}
-                className="absolute inset-y-0 left-0 w-1/2 disabled:cursor-default"
+                className={`absolute ${alto} left-0 w-1/2 disabled:cursor-default`}
               />
               <button
                 type="button"
                 disabled={disabilitato}
                 onClick={() => scegli(posizione)}
                 aria-label={`${posizione} stelle`}
-                className="absolute inset-y-0 right-0 w-1/2 disabled:cursor-default"
+                className={`absolute ${alto} right-0 w-1/2 disabled:cursor-default`}
               />
             </span>
           );

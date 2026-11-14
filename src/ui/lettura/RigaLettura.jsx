@@ -101,7 +101,7 @@ export function RigaLettura({ lettura, principale, ultima, soloLettura, onAvanti
                   onClick={() => setSegnalibro((s) => !s)}
                   aria-expanded={segnalibro}
                   aria-label={`Volume ${volume}: tocca per spostare il segnalibro`}
-                  className="underline decoration-ink-faint decoration-dotted underline-offset-4"
+                  className="bersaglio underline decoration-ink-faint decoration-dotted underline-offset-4"
                 >
                   Volume <span className="font-numeric font-semibold text-ink-bright">{volume}</span>
                 </button>
@@ -142,7 +142,7 @@ export function RigaLettura({ lettura, principale, ultima, soloLettura, onAvanti
                 onClick={onIndietro}
                 disabled={volume <= 1}
                 aria-label="Segnalibro al volume prima"
-                className="grid h-10 w-10 place-items-center text-lg text-ink transition-opacity duration-quick disabled:opacity-30"
+                className="grid h-11 w-11 place-items-center text-lg text-ink transition-opacity duration-quick disabled:opacity-30"
               >
                 −
               </button>
@@ -152,7 +152,7 @@ export function RigaLettura({ lettura, principale, ultima, soloLettura, onAvanti
                 onClick={onAvanti}
                 disabled={eUltimo}
                 aria-label="Segnalibro al volume dopo"
-                className="grid h-10 w-10 place-items-center text-lg text-ink transition-opacity duration-quick disabled:opacity-30"
+                className="grid h-11 w-11 place-items-center text-lg text-ink transition-opacity duration-quick disabled:opacity-30"
               >
                 +
               </button>
@@ -162,7 +162,7 @@ export function RigaLettura({ lettura, principale, ultima, soloLettura, onAvanti
               type="button"
               onClick={onLetto}
               disabled={giaLetto && eUltimo}
-              className={`h-10 min-w-0 flex-1 truncate rounded-card px-3 text-sm font-semibold transition-transform duration-quick active:scale-[0.98] disabled:opacity-50 ${
+              className={`h-11 min-w-0 flex-1 truncate rounded-card px-3 text-sm font-semibold transition-transform duration-quick active:scale-[0.98] disabled:opacity-50 ${
                 principale ? "insegna" : "border border-hairline bg-glass-2 text-ink-bright hover:border-brass-400/40"
               }`}
             >
@@ -314,7 +314,7 @@ export function FoglioLettura({
               placeholder={String(volume)}
               className="w-16 rounded-lg bg-alcove px-2 py-1.5 text-center font-numeric text-ink-bright placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-brass-400"
             />
-            <button type="submit" className="rounded-lg bg-glass-2 px-3 py-1.5 text-sm font-semibold text-ink-bright">
+            <button type="submit" className="min-h-11 rounded-lg bg-glass-2 px-3 text-sm font-semibold text-ink-bright">
               Vai
             </button>
           </form>
