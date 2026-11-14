@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import { ripristino } from "../dati/paginaViva";
 import { Link, useNavigate } from "react-router";
@@ -55,14 +55,29 @@ import {
  * del dito o del mouse, così al tocco c'è e la copertina ha dove atterrare.
  */
 let schedaPronta = false;
+let promessaScheda = null;
 
+/**
+ * Prepara il codice della scheda e restituisce la promessa. Sul telefono
+ * `pointerenter` e `click` arrivano a pochi millesimi di distanza: il
+ * pezzo non è ancora scaricato quando parte il volo, e alla PRIMA
+ * apertura la copertina sfumava invece di volare. `apriConVolo` ora
+ * aspetta questa promessa (al massimo `ATTESA_SCHEDA_MS`) prima di
+ * avviare la transizione, e `GrigliaSerie` la fa partire a pagina
+ * ferma, così di solito è già pronta al primo tocco.
+ */
 function precaricaScheda() {
-  if (schedaPronta) return;
+  if (schedaPronta) return promessaScheda;
   schedaPronta = true;
-  import("../pages/SeriePage").catch(() => {
+  promessaScheda = import("../pages/SeriePage").catch(() => {
     schedaPronta = false;
+    promessaScheda = null;
   });
+
+  return promessaScheda;
 }
+
+const ATTESA_SCHEDA_MS = 800;
 
 function useVolo(indirizzo) {
   const navigate = useNavigate();
@@ -83,29 +98,36 @@ function useVolo(indirizzo) {
 
     e.preventDefault();
 
-    // Un nome rimasto addosso a un'altra carta (una transizione interrotta)
-    // farebbe annullare la nuova: due elementi non possono averlo insieme.
-    document.querySelectorAll("[data-copertina]").forEach((c) => (c.style.viewTransitionName = ""));
-    copertina.style.viewTransitionName = "copertina-serie";
+    // Il codice della scheda deve esserci PRIMA di fotografare la pagina:
+    // se arriva a transizione iniziata, la scheda non c'è quando serve
+    // la copertina d'arrivo e il volo diventa una sfumatura.
+    Promise.race([precaricaScheda(), new Promise((r) => setTimeout(r, ATTESA_SCHEDA_MS))]).then(() => parti());
 
-    // Si naviga UNA volta, e comunque: se il browser non disegna (scheda in
-    // secondo piano) la transizione non parte e il tocco sembrerebbe morto.
-    let fatto = false;
-    const vai = () => {
-      if (fatto) return;
-      fatto = true;
-      flushSync(() => navigate(indirizzo));
-    };
-    const pulisci = () => (copertina.style.viewTransitionName = "");
+    function parti() {
+      // Un nome rimasto addosso a un'altra carta (una transizione interrotta)
+      // farebbe annullare la nuova: due elementi non possono averlo insieme.
+      document.querySelectorAll("[data-copertina]").forEach((c) => (c.style.viewTransitionName = ""));
+      copertina.style.viewTransitionName = "copertina-serie";
 
-    try {
-      const volo = document.startViewTransition(vai);
+      // Si naviga UNA volta, e comunque: se il browser non disegna (scheda in
+      // secondo piano) la transizione non parte e il tocco sembrerebbe morto.
+      let fatto = false;
+      const vai = () => {
+        if (fatto) return;
+        fatto = true;
+        flushSync(() => navigate(indirizzo));
+      };
+      const pulisci = () => (copertina.style.viewTransitionName = "");
 
-      volo.finished.then(pulisci, pulisci);
-      setTimeout(vai, 400);
-    } catch {
-      pulisci();
-      vai();
+      try {
+        const volo = document.startViewTransition(vai);
+
+        volo.finished.then(pulisci, pulisci);
+        setTimeout(vai, 400);
+      } catch {
+        pulisci();
+        vai();
+      }
     }
   };
 }
@@ -379,6 +401,21 @@ function AnelloCompletamento({ pct, tono, etichetta }) {
  * scaricate all'apertura, quando se ne vedono sei).
  */
 export function GrigliaSerie({ serie, riempi = false, lettore = null, compatta = false, inizio = 0, children }) {
+  // A pagina ferma si prepara la scheda: al primo tocco il volo ha dove atterrare.
+  useEffect(() => {
+    if (!serie?.length) return undefined;
+
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(() => precaricaScheda(), { timeout: 3000 });
+
+      return () => cancelIdleCallback(id);
+    }
+
+    const t = setTimeout(precaricaScheda, 1500);
+
+    return () => clearTimeout(t);
+  }, [serie?.length]);
+
   return (
     <div
       className={
