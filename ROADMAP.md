@@ -95,6 +95,15 @@ non lo sa, e infatti chiedendo solo quella si sbagliano tutte e due le volte.
   impedisce, e `npm run controlla` fa fallire la build se qualcuno lo toglie.
   Misura di riferimento in `scripts/prova-router.cjs`. Il pacchetto principale è
   cresciuto di circa 19 kB (6,5 kB compresso).
+- **Vite 8** (14/11/2026), con `@vitejs/plugin-react` 6: audit a zero anche per gli
+  strumenti di sviluppo. La build è la stessa (stessi pacchetti, il service worker
+  riceve l'elenco dei file, il `preconnect` c'è) ma impiega la metà (1,7 s invece di
+  3,6) e il pacchetto principale è più leggero (266,9 kB invece di 276,6). Confrontate
+  36 schermate (telefono e computer, chiaro e scuro, nove pagine): le 18 da telefono
+  sono identiche al pixel, quelle da computer differiscono di 1-2 livelli su 255 in un
+  canale, su qualche decina di pixel di bordo. Richiede **Node 22.12 o più recente**:
+  `package.json` dice `22.x`. Se la build su Vercel fallisce con un messaggio sulla
+  versione di Node, è lì (Settings, General, Node.js Version).
 - **Il lato anime scrive da `eseguiProtetto`**: a sessione scaduta si riapre
   l'accesso e l'azione riparte.
 - **Copertine alla misura giusta.** `urlCopertina(src, larghezza)` vuole i
@@ -114,10 +123,6 @@ decadute con la stanza; `ANTHROPIC_API_KEY` nel frontend non c'è più.
   che serve a un testo piccolo. Le etichette e le descrizioni che erano
   testo vero sono passate a `ink-muted` (14/11/2026); restano gli usi come
   segnaposto e come testo secondario, una settantina, da guardare uno a uno.
-- **Vite 5 e `esbuild`**: due avvisi (uno alto, uno moderato) che riguardano
-  solo il server di sviluppo (`npm run dev`), non la build pubblicata. Si
-  chiudono passando a Vite 8, che è un cambio incompatibile. Le dipendenze di
-  produzione sono a zero avvisi.
 - **Poche prove automatiche**: il sito ha solo lint e build a ogni push. I
   candidati sono le funzioni pure di `dati/serie.js`, `dati/kachinuki.js`,
   `bibliotecario/intenti.js`.
