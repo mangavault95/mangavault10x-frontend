@@ -372,8 +372,13 @@ function AnelloCompletamento({ pct, tono, etichetta }) {
  * quattro serie per schermata su una collezione di duecento. Sotto `sm`
  * scende a 6.5rem: tre colonne, copertine da 127 pixel — la larghezza a
  * cui un titolo si legge ancora e se ne vedono nove per schermata.
+ *
+ * `inizio` è la posizione della prima carta nella pagina intera: la
+ * collezione disegna una griglia per lettera, e senza questo ogni
+ * lettera dichiarava «urgenti» le sue prime 12 copertine (171 su 205
+ * scaricate all'apertura, quando se ne vedono sei).
  */
-export function GrigliaSerie({ serie, riempi = false, lettore = null, compatta = false, children }) {
+export function GrigliaSerie({ serie, riempi = false, lettore = null, compatta = false, inizio = 0, children }) {
   return (
     <div
       className={
@@ -388,7 +393,7 @@ export function GrigliaSerie({ serie, riempi = false, lettore = null, compatta =
             <CartaSerie
               key={s.id}
               serie={s}
-              priorita={i < 12}
+              priorita={inizio + i < 12}
               riempi={riempi}
               lettore={lettore}
               compatta={compatta}

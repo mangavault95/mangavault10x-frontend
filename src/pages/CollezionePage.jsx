@@ -747,7 +747,7 @@ export default function CollezionePage() {
       )}
 
       {inCorso && !serie.length ? (
-        <CaricamentoGriglia />
+        <CaricamentoGriglia compatta={vista === "compatta"} conMessaggio />
       ) : risultati.length ? (
         vista === "elenco" ? (
           <ul className="divide-y divide-hairline rounded-card bg-alcove px-3.5">
@@ -763,7 +763,7 @@ export default function CollezionePage() {
           </ul>
         ) : gruppi ? (
           <div className="space-y-7 pr-5">
-            {gruppi.map((g) => (
+            {gruppi.map((g, indice) => (
               <section
                 key={g.lettera}
                 id={idLettera(g.lettera)}
@@ -775,7 +775,13 @@ export default function CollezionePage() {
                   <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-[rgb(var(--c-riga))] to-transparent" />
                 </h2>
 
-                <GrigliaSerie serie={g.serie} riempi lettore={lettoreAttivo} compatta={vista === "compatta"} />
+                <GrigliaSerie
+                  serie={g.serie}
+                  inizio={gruppi.slice(0, indice).reduce((somma, prima) => somma + prima.serie.length, 0)}
+                  riempi
+                  lettore={lettoreAttivo}
+                  compatta={vista === "compatta"}
+                />
               </section>
             ))}
             <IndiceLettere lettere={gruppi.map((g) => g.lettera)} />

@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 /**
  * Cosa si vede quando non c'è ancora niente da vedere.
  *
@@ -7,21 +9,55 @@
  * rete non deve più sembrare una collezione vuota.
  */
 
-/** Scheletro con la forma della griglia: il layout non salta al termine. */
-export function CaricamentoGriglia({ quante = 18 }) {
+/**
+ * Scheletro con la forma della griglia: il layout non salta al termine.
+ *
+ * Le colonne sono le stesse di `GrigliaSerie` (`ui/CartaSerie.jsx`): prima
+ * lo scheletro aveva `minmax(9rem)` su ogni larghezza, quindi su un
+ * telefono compariva a due colonne grandi e all'arrivo dei dati la pagina
+ * saltava a tre piccole. `compatta` segue la vista «Solo cover».
+ * Con `conMessaggio`, dopo qualche secondo dice perché ci vuole (il
+ * server gratuito che dorme), come la home.
+ */
+export function CaricamentoGriglia({ quante = 18, compatta = false, conMessaggio = false }) {
+  const [lento, setLento] = useState(false);
+
+  useEffect(() => {
+    if (!conMessaggio) return undefined;
+
+    const timer = setTimeout(() => setLento(true), 2500);
+
+    return () => clearTimeout(timer);
+  }, [conMessaggio]);
+
   return (
-    <div
-      role="status"
-      aria-label="Caricamento in corso"
-      className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-x-5 gap-y-8"
-    >
-      {Array.from({ length: quante }).map((_, i) => (
-        <div key={i} className="space-y-3">
-          <div className="scheletro aspect-cover w-full rounded-card border border-hairline bg-glass-1" />
-          <div className="scheletro h-3 w-4/5 rounded bg-glass-1" />
-          <div className="scheletro h-3 w-2/5 rounded bg-glass-1" />
-        </div>
-      ))}
+    <div role="status" aria-label="Caricamento in corso">
+      <div
+        className={
+          compatta
+            ? "grid grid-cols-[repeat(auto-fill,minmax(4.75rem,1fr))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] sm:gap-3"
+            : `grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-x-3 gap-y-5
+               sm:grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] sm:gap-x-5 sm:gap-y-8`
+        }
+      >
+        {Array.from({ length: quante }).map((_, i) => (
+          <div key={i} className="space-y-3">
+            <div className="scheletro aspect-cover w-full rounded-card border border-hairline bg-glass-1" />
+            {!compatta && (
+              <>
+                <div className="scheletro h-3 w-4/5 rounded bg-glass-1" />
+                <div className="scheletro h-3 w-2/5 rounded bg-glass-1" />
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {conMessaggio && (
+        <p className="px-5 pt-4 text-center text-xs text-ink-muted" aria-live="polite">
+          {lento ? "Il server si sta svegliando, ancora qualche secondo…" : " "}
+        </p>
+      )}
 
       <span className="sr-only">Caricamento in corso</span>
     </div>
