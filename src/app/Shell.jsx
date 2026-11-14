@@ -44,6 +44,8 @@ import { ripristino } from "../dati/paginaViva";
  * segnare un volume. Adesso arrivano la prima volta che servono; nel
  * frattempo non si vede niente, che è quello che si vedeva comunque.
  */
+import InvitoRassegna from "../ui/InvitoRassegna";
+import { annoAperto } from "../dati/rassegna";
 const AggiungiAnime = lazy(() => import("../ui/videoteca/AggiungiAnime"));
 const PostaInArrivo = lazy(() => import("../ui/videoteca/PostaInArrivo"));
 
@@ -303,6 +305,7 @@ export default function Shell({ children }) {
       </nav>
 
       {tuAperto && <FoglioTu richieste={richieste.length} chiudi={() => setApertoSu(null)} />}
+      <InvitoRassegna />
 
       <Suspense fallback={null}>
       {aggiunta && (
@@ -530,7 +533,7 @@ function FoglioTu({ richieste, chiudi }) {
   // Gestioni sono una: dentro, tre linguette (Manga, Anime, Accessi).
   const voci = [
     { id: "mese", percorso: "/mese", etichetta: "Il vostro mese", icona: "calendario" },
-    { id: "rassegna", percorso: "/rassegna", etichetta: "Anno in rassegna", icona: "calendario" },
+    ...(annoAperto() ? [{ id: "rassegna", percorso: `/rassegna?anno=${annoAperto()}`, etichetta: `Anno in rassegna ${annoAperto()}`, icona: "calendario" }] : []),
     { id: "uscite", percorso: "/uscite", etichetta: "Uscite e spesa", icona: "uscite" },
     { ...SEZIONE_GESTIONE, descrizione: "Correggi schede, stagioni e accessi" }
   ];

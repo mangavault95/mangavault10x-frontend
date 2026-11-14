@@ -4,6 +4,7 @@ import useRisorsa from "../dati/useRisorsa";
 import { useSessione } from "../dati/sessione";
 import { euro, numeroIt } from "../dati/serie";
 import { dopoIlRipiego, getRassegna, urlCopertina } from "../services/api";
+import { annoAperto, rassegnaAperta } from "../dati/rassegna";
 
 /**
  * L'ANNO IN RASSEGNA (14/11/2026), alla Spotify.
@@ -38,7 +39,10 @@ export default function RassegnaPage() {
   const { utente, lettori } = useSessione();
 
   const chi = parametri.get("u") || String(utente?.id || lettori.find((l) => l.proprietario)?.id || "");
-  const anno = parametri.get("anno") || String(new Date().getFullYear());
+  const anno = parametri.get("anno") || String(annoAperto() ?? new Date().getFullYear());
+
+  // Prima del 31 dicembre non c'è niente da vedere: lo dice il server (403), e qui non si chiede nemmeno.
+  if (!rassegnaAperta(anno)) return <NonAncora anno={anno} />;
 
   // Chiave sull'indirizzo: cambiando persona o anno la pagina riparte da zero.
   return <Storia key={`${chi}:${anno}`} chi={chi} anno={anno} />;
@@ -355,6 +359,21 @@ function Mesi({ manga, anime, fila, attivi, mio, nome }) {
       {anime.giornoTop && anime.giornoTop.n > 1 && (
         <p className="mt-1 text-sm text-ink-muted">{mio ? "Il giorno in cui hai guardato di più:" : "Il giorno in cui ha guardato di più:"} {giornoEsteso(anime.giornoTop.giorno)} ({anime.giornoTop.n} puntate).</p>
       )}
+    </div>
+  );
+}
+
+function NonAncora({ anno }) {
+  const navigate = useNavigate();
+
+  return (
+    <div className="mx-auto flex min-h-[60dvh] w-full max-w-xl flex-col justify-center px-6 py-10 text-center">
+      <p className="text-5xl" aria-hidden="true">🎁</p>
+      <h1 className="mt-4 font-display text-3xl font-extrabold text-ink-bright">L&apos;anno in rassegna {anno} non è ancora pronto</h1>
+      <p className="mt-3 text-ink-muted">Si apre il 31 dicembre {anno} a mezzanotte. Ti arriverà anche un messaggio su Telegram.</p>
+      <button type="button" onClick={() => navigate("/")} className="mx-auto mt-6 h-11 rounded-card bg-glass-2 px-6 font-semibold text-ink-bright">
+        Torna alla Home
+      </button>
     </div>
   );
 }
