@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "font-kana": "node scripts/genera-font-kana.mjs",
-    "controlla": "node scripts/controlla-router.mjs && node scripts/controlla-contrasto.mjs"
+    "controlla": "node scripts/controlla-router.mjs && node scripts/controlla-contrasto.mjs && node scripts/controlla-copertine.mjs"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",

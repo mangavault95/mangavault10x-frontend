@@ -23,9 +23,19 @@
  * più: non c'è nessun confine da attraversare.
  */
 
-// Solo questi tre. Un inoltro che accetta qualsiasi indirizzo è un
-// proxy aperto: chiunque potrebbe usare il nostro dominio per servire
-// roba sua, e la reputazione del sito è nostra, non sua.
+// Solo questi quattro host, e di ciascuno SOLO i percorsi delle immagini.
+//
+// ⚠️ Un inoltro che accetta qualsiasi percorso è un proxy aperto, e fino al 14/11/2026 lo
+// era: `/copertine/animeclick/<qualunque pagina>` serviva quella pagina SOTTO IL NOSTRO
+// DOMINIO. Una pagina di un altro sito aperta con il nostro indirizzo gira «come se fosse
+// MangaVault»: se contiene uno script, quello script legge il gettone d'accesso che sta
+// nella memoria del browser e può modificare la collezione. In più era una porta verso
+// AnimeClick che parte da Vercel senza la firma dichiarata (MangaVault/1.0).
+//
+// Oggi si inoltrano solo le cartelle da cui arrivano le copertine. Tutto il resto
+// (`PERCORSI_AMMESSI`) non passa di qui: `copertinaLocale` lo manda al ponte del backend,
+// che ha le sue regole. `scripts/controlla-copertine.mjs` (dentro `npm run controlla`) fa
+// fallire la build se `vercel.json` si allarga di nuovo o si disallinea da questa tabella.
 const INOLTRI = {
   "s4.anilist.co": "/copertine/anilist",
   "myanimelist.net": "/copertine/mal",
@@ -33,11 +43,18 @@ const INOLTRI = {
   "www.animeclick.it": "/copertine/animeclick"
 };
 
+export const PERCORSI_AMMESSI = {
+  "s4.anilist.co": ["/file/anilistcdn/"],
+  "myanimelist.net": ["/images/"],
+  "cdn.myanimelist.net": ["/images/"],
+  "www.animeclick.it": ["/immagini/", "/images/"]
+};
+
 /**
  * Converte l'indirizzo di una copertina nella versione servita dal
- * nostro dominio. Un host che non conosciamo torna indietro invariato:
- * la texture non si caricherà e il libro terrà la sua carta colorata,
- * che è meglio di una richiesta a un indirizzo che non controlliamo.
+ * nostro dominio. Un host che non conosciamo, o un percorso che non è
+ * una cartella di immagini, dà `null`: chi chiama ripiega sul ponte del
+ * backend, che è meglio di una richiesta a un indirizzo che non controlliamo.
  */
 export function copertinaLocale(url) {
   if (!url) return null;
@@ -51,6 +68,11 @@ export function copertinaLocale(url) {
     const prefisso = INOLTRI[indirizzo.hostname];
 
     if (!prefisso) return null;
+
+    // Solo le cartelle delle immagini: una pagina di quei siti non passa dal nostro dominio.
+    if (!PERCORSI_AMMESSI[indirizzo.hostname].some((cartella) => indirizzo.pathname.startsWith(cartella))) {
+      return null;
+    }
 
     return `${prefisso}${indirizzo.pathname}${indirizzo.search}`;
   } catch {

@@ -16,16 +16,21 @@
     ]
   },
   "rewrites": [
-    { "source": "/copertine/anilist/:percorso*", "destination": "https://s4.anilist.co/:percorso*" },
-    { "source": "/copertine/mal/:percorso*", "destination": "https://myanimelist.net/:percorso*" },
-    { "source": "/copertine/mal-cdn/:percorso*", "destination": "https://cdn.myanimelist.net/:percorso*" },
-    { "source": "/copertine/animeclick/:percorso*", "destination": "https://www.animeclick.it/:percorso*" },
+    { "source": "/copertine/anilist/file/anilistcdn/:percorso*", "destination": "https://s4.anilist.co/file/anilistcdn/:percorso*" },
+    { "source": "/copertine/mal/images/:percorso*", "destination": "https://myanimelist.net/images/:percorso*" },
+    { "source": "/copertine/mal-cdn/images/:percorso*", "destination": "https://cdn.myanimelist.net/images/:percorso*" },
+    { "source": "/copertine/animeclick/immagini/:percorso*", "destination": "https://www.animeclick.it/immagini/:percorso*" },
+    { "source": "/copertine/animeclick/images/:percorso*", "destination": "https://www.animeclick.it/images/:percorso*" },
     { "source": "/:qualsiasi*", "destination": "/index.html" }
   ],
   "headers": [
     {
       "source": "/copertine/:percorso*",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800, immutable" }]
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=604800, immutable" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Content-Security-Policy", "value": "sandbox" }
+      ]
     }
   ]
 }

@@ -2,42 +2,33 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import { HOST_INOLTRATI, PERCORSI_AMMESSI } from "./src/dati/copertine.js";
 
 /**
- * Gli inoltri delle copertine.
+ * Gli inoltri delle copertine, solo per lo sviluppo (in produzione lo fa `vercel.json`).
  *
- * Servono alla biblioteca in 3D: WebGL rifiuta le immagini di un altro
- * dominio che non dichiarano il permesso CORS, e nessuno dei nostri
- * host lo dichiara. Facendole passare di qui diventano immagini del
- * nostro stesso indirizzo e il problema sparisce.
- *
- * Questa tabella deve restare allineata con `vercel.json` (che fa la
- * stessa cosa in produzione) e con `src/dati/copertine.js` (che riscrive
- * gli indirizzi). Il `Referer` va tolto: alcuni CDN rispondono 403 a
- * chi arriva da un dominio che non riconoscono.
+ * Gli host e le cartelle di immagini che si inoltrano vengono da `src/dati/copertine.js`:
+ * una tabella sola, così il computer di casa e Vercel non possono dirsi cose diverse.
+ * Solo le cartelle delle immagini, mai l'intero sito (vedi lì il perché).
+ * Il `Referer` va tolto: alcuni CDN rispondono 403 a chi arriva da un dominio che non riconoscono.
  */
-const COPERTINE = {
-  "/copertine/anilist": "https://s4.anilist.co",
-  "/copertine/mal": "https://myanimelist.net",
-  "/copertine/mal-cdn": "https://cdn.myanimelist.net",
-  "/copertine/animeclick": "https://www.animeclick.it"
-};
-
 const inoltri = Object.fromEntries(
-  Object.entries(COPERTINE).map(([percorso, destinazione]) => [
-    percorso,
-    {
-      target: destinazione,
-      changeOrigin: true,
-      rewrite: (p) => p.replace(percorso, ""),
-      configure: (proxy) => {
-        proxy.on("proxyReq", (richiesta) => {
-          richiesta.removeHeader("referer");
-          richiesta.removeHeader("origin");
-        });
+  Object.entries(HOST_INOLTRATI).flatMap(([host, prefisso]) =>
+    PERCORSI_AMMESSI[host].map((cartella) => [
+      `${prefisso}${cartella}`,
+      {
+        target: `https://${host}`,
+        changeOrigin: true,
+        rewrite: (p) => p.replace(prefisso, ""),
+        configure: (proxy) => {
+          proxy.on("proxyReq", (richiesta) => {
+            richiesta.removeHeader("referer");
+            richiesta.removeHeader("origin");
+          });
+        }
       }
-    }
-  ])
+    ])
+  )
 );
 
 /**

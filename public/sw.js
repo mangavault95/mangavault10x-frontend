@@ -138,7 +138,9 @@ async function copertina(richiesta) {
   try {
     const risposta = await fetch(richiesta.url, { mode: "cors", credentials: "omit" });
 
-    if (risposta.ok) {
+    // Solo se è davvero un'immagine: un indirizzo `/copertine/…` che non lo è (la pagina
+    // del sito, un 200 con dentro HTML) non va tenuto da parte come se fosse una copertina.
+    if (risposta.ok && /^image\//i.test(risposta.headers.get("content-type") || "")) {
       await cache.put(richiesta, risposta.clone());
       sfoltisci(COPERTINE);
     }
