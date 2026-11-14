@@ -26,6 +26,7 @@ import { BibliotecarioProvider } from "../bibliotecario/BibliotecarioProvider";
 const Adesso = lazy(() => import("../pages/AdessoPage"));
 const Cerca = lazy(() => import("../pages/CercaPage"));
 const Mese = lazy(() => import("../pages/MesePage"));
+const Rassegna = lazy(() => import("../pages/RassegnaPage"));
 const Gestione = lazy(() => import("../pages/GestionePage"));
 const Collezione = lazy(() => import("../pages/CollezionePage"));
 const Serie = lazy(() => import("../pages/SeriePage"));
@@ -226,6 +227,7 @@ function ContenutoRotte({ location, idVisto }) {
                   <Route path="/gestione" element={<Gestione />} />
                   <Route path="/cerca" element={<Cerca />} />
                   <Route path="/mese" element={<Mese />} />
+                  <Route path="/rassegna" element={<Rassegna />} />
                   {/* La Collezione sta sopra, tenuta in vita (vedi `Contenuto`). */}
                   <Route path="/collezione" element={null} />
                   <Route path="/biblioteca" element={<Navigate to="/collezione" replace />} />

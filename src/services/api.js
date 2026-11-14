@@ -329,6 +329,10 @@ export const registraAcquisto = (mangaId, { volumi = null, prezzo = null, data =
 /** Il riassunto di un mese di casa (`routes/mese.js`); senza mese, quello scorso. */
 export const getMese = (mese = null) => request(`/api/mese${mese ? `?m=${mese}` : ""}`);
 
+/** L'anno in rassegna di una persona (`routes/rassegna.js`). */
+export const getRassegna = (anno, utente) =>
+  request(`/api/rassegna?anno=${encodeURIComponent(anno)}${utente ? `&utente=${encodeURIComponent(utente)}` : ""}`);
+
 export const annullaAcquisti = (ids) =>
   request("/api/manga/acquisti/annulla", { method: "POST", body: { ids }, auth: true });
 

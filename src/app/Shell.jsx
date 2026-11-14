@@ -530,6 +530,7 @@ function FoglioTu({ richieste, chiudi }) {
   // Gestioni sono una: dentro, tre linguette (Manga, Anime, Accessi).
   const voci = [
     { id: "mese", percorso: "/mese", etichetta: "Il vostro mese", icona: "calendario" },
+    { id: "rassegna", percorso: "/rassegna", etichetta: "Anno in rassegna", icona: "calendario" },
     { id: "uscite", percorso: "/uscite", etichetta: "Uscite e spesa", icona: "uscite" },
     { ...SEZIONE_GESTIONE, descrizione: "Correggi schede, stagioni e accessi" }
   ];
