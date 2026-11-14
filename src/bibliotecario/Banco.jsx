@@ -8,6 +8,7 @@ import useRisorsa from "../dati/useRisorsa";
 import { getReadingSessions } from "../services/api";
 import Copertina from "../ui/Copertina";
 import Icon from "../app/Icon";
+import Sovrapposizione from "../ui/Sovrapposizione";
 
 /**
  * Il pannello vero e proprio, in un file suo.
@@ -103,7 +104,11 @@ export default function Pannello({ onChiudi }) {
   );
 
   return (
-    <>
+    // Da `Sovrapposizione` come ogni altra finestra: su <body> fuori
+    // dalla pagina, che sotto si ferma (niente scorrimento dietro il
+    // pannello) e non risponde alla tastiera. Prima il pannello stava
+    // dentro la pagina e il Tab ci usciva.
+    <Sovrapposizione>
       {/* Il velo scurisce la pagina e chiude al click: su mobile è
           l'unico modo comodo di uscire da un pannello a tutta altezza. */}
       <div
@@ -116,7 +121,7 @@ export default function Pannello({ onChiudi }) {
         role="dialog"
         aria-modal="true"
         aria-label="Il banco del bibliotecario"
-        className="fixed inset-x-0 bottom-0 z-modal flex h-[85dvh] flex-col rounded-t-sheet border border-hairline bg-alcove/95 shadow-float backdrop-blur-2xl
+        className="fixed inset-x-0 bottom-0 z-modal flex h-[85dvh] flex-col rounded-t-sheet border border-hairline bg-alcove shadow-float
                    animate-rise-in
                    md:inset-y-0 md:left-auto md:right-0 md:h-dvh md:w-[27rem] md:rounded-none md:rounded-l-sheet md:border-y-0 md:border-r-0"
       >
@@ -203,7 +208,7 @@ export default function Pannello({ onChiudi }) {
           </div>
         </form>
       </aside>
-    </>
+    </Sovrapposizione>
   );
 }
 

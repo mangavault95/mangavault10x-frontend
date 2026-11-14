@@ -78,31 +78,33 @@ non lo sa, e infatti chiedendo solo quella si sbagliano tutte e due le volte.
   server scritto a mano e citava una colonna `Valutazione` che non esiste
   più.)
 
+## Fatto il 14 novembre 2026
+
+- **Le finestre sono finestre.** `ui/Sovrapposizione.jsx` rende `inert` la
+  pagina sotto finché una è aperta (il Tab non esce) e riporta il fuoco al
+  bottone di partenza. Le tre che non passano da `Foglio` perché hanno un
+  disegno loro — la busta di `ConsigliaAnime`, la cartolina di
+  `PostaInArrivo` — usano `ui/useFinestra.js` per Escape e fuoco iniziale; il
+  Banco passa da `Sovrapposizione` come tutte. Gli avvisi stanno su `<body>`:
+  restano toccabili con una finestra aperta.
+- **Il lato anime scrive da `eseguiProtetto`**: a sessione scaduta si riapre
+  l'accesso e l'azione riparte.
+
 ## Aperti
 
 Riscritta il 14 novembre 2026, dopo un controllo dei tre repository. Le voci
 sulla stanza (porta animata, peso dei modelli, compressione dei `.glb`) sono
 decadute con la stanza; `ANTHROPIC_API_KEY` nel frontend non c'è più.
 
-- **Tre finestre fuori dal foglio comune**: `bibliotecario/Banco.jsx`,
-  `ui/videoteca/ConsigliaAnime.jsx`, `ui/videoteca/PostaInArrivo.jsx`. Hanno
-  velo, chiusura e fuoco fatti a mano, e meno di quello che `ui/Foglio.jsx` dà
-  gratis.
-- **Il Tab esce dalle finestre**: `Foglio` dichiara `aria-modal` ma la pagina
-  dietro resta raggiungibile da tastiera. La correzione è `inert` su `#root`
-  in `ui/Sovrapposizione.jsx` — ma gli avvisi (`ui/Avvisi.jsx`) stanno dentro
-  `#root` e diventerebbero intoccabili mentre una finestra è aperta: vanno
-  portati fuori prima.
 - **Contrasto di `text-ink-faint`**: circa 3:1 sullo sfondo, sotto il 4,5:1
-  che serve a un testo piccolo. È usato in un'ottantina di punti, anche per
-  testo vero e non solo per decorazioni.
-- **Il lato anime scrive senza `eseguiProtetto`**: una sessione scaduta ora
-  si vede (il sito torna a «nessuno»), ma la prima azione fallisce invece di
-  riaprire l'accesso e ripartire da sola come fa la biblioteca.
+  che serve a un testo piccolo. Le etichette e le descrizioni che erano
+  testo vero sono passate a `ink-muted` (14/11/2026); restano gli usi come
+  segnaposto e come testo secondario, una settantina, da guardare uno a uno.
 - **`react-router` 6**: due avvisi di sicurezza moderati che si chiudono solo
   passando alla 7, che è un cambio incompatibile.
-- **Nessuna prova automatica**: i candidati sono le funzioni pure di
-  `dati/serie.js`, `dati/kachinuki.js`, `bibliotecario/intenti.js`.
+- **Poche prove automatiche**: il sito ha solo lint e build a ogni push. I
+  candidati sono le funzioni pure di `dati/serie.js`, `dati/kachinuki.js`,
+  `bibliotecario/intenti.js`.
 - **Copertine sempre a 384 px**: solo 8 chiamate su 34 a `urlCopertina`
   dicono quanto è grande il riquadro; le altre scaricano 384 px anche per una
   miniatura da 44.

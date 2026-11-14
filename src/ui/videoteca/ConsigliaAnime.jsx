@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Icon from "../../app/Icon";
 import { raggruppaCandidati } from "../../dati/videoteca";
 import { cercaAnime, mandaConsiglio, urlCopertina } from "../../services/api";
+import useFinestra from "../useFinestra";
 import Sovrapposizione from "../Sovrapposizione";
 import Busta, { Indirizzo } from "./Busta";
 import { Bottone, Pillola, Scheda } from "./Foglio";
@@ -77,6 +78,10 @@ export default function ConsigliaAnime({ persona, chiudi, alMandato }) {
   // chiesto di non vedere.
   const [ferma] = useState(preferisceMenoMovimento);
 
+  // Escape e fuoco iniziale. Non mentre la busta vola: la richiesta è
+  // già partita, e chiudere vorrebbe dire non vedere se è arrivata.
+  const finestra = useFinestra(chiudi, { attiva: !inVolo });
+
   async function manda() {
     if (!scelto || inVolo) return;
 
@@ -114,11 +119,22 @@ export default function ConsigliaAnime({ persona, chiudi, alMandato }) {
   return (
     <Sovrapposizione>
       <div
-        className="fixed inset-0 z-modal grid place-items-center p-3"
+        ref={finestra}
+        className="fixed inset-0 z-modal grid place-items-center p-3 outline-none"
         role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
         aria-label={`Consiglia un anime a ${persona.nickname}`}
       >
-        <div className="absolute inset-0 bg-quaderno-inchiostro/40" />
+        {/* Un tocco sul velo chiude, come in ogni altra finestra del sito
+            — tranne mentre la busta vola. */}
+        <div
+          aria-hidden="true"
+          onClick={() => {
+            if (!inVolo) chiudi();
+          }}
+          className="absolute inset-0 bg-quaderno-inchiostro/40"
+        />
 
         {inVolo ? (
           <Volo persona={persona} scelto={scelto} ferma={ferma} />

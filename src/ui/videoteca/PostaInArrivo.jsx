@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Icon from "../../app/Icon";
 import { quandoBreveDa } from "../../dati/cineforum";
 import { getConsigliInArrivo, segnaConsiglioAperto, urlCopertina } from "../../services/api";
+import useFinestra from "../useFinestra";
 import Sovrapposizione from "../Sovrapposizione";
 import Busta, { Indirizzo } from "./Busta";
 import Tondino from "./Tondino";
@@ -131,14 +132,8 @@ function Cartolina({ consiglio, apriAggiunta, chiudi }) {
     segnaConsiglioAperto(consiglio.id).catch(() => {});
   }, [consiglio.id]);
 
-  useEffect(() => {
-    function alTasto(e) {
-      if (e.key === "Escape") chiudi();
-    }
-
-    window.addEventListener("keydown", alTasto);
-    return () => window.removeEventListener("keydown", alTasto);
-  }, [chiudi]);
+  // Escape e fuoco iniziale (vedi `useFinestra`).
+  const finestra = useFinestra(chiudi);
 
   /**
    * Dove porta la copertina.
@@ -162,9 +157,12 @@ function Cartolina({ consiglio, apriAggiunta, chiudi }) {
   return (
     <Sovrapposizione>
       <div
+        ref={finestra}
         role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
         aria-label={`${consiglio.da.nickname} ti consiglia ${consiglio.titolo}`}
-        className="fixed inset-0 z-modal grid place-items-center overflow-y-auto bg-quaderno-inchiostro/70 p-4"
+        className="fixed inset-0 z-modal grid place-items-center overflow-y-auto bg-quaderno-inchiostro/70 p-4 outline-none"
       >
         {/* La ✕ c'è da subito, anche mentre la busta vola: un velo a
             schermo intero senza via d'uscita per due secondi è una
