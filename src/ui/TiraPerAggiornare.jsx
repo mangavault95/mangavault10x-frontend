@@ -20,6 +20,12 @@ import { AGGIORNA } from "../dati/useRisorsa";
  * si sposta di lato (le file che scorrono in orizzontale restano loro) e
  * se sopra non c'è un foglio aperto — lì lo stesso gesto chiude il foglio.
  *
+ * `touchmove` si ascolta SOLO durante un gesto cominciato in cima alla
+ * pagina (`inizia` lo aggiunge, ogni uscita lo toglie). Un ascoltatore di
+ * `touchmove` che può chiamare `preventDefault` obbliga il browser ad
+ * aspettare il JavaScript prima di scorrere, a ogni movimento del dito su
+ * ogni pagina: con il telefono occupato lo scorrimento si inceppava.
+ *
  * Il tondo si muove scrivendo `transform` e `opacity` direttamente sul
  * nodo: a 120 Hz un render di React per fotogramma si vedrebbe.
  */
@@ -53,6 +59,12 @@ export default function TiraPerAggiornare() {
       icona.style.transform = `rotate(${Math.min(giu / SOGLIA, 1.2) * 300}deg)`;
     }
 
+    function ascolta(si) {
+      window.removeEventListener("touchmove", muovi);
+
+      if (si) window.addEventListener("touchmove", muovi, { passive: false });
+    }
+
     function inizia(e) {
       if (occupato || e.touches.length !== 1) return;
       if (window.scrollY > 0) return;
@@ -63,6 +75,7 @@ export default function TiraPerAggiornare() {
       const t = e.touches[0];
 
       gesto = { x0: t.clientX, y0: t.clientY, attivo: false, giu: 0, armato: false };
+      ascolta(true);
     }
 
     function muovi(e) {
@@ -79,6 +92,7 @@ export default function TiraPerAggiornare() {
         // scesa: non è questo gesto.
         if (dy <= 0 || Math.abs(dx) > dy || window.scrollY > 0) {
           gesto = null;
+          ascolta(false);
           return;
         }
 
@@ -107,6 +121,7 @@ export default function TiraPerAggiornare() {
       const era = gesto;
 
       gesto = null;
+      ascolta(false);
 
       if (!era?.attivo) return;
 
@@ -134,7 +149,6 @@ export default function TiraPerAggiornare() {
     }
 
     window.addEventListener("touchstart", inizia, { passive: true });
-    window.addEventListener("touchmove", muovi, { passive: false });
     window.addEventListener("touchend", finisci);
     window.addEventListener("touchcancel", finisci);
 
