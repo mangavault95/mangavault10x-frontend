@@ -348,7 +348,7 @@ function InComune({ serie }) {
       <div className="h-14 w-10 shrink-0 overflow-hidden rounded bg-quaderno-carta">
         {serie.cover_url && (
           <img
-            src={urlCopertina(serie.cover_url)}
+            src={urlCopertina(serie.cover_url, 128)}
             alt=""
             loading="lazy"
             className="h-full w-full object-cover"

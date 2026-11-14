@@ -258,7 +258,7 @@ function Voce({ voce }) {
       >
         {serie.cover_url && (
           <img
-            src={urlCopertina(serie.cover_url)}
+            src={urlCopertina(serie.cover_url, 128)}
             alt=""
             loading="lazy"
             className="h-full w-full object-cover"
@@ -331,7 +331,7 @@ function Copertina({ anime, className = "" }) {
       <div className="h-16 w-11 shrink-0 overflow-hidden rounded bg-quaderno-riga">
         {anime.cover_url && (
           <img
-            src={urlCopertina(anime.cover_url)}
+            src={urlCopertina(anime.cover_url, 128)}
             alt=""
             loading="lazy"
             className="h-full w-full object-cover"

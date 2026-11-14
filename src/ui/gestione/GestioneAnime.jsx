@@ -265,7 +265,7 @@ function NomeDellaSerie({ serie, fai, inCorso }) {
       <div className="h-20 w-14 shrink-0 overflow-hidden rounded bg-quaderno-carta">
         {serie.cover_url && (
           <img
-            src={urlCopertina(serie.cover_url)}
+            src={urlCopertina(serie.cover_url, 128)}
             alt=""
             className="h-full w-full object-cover"
           />

@@ -164,6 +164,12 @@ async function request(path, { method = "GET", body, auth = false, signal } = {}
  * miniature di Google): meglio lenti che rotti.
  */
 export function urlCopertina(originale, larghezza = 384) {
+  // `larghezza` sono i pixel che SERVONO, non quelli che il riquadro
+  // occupa: uno schermo di telefono ne mette due o tre per ogni pixel
+  // CSS, quindi un riquadro largo 44 vuole 128, uno da 64-90 vuole 256,
+  // e solo una carta da 130 in su i 384 di partenza. Dimenticarsene
+  // costa: una miniatura da 40 pixel scaricava la stessa immagine di
+  // una carta grande, tre volte più pesante del dovuto.
   if (!originale) return null;
 
   // Un'immagine già nostra o già in formato dati non va rimbalzata.

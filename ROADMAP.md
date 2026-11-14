@@ -89,6 +89,12 @@ non lo sa, e infatti chiedendo solo quella si sbagliano tutte e due le volte.
   restano toccabili con una finestra aperta.
 - **Il lato anime scrive da `eseguiProtetto`**: a sessione scaduta si riapre
   l'accesso e l'azione riparte.
+- **Copertine alla misura giusta.** `urlCopertina(src, larghezza)` vuole i
+  pixel che SERVONO (circa 2,5 volte quelli del riquadro): 128 per le
+  miniature da 24-56 px, 256 per quelle da 64-90, 384 — la misura di
+  partenza — per le carte. Quindici miniature scaricavano 384 per un riquadro
+  da 40: ora no. Restano a 384 apposta le carte, la scheda e la foto
+  del profilo (`SceltaImmagine` salva quell'indirizzo come immagine vera).
 
 ## Aperti
 
@@ -105,9 +111,6 @@ decadute con la stanza; `ANTHROPIC_API_KEY` nel frontend non c'è più.
 - **Poche prove automatiche**: il sito ha solo lint e build a ogni push. I
   candidati sono le funzioni pure di `dati/serie.js`, `dati/kachinuki.js`,
   `bibliotecario/intenti.js`.
-- **Copertine sempre a 384 px**: solo 8 chiamate su 34 a `urlCopertina`
-  dicono quanto è grande il riquadro; le altre scaricano 384 px anche per una
-  miniatura da 44.
 - Pulizia dati: editori duplicati (`Panini` / `Panini S.p.A.`), `DataAggiunta`
   quasi sempre vuoto.
 - ~~"Più edizioni della stessa serie"~~: fatta. Ogni edizione è una riga di

@@ -246,7 +246,7 @@ function Ricerca({ titolo, setTitolo, righe, per, inCorso, errore, scegli, chiud
                 <div className="h-16 w-12 shrink-0 overflow-hidden rounded bg-quaderno-carta">
                   {riga.copertina && (
                     <img
-                      src={urlCopertina(riga.copertina)}
+                      src={urlCopertina(riga.copertina, 128)}
                       alt=""
                       loading="lazy"
                       className="h-full w-full object-cover"
@@ -643,7 +643,7 @@ function Anteprima({ guardata, presa, spunta, bloccata, chiudi }) {
         <div className="h-24 w-16 shrink-0 overflow-hidden rounded bg-quaderno-carta">
           {(dati?.cover_url || parte.copertina) && (
             <img
-              src={urlCopertina(dati?.cover_url || parte.copertina)}
+              src={urlCopertina(dati?.cover_url || parte.copertina, 256)}
               alt=""
               className="h-full w-full object-cover"
             />
@@ -839,7 +839,7 @@ function RigaParte({ parte, presa, spunta, bloccata, anteprima }) {
         <div className="h-14 w-10 shrink-0 overflow-hidden rounded bg-quaderno-carta">
           {parte.copertina && (
             <img
-              src={urlCopertina(parte.copertina)}
+              src={urlCopertina(parte.copertina, 128)}
               alt=""
               loading="lazy"
               className="h-full w-full object-cover"

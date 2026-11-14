@@ -281,7 +281,7 @@ function Cerca({ persona, scegli, chiudi }) {
                 <div className="h-16 w-12 shrink-0 overflow-hidden rounded bg-quaderno-carta">
                   {riga.copertina && (
                     <img
-                      src={urlCopertina(riga.copertina)}
+                      src={urlCopertina(riga.copertina, 128)}
                       alt=""
                       loading="lazy"
                       className="h-full w-full object-cover"
@@ -352,7 +352,7 @@ function Scrivi({ persona, scelto, testo, setTesto, errore, indietro, chiudi, ma
           <div className="h-32 w-[5.5rem] shrink-0 overflow-hidden rounded bg-quaderno-carta">
             {scelto.copertina && (
               <img
-                src={urlCopertina(scelto.copertina)}
+                src={urlCopertina(scelto.copertina, 256)}
                 alt=""
                 // `eager` e non `lazy`: dentro un portale appena
                 // montato una lazy non parte MAI — il browser decide

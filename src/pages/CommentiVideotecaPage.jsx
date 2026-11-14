@@ -97,7 +97,7 @@ function Commento({ commento, persona }) {
       >
         {commento.anime.cover_url && (
           <img
-            src={urlCopertina(commento.anime.cover_url)}
+            src={urlCopertina(commento.anime.cover_url, 256)}
             alt=""
             loading="lazy"
             className="h-full w-full object-cover"

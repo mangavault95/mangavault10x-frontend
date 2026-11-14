@@ -104,7 +104,7 @@ export default function ComponiMessaggio({ alFatto, chiediAccesso }) {
               <div className="mt-2 inline-flex items-center gap-2 rounded-lg border border-quaderno-riga bg-quaderno-carta py-1 pl-1 pr-2">
                 <div className="h-9 w-6 shrink-0 overflow-hidden rounded-sm bg-quaderno-riga">
                   {serie.cover_url && (
-                    <img src={urlCopertina(serie.cover_url)} alt="" className="h-full w-full object-cover" />
+                    <img src={urlCopertina(serie.cover_url, 128)} alt="" className="h-full w-full object-cover" />
                   )}
                 </div>
 
@@ -244,7 +244,7 @@ function SceltaSerie({ scegli, chiudi }) {
             >
               <div className="h-9 w-6 shrink-0 overflow-hidden rounded-sm bg-quaderno-carta">
                 {s.cover_url && (
-                  <img src={urlCopertina(s.cover_url)} alt="" className="h-full w-full object-cover" />
+                  <img src={urlCopertina(s.cover_url, 128)} alt="" className="h-full w-full object-cover" />
                 )}
               </div>
 

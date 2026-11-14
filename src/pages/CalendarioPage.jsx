@@ -244,7 +244,7 @@ function Uscita({ uscita: u, passato }) {
       <div className="h-14 w-10 shrink-0 overflow-hidden rounded bg-quaderno-carta">
         {u.cover_url && (
           <img
-            src={urlCopertina(u.cover_url)}
+            src={urlCopertina(u.cover_url, 128)}
             alt=""
             loading="lazy"
             className={`h-full w-full object-cover ${passato ? "opacity-50" : ""}`}

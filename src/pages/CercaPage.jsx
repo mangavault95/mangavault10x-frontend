@@ -529,8 +529,8 @@ function ProposataAcquisto({ acquisto, occupato, onRegistra }) {
   return (
     <section className="mt-5 rounded-card border border-brass-400/40 bg-alcove p-4 text-ink-bright">
       <div className="flex items-center gap-3.5">
-        {urlCopertina(serie.copertina) ? (
-          <img src={urlCopertina(serie.copertina)} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" />
+        {urlCopertina(serie.copertina, 128) ? (
+          <img src={urlCopertina(serie.copertina, 128)} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" />
         ) : null}
 
         <div className="min-w-0 flex-1">

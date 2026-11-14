@@ -114,7 +114,7 @@ export default function ListaInVisione({ righe, setRighe, ricarica, puoiScrivere
                 <div className="h-20 w-14 shrink-0 overflow-hidden rounded bg-quaderno-carta">
                   {anime.cover_url && (
                     <img
-                      src={urlCopertina(anime.cover_url)}
+                      src={urlCopertina(anime.cover_url, 128)}
                       alt=""
                       loading="lazy"
                       className="h-full w-full object-cover"

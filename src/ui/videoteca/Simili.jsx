@@ -194,7 +194,7 @@ function RigaRipresa({ carta }) {
       className="group flex gap-3 rounded-card border border-quaderno-riga bg-quaderno-foglio p-2 transition-shadow duration-quick hover:shadow-lift
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu focus-visible:ring-offset-2 focus-visible:ring-offset-quaderno-carta"
     >
-      <Copertina carta={carta} className="h-[4.5rem] w-[3.4rem] shrink-0" />
+      <Copertina carta={carta} larghezza={128} className="h-[4.5rem] w-[3.4rem] shrink-0" />
 
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 py-0.5">
         <h4 className="line-clamp-1 text-sm font-semibold text-quaderno-inchiostro">
@@ -447,7 +447,7 @@ function Anteprima({ carta, chiudi, aggiungi }) {
  * il bordo dello schermo); nel riquadro no, ed è una sola immagine che
  * qualcuno ha appena chiesto di vedere.
  */
-function Copertina({ carta, className = "", pigra = true }) {
+function Copertina({ carta, className = "", pigra = true, larghezza = 384 }) {
   if (!carta.copertina) {
     return (
       <div
@@ -460,7 +460,7 @@ function Copertina({ carta, className = "", pigra = true }) {
 
   return (
     <img
-      src={urlCopertina(carta.copertina)}
+      src={urlCopertina(carta.copertina, larghezza)}
       alt=""
       loading={pigra ? "lazy" : "eager"}
       className={`overflow-hidden rounded bg-quaderno-carta object-cover ${className}`}

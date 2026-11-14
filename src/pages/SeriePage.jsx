@@ -286,7 +286,7 @@ export default function SeriePage() {
         {serie.copertina && (
           <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
             <img
-              src={urlCopertina(serie.copertina)}
+              src={urlCopertina(serie.copertina, 128)}
               alt=""
               className="h-full w-full scale-125 object-cover opacity-25 blur-3xl"
             />
