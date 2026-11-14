@@ -12,7 +12,17 @@ import {
   utenteDalToken,
   utenteRicordato
 } from "./sessione";
+import { svuotaCacheDati } from "./cacheOffline";
 import { svuotaRisorse } from "./useRisorsa";
+
+/**
+ * Cambia chi sta guardando: quello che si sapeva era di un'altra persona,
+ * in memoria (`svuotaRisorse`) e nella copia offline del service worker.
+ */
+function dimenticaTutto() {
+  svuotaRisorse();
+  svuotaCacheDati();
+}
 
 /**
  * Chi sta usando il sito, per tutto il sito.
@@ -110,7 +120,7 @@ export function SessioneProvider({ children }) {
 
     // Quello che è in memoria è stato chiesto da un'altra persona (o
     // da nessuno): chi entra riparte da zero.
-    svuotaRisorse();
+    dimenticaTutto();
     ricordaUtente(identita);
     setUtente(identita);
 
@@ -119,7 +129,7 @@ export function SessioneProvider({ children }) {
 
   const esci = useCallback(() => {
     buttaViaLaSessione();
-    svuotaRisorse();
+    dimenticaTutto();
     setUtente(null);
     setRichieste([]);
   }, []);
@@ -131,7 +141,7 @@ export function SessioneProvider({ children }) {
   // tocca riapre l'accesso invece di fallire.
   useEffect(() => {
     const caduta = () => {
-      svuotaRisorse();
+      dimenticaTutto();
       setUtente(null);
       setRichieste([]);
     };
