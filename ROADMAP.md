@@ -126,8 +126,21 @@ decadute con la stanza; `ANTHROPIC_API_KEY` nel frontend non c'è più.
 - **Poche prove automatiche**: il sito ha solo lint e build a ogni push. I
   candidati sono le funzioni pure di `dati/serie.js`, `dati/kachinuki.js`,
   `bibliotecario/intenti.js`.
-- Pulizia dati: editori duplicati (`Panini` / `Panini S.p.A.`), `DataAggiunta`
-  quasi sempre vuoto.
+- **Editori: un solo nome ancora da decidere.** Il 14/11/2026 l'elenco nel database
+  (205 serie, 15 editori) era già pulito: nessun `S.p.A.`, nessuna stringa vuota, nessuno
+  spazio di troppo. Restava solo «GP» (2 serie) accanto a «GP Manga» (1): il logo si chiama
+  `gp.jpg`, quindi per l'app l'editore è «GP» e «GP Manga» è l'unica serie senza logo.
+  Da allora l'editore si normalizza **alla scrittura** (`services/editori.js` nel backend,
+  `src/editori.js` nel bot, con casi condivisi): le varianti di Google Books e di AnimeClick
+  non entrano più. La regola «GP Manga → GP» è già nel codice; i dati si correggono con una
+  riga di SQL, che si scrive solo dopo la conferma.
+- **`DataAggiunta`: vuota per tutte le 205 serie, e va bene così.** Era vuota perché la
+  scrivevano solo le serie create dal bot; dal 14/11/2026 la scrivono anche la creazione dal
+  sito e il passaggio dalla wishlist. Le serie già presenti NON si riempiono: 28 hanno
+  almeno un acquisto registrato, ma il primo acquisto non è il giorno in cui la serie è
+  entrata (la collezione era già lì, e gli acquisti si registrano da agosto): sarebbe una
+  data inventata. Le liste «ultime aggiunte» si riempiono da sole man mano che entrano
+  serie nuove.
 - ~~"Più edizioni della stessa serie"~~: fatta. Ogni edizione è una riga di
   `"Manga"` con la sua `"Edizione"`, collegata alle gemelle da `"OperaId"`
   (`sql/005_edizioni.sql` nel backend, `edizioniSorelle` in `dati/collezione.js`).
