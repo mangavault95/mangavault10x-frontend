@@ -193,19 +193,47 @@ export function tornaIndietroConVolo(navigate, idSerie) {
 function installaVoloIndietro() {
   if (typeof window === "undefined" || typeof document.startViewTransition !== "function") return;
 
-  function alPopstate() {
+  // `startViewTransition` fotografa «il prima» alla prossima occasione di
+  // disegno, cioè DOPO l'evento in corso e dopo i suoi microtask. React
+  // Router, sentito il `popstate`, aggiorna subito la pagina (un evento di
+  // navigazione è «discreto»: React lo svolge in sincrono): quando il browser
+  // scattava la foto la scheda era già sparita, e il volo aveva solo l'arrivo.
+  // Col bottone non succedeva perché lì la navigazione è dentro la
+  // transizione. Qui si fa lo stesso: l'evento originale si ferma, e il
+  // router lo riceve di nuovo dentro la transizione, a foto scattata.
+  let rilancio = false;
+
+  function alPopstate(e) {
+    if (rilancio) return;
+
     const idSerie = idDaPercorso(percorsoPrima);
     const arrivo = window.location.pathname;
 
     if (inVolo || ridotto() || !idSerie || arrivo !== "/collezione") return;
 
-    // La pagina nuova la monta il router subito dopo questo evento: qui non
-    // c'è niente da fare, basta aspettare che la carta compaia.
-    avviaVolo(idSerie, async () => {});
+    e.stopImmediatePropagation();
+
+    let fatto = false;
+    const consegna = () => {
+      if (fatto) return;
+      fatto = true;
+      rilancio = true;
+
+      try {
+        window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
+      } finally {
+        rilancio = false;
+      }
+    };
+
+    avviaVolo(idSerie, async () => consegna());
+
+    // Se la transizione non parte (scheda in secondo piano) il gesto non
+    // deve restare senza effetto: il router riceve l'evento comunque.
+    setTimeout(consegna, 400);
   }
 
-  // In cattura: deve partire prima dell'ascoltatore del router, perché
-  // l'aspetto "di prima" va fotografato prima che la pagina cambi.
+  // In cattura: deve partire prima dell'ascoltatore del router.
   window.addEventListener("popstate", alPopstate, true);
 }
 
