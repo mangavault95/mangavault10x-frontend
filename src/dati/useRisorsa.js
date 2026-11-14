@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { getToken } from "../services/api";
+import { utenteDalToken } from "./sessione";
 
 /**
  * Un caricamento dal server, con i tre stati che servono davvero.
@@ -52,9 +54,97 @@ export const AGGIORNA = "mangavault:aggiorna";
 const ricordate = new Map();
 const inVolo = new Map();
 
+/**
+ * LA COPIA SU DISCO (`opzioni.persisti`)
+ *
+ * La memoria sopra vale per una visita sola: aprendo l'app la sera, con
+ * Render addormentato, la Home ripartiva da riquadri grigi per tutto il
+ * risveglio. Con `persisti` la risposta si mette via anche in
+ * `localStorage` e la visita dopo parte da lì, mentre la richiesta vera
+ * corre in silenzio.
+ *
+ * La chiave porta con sé CHI guarda (l'id nel token, o "ospite") e la
+ * copia scade dopo 24 ore. Si butta via a ogni cambio di persona
+ * (`svuotaRisorse`) insieme alla memoria. Va alzata `VERSIONE_DISCO` se
+ * cambia la forma di una risposta.
+ */
+const PREFISSO_DISCO = "mangavault:risorsa:";
+const VERSIONE_DISCO = 1;
+const SCADENZA_DISCO_MS = 24 * 60 * 60 * 1000;
+
+function chiaveDisco(chiave) {
+  const chi = utenteDalToken(getToken())?.id ?? "ospite";
+
+  return `${PREFISSO_DISCO}${chi}:${chiave}`;
+}
+
+function leggiDisco(chiave) {
+  try {
+    const grezzo = localStorage.getItem(chiaveDisco(chiave));
+
+    if (!grezzo) return undefined;
+
+    const { versione, quando, dati } = JSON.parse(grezzo);
+
+    if (versione !== VERSIONE_DISCO || Date.now() - quando > SCADENZA_DISCO_MS) return undefined;
+
+    return dati;
+  } catch {
+    return undefined;
+  }
+}
+
+function scriviDisco(chiave, dati) {
+  const scrivi = () => {
+    try {
+      localStorage.setItem(
+        chiaveDisco(chiave),
+        JSON.stringify({ versione: VERSIONE_DISCO, quando: Date.now(), dati })
+      );
+    } catch {
+      /* archiviazione piena o spenta: la prossima visita aspetterà la rete */
+    }
+  };
+
+  // localStorage è sincrono: si scrive quando il browser ha un attimo libero.
+  if (typeof requestIdleCallback === "function") requestIdleCallback(scrivi, { timeout: 4000 });
+  else setTimeout(scrivi, 1000);
+}
+
+function svuotaDisco() {
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const nome = localStorage.key(i);
+
+      if (nome?.startsWith(PREFISSO_DISCO)) localStorage.removeItem(nome);
+    }
+  } catch {
+    /* niente da buttare */
+  }
+}
+
 export function svuotaRisorse() {
   ricordate.clear();
   inVolo.clear();
+  svuotaDisco();
+}
+
+// Se la memoria non ha la risposta, prova il disco (solo per chi lo chiede).
+function ricordo(chiave, persisti) {
+  if (!chiave) return undefined;
+  if (ricordate.has(chiave)) return ricordate.get(chiave);
+
+  if (persisti) {
+    const daDisco = leggiDisco(chiave);
+
+    if (daDisco !== undefined && daDisco !== null) {
+      ricordate.set(chiave, daDisco);
+
+      return daDisco;
+    }
+  }
+
+  return undefined;
 }
 
 function chiedi(chiave, carica) {
@@ -73,14 +163,15 @@ function chiedi(chiave, carica) {
   return promessa;
 }
 
-export default function useRisorsa(carica, { trasforma, attivo = true, chiave = null } = {}) {
+export default function useRisorsa(carica, { trasforma, attivo = true, chiave = null, persisti = false } = {}) {
   // Se c'è già, si parte da lì: niente scheletri, e `inCorso` spento —
   // la richiesta di conferma è un dettaglio che lo schermo non mostra.
-  const [dati, impostaDati] = useState(() => (chiave && ricordate.has(chiave) ? ricordate.get(chiave) : null));
+  const [dati, impostaDati] = useState(() => ricordo(chiave, persisti) ?? null);
   const [errore, setErrore] = useState(null);
-  const [inCorso, setInCorso] = useState(() => attivo && !(chiave && ricordate.has(chiave)));
+  const [inCorso, setInCorso] = useState(() => attivo && ricordo(chiave, persisti) === undefined);
 
   const chiaveRef = useRef(chiave);
+  const persistiRef = useRef(persisti);
 
   // Chi ritocca i dati a mano (la spunta messa prima che il server
   // risponda) ritocca anche il ricordo: altrimenti la pagina dopo
@@ -89,7 +180,10 @@ export default function useRisorsa(carica, { trasforma, attivo = true, chiave = 
     impostaDati((prima) => {
       const dopo = typeof valore === "function" ? valore(prima) : valore;
 
-      if (chiaveRef.current) ricordate.set(chiaveRef.current, dopo);
+      if (chiaveRef.current) {
+        ricordate.set(chiaveRef.current, dopo);
+        if (persistiRef.current) scriviDisco(chiaveRef.current, dopo);
+      }
 
       return dopo;
     });
@@ -110,6 +204,7 @@ export default function useRisorsa(carica, { trasforma, attivo = true, chiave = 
     caricaRef.current = carica;
     trasformaRef.current = trasforma;
     chiaveRef.current = chiave;
+    persistiRef.current = persisti;
   });
 
   // Contatore di richieste: se ne parte una nuova prima che la
@@ -146,7 +241,10 @@ export default function useRisorsa(carica, { trasforma, attivo = true, chiave = 
       // Nel ricordo ci va comunque, anche se nel frattempo la pagina è
       // stata chiusa: la risposta è buona, e la prossima che la chiede
       // la trova.
-      if (miaChiave) ricordate.set(miaChiave, pronta);
+      if (miaChiave) {
+        ricordate.set(miaChiave, pronta);
+        if (persistiRef.current) scriviDisco(miaChiave, pronta);
+      }
 
       if (!montato.current || mia !== richiestaCorrente.current) return;
 
