@@ -128,6 +128,20 @@ non lo sa, e infatti chiedendo solo quella si sbagliano tutte e due le volte.
   devono rispondere 401/403. Tre eccezioni scritte, col perché: `login`, il vecchio `login`,
   `enrich` (solo lettura da fonti esterne).
 
+- **AnimeClick si legge da GitHub, non da Render** (14/11/2026). Da Render risponde 403 (verifica
+  anti-bot, dal 3/11); da GitHub Actions, con la stessa firma dichiarata, 200. Il giro delle uscite
+  (`giro-animeclick.yml` nel backend) scarica le pagine e le manda al backend; se AnimeClick non
+  risponde quel giorno si usa Fumettologica, e dopo sette giorni di fila senza riuscirci si va in
+  pausa due settimane (`services/fontiStato.js`, con messaggio Telegram). Non si cambia firma né
+  indirizzo per aggirare un rifiuto: se dice di no, ci si ferma.
+- **La copertina del volume, non della serie** (14/11/2026). Le uscite hanno la copertina del loro
+  volume (da AnimeClick; Fumettologica non la dà). Per letture, «Da comprare» e «Prossimo acquisto»
+  c'è `copertine_volumi` nel backend, riempita da `copertine-volumi.yml` (venti serie al giorno), e
+  qui `dati/copertineVolumi.js`: `useCopertinaVolume(idSerie, numero, ripiego)` dà la copertina di
+  quel volume e torna a quella della serie se manca o non si carica. Provato nel browser con dati
+  finti (volume presente, immagine rotta, backend che non risponde). Non ancora in: classifica,
+  scheda della serie, cronologia delle letture.
+
 ## Aperti
 
 Riscritta il 14 novembre 2026, dopo un controllo dei tre repository. Le voci

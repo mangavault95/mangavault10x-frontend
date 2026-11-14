@@ -263,6 +263,9 @@ export const getManga = () => request("/api/manga");
 export const getUsciteManga = (giorni = 7) => request(`/api/manga/uscite?giorni=${giorni}`);
 
 /** Le uscite di un mese (AAAA-MM), passato o futuro, delle serie in collezione. */
+/** La copertina di ogni volume: `{ base, copertine: { [idSerie]: { [numero]: percorso } } }`. */
+export const getCopertineVolumi = () => request("/api/manga/copertine-volumi");
+
 export const getUsciteArchivio = (mese) => request(`/api/manga/uscite/archivio?mese=${mese}`);
 
 /**

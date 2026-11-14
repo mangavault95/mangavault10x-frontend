@@ -5,6 +5,7 @@ import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
 import { useSessione } from "../dati/sessione";
 import { useAccessoProtetto } from "../dati/accesso";
+import { useCopertinaVolume } from "../dati/copertineVolumi";
 import { chiudibile, euro, fraseMancanti, prossimoVolume, tettoLettura, volumiMancanti } from "../dati/serie";
 import {
   addReadingHistory,
@@ -254,7 +255,7 @@ export default function AdessoPage() {
                   to={`/serie/${l.mangaId}`}
                   className="flex items-center gap-2.5 rounded-card bg-alcove p-2.5 transition-colors duration-quick active:bg-glass-2"
                 >
-                  <Immagine src={l.copertina} alt="" className="h-12 w-8 shrink-0 rounded-md" larghezza={128} />
+                  <ImmagineVolume idSerie={l.mangaId} numero={l.volume} ripiego={l.copertina} alt="" className="h-12 w-8 shrink-0 rounded-md" larghezza={128} />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-ink-bright">{l.titolo}</p>
                     <p className="font-numeric text-xs text-ink-muted">
@@ -301,7 +302,7 @@ export default function AdessoPage() {
             to={`/serie/${prossimoAcquisto.serie.id}`}
             className="flex items-center gap-3.5 rounded-card bg-alcove p-3.5 transition-colors duration-quick active:bg-glass-2"
           >
-            <Immagine src={prossimoAcquisto.serie.copertina} alt="" className="h-[70px] w-12 shrink-0 rounded-lg" />
+            <ImmagineVolume idSerie={prossimoAcquisto.serie.id} numero={prossimoAcquisto.volume} ripiego={prossimoAcquisto.serie.copertina} alt="" className="h-[70px] w-12 shrink-0 rounded-lg" />
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold text-ink-bright">
                 {prossimoAcquisto.serie.titolo} {prossimoAcquisto.volume}
@@ -620,7 +621,7 @@ function LetturaPrincipale({ lettura, occupato, onPiuUno }) {
   return (
     <div className="flex items-center gap-3.5 rounded-card bg-alcove p-3.5">
       <Link to={`/serie/${lettura.mangaId}`} className="shrink-0">
-        <Immagine src={lettura.copertina} alt={`Copertina di ${lettura.titolo}`} className="h-[84px] w-[58px] rounded-lg" />
+        <ImmagineVolume idSerie={lettura.mangaId} numero={lettura.volume} ripiego={lettura.copertina} alt={`Copertina di ${lettura.titolo}`} className="h-[84px] w-[58px] rounded-lg" />
       </Link>
       <div className="min-w-0 flex-1">
         <Link to={`/serie/${lettura.mangaId}`} className="block truncate font-semibold text-ink-bright">
@@ -687,6 +688,13 @@ function RichiamoMese({ adesso }) {
  * copertine che passano dal ridimensionatore, la home restava qualche
  * secondo fatta di rettangoli neri tutti uguali.
  */
+/** La copertina di QUEL volume (letture, prossimo acquisto); se non c'è, quella della serie. */
+function ImmagineVolume({ idSerie, numero, ripiego, larghezza = 256, ...resto }) {
+  const src = useCopertinaVolume(idSerie, numero, ripiego, larghezza);
+
+  return <Immagine key={src} src={src} larghezza={larghezza} {...resto} />;
+}
+
 function Immagine({ src, alt, className = "", larghezza = 256 }) {
   const [rotta, setRotta] = useState(false);
   const [caricata, setCaricata] = useState(false);

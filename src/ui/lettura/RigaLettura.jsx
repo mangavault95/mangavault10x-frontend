@@ -7,6 +7,7 @@ import { VotoStelle } from "../AzioniSerie";
 import NoteSerie from "../NoteSerie";
 import Foglio from "../Foglio";
 import { plurale } from "../../dati/serie";
+import { useCopertinaVolume } from "../../dati/copertineVolumi";
 
 /* ==================================================
    FINE LETTURA: IL VOTO
@@ -71,7 +72,7 @@ export function RigaLettura({ lettura, principale, ultima, soloLettura, onAvanti
   return (
     <div className="flex gap-3 rounded-card bg-alcove p-3">
       <Link to={`/serie/${lettura.mangaId}`} className="w-[3.25rem] shrink-0 self-start">
-        <Copertina src={lettura.copertina} alt="" inclina={false} />
+        <CopertinaLettura lettura={lettura} />
       </Link>
 
       <div className="min-w-0 flex-1">
@@ -268,7 +269,7 @@ export function FoglioLettura({
       <div className="px-5 pb-1">
           <div className="flex items-center gap-3.5">
             <div className="w-11 shrink-0">
-              <Copertina src={lettura.copertina} alt="" inclina={false} />
+              <CopertinaLettura lettura={lettura} />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate font-display text-lg font-bold text-ink-bright">{lettura.titolo}</p>
@@ -363,4 +364,11 @@ export function FoglioLettura({
       </div>
     </Foglio>
   );
+}
+
+/** La copertina del volume a cui si è arrivati; se non c'è, quella della serie. */
+function CopertinaLettura({ lettura }) {
+  const src = useCopertinaVolume(lettura.mangaId, lettura.volume, lettura.copertina);
+
+  return <Copertina key={src} src={src} alt="" inclina={false} />;
 }

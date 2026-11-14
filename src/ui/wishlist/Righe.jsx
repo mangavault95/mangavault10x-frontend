@@ -6,6 +6,7 @@ import Menu from "../Menu";
 import { dopoIlRipiego, urlCopertina } from "../../services/api";
 import Foglio from "../Foglio";
 import { euro, intervalliVolumi, plurale } from "../../dati/serie";
+import { useCopertinaVolume } from "../../dati/copertineVolumi";
 
 /* ==================================================
    I MUCCHI DELLA SPESA
@@ -83,11 +84,13 @@ export function RigaSpesa({ a, copertina, ripiego, titolo, sotto, sottoColore = 
  */
 export function CartaMancanti({ serie, numeri, onApri }) {
   const tutti = numeri.length;
+  // Il primo volume che manca: è quello che si va a comprare.
+  const delVolume = useCopertinaVolume(serie.id, Math.min(...numeri), serie.copertina, 128);
 
   return (
     <li>
       <button type="button" onClick={onApri} className="flex w-full items-center gap-3 py-2.5 text-left">
-        <Miniatura src={serie.copertina} />
+        <Miniatura src={delVolume} ripiego={serie.copertina} />
 
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-corpo font-semibold leading-snug text-ink-bright">{serie.titolo}</p>
