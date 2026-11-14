@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router";
 import useRisorsa from "../dati/useRisorsa";
 import { formattaMedia, paginaDi, tempoVisto } from "../dati/cineforum";
 import { getConfronto, urlCopertina } from "../services/api";

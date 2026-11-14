@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { urlCopertina } from "../../services/api";
 import { Pillola, Progresso } from "./Foglio";
 import { NOMI_STATO, formattaVoto, quandoBreve } from "./formati";

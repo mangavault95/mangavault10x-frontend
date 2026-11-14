@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { dopoIlRipiego, urlCopertina } from "../../services/api";
 import { prossimoVolume, totaleDisponibile, volumiMancanti, votoDi, votoIt } from "../../dati/serie";
 

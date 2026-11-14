@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router";
 import Icon from "../app/Icon";
 import useRisorsa from "../dati/useRisorsa";
 import { useSessione } from "../dati/sessione";

@@ -6,7 +6,7 @@ import {
   useLocation,
   useNavigationType,
   UNSAFE_LocationContext as ContestoPosizione
-} from "react-router-dom";
+} from "react-router";
 import { PaginaViva, ripristino } from "../dati/paginaViva";
 import { ricordaCollezione, ricordaPercorso } from "../dati/volo";
 import Shell from "./Shell";

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import Icon from "../../app/Icon";
 import { quandoBreveDa } from "../../dati/cineforum";
 import { getConsigliInArrivo, segnaConsiglioAperto, urlCopertina } from "../../services/api";

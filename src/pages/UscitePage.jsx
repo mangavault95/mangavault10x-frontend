@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router";
 import useRisorsa from "../dati/useRisorsa";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
 import { euro } from "../dati/serie";

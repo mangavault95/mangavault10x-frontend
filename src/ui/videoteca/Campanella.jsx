@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import Icon from "../../app/Icon";
 import { giornoPerEsteso, quandoBreveDa, quandoPerEsteso } from "../../dati/cineforum";
 import { getAvvisi, segnaAvvisiLetti } from "../../services/api";

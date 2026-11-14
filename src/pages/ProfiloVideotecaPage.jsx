@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router";
 import useRisorsa from "../dati/useRisorsa";
 import { useSessione } from "../dati/sessione";
 import { paginaDi, tesserine } from "../dati/cineforum";

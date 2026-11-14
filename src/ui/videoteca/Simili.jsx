@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router";
 import useRisorsa from "../../dati/useRisorsa";
 import { useSessione } from "../../dati/sessione";
 import { getAnteprimaConsiglio, getSimiliAnime, urlCopertina } from "../../services/api";

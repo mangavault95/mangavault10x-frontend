@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router";
 import useRisorsa from "../dati/useRisorsa";
 import { formattaMedia, paginaDi, tempoVisto, vaiAlConfronto } from "../dati/cineforum";
 import { getIoVideoteca, getPersone, getProfiloVideoteca } from "../services/api";

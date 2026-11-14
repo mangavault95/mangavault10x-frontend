@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 import Copertina from "../Copertina";
 import Icon from "../../app/Icon";
 import { Bottone, CampoRicerca } from "../Controlli";

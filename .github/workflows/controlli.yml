@@ -17,4 +17,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      - name: Il router non usa startTransition (serve al volo della copertina)
+        run: npm run controlla
       - run: npm run build

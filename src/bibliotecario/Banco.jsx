@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { creaIndiceAutori, creaIndiceTitoli, interpreta } from "./intenti";
 import { rispondi } from "./rispondi";
 import { chiediTramaItaliana } from "./esterni";

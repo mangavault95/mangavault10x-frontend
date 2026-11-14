@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import IndiceLettere from "../ui/IndiceLettere";
 import { idLettera, letteraDi } from "../dati/lettere";
 import useRisorsa from "../dati/useRisorsa";

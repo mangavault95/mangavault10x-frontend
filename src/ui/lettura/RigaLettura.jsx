@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import Copertina from "../Copertina";
 import Icon from "../../app/Icon";
 import { Bottone } from "../Controlli";

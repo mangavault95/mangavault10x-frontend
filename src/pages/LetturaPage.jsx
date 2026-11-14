@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import Pagina, { Sezione } from "../ui/Pagina";
 import Copertina from "../ui/Copertina";
 import Icon from "../app/Icon";

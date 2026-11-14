@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { flushSync } from "react-dom";
 import { ripristino } from "../dati/paginaViva";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 import Copertina from "./Copertina";
 import { BottonePreferito } from "./AzioniSerie";
 import AzioniRapide from "./AzioniRapide";

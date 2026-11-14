@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router";
 import { getToken, login as accedi, registrazione as chiediAccount } from "../services/api";
 import { ContestoAccesso } from "./accesso";
 import { useSessione } from "./sessione";

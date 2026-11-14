@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 import { useSessione } from "../dati/sessione";
 import { ModuloAccesso } from "../dati/AccessoProvider";
 import { Bottone } from "../ui/Controlli";

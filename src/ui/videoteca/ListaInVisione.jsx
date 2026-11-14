@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { segnaEpisodio, urlCopertina } from "../../services/api";
 import { useAccessoProtetto } from "../../dati/accesso";
 import { Bottone, Progresso, Scheda } from "./Foglio";

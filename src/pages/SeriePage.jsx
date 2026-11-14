@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import Copertina from "../ui/Copertina";
 import { tornaIndietroConVolo } from "../dati/volo";
 import Progresso from "../ui/Progresso";

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import useRisorsa from "../../dati/useRisorsa";
 import { useCollezione } from "../../dati/collezione";
 import { corrisponde, raggruppa, etichettaStagione } from "../../dati/videoteca";

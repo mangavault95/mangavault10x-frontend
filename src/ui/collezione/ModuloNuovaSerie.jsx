@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { Bottone } from "../Controlli";
 import Copertina from "../Copertina";
 import Foglio from "../Foglio";

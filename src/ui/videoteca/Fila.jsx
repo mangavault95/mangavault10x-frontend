@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import Icon from "../../app/Icon";
 import CartaAnime from "./CartaAnime";
 

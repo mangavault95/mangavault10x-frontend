@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import Pagina, { Sezione } from "../ui/Pagina";
 import Classifica from "../ui/Classifica";
 import Copertina from "../ui/Copertina";

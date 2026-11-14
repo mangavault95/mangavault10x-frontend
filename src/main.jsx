@@ -1,6 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter } from "react-router";
 import "@fontsource-variable/sora";
 import "@fontsource-variable/geist";
 import "@fontsource-variable/jetbrains-mono";
@@ -62,7 +62,15 @@ window.addEventListener(
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
+    {/* `useTransitions={false}`: il router NON avvolge i cambi di pagina in
+        `React.startTransition`. Dalla versione 7 lo fa di suo, e il «volo»
+        della copertina (`dati/volo.js`, `ui/CartaSerie.jsx`) si regge su
+        `flushSync(() => navigate(...))` dentro `document.startViewTransition`:
+        con `startTransition` la pagina non è ancora cambiata quando la
+        transizione fotografa il «dopo», e la copertina non vola (misurato il
+        14/11/2026: la Collezione era ancora visibile a transizione partita).
+        Con `false` il comportamento è quello della versione 6. */}
+    <BrowserRouter useTransitions={false}>
       <AppRoutes />
     </BrowserRouter>
   </React.StrictMode>

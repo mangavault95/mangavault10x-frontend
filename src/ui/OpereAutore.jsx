@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import Copertina from "./Copertina";
 import Foglio from "./Foglio";
 import useRisorsa from "../dati/useRisorsa";
