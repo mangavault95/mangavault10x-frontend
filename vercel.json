@@ -1,35 +1,123 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "images": {
-    "sizes": [128, 256, 384, 640],
-    "formats": ["image/avif", "image/webp"],
+    "sizes": [
+      128,
+      256,
+      384,
+      640
+    ],
+    "formats": [
+      "image/avif",
+      "image/webp"
+    ],
     "minimumCacheTTL": 2592000,
     "remotePatterns": [
-      { "protocol": "https", "hostname": "**.anilist.co" },
-      { "protocol": "https", "hostname": "www.animeclick.it" },
-      { "protocol": "https", "hostname": "animeclick.it" },
-      { "protocol": "https", "hostname": "cdn.myanimelist.net" },
-      { "protocol": "https", "hostname": "myanimelist.net" },
-      { "protocol": "https", "hostname": "books.google.com" },
-      { "protocol": "https", "hostname": "books.googleusercontent.com" },
-      { "protocol": "https", "hostname": "**.gstatic.com" }
+      {
+        "protocol": "https",
+        "hostname": "**.anilist.co"
+      },
+      {
+        "protocol": "https",
+        "hostname": "www.animeclick.it"
+      },
+      {
+        "protocol": "https",
+        "hostname": "animeclick.it"
+      },
+      {
+        "protocol": "https",
+        "hostname": "cdn.myanimelist.net"
+      },
+      {
+        "protocol": "https",
+        "hostname": "myanimelist.net"
+      },
+      {
+        "protocol": "https",
+        "hostname": "books.google.com"
+      },
+      {
+        "protocol": "https",
+        "hostname": "books.googleusercontent.com"
+      },
+      {
+        "protocol": "https",
+        "hostname": "**.gstatic.com"
+      }
     ]
   },
   "rewrites": [
-    { "source": "/copertine/anilist/file/anilistcdn/:percorso*", "destination": "https://s4.anilist.co/file/anilistcdn/:percorso*" },
-    { "source": "/copertine/mal/images/:percorso*", "destination": "https://myanimelist.net/images/:percorso*" },
-    { "source": "/copertine/mal-cdn/images/:percorso*", "destination": "https://cdn.myanimelist.net/images/:percorso*" },
-    { "source": "/copertine/animeclick/immagini/:percorso*", "destination": "https://www.animeclick.it/immagini/:percorso*" },
-    { "source": "/copertine/animeclick/images/:percorso*", "destination": "https://www.animeclick.it/images/:percorso*" },
-    { "source": "/:qualsiasi*", "destination": "/index.html" }
+    {
+      "source": "/copertine/anilist/file/anilistcdn/:percorso*",
+      "destination": "https://s4.anilist.co/file/anilistcdn/:percorso*"
+    },
+    {
+      "source": "/copertine/mal/images/:percorso*",
+      "destination": "https://myanimelist.net/images/:percorso*"
+    },
+    {
+      "source": "/copertine/mal-cdn/images/:percorso*",
+      "destination": "https://cdn.myanimelist.net/images/:percorso*"
+    },
+    {
+      "source": "/copertine/animeclick/immagini/:percorso*",
+      "destination": "https://www.animeclick.it/immagini/:percorso*"
+    },
+    {
+      "source": "/copertine/animeclick/images/:percorso*",
+      "destination": "https://www.animeclick.it/images/:percorso*"
+    },
+    {
+      "source": "/:qualsiasi*",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
+      "source": "/((?!copertine/).*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'sha256-2X9XwzBJJpxAn0HHY02hOlagCemUiINrW4ihFCosOdA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.onrender.com https://graphql.anilist.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), payment=()"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000"
+        }
+      ]
+    },
+    {
       "source": "/copertine/:percorso*",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=604800, immutable" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Content-Security-Policy", "value": "sandbox" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800, immutable"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "sandbox"
+        }
       ]
     }
   ]
