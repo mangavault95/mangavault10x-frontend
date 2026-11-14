@@ -142,6 +142,17 @@ non lo sa, e infatti chiedendo solo quella si sbagliano tutte e due le volte.
   finti (volume presente, immagine rotta, backend che non risponde). Non ancora in: classifica,
   scheda della serie, cronologia delle letture.
 
+- **Copia di sicurezza dei dati** (14/11/2026). Il piano gratuito di Supabase non ha backup
+  (confermato): finché non si scarica un file, i dati stanno in una copia sola. In Gestione, solo per
+  il proprietario, la linguetta «Copia» dà la copia completa (JSON) e due fogli (collezione e acquisti, CSV)
+  da `/api/esporta/*` nel backend. **Due passi, «Prepara» e «Salva il file», di proposito**: il foglio di
+  condivisione di iPhone si apre solo dentro il tocco che lo chiede, e con Render che si sveglia l'attesa
+  di rete lo farebbe scadere. Il file NON contiene password né chat Telegram. Il primo del mese un messaggio
+  Telegram dal bot della spesa manga (non silenzioso) ricorda di scaricarla (`promemoria-copia.yml`).
+  Il ripristino è `scripts/ripristina-copia.js` nel backend, su un database vuoto con lo schema: provato
+  su dati finti, 27 tabelle su 27 identiche riga per riga (la prova ha trovato e fatto correggere la perdita
+  dei microsecondi nelle date con ora). Non provato su Supabase vero né su un iPhone vero.
+
 ## Aperti
 
 Riscritta il 14 novembre 2026, dopo un controllo dei tre repository. Le voci

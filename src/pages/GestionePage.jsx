@@ -7,6 +7,7 @@ import GestioneManga from "../ui/gestione/GestioneManga";
 import GestioneAnime from "../ui/gestione/GestioneAnime";
 import RichiesteAccesso from "../ui/RichiesteAccesso";
 import AccessoBiblioteca from "../ui/AccessoBiblioteca";
+import CopiaDati from "../ui/gestione/CopiaDati";
 
 /**
  * GESTIONE — una sola, dal 05/10/2026.
@@ -17,11 +18,12 @@ import AccessoBiblioteca from "../ui/AccessoBiblioteca";
  * questa cosa» doveva prima indovinare quale delle due, e se sbagliava
  * trovava una pagina che non c'entrava.
  *
- * Adesso è una pagina con tre linguette:
+ * Adesso è una pagina con quattro linguette:
  *
  *   Manga    le schede della collezione: titolo, volumi, prezzo, trama
  *   Anime    le serie: stagioni da unire, manga collegato, serie da togliere
  *   Accessi  chi ha chiesto di entrare e chi c'è già (solo il proprietario)
+ *   Copia    scarica una copia dei dati (solo il proprietario)
  *
  * La linguetta sta nell'indirizzo (`?sezione=anime`), così i vecchi
  * indirizzi `/admin` e `/videoteca/gestione` — che ora rimandano qui —
@@ -35,7 +37,8 @@ import AccessoBiblioteca from "../ui/AccessoBiblioteca";
 const SEZIONI = [
   { id: "manga", etichetta: "Manga", sommario: "Correggi le schede della collezione." },
   { id: "anime", etichetta: "Anime", sommario: "Stagioni da unire, manga collegato, serie da togliere." },
-  { id: "accessi", etichetta: "Accessi", sommario: "Chi ha chiesto di entrare e chi può scrivere." }
+  { id: "accessi", etichetta: "Accessi", sommario: "Chi ha chiesto di entrare e chi può scrivere." },
+  { id: "copia", etichetta: "Copia", sommario: "Scarica una copia dei vostri dati." }
 ];
 
 export default function GestionePage() {
@@ -49,7 +52,7 @@ export default function GestionePage() {
   // accessi solo al proprietario. Gli anime sono di tutti: sono tuoi.
   const disponibili = SEZIONI.filter((s) => {
     if (s.id === "manga") return !bibliotecaSolaLettura;
-    if (s.id === "accessi") return proprietario;
+    if (s.id === "accessi" || s.id === "copia") return proprietario;
 
     return true;
   });
@@ -136,6 +139,8 @@ export default function GestionePage() {
         {attiva.id === "manga" && <GestioneManga />}
 
         {attiva.id === "anime" && <GestioneAnime />}
+
+        {attiva.id === "copia" && <CopiaDati />}
 
         {attiva.id === "accessi" && (
           <div className="space-y-6">

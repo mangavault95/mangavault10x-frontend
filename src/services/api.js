@@ -142,6 +142,52 @@ async function request(path, { method = "GET", body, auth = false, signal } = {}
 }
 
 /* ==================================================
+   COPIA DI SICUREZZA
+   ================================================== */
+
+const COPIE = {
+  tutto: { percorso: "/api/esporta/tutto", estensione: "json" },
+  collezione: { percorso: "/api/esporta/collezione.csv", estensione: "csv" },
+  acquisti: { percorso: "/api/esporta/acquisti.csv", estensione: "csv" }
+};
+
+/**
+ * Scarica una copia dei dati (solo il proprietario: il server risponde 403 agli altri).
+ *
+ * Non può essere un semplice link: l'accesso viaggia in un'intestazione, quindi si
+ * chiede con fetch e il file si salva dopo (vedi `ui/gestione/CopiaDati.jsx`).
+ * Il nome del file lo si fa qui: `Content-Disposition` non è leggibile da un altro
+ * dominio, e comunque la data che conta è quella di chi scarica.
+ */
+export async function scaricaCopia(tipo) {
+  const copia = COPIE[tipo];
+
+  if (!copia) throw new Error(`Copia sconosciuta: ${tipo}`);
+
+  const token = getToken();
+  let res;
+
+  try {
+    res = await fetch(`${API_URL}${copia.percorso}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+  } catch {
+    throw new ApiError("Impossibile contattare il server", 0);
+  }
+
+  if (!res.ok) {
+    const payload = await res.json().catch(() => null);
+
+    throw new ApiError(payload?.error || `Errore ${res.status}`, res.status);
+  }
+
+  const giorno = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+  const nome = tipo === "tutto" ? `mangavault-copia-${giorno}` : `mangavault-${tipo}-${giorno}`;
+
+  return { blob: await res.blob(), nome: `${nome}.${copia.estensione}` };
+}
+
+/* ==================================================
    COPERTINE
    ================================================== */
 
