@@ -545,7 +545,7 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
             <p
               role="status"
               className={`ml-auto text-xs ${
-                stato ? (stato.tipo === "ok" ? "text-jade" : "text-ember") : sporco ? "text-brass-300" : "text-ink-faint"
+                stato ? (stato.tipo === "ok" ? "text-jade" : "text-ember") : sporco ? "text-brass-300" : "text-ink-muted"
               }`}
             >
               {stato ? stato.testo : sporco ? "Modifiche non salvate" : "Niente da salvare"}

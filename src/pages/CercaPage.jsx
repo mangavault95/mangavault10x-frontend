@@ -253,7 +253,7 @@ export default function CercaPage() {
           placeholder="Berserk, Frieren, Adachi…"
           autoComplete="off"
           enterKeyHint="search"
-          className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink-bright placeholder:text-ink-faint focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink-bright placeholder:text-ink-muted focus:outline-none"
         />
 
         {scritto && (

@@ -103,7 +103,7 @@ export function ModuloComprato({ elemento, onConferma, onAnnulla }) {
             />
           </div>
 
-          <p className="text-xs text-ink-faint">
+          <p className="text-xs text-ink-muted">
             L'edizione tiene separate due versioni della stessa serie: senza, la
             seconda che compri sembrerebbe quella che hai già.
           </p>
@@ -254,7 +254,7 @@ export function ModuloDesiderio({ valori, onSalva, onAnnulla }) {
             inclina={false}
           />
 
-          <p className="truncate text-center text-xs text-ink-faint sm:text-left">
+          <p className="truncate text-center text-xs text-ink-muted sm:text-left">
             {campi.titolo || "In attesa di un titolo"}
           </p>
         </div>
@@ -281,7 +281,7 @@ export function ModuloDesiderio({ valori, onSalva, onAnnulla }) {
               {tendinaAperta && (
                 <ul className="absolute z-10 mt-1.5 w-full overflow-hidden rounded-card border border-soft bg-glass-3 shadow-raised backdrop-blur-xl">
                   {cercandoSuggerimenti && suggerimenti.length === 0 && (
-                    <li className="px-3.5 py-2.5 text-sm text-ink-faint">Cerco su AniList…</li>
+                    <li className="px-3.5 py-2.5 text-sm text-ink-muted">Cerco su AniList…</li>
                   )}
 
                   {suggerimenti.map((r) => (
@@ -302,7 +302,7 @@ export function ModuloDesiderio({ valori, onSalva, onAnnulla }) {
                             {r.titolo}
                           </span>
                           {r.autore && (
-                            <span className="block truncate text-xs text-ink-faint">{r.autore}</span>
+                            <span className="block truncate text-xs text-ink-muted">{r.autore}</span>
                           )}
                         </span>
                       </button>
@@ -345,7 +345,7 @@ export function ModuloDesiderio({ valori, onSalva, onAnnulla }) {
               onChange={cambia("trama")}
               rows={4}
               className="w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright
-                         outline-none transition-colors duration-quick placeholder:text-ink-faint
+                         outline-none transition-colors duration-quick placeholder:text-ink-muted
                          hover:border-soft focus:border-brass-400/60"
             />
           </label>
@@ -386,7 +386,7 @@ function Campo({ etichetta, tipo = "text", valore, onChange, className = "", ...
         value={valore ?? ""}
         onChange={onChange}
         className="w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright
-                   outline-none transition-colors duration-quick placeholder:text-ink-faint
+                   outline-none transition-colors duration-quick placeholder:text-ink-muted
                    hover:border-soft focus:border-brass-400/60"
         {...resto}
       />

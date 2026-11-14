@@ -113,7 +113,7 @@ export default function NoteSerie({ serie, compatto = false }) {
       )}
 
       {note.length === 0 && !inScrittura && (
-        <p className="text-sm text-ink-faint">
+        <p className="text-sm text-ink-muted">
           {bibliotecaSolaLettura
             ? "Nessuna nota su questa serie: le note della biblioteca le scrive la casa."
             : "Nessuna nota su questa serie."}
@@ -141,7 +141,7 @@ export default function NoteSerie({ serie, compatto = false }) {
                 </span>
 
                 {nota.creataIl && (
-                  <time dateTime={nota.creataIl} className="text-xs text-ink-faint">
+                  <time dateTime={nota.creataIl} className="text-xs text-ink-muted">
                     {dataIt(nota.creataIl)}
                   </time>
                 )}
@@ -261,7 +261,7 @@ function Compositore({
         placeholder={segnaposto}
         aria-label="Testo della nota"
         className="w-full resize-y rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm text-ink-bright
-                   placeholder:text-ink-faint outline-none transition-colors duration-quick
+                   placeholder:text-ink-muted outline-none transition-colors duration-quick
                    hover:border-soft focus:border-brass-400/60 focus:bg-glass-2"
       />
 
@@ -290,7 +290,7 @@ function MiniAzione({ pericolo = false, children, ...resto }) {
   return (
     <button
       type="button"
-      className={`rounded-lg px-2 py-1 text-xs text-ink-faint transition-colors duration-quick
+      className={`rounded-lg px-2 py-1 text-xs text-ink-muted transition-colors duration-quick
                   focus-visible:outline-none focus-visible:ring-2
                   ${
                     pericolo

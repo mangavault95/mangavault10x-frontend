@@ -102,7 +102,7 @@ export default function AccessoBiblioteca() {
       )}
 
       {!persone ? (
-        <p className="mt-4 text-sm text-ink-faint">Carico le persone…</p>
+        <p className="mt-4 text-sm text-ink-muted">Carico le persone…</p>
       ) : (
         <ul className="mt-4 space-y-3">
           {attivi.map((p) => {

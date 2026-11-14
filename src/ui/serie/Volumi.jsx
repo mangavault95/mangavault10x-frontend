@@ -95,7 +95,7 @@ export function Volumi({
       }
     >
       {riprendibile && !inModifica && (
-        <p className="mb-3 text-xs text-ink-faint">
+        <p className="mb-3 text-xs text-ink-muted">
           Serie droppata — clicca un volume per riprendere da lì.
         </p>
       )}

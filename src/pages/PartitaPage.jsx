@@ -180,7 +180,7 @@ export default function PartitaPage() {
         <Sezione
           titolo="Tutti gli scontri"
           extra={
-            <span className="font-numeric text-xs text-ink-faint">
+            <span className="font-numeric text-xs text-ink-muted">
               {partita.sfide.length} sfide
             </span>
           }
@@ -194,7 +194,7 @@ export default function PartitaPage() {
           />
 
           <Pannello className="p-4">
-            <p className="text-xs text-ink-faint">
+            <p className="text-xs text-ink-muted">
               Chi ha perso è barrato. Il tabellone si legge dalla finale in giù: i turni
               lunghi restano chiusi finché non li apri.
             </p>

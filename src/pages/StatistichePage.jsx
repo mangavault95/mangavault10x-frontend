@@ -171,7 +171,7 @@ export default function StatistichePage() {
             key={gruppo.id}
             titolo={gruppo.titolo}
             extra={
-              <p className="text-xs text-ink-faint">{gruppo.sommario}</p>
+              <p className="text-xs text-ink-muted">{gruppo.sommario}</p>
             }
           >
             {/* Sul telefono i primati scorrono di lato, una scheda e un
@@ -192,7 +192,7 @@ export default function StatistichePage() {
 
         {/* ---------- Classifiche ---------- */}
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-          <Sezione titolo="Editori" extra={<span className="text-xs text-ink-faint">serie · spesa</span>}>
+          <Sezione titolo="Editori" extra={<span className="text-xs text-ink-muted">serie · spesa</span>}>
             <ClassificaEditori voci={editori} />
           </Sezione>
 
@@ -367,7 +367,7 @@ function Tessera({ etichetta, valore, nota, tono = "neutro", onClick, grande = f
         {valore}
       </dd>
 
-      {nota && <p className="relative mt-1 text-xs text-ink-faint">{nota}</p>}
+      {nota && <p className="relative mt-1 text-xs text-ink-muted">{nota}</p>}
 
       {onClick && (
         <span

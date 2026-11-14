@@ -230,7 +230,7 @@ function UsciteDelMese({ richiesto }) {
         ))}
       </div>
 
-      <p className="mt-8 text-xs leading-relaxed text-ink-faint">
+      <p className="mt-8 text-xs leading-relaxed text-ink-muted">
         Le uscite vengono da Fumettologica, una volta a settimana, e riguardano le serie che stai seguendo. La data è il
         giovedì della settimana di uscita.
       </p>

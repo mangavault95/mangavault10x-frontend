@@ -35,7 +35,7 @@ export function ModaleCompletamento({ lettura, serie, onVotoCambiato, onChiudi }
     >
       {serie && (
         <div className="flex flex-col items-center gap-3 py-4">
-          <p className="text-xs uppercase tracking-wider text-ink-faint">Che voto le dai?</p>
+          <p className="text-xs uppercase tracking-wider text-ink-muted">Che voto le dai?</p>
           <VotoStelle serie={serie} onCambiato={onVotoCambiato} dimensione={30} />
         </div>
       )}
@@ -311,7 +311,7 @@ export function FoglioLettura({
               value={salto}
               onChange={(e) => setSalto(e.target.value)}
               placeholder={String(volume)}
-              className="w-16 rounded-lg bg-alcove px-2 py-1.5 text-center font-numeric text-ink-bright placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brass-400"
+              className="w-16 rounded-lg bg-alcove px-2 py-1.5 text-center font-numeric text-ink-bright placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-brass-400"
             />
             <button type="submit" className="rounded-lg bg-glass-2 px-3 py-1.5 text-sm font-semibold text-ink-bright">
               Vai

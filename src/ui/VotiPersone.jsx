@@ -58,7 +58,7 @@ export default function VotiPersone({ serie, dimensione = 20 }) {
             )}
 
             <span className="font-numeric text-sm text-ink-bright">
-              {voto ? votoIt(voto) : <span className="text-ink-faint">—</span>}
+              {voto ? votoIt(voto) : <span className="text-ink-muted">—</span>}
             </span>
           </li>
         );

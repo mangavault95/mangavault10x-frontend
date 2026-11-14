@@ -180,7 +180,7 @@ function MenuOrdineVista({ aperto, onApri, ordine, onOrdine, vista, onVista }) {
           role="menu"
           className="absolute right-0 top-full z-overlay mt-2 w-60 rounded-card border border-hairline bg-alcove p-1.5 shadow-float animate-rise-in"
         >
-          <p className="px-2.5 pb-1 pt-1.5 text-xs font-medium uppercase tracking-wider text-ink-faint">Ordina per</p>
+          <p className="px-2.5 pb-1 pt-1.5 text-xs font-medium uppercase tracking-wider text-ink-muted">Ordina per</p>
 
           {ORDINAMENTI.map((o) => (
             <button
@@ -640,7 +640,7 @@ export default function CollezionePage() {
                 >
                   {f.etichetta}
                   <span
-                    className={`ml-1.5 font-numeric text-xs ${accesa ? "text-void/60" : "text-ink-faint"}`}
+                    className={`ml-1.5 font-numeric text-xs ${accesa ? "text-void/60" : "text-ink-muted"}`}
                   >
                     {conteggi[f.id]}
                   </span>

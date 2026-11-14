@@ -77,7 +77,7 @@ export function Errore({ errore, riprova }) {
       <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">{messaggio}</p>
 
       {errore?.message && (
-        <p className="mt-3 font-numeric text-xs text-ink-faint">{errore.message}</p>
+        <p className="mt-3 font-numeric text-xs text-ink-muted">{errore.message}</p>
       )}
 
       {riprova && (

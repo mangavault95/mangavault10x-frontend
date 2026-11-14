@@ -108,7 +108,7 @@ export function BottonePreferito({ serie, onCambiato, dimensione = 18, className
       aria-pressed={serie.preferito}
       className={`grid place-items-center rounded-full transition-all duration-quick ease-spring
                   active:scale-90 disabled:opacity-50
-                  ${serie.preferito ? "text-brass-400" : "text-ink-faint hover:text-brass-300"}
+                  ${serie.preferito ? "text-brass-400" : "text-ink-muted hover:text-brass-300"}
                   ${className}`}
     >
       <span className={salta ? "salta grid" : "grid"} onAnimationEnd={() => setSalta(false)}>
@@ -224,7 +224,7 @@ export function Stella({ riempimento, dimensione }) {
       className="relative grid place-items-center"
       style={{ width: dimensione, height: dimensione }}
     >
-      <Icon nome="star" dimensione={dimensione} className="text-ink-faint" />
+      <Icon nome="star" dimensione={dimensione} className="text-ink-muted" />
 
       {riempimento > 0 && (
         <span

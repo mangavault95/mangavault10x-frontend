@@ -268,7 +268,7 @@ function Ingresso({
                 ))}
               </div>
 
-              <p className="text-xs text-ink-faint">
+              <p className="text-xs text-ink-muted">
                 {quante < TAGLIE[0]
                   ? `In collezione ci sono ${plurale(quante, "serie giocabile", "serie giocabili")}: ` +
                     `per il torneo più piccolo ne servono ${TAGLIE[0]}.`
@@ -321,7 +321,7 @@ function SceltaTaglia({ taglia, serie, abbastanza, onComincia }) {
         {taglia - 1} scelte · {turniPer(taglia)} turni
       </span>
 
-      <span className="mt-1 block text-xs text-ink-faint">
+      <span className="mt-1 block text-xs text-ink-muted">
         {abbastanza
           ? `sorteggiato fra ${plurale(temi, "tema", "temi")}`
           : "non hai abbastanza serie"}
@@ -516,7 +516,7 @@ function Salvataggio({ salvataggio, utente, onSalva }) {
 
   if (salvataggio.stato === "inCorso") {
     return (
-      <p className="text-center text-sm text-ink-faint" aria-live="polite">
+      <p className="text-center text-sm text-ink-muted" aria-live="polite">
         Sto salvando la partita…
       </p>
     );
@@ -601,7 +601,7 @@ function Cronologia({ partite, inCorso }) {
                     {p.temaEtichetta} · torneo da {p.taglia}
                   </span>
 
-                  <span className="mt-0.5 block truncate text-xs text-ink-faint">
+                  <span className="mt-0.5 block truncate text-xs text-ink-muted">
                     {p.giocatore.nickname} · {dataIt(p.giocatoIl)}
                   </span>
                 </span>
@@ -639,7 +639,7 @@ function Cronologia({ partite, inCorso }) {
               ))}
             </ol>
 
-            <p className="mt-4 text-xs text-ink-faint">
+            <p className="mt-4 text-xs text-ink-muted">
               Quante volte ognuna ha vinto un torneo, con qualunque tema.
             </p>
           </Pannello>

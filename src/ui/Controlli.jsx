@@ -69,13 +69,13 @@ export function CampoRicerca({
         placeholder={segnaposto}
         aria-label={segnaposto}
         className="w-full rounded-card border border-hairline bg-glass-1 py-2.5 pl-10 pr-10 text-sm text-ink-bright
-                   placeholder:text-ink-faint outline-none backdrop-blur-xl transition-colors duration-quick
+                   placeholder:text-ink-muted outline-none backdrop-blur-xl transition-colors duration-quick
                    hover:border-soft focus:border-brass-400/60 focus:bg-glass-2
                    [&::-webkit-search-cancel-button]:appearance-none"
       />
 
       {!valore && (
-        <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-soft bg-glass-1 px-1.5 py-0.5 font-numeric text-micro text-ink-faint sm:block">
+        <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-soft bg-glass-1 px-1.5 py-0.5 font-numeric text-micro text-ink-muted sm:block">
           /
         </kbd>
       )}
@@ -125,7 +125,7 @@ export function Pastiglie({ opzioni, attiva, onCambia, conteggi }) {
             {quante !== undefined && (
               <span
                 className={`ml-2 font-numeric text-xs ${
-                  accesa ? "text-void/60" : "text-ink-faint"
+                  accesa ? "text-void/60" : "text-ink-muted"
                 }`}
               >
                 {quante}

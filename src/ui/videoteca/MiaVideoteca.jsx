@@ -332,7 +332,7 @@ function Elenco({ children }) {
 function Riga({ anime, sotto, posizione, children }) {
   return (
     <li className="flex items-center gap-3 py-2.5">
-      {posizione ? <span className="w-5 shrink-0 text-right font-numeric text-xs text-ink-faint">{posizione}</span> : null}
+      {posizione ? <span className="w-5 shrink-0 text-right font-numeric text-xs text-ink-muted">{posizione}</span> : null}
       <Link to={`/videoteca/${anime.id}`} className="w-9 shrink-0">
         <Copertina src={anime.cover_url} alt="" inclina={false} />
       </Link>
@@ -415,7 +415,7 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
             {occupato ? "Segno…" : `Visto l'${etichettaEp(prossimo, anime.tagli)}`}
           </button>
         ) : (
-          <p className="mt-2.5 text-xs text-ink-faint">
+          <p className="mt-2.5 text-xs text-ink-muted">
             {uscite ? `Hai visto tutte le ${uscite} uscite.` : "Non è ancora uscita nessuna puntata."}
           </p>
         )}
@@ -514,13 +514,13 @@ function FoglioAnime({ anime, onChiudi, onVota, onFinoA, onNonVisto, onStato }) 
               value={salto}
               onChange={(e) => setSalto(e.target.value)}
               placeholder={String(anime.uscite || anime.prossimo)}
-              className="w-16 rounded-lg bg-alcove px-2 py-1.5 text-center font-numeric text-ink-bright placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brass-400"
+              className="w-16 rounded-lg bg-alcove px-2 py-1.5 text-center font-numeric text-ink-bright placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-brass-400"
             />
             <button type="submit" className="rounded-lg bg-glass-2 px-3 py-1.5 text-sm font-semibold text-ink-bright">
               Segna
             </button>
           </form>
-          <p className="mt-1.5 px-1 text-xs text-ink-faint">Il numero è quello di AnimeClick, contato dall'inizio della scheda.</p>
+          <p className="mt-1.5 px-1 text-xs text-ink-muted">Il numero è quello di AnimeClick, contato dall'inizio della scheda.</p>
 
           <ul className="mt-3 divide-y divide-hairline rounded-card bg-shelf">
             {voci.map((v) => (

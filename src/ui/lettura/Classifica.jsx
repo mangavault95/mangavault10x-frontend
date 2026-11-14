@@ -140,7 +140,7 @@ export function RigaClassifica({
     <li className="group flex items-center gap-3 rounded-card px-2 py-1.5 transition-colors duration-quick hover:bg-glass-1 sm:gap-3.5 sm:px-3 sm:py-2">
       {/* Il numero solo dove c'è una posizione: fra le non votate
           sarebbe una graduatoria inventata. */}
-      <span className="w-6 shrink-0 text-right font-numeric text-sm text-ink-faint">
+      <span className="w-6 shrink-0 text-right font-numeric text-sm text-ink-muted">
         {posizione ?? ""}
       </span>
 
@@ -329,7 +329,7 @@ function ModuloVoto({ serie }) {
           <span className="font-numeric text-2xl font-semibold text-ink-bright">
             {voto ? votoIt(voto) : "—"}
           </span>
-          <span className="ml-1 text-sm text-ink-faint">/ 5</span>
+          <span className="ml-1 text-sm text-ink-muted">/ 5</span>
 
           <span className="mt-0.5 block text-sm text-ink-muted">
             {voto ? PAROLE_VOTO[voto] : "non l'hai ancora votata"}
@@ -343,7 +343,7 @@ function ModuloVoto({ serie }) {
         </p>
       )}
 
-      <p className="text-center text-xs text-ink-faint">
+      <p className="text-center text-xs text-ink-muted">
         Mezzo voto: la metà sinistra di ogni stella.
       </p>
 

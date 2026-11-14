@@ -125,7 +125,7 @@ export default function FiltriCollezione({
                     className={`h-1.5 w-1.5 rounded-full ${colore.pallino}`}
                   />
                   {l.nickname}
-                  <span className="font-numeric text-micro text-ink-faint">
+                  <span className="font-numeric text-micro text-ink-muted">
                     {quante}
                   </span>
                 </button>
@@ -211,7 +211,7 @@ export default function FiltriCollezione({
                   {g.etichetta}
                   <span
                     className={`ml-1.5 font-numeric text-micro ${
-                      attivo ? "text-void/60" : "text-ink-faint"
+                      attivo ? "text-void/60" : "text-ink-muted"
                     }`}
                   >
                     {g.quante}

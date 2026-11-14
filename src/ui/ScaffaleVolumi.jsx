@@ -373,7 +373,7 @@ function Nastro({
               didascalie invece di una scala. */}
           <span
             aria-hidden="true"
-            className="block font-numeric text-micro leading-none text-ink-faint"
+            className="block font-numeric text-micro leading-none text-ink-muted"
           >
             {blocco.inizio}
           </span>

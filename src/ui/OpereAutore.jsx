@@ -109,7 +109,7 @@ function CartaOpera({ opera, onChiudere }) {
           {titolo}
         </h3>
 
-        <p className="font-numeric text-micro text-ink-faint">
+        <p className="font-numeric text-micro text-ink-muted">
           {posseduta
             ? `${posseduta.posseduti}${posseduta.totali ? ` / ${posseduta.totali}` : ""} vol.`
             : opera.anno || ""}

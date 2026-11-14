@@ -323,7 +323,7 @@ export default function SeriePage() {
                   nuovi.delete("lettore");
                   setParametri(nuovi, { replace: true });
                 }}
-                className="ml-auto rounded-lg px-2 py-1 text-xs text-ink-faint transition-colors duration-quick hover:text-ink-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+                className="ml-auto rounded-lg px-2 py-1 text-xs text-ink-muted transition-colors duration-quick hover:text-ink-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
               >
                 mostra le mie
               </button>
@@ -466,7 +466,7 @@ export default function SeriePage() {
                   qui sotto; il resto si sistema da «Modifica volumi». */}
               <div className="max-w-md space-y-2">
                 <div className="flex items-center justify-between gap-4">
-                  <p className="font-numeric text-sm text-ink-faint">
+                  <p className="font-numeric text-sm text-ink-muted">
                     <span className="text-lg font-semibold text-ink-bright">{serie.posseduti}</span>{" "}
                     {totaleAttuale ? `su ${totaleAttuale}` : serie.posseduti === 1 ? "volume" : "volumi"}
                   </p>
@@ -486,7 +486,7 @@ export default function SeriePage() {
                 />
 
                 {totaleAttuale === null && (
-                  <p className="text-xs text-ink-faint">
+                  <p className="text-xs text-ink-muted">
                     Numero totale di volumi non registrato: il completamento non è calcolabile.
                   </p>
                 )}

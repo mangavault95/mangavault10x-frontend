@@ -100,7 +100,7 @@ export function SceltaSerie({ serie, escludi, onScegli, onAnnulla }) {
                     {m.titolo}
                   </span>
                   {m.totali ? (
-                    <span className="font-numeric text-xs text-ink-faint">
+                    <span className="font-numeric text-xs text-ink-muted">
                       {m.totali} volumi
                     </span>
                   ) : null}
@@ -118,7 +118,7 @@ export function SceltaSerie({ serie, escludi, onScegli, onAnnulla }) {
       )}
 
       <div className="mt-4 flex items-center justify-between gap-3">
-        <p className="font-numeric text-xs text-ink-faint">
+        <p className="font-numeric text-xs text-ink-muted">
           {nascoste > 0
             ? `altre ${nascoste} non in elenco: cercale per nome`
             : " "}

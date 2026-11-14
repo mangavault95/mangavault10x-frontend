@@ -190,7 +190,7 @@ export default function Pannello({ onChiudi }) {
               placeholder="Quanti volumi mi mancano di…"
               aria-label="La tua domanda"
               className="min-w-0 flex-1 rounded-card border border-hairline bg-glass-1 px-4 py-3 text-sm text-ink-bright
-                         outline-none transition-colors duration-quick placeholder:text-ink-faint
+                         outline-none transition-colors duration-quick placeholder:text-ink-muted
                          hover:border-soft focus:border-brass-400/60"
             />
 
@@ -258,7 +258,7 @@ function Domanda({ testo }) {
 
 function Attesa() {
   return (
-    <p className="text-sm text-ink-faint" role="status">
+    <p className="text-sm text-ink-muted" role="status">
       <span className="inline-flex gap-1">
         {[0, 1, 2].map((i) => (
           <span
@@ -280,7 +280,7 @@ function Risposta({ risposta, onChiedi }) {
           nominato, si dichiara. È la differenza fra un bibliotecario
           che ha seguito il filo e uno che ha risposto a caso. */}
       {risposta.ripreso && (
-        <p className="text-xs text-ink-faint">
+        <p className="text-xs text-ink-muted">
           <span className="text-brass-500/70">↳</span> su {risposta.ripreso}
         </p>
       )}
@@ -318,7 +318,7 @@ function Risposta({ risposta, onChiedi }) {
 
       {risposta.altreEsterne?.length > 0 && (
         <div className="flex flex-wrap gap-2 pt-1">
-          <span className="w-full text-xs text-ink-faint">Forse cercavi:</span>
+          <span className="w-full text-xs text-ink-muted">Forse cercavi:</span>
 
           {risposta.altreEsterne.map((m) => (
             <button
@@ -384,7 +384,7 @@ function DaComprare({ elenco, onChiedi }) {
                   {m.titolo}
                 </span>
 
-                <span className="block truncate text-xs text-ink-faint">
+                <span className="block truncate text-xs text-ink-muted">
                   {[m.autore, m.volumi ? `${m.volumi} vol.` : m.stato]
                     .filter(Boolean)
                     .join(" · ")}
@@ -401,7 +401,7 @@ function DaComprare({ elenco, onChiedi }) {
         ))}
       </ul>
 
-      <p className="text-micro uppercase tracking-wider text-ink-faint">
+      <p className="text-micro uppercase tracking-wider text-ink-muted">
         Accostamenti votati dai lettori su AniList
       </p>
     </div>
@@ -478,7 +478,7 @@ function SchedaEsterna({ manga }) {
           <p className="text-xs leading-relaxed text-ink-muted">{righe.join(" · ")}</p>
 
           {manga.generi.length > 0 && (
-            <p className="text-xs text-ink-faint">{manga.generi.slice(0, 4).join(", ")}</p>
+            <p className="text-xs text-ink-muted">{manga.generi.slice(0, 4).join(", ")}</p>
           )}
         </div>
       </div>
@@ -520,7 +520,7 @@ function SchedaEsterna({ manga }) {
       </div>
 
       {/* Da dove viene il dato, sempre visibile. */}
-      <p className="text-micro uppercase tracking-wider text-ink-faint">
+      <p className="text-micro uppercase tracking-wider text-ink-muted">
         Fonte: AniList{trama ? " · trama tradotta" : manga.trama ? " · trama in inglese" : ""}
       </p>
     </div>

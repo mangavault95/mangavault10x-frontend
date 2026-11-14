@@ -136,7 +136,7 @@ function Sfidante({ serie, onScegli, tasto, conVs = false }) {
 
         {/* La scorciatoia si mostra solo dove esiste una tastiera: col
             dito è una riga di rumore sotto ogni copertina. */}
-        <kbd className="mt-1.5 hidden rounded border border-soft bg-glass-1 px-1.5 py-0.5 font-numeric text-micro text-ink-faint [@media(hover:hover)]:inline-block">
+        <kbd className="mt-1.5 hidden rounded border border-soft bg-glass-1 px-1.5 py-0.5 font-numeric text-micro text-ink-muted [@media(hover:hover)]:inline-block">
           {tasto}
         </kbd>
       </span>
@@ -180,7 +180,7 @@ export function Tabellone({ sfide, taglia, nomeDi, collegabile, evidenzia }) {
             </span>
 
             <span className="flex items-center gap-3">
-              <span className="font-numeric text-xs text-ink-faint">
+              <span className="font-numeric text-xs text-ink-muted">
                 {dentro.length === 1 ? "1 sfida" : `${dentro.length} sfide`}
               </span>
 
@@ -266,7 +266,7 @@ function InSfida({ id, nomeDi, collegabile, vinta, evidenziata, aDestra = false 
       ? evidenziata
         ? "font-semibold text-brass-300"
         : "font-medium text-ink-bright"
-      : "text-ink-faint line-through decoration-ink-faint/60"
+      : "text-ink-muted line-through decoration-ink-faint/60"
   }`;
 
   // Una serie cancellata dalla collezione resta nel verbale col suo

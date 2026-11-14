@@ -209,7 +209,7 @@ export default function DesiderioPage() {
                 )}
 
                 {cercandoAniList && !aniList && (
-                  <span className="text-xs text-ink-faint">Cerco dati aggiornati su AniList…</span>
+                  <span className="text-xs text-ink-muted">Cerco dati aggiornati su AniList…</span>
                 )}
 
                 {generiElemento.map((g) => (

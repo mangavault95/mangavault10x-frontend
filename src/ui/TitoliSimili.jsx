@@ -60,7 +60,7 @@ export default function TitoliSimili({ serie }) {
     <Sezione
       titolo="Titoli simili"
       extra={
-        <span className="text-xs text-ink-faint">
+        <span className="text-xs text-ink-muted">
           <span className="hidden sm:inline">per trama e temi, da AniList e dai lettori di AnimeClick</span>
           {inCasa > 0 && <span className="sm:before:content-['_·_']">{inCasa} li hai già</span>}
         </span>
@@ -203,7 +203,7 @@ function Motivo({ manga }) {
   if (!quanti) return null;
 
   return (
-    <p className="text-micro italic text-ink-faint">
+    <p className="text-micro italic text-ink-muted">
       {quanti === 1 ? "segnalato da un lettore" : `segnalato da ${quanti} lettori`}
     </p>
   );

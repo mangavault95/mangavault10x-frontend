@@ -137,7 +137,7 @@ export function PopupVolumi({ serie, numeri, inAttesa, prendendo, soloLettura, o
             })}
           </div>
 
-          <p className="mt-3 text-xs text-ink-faint">
+          <p className="mt-3 text-xs text-ink-muted">
             Il segno si registra dopo 5 secondi: tocca di nuovo il numero per annullare.
           </p>
     </Foglio>

@@ -113,16 +113,27 @@ non lo sa, e infatti chiedendo solo quella si sbagliano tutte e due le volte.
   da 40: ora no. Restano a 384 apposta le carte, la scheda e la foto
   del profilo (`SceltaImmagine` salva quell'indirizzo come immagine vera).
 
+- **Contrasto del testo** (14/11/2026): `ink-faint` misurava 2,8-3,2:1, sotto il 4,5:1. Non si
+  poteva alzare senza farlo coincidere con `ink-muted` (già a 4,2:1 sulle superfici più chiare),
+  quindi 69 usi di testo vero sono passati a `ink-muted` e `ink-faint` resta solo per le
+  decorazioni (kana `aria-hidden`, freccette, icone). `scripts/controlla-contrasto.mjs`, dentro
+  `npm run controlla`, fa fallire la build se `ink` o `ink-muted` scendono sotto 4,5:1 o se
+  compare un nuovo uso di `ink-faint` fuori dall'elenco ammesso. Confrontate 36 schermate: 4 coppie
+  differiscono, solo `/collezione`, per meno dello 0,2% dei pixel. Non verificata a occhio la pagina
+  di una serie (la prova è uscita vuota in tutte e due le versioni).
+- **Chi può scrivere** (14/11/2026): il sito si legge liberamente (due persone), ma ogni scrittura
+  chiede un accesso. Le registrazioni sono chiuse di default: si riaprono con
+  `REGISTRAZIONI_APERTE=1` su Render. Nel backend `scripts/prova-protezione.js` (dentro `npm test`)
+  avvia l'app e manda ogni rotta POST/PUT/DELETE senza credenziali e con un token falso: tutte
+  devono rispondere 401/403. Tre eccezioni scritte, col perché: `login`, il vecchio `login`,
+  `enrich` (solo lettura da fonti esterne).
+
 ## Aperti
 
 Riscritta il 14 novembre 2026, dopo un controllo dei tre repository. Le voci
 sulla stanza (porta animata, peso dei modelli, compressione dei `.glb`) sono
 decadute con la stanza; `ANTHROPIC_API_KEY` nel frontend non c'è più.
 
-- **Contrasto di `text-ink-faint`**: circa 3:1 sullo sfondo, sotto il 4,5:1
-  che serve a un testo piccolo. Le etichette e le descrizioni che erano
-  testo vero sono passate a `ink-muted` (14/11/2026); restano gli usi come
-  segnaposto e come testo secondario, una settantina, da guardare uno a uno.
 - **Poche prove automatiche**: il sito ha solo lint e build a ogni push. I
   candidati sono le funzioni pure di `dati/serie.js`, `dati/kachinuki.js`,
   `bibliotecario/intenti.js`.

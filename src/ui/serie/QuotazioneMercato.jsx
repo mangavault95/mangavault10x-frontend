@@ -69,7 +69,7 @@ export function QuotazioneMercato({ serie, sorelle }) {
                 è giusto dirlo, invece di far sembrare il numero più
                 solido di quanto sia. */}
             {scartati > 0 && (
-              <p className="text-xs text-ink-faint">
+              <p className="text-xs text-ink-muted">
                 Scartati {scartati} annunci su {dati.campioneGrezzo}: volumi singoli o edizione diversa.
               </p>
             )}
