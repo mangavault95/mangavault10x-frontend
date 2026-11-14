@@ -256,6 +256,18 @@ export default function CercaPage() {
           className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink-bright placeholder:text-ink-muted focus:outline-none"
         />
 
+        {!scritto && (
+          <Link
+            to="/scansiona"
+            aria-label="Scansiona il codice a barre"
+            className="bersaglio grid h-9 w-9 shrink-0 place-items-center rounded-full bg-glass-2 text-ink-bright"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2M8 9v6M12 9v6M16 9v6" />
+            </svg>
+          </Link>
+        )}
+
         {scritto && (
           <button
             type="button"

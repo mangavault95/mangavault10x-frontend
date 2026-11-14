@@ -329,6 +329,13 @@ export const registraAcquisto = (mangaId, { volumi = null, prezzo = null, data =
 /** Il riassunto di un mese di casa (`routes/mese.js`); senza mese, quello scorso. */
 export const getMese = (mese = null) => request(`/api/mese${mese ? `?m=${mese}` : ""}`);
 
+/** Cos'è un codice a barre e a che punto siete (`routes/isbn.js`). Serve l'accesso. */
+export const getIsbn = (codice) => request(`/api/isbn/${encodeURIComponent(codice)}`, { auth: true });
+
+/** Ricorda che un codice è il volume N di una serie. */
+export const collegaIsbn = ({ isbn, mangaId, numero }) =>
+  request("/api/isbn/collega", { method: "POST", body: { isbn, mangaId, numero }, auth: true });
+
 /** L'anno in rassegna di una persona (`routes/rassegna.js`). */
 export const getRassegna = (anno, utente) =>
   request(`/api/rassegna?anno=${encodeURIComponent(anno)}${utente ? `&utente=${encodeURIComponent(utente)}` : ""}`);
