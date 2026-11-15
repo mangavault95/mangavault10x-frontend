@@ -457,7 +457,7 @@ function Risposta({ esito, collezione, occupato, registrato, onRegistra, onAnnul
         <>
           <p className="mt-3 text-lg font-semibold text-ink-bright">{esito.candidate.length > 1 ? "Quale di queste è?" : "È questa?"}</p>
           <p className="mt-1 text-sm text-ink-muted">Non ne sono sicuro: confermalo tu e me lo ricordo.</p>
-          <Scelta candidate={esito.candidate} numeroIniziale={numero} occupato={occupato} onScelta={onCollega} />
+          <Scelta candidate={esito.candidate} collezione={collezione} numeroIniziale={numero} occupato={occupato} onScelta={onCollega} />
           <Altrove etichetta="Nessuna di queste" collezione={collezione} numeroIniziale={numero} occupato={occupato} onScelta={onCollega} />
         </>
       )}
@@ -482,10 +482,14 @@ function Risposta({ esito, collezione, occupato, registrato, onRegistra, onAnnul
           <p className="mt-1 text-sm text-ink-muted">
             {esito.periodico
               ? "È un codice da edicola, non un ISBN: i cataloghi dei libri non lo conoscono."
-              : esito.motivo
-                ? "I cataloghi adesso non rispondono."
-                : "I cataloghi non hanno questo volume."}{" "}
-            Dimmi tu che volume è: me lo ricordo per la prossima volta.
+              : /chiave/i.test(esito.motivo || "")
+                ? "Google Books non è configurato sul server (manca la chiave), e l'altro catalogo non ha questo volume."
+                : /quota/i.test(esito.motivo || "")
+                  ? "Google Books per oggi ha finito le richieste, e l'altro catalogo non ha questo volume."
+                  : esito.motivo
+                    ? "I cataloghi adesso non rispondono."
+                    : "Né Google Books né Open Library hanno questo volume: capita, con le edizioni italiane."}{" "}
+            Dimmi tu che serie è: due lettere e due tocchi, poi me lo ricordo.
           </p>
           {esito.periodico && !esito.aggiunta && (
             <p className="mt-2 text-xs text-ink-muted">
@@ -594,61 +598,15 @@ function CampoNumero({ valore, onChange, id }) {
  * codice si ricorda, e la prossima volta la risposta è diretta.
  */
 function CheVolume({ serie, scheda, daEdicola, suggerito, occupato, onNumero, onAltraSerie }) {
-  const [numero, setNumero] = useState("");
-
-  const presenti = useMemo(() => new Set(scheda?.numeri ?? []), [scheda]);
-  // Fin dove arrivano i numeri: i volumi usciti che conosciamo, o l'ultimo posseduto, più un paio oltre.
-  const fino = scheda ? Math.min(Math.max(totaleDisponibile(scheda) || 0, ...presenti, suggerito || 1) + 2, 250) : 0;
-
   return (
     <div className="mt-3">
       <p className="text-lg font-semibold text-ink-bright">Che numero hai in mano?</p>
       <p className="mt-1 text-sm text-ink-muted">
-        {daEdicola ? "Questo codice è lo stesso per tutti i numeri della serie." : "Il catalogo non scrive il numero di questo volume."}{" "}
-        {fino > 0 ? "Toccalo: me lo ricordo per la prossima volta." : "Scrivilo: me lo ricordo per la prossima volta."}
+        {daEdicola ? "Questo codice è lo stesso per tutti i numeri della serie." : "Il catalogo non scrive il numero di questo volume."} Me lo ricordo
+        per la prossima volta.
       </p>
 
-      {fino > 0 ? (
-        <>
-          <p className="mt-3 flex gap-4 text-xs text-ink-muted" aria-hidden="true">
-            <span><span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-jade" />ce l&apos;hai</span>
-            <span><span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-brass-400" />ti manca</span>
-          </p>
-          <div className="mt-2 grid grid-cols-6 gap-2" role="group" aria-label={`Volumi di ${serie.titolo}`}>
-            {Array.from({ length: fino }, (_, i) => i + 1).map((n) => {
-              const tuo = presenti.has(n);
-
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  disabled={occupato}
-                  onClick={() => onNumero(n)}
-                  aria-label={`Volume ${n}, ${tuo ? "ce l'hai" : "ti manca"}`}
-                  className={`h-11 rounded-card font-numeric text-base font-semibold disabled:opacity-50 ${
-                    tuo ? "bg-jade/15 text-jade" : "bg-brass-400/15 text-brass-300"
-                  } ${n === suggerito ? "ring-2 ring-brass-400" : ""}`}
-                >
-                  {n}
-                </button>
-              );
-            })}
-          </div>
-        </>
-      ) : (
-        <form
-          className="mt-3 flex items-center gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (numero) onNumero(Number(numero));
-          }}
-        >
-          <CampoNumero valore={numero} onChange={setNumero} />
-          <button type="submit" disabled={occupato || !numero} className="insegna h-11 flex-1 rounded-card font-semibold disabled:opacity-50">
-            Controlla
-          </button>
-        </form>
-      )}
+      <Numeri titolo={serie.titolo} scheda={scheda} suggerito={suggerito} occupato={occupato} onNumero={onNumero} />
 
       <button type="button" onClick={onAltraSerie} className="bersaglio mt-3 text-sm font-medium text-ciano underline underline-offset-4">
         Non è {serie.titolo}
@@ -657,11 +615,79 @@ function CheVolume({ serie, scheda, daEdicola, suggerito, occupato, onNumero, on
   );
 }
 
-function RigaSerie({ serie, occupato, spento, onClick }) {
+/**
+ * I numeri di una serie, da toccare: verdi quelli che avete, rosa quelli che
+ * mancano. Chi ha il volume in mano legge il numero sul dorso e dal colore ha
+ * già la risposta. Senza la scheda della serie (non ancora arrivata) resta un
+ * campo da scrivere.
+ */
+function Numeri({ titolo, scheda, suggerito, occupato, onNumero }) {
+  const [numero, setNumero] = useState("");
+
+  const presenti = useMemo(() => new Set(scheda?.numeri ?? []), [scheda]);
+  // Fin dove arrivano i numeri: i volumi usciti che conosciamo, o l'ultimo posseduto, più un paio oltre.
+  const fino = scheda ? Math.min(Math.max(totaleDisponibile(scheda) || 0, ...presenti, suggerito || 1) + 2, 250) : 0;
+
+  // Il campo da scrivere: da solo quando la scheda non c'è, e sotto i numeri per quelli che
+  // la griglia non mostra (una serie di cui non sappiamo quanti volumi sono usciti).
+  const campo = (etichetta) => (
+    <form
+      className="mt-3 flex items-center gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (numero) onNumero(Number(numero));
+      }}
+    >
+      {etichetta && <span className="text-xs text-ink-muted">{etichetta}</span>}
+      <CampoNumero valore={numero} onChange={setNumero} />
+      <button
+        type="submit"
+        disabled={occupato || !numero}
+        className={`h-11 rounded-card px-4 font-semibold disabled:opacity-50 ${etichetta ? "bg-glass-2 text-ink-bright" : "insegna flex-1"}`}
+      >
+        Controlla
+      </button>
+    </form>
+  );
+
+  if (!fino) return campo(null);
+
+  return (
+    <>
+      <p className="mt-3 flex gap-4 text-xs text-ink-muted" aria-hidden="true">
+        <span><span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-jade" />ce l&apos;hai</span>
+        <span><span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-brass-400" />ti manca</span>
+      </p>
+      <div className="mt-2 grid grid-cols-6 gap-2" role="group" aria-label={`Volumi di ${titolo}`}>
+        {Array.from({ length: fino }, (_, k) => k + 1).map((n) => {
+          const tuo = presenti.has(n);
+
+          return (
+            <button
+              key={n}
+              type="button"
+              disabled={occupato}
+              onClick={() => onNumero(n)}
+              aria-label={`Volume ${n}, ${tuo ? "ce l'hai" : "ti manca"}`}
+              className={`h-11 rounded-card font-numeric text-base font-semibold disabled:opacity-50 ${
+                tuo ? "bg-jade/15 text-jade" : "bg-brass-400/15 text-brass-300"
+              } ${n === suggerito ? "ring-2 ring-brass-400" : ""}`}
+            >
+              {n}
+            </button>
+          );
+        })}
+      </div>
+      {campo("Un altro numero")}
+    </>
+  );
+}
+
+function RigaSerie({ serie, occupato, onClick }) {
   return (
     <button
       type="button"
-      disabled={occupato || spento}
+      disabled={occupato}
       onClick={onClick}
       className="flex min-h-12 w-full items-center gap-3 rounded-card bg-glass-2 px-3 py-2 text-left disabled:opacity-50"
     >
@@ -671,32 +697,51 @@ function RigaSerie({ serie, occupato, spento, onClick }) {
   );
 }
 
-/** Le serie proposte dal server: si sceglie con un tocco, col numero già scritto se il catalogo lo sapeva. */
-function Scelta({ candidate, numeroIniziale, occupato, onScelta }) {
-  const [numero, setNumero] = useState(numeroIniziale ? String(numeroIniziale) : "");
+/** Le serie proposte dal server: un tocco se il catalogo sa il numero, altrimenti un tocco sulla serie e uno sul numero. */
+function Scelta({ candidate, collezione, numeroIniziale, occupato, onScelta }) {
+  const [scelta, setScelta] = useState(null);
+
+  if (scelta) {
+    const scheda = collezione.find((s) => Number(s.id) === Number(scelta.id)) || null;
+
+    return (
+      <div className="mt-3">
+        <p className="text-sm text-ink-bright">
+          <span className="font-semibold">{scelta.titolo}</span>: che numero è?{" "}
+          <button type="button" onClick={() => setScelta(null)} className="bersaglio font-medium text-ciano underline underline-offset-4">
+            Cambia serie
+          </button>
+        </p>
+        <Numeri
+          titolo={scelta.titolo}
+          scheda={scheda}
+          suggerito={scheda ? prossimoVolume(scheda) : null}
+          occupato={occupato}
+          onNumero={(n) => onScelta(scelta, n)}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="mt-3">
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-ink-muted">Volume</span>
-        <CampoNumero valore={numero} onChange={setNumero} />
-        {!numero && <span className="text-xs text-ink-muted">Scrivi il numero, poi tocca la serie.</span>}
-      </div>
-      <ul className="mt-3 space-y-2">
-        {candidate.map((s) => (
-          <li key={s.id}>
-            <RigaSerie serie={s} occupato={occupato} spento={!numero} onClick={() => onScelta(s, Number(numero))} />
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul className="mt-3 space-y-2">
+      {candidate.map((s) => (
+        <li key={s.id}>
+          <RigaSerie serie={s} occupato={occupato} onClick={() => (numeroIniziale ? onScelta(s, Number(numeroIniziale)) : setScelta(s))} />
+        </li>
+      ))}
+    </ul>
   );
 }
 
-/** Cerca fra tutte le serie in collezione. */
-function CercaSerie({ collezione, numeroIniziale, occupato, onScelta }) {
+/**
+ * Cerca fra tutte le serie in collezione: due lettere, un tocco sulla serie, un
+ * tocco sul numero. Se il numero si sa già (lo ha detto il catalogo) e non lo
+ * si sta correggendo (`chiediNumero`), basta il tocco sulla serie.
+ */
+function CercaSerie({ collezione, numeroIniziale, chiediNumero = false, occupato, onScelta }) {
   const [testo, setTesto] = useState("");
-  const [numero, setNumero] = useState(numeroIniziale ? String(numeroIniziale) : "");
+  const [scelta, setScelta] = useState(null);
 
   const trovate = useMemo(() => {
     const parole = ossoDelTitolo(testo).split(" ").filter(Boolean);
@@ -706,28 +751,49 @@ function CercaSerie({ collezione, numeroIniziale, occupato, onScelta }) {
     return collezione.filter((s) => parole.every((p) => ossoDelTitolo(s.titolo).includes(p))).slice(0, 6);
   }, [testo, collezione]);
 
+  if (scelta) {
+    return (
+      <div className="mt-3">
+        <p className="text-sm text-ink-bright">
+          <span className="font-semibold">{scelta.titolo}</span>
+          {scelta.edizione ? ` · ${scelta.edizione}` : ""}: che numero è?{" "}
+          <button type="button" onClick={() => setScelta(null)} className="bersaglio font-medium text-ciano underline underline-offset-4">
+            Cambia serie
+          </button>
+        </p>
+        <Numeri
+          titolo={scelta.titolo}
+          scheda={scelta}
+          suggerito={numeroIniziale || prossimoVolume(scelta)}
+          occupato={occupato}
+          onNumero={(n) => onScelta(scelta, n)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="mt-3">
-      <div className="flex items-center gap-2">
-        <input
-          value={testo}
-          onChange={(e) => setTesto(e.target.value)}
-          autoComplete="off"
-          placeholder="Titolo della serie"
-          aria-label="Titolo della serie"
-          className="h-11 min-w-0 flex-1 rounded-card bg-void/40 px-3 text-base text-ink-bright placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-brass-400"
-        />
-        <CampoNumero valore={numero} onChange={setNumero} />
-      </div>
+      <input
+        value={testo}
+        onChange={(e) => setTesto(e.target.value)}
+        autoComplete="off"
+        placeholder="Scrivi il titolo della serie"
+        aria-label="Titolo della serie"
+        className="h-11 w-full rounded-card bg-void/40 px-3 text-base text-ink-bright placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-brass-400"
+      />
       <ul className="mt-2 space-y-2">
         {trovate.map((s) => (
           <li key={s.id}>
-            <RigaSerie serie={s} occupato={occupato} spento={!numero} onClick={() => onScelta(s, Number(numero))} />
+            <RigaSerie
+              serie={s}
+              occupato={occupato}
+              onClick={() => (numeroIniziale && !chiediNumero ? onScelta(s, Number(numeroIniziale)) : setScelta(s))}
+            />
           </li>
         ))}
         {testo.trim() && !trovate.length && <li className="text-sm text-ink-muted">Nessuna serie in collezione con questo titolo.</li>}
       </ul>
-      {!numero && trovate.length > 0 && <p className="mt-2 text-xs text-ink-muted">Scrivi anche il numero del volume, poi tocca la serie.</p>}
     </div>
   );
 }
@@ -757,7 +823,7 @@ function Correzione({ aperta, onApri, collegato, onDimentica, occupato, ...resto
   return (
     <div className="mt-4 border-t border-hairline pt-3">
       <p className="text-sm font-semibold text-ink-bright">Che volume è, allora?</p>
-      <CercaSerie occupato={occupato} {...resto} />
+      <CercaSerie occupato={occupato} chiediNumero {...resto} />
       {collegato && (
         <button type="button" onClick={onDimentica} disabled={occupato} className="bersaglio mt-3 block text-sm font-medium text-ember underline underline-offset-4 disabled:opacity-50">
           Dimentica questo codice
