@@ -221,11 +221,66 @@ export function urlCopertina(originale, larghezza = 384) {
   // Un'immagine già nostra o già in formato dati non va rimbalzata.
   if (originale.startsWith("data:") || originale.startsWith("/")) return originale;
 
-  if (RIDIMENSIONA && HOST_RIDIMENSIONABILI.test(originale)) {
-    return `/_vercel/image?url=${encodeURIComponent(originale)}&w=${misuraPer(larghezza)}&q=72`;
+  const pulito = riparaIndirizzo(originale);
+
+  if (RIDIMENSIONA && HOST_RIDIMENSIONABILI.test(pulito)) {
+    return `/_vercel/image?url=${encodeURIComponent(pulito)}&w=${misuraPer(larghezza)}&q=72`;
   }
 
-  return copertinaLocale(originale) || `${API_URL}/api/cover?url=${encodeURIComponent(originale)}`;
+  return senzaRidimensionare(pulito);
+}
+
+/**
+ * L'immagine intera, senza il ridimensionatore: dal nostro dominio (gli inoltri di
+ * Vercel), dal ponte del backend per gli host che il ponte ammette, e DIRETTA per
+ * tutti gli altri.
+ *
+ * L'ultima strada è del 15/11/2026. Dalla Gestione si può incollare l'indirizzo di
+ * una copertina presa da qualsiasi sito (la copertina di un volume, quella di una
+ * serie), e il ponte, che giustamente non scarica da chiunque (`routes/cover.js`,
+ * `DOMINI_AMMESSI`), la rifiutava: l'indirizzo era salvato e la copertina non si
+ * vedeva mai. Un `<img>` invece può mostrare un'immagine di qualsiasi sito https
+ * (lo permette la CSP, `img-src https:`) senza che passi da noi.
+ */
+function senzaRidimensionare(originale) {
+  const locale = copertinaLocale(originale);
+
+  if (locale) return locale;
+  if (HOST_DEL_PONTE.test(originale) || !/^https:\/\//i.test(originale)) return `${API_URL}/api/cover?url=${encodeURIComponent(originale)}`;
+
+  return originale;
+}
+
+// Gli host che il ponte del backend scarica (`DOMINI_AMMESSI` in `routes/cover.js`): se lì
+// cambia, cambia qui. Uno che manca qui va diretto al browser invece che al ponte, che è
+// comunque una copertina che si vede.
+const HOST_DEL_PONTE =
+  /^https:\/\/(s[1-4]\.anilist\.co|(www\.)?animeclick\.it|(cdn\.)?myanimelist\.net|books\.google(usercontent)?\.com|encrypted-tbn[0-3]\.gstatic\.com)\//i;
+
+/**
+ * Un indirizzo con dentro le entità HTML (`Yu-Gi-Oh&#33;1.jpg`, `&Egrave;`), salvato prima
+ * del 15/11/2026: il backend le leggeva dalle pagine di AnimeClick senza scioglierle (vedi
+ * `indirizzoImmagine` in `providers/animeclick.js`). Il `#` di `&#33;` per un indirizzo è
+ * l'inizio di un'àncora: il browser chiedeva il file fino alla `&`, che non esiste. Qui si
+ * sciolgono, così si vedono anche le copertine già salvate così.
+ */
+const ENTITA_CON_NOME = { amp: "&", quot: '"', apos: "'", nbsp: " ", Agrave: "À", agrave: "à", Egrave: "È", egrave: "è", Eacute: "É", eacute: "é", Igrave: "Ì", igrave: "ì", Ograve: "Ò", ograve: "ò", Ugrave: "Ù", ugrave: "ù" };
+
+export function riparaIndirizzo(indirizzo) {
+  const testo = String(indirizzo ?? "");
+
+  if (!/&(#\d+|#x[0-9a-f]+|[a-z]+);/i.test(testo)) return testo;
+
+  const sciolto = testo
+    .replace(/&#(\d+);/g, (tutto, n) => (Number(n) > 0 && Number(n) <= 0x10ffff ? String.fromCodePoint(Number(n)) : tutto))
+    .replace(/&#x([0-9a-f]+);/gi, (tutto, n) => (parseInt(n, 16) > 0 && parseInt(n, 16) <= 0x10ffff ? String.fromCodePoint(parseInt(n, 16)) : tutto))
+    .replace(/&([a-z]+);/gi, (tutto, nome) => ENTITA_CON_NOME[nome] ?? tutto);
+
+  try {
+    return new URL(sciolto).href;
+  } catch {
+    return testo;
+  }
 }
 
 /*
@@ -289,7 +344,7 @@ export function copertinaOriginale(indirizzo) {
   try {
     const originale = new URL(indirizzo, window.location.origin).searchParams.get("url");
 
-    return originale ? copertinaLocale(originale) || `${API_URL}/api/cover?url=${encodeURIComponent(originale)}` : null;
+    return originale ? senzaRidimensionare(riparaIndirizzo(originale)) : null;
   } catch {
     return null;
   }

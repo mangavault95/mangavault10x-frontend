@@ -611,7 +611,7 @@ function CopertineVolumi({ serie }) {
 
       <div className="space-y-3 border-t border-hairline p-4 sm:p-6">
         <p className="text-xs leading-relaxed text-ink-muted">
-          Incolla l'indirizzo dell'immagine (https, da AnimeClick, AniList, MyAnimeList o Google). Quella
+          Incolla l'indirizzo dell'immagine (https, da qualsiasi sito). Quella
           scelta qui il giro automatico non la cambia più; «Togli» la rimette a AnimeClick.
         </p>
 
