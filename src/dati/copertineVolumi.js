@@ -53,6 +53,12 @@ function carica() {
     });
 }
 
+/** Rilegge tutte le copertine dal backend, dopo una correzione a mano dalla Gestione. */
+export function ricaricaCopertineVolumi() {
+  richiesta = null;
+  carica();
+}
+
 /** L'indirizzo della copertina di quel volume, o null. Pura: si prova senza rete. */
 export function indirizzoVolume(fonte, idSerie, numero) {
   const percorso = fonte?.copertine?.[String(idSerie)]?.[String(Number(numero))];

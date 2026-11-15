@@ -312,6 +312,14 @@ export const getUsciteManga = (giorni = 7) => request(`/api/manga/uscite?giorni=
 /** La copertina di ogni volume: `{ base, copertine: { [idSerie]: { [numero]: percorso } } }`. */
 export const getCopertineVolumi = () => request("/api/manga/copertine-volumi");
 
+/** Sceglie a mano la copertina di un volume (`copertina` = indirizzo https), o la toglie (null). */
+export const setCopertinaVolume = (idSerie, numero, copertina) =>
+  request(`/api/manga/${idSerie}/copertine-volumi/${numero}`, {
+    method: "PUT",
+    body: { copertina: copertina || null },
+    auth: true
+  });
+
 export const getUsciteArchivio = (mese) => request(`/api/manga/uscite/archivio?mese=${mese}`);
 
 /**

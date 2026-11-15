@@ -5,7 +5,8 @@ import Icon from "../../app/Icon";
 import { Bottone, CampoRicerca } from "../Controlli";
 import { Errore } from "../Stati";
 import { useCollezione } from "../../dati/collezione";
-import { eliminaManga, enrichManga, updateManga } from "../../services/api";
+import { eliminaManga, enrichManga, setCopertinaVolume, updateManga } from "../../services/api";
+import { ricaricaCopertineVolumi, useCopertinaVolume } from "../../dati/copertineVolumi";
 import { CATEGORIE, ETICHETTE_STATO } from "../../dati/serie";
 
 /**
@@ -31,7 +32,7 @@ export default function GestioneManga() {
   const { serie, inCorso, errore, ricarica, aggiornaLocale, rimuoviLocale } = useCollezione();
 
   const [parametri] = useSearchParams();
-  const [selezionataId, setSelezionataId] = useState(() => Number(parametri.get("serie")) || null);
+  const [selezionataId, setSelezionataId] = useState(() => parametri.get("serie") || null);
   const [ricercaTesto, setRicerca] = useState("");
   const [soloDaFinire, setSoloDaFinire] = useState(false);
   // L'esito dell'eliminazione non può stare nella scheda: quella
@@ -55,7 +56,7 @@ export default function GestioneManga() {
     );
   }, [ordinate, ricercaTesto, soloDaFinire]);
 
-  const selezionata = serie.find((s) => s.id === selezionataId) || null;
+  const selezionata = serie.find((s) => String(s.id) === String(selezionataId)) || null;
 
   if (errore) return <Errore errore={errore} riprova={ricarica} />;
 
@@ -107,9 +108,9 @@ export default function GestioneManga() {
                   <button
                     type="button"
                     onClick={() => setSelezionataId(s.id)}
-                    aria-current={s.id === selezionataId ? "true" : undefined}
+                    aria-current={String(s.id) === String(selezionataId) ? "true" : undefined}
                     className={`flex w-full items-center gap-3 border-b border-hairline px-4 py-3 text-left transition-colors duration-quick last:border-b-0 ${
-                      s.id === selezionataId
+                      String(s.id) === String(selezionataId)
                         ? "bg-brass-400/10 text-brass-300"
                         : "text-ink hover:bg-glass-2 hover:text-ink-bright"
                     }`}
@@ -556,6 +557,8 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
 
       {/* Fuori dal modulo di proposito: un bottone che cancella non
           deve stare nella stessa cornice di uno che salva. */}
+      <CopertineVolumi serie={serie} />
+
       <Eliminazione serie={serie} onEliminata={onEliminata} />
     </div>
   );
@@ -574,6 +577,127 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
  * via — che è più utile di una finestra `confirm` del browser, dove
  * il titolo non si può nemmeno leggere.
  */
+/**
+ * La copertina di ogni volume, a mano.
+ *
+ * Quelle che il sito mostra nelle letture, in «Da comprare» e in «Adesso» le
+ * legge da sole il giro di AnimeClick, e per le serie che hanno cambiato
+ * edizione (Yu-Gi-Oh!, Stella cadente in pieno giorno) ne prende a volte una
+ * sbagliata o quella vecchia. Qui si sceglie l'indirizzo di quella giusta,
+ * volume per volume: una scelta a mano il giro non la riscrive più, e
+ * «Togli» la rimette a AnimeClick. I volumi che non si toccano restano come
+ * sono, quindi la copertina della vecchia edizione resta sui vecchi e la
+ * nuova va solo sui nuovi.
+ */
+function CopertineVolumi({ serie }) {
+  const [tutti, setTutti] = useState(false);
+
+  const massimo = Math.max(serie.totali || 0, ...(serie.numeri || []), 0);
+  const elenco = tutti
+    ? Array.from({ length: Math.min(massimo, 200) }, (_, i) => i + 1)
+    : [...(serie.numeri || [])].sort((a, b) => a - b);
+
+  return (
+    <details className="group rounded-card bg-alcove">
+      <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-ink-bright sm:px-6">
+        <span>
+          Copertine dei volumi{" "}
+          <span className="font-normal text-ink-muted">· correggi quella di un volume</span>
+        </span>
+        <span aria-hidden="true" className="text-ink-muted transition-transform duration-quick group-open:rotate-180">
+          ▾
+        </span>
+      </summary>
+
+      <div className="space-y-3 border-t border-hairline p-4 sm:p-6">
+        <p className="text-xs leading-relaxed text-ink-muted">
+          Incolla l'indirizzo dell'immagine (https, da AnimeClick, AniList, MyAnimeList o Google). Quella
+          scelta qui il giro automatico non la cambia più; «Togli» la rimette a AnimeClick.
+        </p>
+
+        {elenco.length === 0 && <p className="text-sm text-ink-muted">Nessun volume in casa.</p>}
+
+        <ul className="space-y-3">
+          {elenco.map((n) => (
+            <RigaCopertinaVolume key={n} serie={serie} numero={n} />
+          ))}
+        </ul>
+
+        {massimo > 0 && (
+          <button
+            type="button"
+            onClick={() => setTutti((v) => !v)}
+            className="bersaglio text-sm font-semibold text-brass-300"
+          >
+            {tutti ? "Solo i volumi in casa" : "Mostra tutti i volumi"}
+          </button>
+        )}
+      </div>
+    </details>
+  );
+}
+
+function RigaCopertinaVolume({ serie, numero }) {
+  const attuale = useCopertinaVolume(serie.id, numero, serie.copertina, 128);
+  const [indirizzo, setIndirizzo] = useState("");
+  const [lavoro, setLavoro] = useState(false);
+  const [stato, setStato] = useState(null);
+
+  async function manda(valore) {
+    setLavoro(true);
+    setStato(null);
+
+    try {
+      await setCopertinaVolume(serie.id, numero, valore);
+      ricaricaCopertineVolumi();
+      setIndirizzo("");
+      setStato({ tipo: "ok", testo: valore ? "Copertina salvata." : "Tolta: torna quella di AnimeClick al prossimo giro." });
+    } catch (e) {
+      setStato({ tipo: "errore", testo: e?.message || "Non è stato possibile salvare." });
+    } finally {
+      setLavoro(false);
+    }
+  }
+
+  return (
+    <li className="flex items-start gap-3">
+      <div className="w-12 shrink-0">
+        <Copertina src={attuale} alt={`${serie.titolo}, volume ${numero}`} inclina={false} />
+      </div>
+
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <p className="text-sm font-semibold text-ink-bright">Volume {numero}</p>
+
+        <div className="flex flex-wrap gap-2">
+          <input
+            type="url"
+            inputMode="url"
+            value={indirizzo}
+            onChange={(e) => setIndirizzo(e.target.value)}
+            placeholder="https://…"
+            aria-label={`Indirizzo della copertina del volume ${numero}`}
+            className="min-w-0 flex-1 rounded-card border border-hairline bg-glass-1 px-3 py-2 text-sm text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
+          />
+
+          <Bottone type="button" disabled={lavoro || !indirizzo.trim()} onClick={() => manda(indirizzo.trim())}>
+            Usa
+          </Bottone>
+
+          <Bottone type="button" variante="secondario" disabled={lavoro} onClick={() => manda(null)}>
+            Togli
+          </Bottone>
+        </div>
+
+        {stato && (
+          <p role="status" className={`text-xs ${stato.tipo === "ok" ? "text-jade" : "text-ember"}`}>
+            {stato.testo}
+          </p>
+        )}
+      </div>
+    </li>
+  );
+}
+
 function Eliminazione({ serie, onEliminata }) {
   const [chiesto, setChiesto] = useState(false);
   const [inCorso, setInCorso] = useState(false);
