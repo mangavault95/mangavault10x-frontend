@@ -4,7 +4,7 @@ import { useCollezione } from "../dati/collezione";
 import { useAccessoProtetto } from "../dati/accesso";
 import { ossoDelTitolo } from "../dati/identita";
 import { useLettoreCodici } from "../dati/lettoreCodici";
-import { euro, prossimoVolume } from "../dati/serie";
+import { euro, prossimoVolume, totaleDisponibile } from "../dati/serie";
 import { vibra } from "../dati/tatto";
 import {
   annullaAcquisti,
@@ -416,6 +416,10 @@ function Risposta({ esito, collezione, occupato, registrato, onRegistra, onAnnul
         <div className="flex gap-3">
           <Copertina src={serie?.copertina || esito.copertina} />
           <div className="min-w-0">
+            {/* La serie è riconosciuta con certezza: lo si dice in verde, prima di tutto il resto. */}
+            {serie && ["ce_l_hai", "ti_manca", "che_volume"].includes(stato) && (
+              <p className="mb-1 text-xs font-semibold uppercase tracking-[0.08em] text-jade">✓ Riconosciuto</p>
+            )}
             <p className="font-display text-xl font-bold leading-tight text-ink-bright">{nome}</p>
             {sotto && <p className="mt-1 text-sm text-ink-muted">{sotto}</p>}
           </div>
@@ -440,6 +444,8 @@ function Risposta({ esito, collezione, occupato, registrato, onRegistra, onAnnul
       {stato === "che_volume" && !correggo && (
         <CheVolume
           serie={serie}
+          scheda={scheda}
+          daEdicola={!esito.libro}
           suggerito={scheda ? prossimoVolume(scheda) : null}
           occupato={occupato}
           onNumero={(n) => onCollega(serie, n)}
@@ -578,32 +584,76 @@ function CampoNumero({ valore, onChange, id }) {
   );
 }
 
-/** La serie si sa (il codice è della collana), il numero no. */
-function CheVolume({ serie, suggerito, occupato, onNumero, onAltraSerie }) {
-  const [numero, setNumero] = useState(suggerito ? String(suggerito) : "");
+/**
+ * La serie si sa, il numero no: il catalogo scrive «Blue box» e basta, o il
+ * codice è da edicola e vale per tutti i numeri.
+ *
+ * Non si chiede di SCRIVERE niente: si mostrano i numeri della serie, verdi
+ * quelli che avete e rosa quelli che mancano. Chi ha il volume in mano legge
+ * il numero sul dorso e ha già la risposta guardando il colore; toccandolo il
+ * codice si ricorda, e la prossima volta la risposta è diretta.
+ */
+function CheVolume({ serie, scheda, daEdicola, suggerito, occupato, onNumero, onAltraSerie }) {
+  const [numero, setNumero] = useState("");
+
+  const presenti = useMemo(() => new Set(scheda?.numeri ?? []), [scheda]);
+  // Fin dove arrivano i numeri: i volumi usciti che conosciamo, o l'ultimo posseduto, più un paio oltre.
+  const fino = scheda ? Math.min(Math.max(totaleDisponibile(scheda) || 0, ...presenti, suggerito || 1) + 2, 250) : 0;
 
   return (
-    <form
-      className="mt-3"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (numero) onNumero(Number(numero));
-      }}
-    >
-      <p className="text-lg font-semibold text-ink-bright">Che volume è?</p>
+    <div className="mt-3">
+      <p className="text-lg font-semibold text-ink-bright">Che numero hai in mano?</p>
       <p className="mt-1 text-sm text-ink-muted">
-        Questo codice è lo stesso per tutti i numeri di {serie.titolo}.{suggerito ? ` Il prossimo che ti manca è il ${suggerito}.` : ""}
+        {daEdicola ? "Questo codice è lo stesso per tutti i numeri della serie." : "Il catalogo non scrive il numero di questo volume."}{" "}
+        {fino > 0 ? "Toccalo: me lo ricordo per la prossima volta." : "Scrivilo: me lo ricordo per la prossima volta."}
       </p>
-      <div className="mt-3 flex items-center gap-2">
-        <CampoNumero valore={numero} onChange={setNumero} />
-        <button type="submit" disabled={occupato || !numero} className="insegna h-11 flex-1 rounded-card font-semibold disabled:opacity-50">
-          Controlla
-        </button>
-      </div>
+
+      {fino > 0 ? (
+        <>
+          <p className="mt-3 flex gap-4 text-xs text-ink-muted" aria-hidden="true">
+            <span><span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-jade" />ce l&apos;hai</span>
+            <span><span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-brass-400" />ti manca</span>
+          </p>
+          <div className="mt-2 grid grid-cols-6 gap-2" role="group" aria-label={`Volumi di ${serie.titolo}`}>
+            {Array.from({ length: fino }, (_, i) => i + 1).map((n) => {
+              const tuo = presenti.has(n);
+
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  disabled={occupato}
+                  onClick={() => onNumero(n)}
+                  aria-label={`Volume ${n}, ${tuo ? "ce l'hai" : "ti manca"}`}
+                  className={`h-11 rounded-card font-numeric text-base font-semibold disabled:opacity-50 ${
+                    tuo ? "bg-jade/15 text-jade" : "bg-brass-400/15 text-brass-300"
+                  } ${n === suggerito ? "ring-2 ring-brass-400" : ""}`}
+                >
+                  {n}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <form
+          className="mt-3 flex items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (numero) onNumero(Number(numero));
+          }}
+        >
+          <CampoNumero valore={numero} onChange={setNumero} />
+          <button type="submit" disabled={occupato || !numero} className="insegna h-11 flex-1 rounded-card font-semibold disabled:opacity-50">
+            Controlla
+          </button>
+        </form>
+      )}
+
       <button type="button" onClick={onAltraSerie} className="bersaglio mt-3 text-sm font-medium text-ciano underline underline-offset-4">
         Non è {serie.titolo}
       </button>
-    </form>
+    </div>
   );
 }
 
