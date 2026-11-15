@@ -532,7 +532,7 @@ function Risposta({ esito, collezione, occupato, registrato, onRegistra, onAnnul
         <details className="mt-3 text-xs text-ink-muted">
           <summary className="cursor-pointer py-2">Cosa dice il catalogo</summary>
           <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-words rounded-card bg-void/40 p-3 font-mono text-[11px] leading-relaxed">
-            {JSON.stringify({ codice: esito.codice, fonte: esito.fonte, motivo: esito.motivo, ...esito.grezzo }, null, 1)}
+            {JSON.stringify({ codice: esito.codice, fonte: esito.fonte, numeroDa: esito.numeroDa, motivo: esito.motivo, ...esito.grezzo }, null, 1)}
           </pre>
         </details>
       )}
