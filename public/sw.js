@@ -210,6 +210,11 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
+  // Le scansioni dei codici a barre non si mettono da parte: «ti manca» è vero
+  // finché non lo compri, e una copia riproposta senza rete direbbe il falso
+  // proprio davanti allo scaffale. Senza rete la pagina lo dice e basta.
+  if (API && richiesta.url.startsWith(`${API}/api/isbn/`)) return;
+
   // I dati: prima la rete, sempre. La copia serve solo perché in metro la
   // collezione si possa comunque sfogliare, non per risparmiare una
   // richiesta a chi la rete ce l'ha.

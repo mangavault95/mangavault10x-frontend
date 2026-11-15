@@ -1,132 +1,231 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { useCollezione } from "../dati/collezione";
 import { useAccessoProtetto } from "../dati/accesso";
 import { ossoDelTitolo } from "../dati/identita";
+import { useLettoreCodici } from "../dati/lettoreCodici";
+import { euro, prossimoVolume } from "../dati/serie";
 import { vibra } from "../dati/tatto";
-import { annullaAcquisti, collegaIsbn, dopoIlRipiego, getIsbn, registraAcquisto, urlCopertina } from "../services/api";
+import {
+  annullaAcquisti,
+  collegaIsbn,
+  dopoIlRipiego,
+  getIsbn,
+  registraAcquisto,
+  scollegaIsbn,
+  urlCopertina
+} from "../services/api";
 
 /**
- * SCANSIONA — «ce l'ho già?» col codice a barre (14/11/2026).
+ * SCANSIONA — «ce l'ho già?» col codice a barre (14/11/2026, rifatta il 15).
  *
  * In fumetteria si inquadra il retro del volume e la pagina dice «ce l'hai»,
  * «ti manca» o «non è in collezione», con un tocco per registrare l'acquisto.
- * Il codice (ISBN) lo riconosce il backend (`routes/isbn.js`): prima fra i codici
- * già collegati a mano, poi su Google Books. Se non lo conosce nessuno dei due,
- * si dice a mano quale serie e quale volume è, e il collegamento si ricorda: la
- * volta dopo la risposta è immediata.
+ * Cosa sia un codice lo decide il backend (`services/isbn.js`): prima fra i
+ * codici già collegati, poi nei cataloghi. Qui si legge, si mostra e si
+ * conferma — e ogni conferma si ricorda, così il sito impara i vostri volumi
+ * e la volta dopo non chiede niente a nessuno.
  *
- * La lettura usa ZXing, caricato solo qui (è pesante: non deve entrare nell'avvio
- * del sito). Safari su iPhone non ha un lettore di codici suo, per questo una
- * libreria. La fotocamera chiede il permesso la prima volta, e vuole https.
- * Se non c'è o è negata, resta la casella per scrivere il codice a mano.
+ *
+ * QUANDO LA FOTOCAMERA ASCOLTA
+ *
+ * La fotocamera legge dieci volte al secondo; cosa farne si decide qui:
+ *
+ *   - lo stesso codice che è già sullo schermo non si richiede (prima
+ *     ripartiva una richiesta ogni quattro secondi, finché restava inquadrato);
+ *   - se la risposta chiede una decisione («ti manca», «quale serie è?») la
+ *     lettura è IN PAUSA finché non si decide o non si tocca «Scansiona un
+ *     altro»: un secondo volume che passa davanti non deve portarsi via il
+ *     bottone che si stava per premere;
+ *   - se la risposta è solo da leggere («ce l'hai», «registrato») si può
+ *     passare al volume dopo senza toccare niente: è così che si controlla
+ *     una pila.
+ *
+ *
+ * I CODICI DA EDICOLA
+ *
+ * Un codice che non comincia per 978/979 non è un ISBN. È lo stesso per tutti
+ * i numeri di una collana, e il numero sta nelle cifre piccole accanto.
+ * Quelle cifre a volte si leggono un attimo dopo il codice: per un codice
+ * così si aspetta poco più di un secondo prima di chiedere, e se nel
+ * frattempo arrivano si usano.
  */
+
+const ATTESA_CIFRE_PICCOLE_MS = 1200;
+
+const eUnLibro = (codice) => /^97[89]/.test(codice);
+const chiaveDi = (codice, aggiunta) => (aggiunta && !eUnLibro(codice) ? `${codice}-${aggiunta}` : codice);
+
+/** «6,50», «6.5», «6» → 6.5; vuoto o illeggibile → null (decide il server). */
+function prezzoDa(testo) {
+  const pulito = String(testo ?? "").trim().replace(",", ".");
+
+  if (!/^\d{1,4}(\.\d{1,2})?$/.test(pulito)) return null;
+
+  return Number(pulito);
+}
 
 export default function ScansionaPage() {
   const { serie: collezione, ricarica: ricaricaCollezione } = useCollezione();
   const eseguiProtetto = useAccessoProtetto();
 
   const video = useRef(null);
-  const lettore = useRef(null);
-  const ultimo = useRef({ codice: null, quando: 0 });
+  const richiesta = useRef(0);
+  const attesa = useRef(null);
 
-  const [fotocamera, setFotocamera] = useState("avvio"); // avvio | ok | negata | assente
-  const [esito, setEsito] = useState(null); // la risposta del server per il codice in mano
+  const [esito, setEsito] = useState(null);
   const [occupato, setOccupato] = useState(false);
   const [problema, setProblema] = useState(null);
   const [registrato, setRegistrato] = useState(null);
   const [scritto, setScritto] = useState("");
+  // I volumi passati sotto la fotocamera in questa visita, dal più recente.
+  const [visti, setVisti] = useState([]);
 
-  const ferma = useCallback(() => {
-    try {
-      lettore.current?.stop?.();
-    } catch {
-      /* già fermo */
-    }
+  // Una risposta che si legge e basta lascia la fotocamera libera; una che
+  // chiede una decisione la mette in pausa.
+  const soloDaLeggere = !esito || registrato || esito.stato === "ce_l_hai" || esito.stato === "codice_non_valido";
 
-    lettore.current = null;
+  // La lettura arriva da fuori da React, dieci volte al secondo: legge lo
+  // stato di adesso da qui, non da una chiusura vecchia di un render.
+  const adesso = useRef({});
+  const inPausa = !soloDaLeggere;
+  const codiceInVista = esito?.codice ?? null;
+
+  useLayoutEffect(() => {
+    adesso.current = { inPausa, occupato, codice: codiceInVista };
+  });
+
+  // …ma lo stato arriva un attimo dopo la lettura (React lo scrive al prossimo
+  // disegno): fra le due, lo stesso codice letto tre volte non deve partire
+  // tre volte. Questo si scrive subito, nel momento stesso della lettura.
+  const appenaLetto = useRef({ codice: null, quando: 0 });
+
+  const annota = useCallback((risposta, cambio = {}) => {
+    if (!risposta?.serie || !risposta.numero) return;
+
+    const chiave = chiaveDi(risposta.codice, risposta.aggiunta);
+    const riga = {
+      chiave,
+      titolo: risposta.serie.titolo,
+      numero: risposta.numero,
+      stato: risposta.stato,
+      ...cambio
+    };
+
+    setVisti((prima) => [riga, ...prima.filter((v) => v.chiave !== chiave)].slice(0, 30));
   }, []);
 
-  const chiedi = useCallback(
-    async (codice) => {
-      setOccupato(true);
-      setProblema(null);
+  const mostra = useCallback(
+    (risposta) => {
+      setEsito(risposta);
       setRegistrato(null);
-
-      try {
-        setEsito(await getIsbn(codice));
-      } catch (e) {
-        setProblema(e?.message || "Non riesco a chiedere il codice adesso.");
-      } finally {
-        setOccupato(false);
-      }
+      annota(risposta);
     },
-    []
+    [annota]
   );
 
-  // La fotocamera. ZXing arriva solo adesso, con un import dinamico.
-  useEffect(() => {
-    let vivo = true;
+  /** Fa una domanda al server e ne mostra la risposta; una domanda più recente la scavalca. */
+  const domanda = useCallback(
+    async (chiedi, seFallisce) => {
+      const mia = ++richiesta.current;
 
-    async function avvia() {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setFotocamera("assente");
+      setOccupato(true);
+      setProblema(null);
+
+      try {
+        const risposta = await eseguiProtetto(chiedi);
+
+        if (mia === richiesta.current) mostra(risposta);
+      } catch (e) {
+        if (mia === richiesta.current && !e?.annullato) setProblema(e?.message || seFallisce);
+      } finally {
+        if (mia === richiesta.current) setOccupato(false);
+      }
+    },
+    [eseguiProtetto, mostra]
+  );
+
+  const cerca = useCallback(
+    (codice, aggiunta = null) => {
+      vibra();
+
+      return domanda(() => getIsbn(codice, { aggiunta }), "Non riesco a chiedere il codice adesso.");
+    },
+    [domanda]
+  );
+
+  const letto = useCallback(
+    (codice, aggiunta) => {
+      const ora = adesso.current;
+
+      if (ora.inPausa || ora.occupato) return;
+      // È il codice già sullo schermo (anche se stavolta le cifre piccole non si sono lette).
+      if (codice === ora.codice) return;
+
+      const istante = Date.now();
+
+      if (eUnLibro(codice) || aggiunta) {
+        if (appenaLetto.current.codice === codice && istante - appenaLetto.current.quando < 1500) return;
+
+        appenaLetto.current = { codice, quando: istante };
+      }
+
+      if (!eUnLibro(codice) && !aggiunta) {
+        if (attesa.current?.codice === codice) return;
+
+        clearTimeout(attesa.current?.timer);
+        attesa.current = {
+          codice,
+          timer: setTimeout(() => {
+            attesa.current = null;
+            cerca(codice);
+          }, ATTESA_CIFRE_PICCOLE_MS)
+        };
+
         return;
       }
 
-      try {
-        const [{ BrowserMultiFormatReader }, { BarcodeFormat, DecodeHintType }] = await Promise.all([
-          import("@zxing/browser"),
-          import("@zxing/library")
-        ]);
+      clearTimeout(attesa.current?.timer);
+      attesa.current = null;
+      cerca(codice, aggiunta);
+    },
+    [cerca]
+  );
 
-        if (!vivo) return;
+  const fotocamera = useLettoreCodici(video, letto);
 
-        // Solo i codici dei libri: EAN-13 (ISBN-13) ed EAN-8 non servono, UPC non c'è sul retro di un volume.
-        const hints = new Map([[DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13]]]);
-        const lettoreZxing = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 150 });
+  // Uscendo dalla pagina, un codice da edicola che stava aspettando le sue cifre piccole non deve partire.
+  useEffect(() => () => clearTimeout(attesa.current?.timer), []);
 
-        lettore.current = await lettoreZxing.decodeFromConstraints(
-          { video: { facingMode: { ideal: "environment" } }, audio: false },
-          video.current,
-          (risultato) => {
-            if (!risultato || !vivo) return;
+  function dopo() {
+    richiesta.current += 1;
+    clearTimeout(attesa.current?.timer);
+    attesa.current = null;
+    appenaLetto.current = { codice: null, quando: 0 };
+    setEsito(null);
+    setRegistrato(null);
+    setProblema(null);
+    setOccupato(false);
+  }
 
-            const codice = risultato.getText();
-            const adesso = Date.now();
-
-            // Lo stesso codice inquadrato per due secondi non si chiede dieci volte.
-            if (codice === ultimo.current.codice && adesso - ultimo.current.quando < 4000) return;
-
-            ultimo.current = { codice, quando: adesso };
-            vibra();
-            chiedi(codice);
-          }
-        );
-
-        if (vivo) setFotocamera("ok");
-      } catch (e) {
-        if (vivo) setFotocamera(e?.name === "NotAllowedError" ? "negata" : "assente");
-      }
-    }
-
-    avvia();
-
-    return () => {
-      vivo = false;
-      ferma();
-    };
-  }, [chiedi, ferma]);
-
-  async function registra() {
+  async function registra(prezzo) {
     setOccupato(true);
     setProblema(null);
 
     try {
-      const fatto = await eseguiProtetto(() => registraAcquisto(esito.serie.id, { volumi: [esito.numero] }));
+      const fatto = await eseguiProtetto(() => registraAcquisto(esito.serie.id, { volumi: [esito.numero], prezzo }));
 
+      vibra("conferma");
       setRegistrato(fatto);
+      annota(esito, { stato: "comprato" });
       ricaricaCollezione();
+
+      // Averlo comprato è la conferma che il catalogo aveva ragione: il codice
+      // si ricorda, e la prossima volta non si chiede a nessuno. Se non riesce
+      // non importa: l'acquisto è fatto, si richiederà al catalogo.
+      if (esito.libro && esito.fonte !== "collegato") {
+        collegaIsbn({ codice: esito.codice, mangaId: esito.serie.id, numero: esito.numero }).catch(() => {});
+      }
     } catch (e) {
       if (!e?.annullato) setProblema(e?.message || "L'acquisto non è stato registrato.");
     } finally {
@@ -136,12 +235,13 @@ export default function ScansionaPage() {
 
   async function annulla() {
     setOccupato(true);
+    setProblema(null);
 
     try {
       await eseguiProtetto(() => annullaAcquisti(registrato.acquisti));
       setRegistrato(null);
+      annota(esito);
       ricaricaCollezione();
-      setEsito((e) => ({ ...e, stato: "ti_manca" }));
     } catch (e) {
       if (!e?.annullato) setProblema("Non sono riuscito ad annullarlo: riprova.");
     } finally {
@@ -149,25 +249,18 @@ export default function ScansionaPage() {
     }
   }
 
-  async function collega(serie, numero) {
-    setOccupato(true);
-    setProblema(null);
+  const collega = (serie, numero, cambiaSerie = false) =>
+    domanda(
+      () => collegaIsbn({ codice: esito.codice, aggiunta: esito.aggiunta, mangaId: serie.id, numero, cambiaSerie }),
+      "Non sono riuscito a ricordare il codice."
+    );
 
-    try {
-      await eseguiProtetto(() => collegaIsbn({ isbn: esito.isbn, mangaId: serie.id, numero }));
-      await chiedi(esito.isbn);
-    } catch (e) {
-      if (!e?.annullato) setProblema(e?.message || "Non sono riuscito a ricordare il codice.");
-      setOccupato(false);
-    }
-  }
+  const dimentica = () =>
+    domanda(async () => {
+      await scollegaIsbn({ codice: esito.codice, aggiunta: esito.aggiunta });
 
-  function dopo() {
-    setEsito(null);
-    setRegistrato(null);
-    setProblema(null);
-    ultimo.current = { codice: null, quando: 0 };
-  }
+      return getIsbn(esito.codice, { aggiunta: esito.aggiunta });
+    }, "Non sono riuscito a dimenticare il codice.");
 
   return (
     <div className="mx-auto w-full max-w-xl px-5 pb-10 pt-6">
@@ -179,25 +272,20 @@ export default function ScansionaPage() {
       </div>
       <p className="mt-1 text-sm text-ink-muted">Inquadra il codice a barre sul retro del volume.</p>
 
-      <div className="relative mt-4 aspect-[4/3] overflow-hidden rounded-panel bg-alcove">
-        <video ref={video} muted playsInline className="h-full w-full object-cover" aria-label="Fotocamera" />
-        {fotocamera === "ok" && !esito && (
-          <div aria-hidden="true" className="pointer-events-none absolute inset-x-8 top-1/2 h-24 -translate-y-1/2 rounded-card border-2 border-brass-400/80" />
-        )}
-        {fotocamera !== "ok" && (
-          <p className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-ink-muted">
-            {fotocamera === "avvio" && "Accendo la fotocamera…"}
-            {fotocamera === "negata" && "Il permesso alla fotocamera è negato. Puoi riattivarlo dalle impostazioni del browser, oppure scrivere il codice qui sotto."}
-            {fotocamera === "assente" && "La fotocamera non è disponibile qui. Scrivi il codice qui sotto."}
-          </p>
-        )}
-      </div>
+      <Inquadratura video={video} fotocamera={fotocamera} inPausa={inPausa} />
 
       <form
         className="mt-3 flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          if (scritto.trim()) chiedi(scritto.trim());
+
+          const codice = scritto.replace(/[\s-]/g, "");
+
+          if (!codice) return;
+
+          dopo();
+          setScritto("");
+          cerca(codice);
         }}
       >
         <input
@@ -205,20 +293,28 @@ export default function ScansionaPage() {
           onChange={(e) => setScritto(e.target.value)}
           inputMode="numeric"
           autoComplete="off"
-          placeholder="Oppure scrivi il codice (ISBN)"
-          aria-label="Codice ISBN"
+          enterKeyHint="search"
+          placeholder="Oppure scrivi il codice"
+          aria-label="Codice a barre"
           className="h-11 min-w-0 flex-1 rounded-card bg-alcove px-3 text-base text-ink-bright placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-brass-400"
         />
-        <button type="submit" disabled={occupato} className="h-11 rounded-card bg-glass-2 px-4 font-semibold text-ink-bright disabled:opacity-50">
+        <button type="submit" disabled={occupato || !scritto.trim()} className="h-11 rounded-card bg-glass-2 px-4 font-semibold text-ink-bright disabled:opacity-50">
           Cerca
         </button>
       </form>
 
-      {problema && <p role="alert" className="mt-4 rounded-card bg-ember/10 px-3.5 py-2.5 text-sm text-ember">{problema}</p>}
+      {problema && (
+        <p role="alert" className="mt-4 rounded-card border border-ember/30 bg-ember/10 px-4 py-3 text-sm text-ember">
+          {problema}
+        </p>
+      )}
+
       {occupato && !esito && <p className="mt-4 text-sm text-ink-muted">Cerco il volume…</p>}
 
       {esito && (
         <Risposta
+          // Un codice nuovo riparte da zero: il prezzo scritto per il volume di prima non vale per questo.
+          key={`${chiaveDi(esito.codice || "", esito.aggiunta)}:${esito.stato}`}
           esito={esito}
           collezione={collezione}
           occupato={occupato}
@@ -226,8 +322,62 @@ export default function ScansionaPage() {
           onRegistra={registra}
           onAnnulla={annulla}
           onCollega={collega}
+          onDimentica={dimentica}
           onDopo={dopo}
         />
+      )}
+
+      {visti.length > 0 && <Visti righe={visti} />}
+    </div>
+  );
+}
+
+function Inquadratura({ video, fotocamera, inPausa }) {
+  const { stato, torcia, cambiaTorcia, riprova } = fotocamera;
+
+  return (
+    <div className="relative mt-4 aspect-[16/10] overflow-hidden rounded-panel bg-alcove">
+      <video ref={video} muted playsInline autoPlay className="h-full w-full object-cover" aria-label="Fotocamera" />
+
+      {stato === "ok" && !inPausa && (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-8 top-1/2 h-20 -translate-y-1/2 rounded-card border-2 border-brass-400/80" />
+      )}
+
+      {stato === "ok" && inPausa && (
+        <p className="absolute inset-x-0 bottom-0 bg-void/70 px-3 py-1.5 text-center text-xs text-ink-bright">
+          In pausa: decidi qui sotto, o tocca «Scansiona un altro».
+        </p>
+      )}
+
+      {stato === "ok" && torcia !== null && (
+        <button
+          type="button"
+          onClick={cambiaTorcia}
+          aria-pressed={torcia}
+          aria-label={torcia ? "Spegni la luce" : "Accendi la luce"}
+          className={`absolute right-3 top-3 grid h-11 w-11 place-items-center rounded-full ${torcia ? "bg-brass-400 text-void" : "bg-void/60 text-ink-bright"}`}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 2h6l-1 7h4l-8 13 2-9H8z" />
+          </svg>
+        </button>
+      )}
+
+      {stato !== "ok" && (
+        <div className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-ink-muted">
+          <div>
+            {stato === "avvio" && <p>Accendo la fotocamera…</p>}
+            {stato === "negata" && (
+              <p>Il permesso alla fotocamera è negato. Si riattiva dalle impostazioni del browser (o dell&apos;app), oppure scrivi il codice qui sotto.</p>
+            )}
+            {stato === "assente" && <p>La fotocamera non è disponibile. Scrivi il codice qui sotto.</p>}
+            {stato !== "avvio" && (
+              <button type="button" onClick={riprova} className="mt-3 h-11 rounded-card bg-glass-2 px-4 font-semibold text-ink-bright">
+                Riprova
+              </button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -244,90 +394,117 @@ function Copertina({ src }) {
   );
 }
 
-function Risposta({ esito, collezione, occupato, registrato, onRegistra, onAnnulla, onCollega, onDopo }) {
-  const { stato, serie, numero } = esito;
-  const nome = serie ? `${serie.titolo}${numero ? ` ${numero}` : ""}` : esito.titolo;
+const TONI = {
+  ce_l_hai: "border-jade/40 bg-jade/10",
+  ti_manca: "border-brass-400/40 bg-brass-400/10",
+  codice_non_valido: "border-ember/40 bg-ember/10"
+};
 
-  const tono = {
-    ce_l_hai: "border-ok/40 bg-ok/10",
-    ti_manca: "border-brass-400/40 bg-brass-400/10",
-    non_in_collezione: "border-hairline bg-alcove",
-    scegli: "border-hairline bg-alcove",
-    non_riconosciuto: "border-hairline bg-alcove",
-    codice_non_valido: "border-ember/40 bg-ember/10"
-  }[stato];
+function Risposta({ esito, collezione, occupato, registrato, onRegistra, onAnnulla, onCollega, onDimentica, onDopo }) {
+  const { stato, serie, numero } = esito;
+  const [correggo, setCorreggo] = useState(false);
+
+  // La scheda della serie com'è in collezione: serve per la stima del prezzo e per il volume che viene dopo.
+  const scheda = useMemo(() => (serie ? collezione.find((s) => Number(s.id) === Number(serie.id)) : null), [serie, collezione]);
+
+  const nome = serie ? `${serie.titolo}${numero ? ` ${numero}` : ""}` : esito.titolo;
+  const sotto = [serie?.edizione, esito.editore || serie?.editore].filter(Boolean).join(" · ");
 
   return (
-    <section className={`mt-5 rounded-panel border p-4 ${tono}`} aria-live="polite">
-      {(serie || esito.copertina) && (
+    <section className={`mt-5 rounded-panel border p-4 ${(registrato ? TONI.ce_l_hai : TONI[stato]) || "border-hairline bg-alcove"}`} aria-live="polite">
+      {(serie || esito.titolo) && (
         <div className="flex gap-3">
           <Copertina src={serie?.copertina || esito.copertina} />
           <div className="min-w-0">
             <p className="font-display text-xl font-bold leading-tight text-ink-bright">{nome}</p>
-            {esito.editore && <p className="mt-1 text-sm text-ink-muted">{esito.editore}</p>}
+            {sotto && <p className="mt-1 text-sm text-ink-muted">{sotto}</p>}
           </div>
         </div>
       )}
 
-      {stato === "ce_l_hai" && <p className="mt-3 text-lg font-semibold text-ok">Ce l&apos;hai già ✓</p>}
+      {stato === "ce_l_hai" && <p className="mt-3 text-lg font-semibold text-jade">Ce l&apos;hai già ✓</p>}
 
       {stato === "ti_manca" && !registrato && (
-        <>
-          <p className="mt-3 text-lg font-semibold text-brass-300">Ti manca</p>
-          {esito.mancanti > 0 && (
-            <p className="mt-1 text-sm text-ink-muted">
-              {esito.mancanti === 1
-                ? "Prima di questo ne manca un altro della serie."
-                : `Prima di questo ne mancano altri ${esito.mancanti} della serie.`}
-            </p>
-          )}
-          <button type="button" onClick={onRegistra} disabled={occupato} className="mt-3 h-12 w-full rounded-card bg-brass-400 font-semibold text-void disabled:opacity-50">
-            Registra come comprato
-          </button>
-        </>
+        <TiManca esito={esito} scheda={scheda} occupato={occupato} onRegistra={onRegistra} />
       )}
 
       {registrato && (
-        <>
-          <p className="mt-3 text-lg font-semibold text-ok">Registrato ✓</p>
-          <button type="button" onClick={onAnnulla} disabled={occupato} className="mt-2 text-sm font-medium text-ciano underline underline-offset-4 disabled:opacity-50">
+        <div className="mt-3 flex items-center gap-3">
+          <p className="flex-1 text-lg font-semibold text-jade">Registrato ✓</p>
+          <button type="button" onClick={onAnnulla} disabled={occupato} className="bersaglio font-semibold text-brass-300 disabled:opacity-50">
             Annulla
           </button>
+        </div>
+      )}
+
+      {stato === "che_volume" && !correggo && (
+        <CheVolume
+          serie={serie}
+          suggerito={scheda ? prossimoVolume(scheda) : null}
+          occupato={occupato}
+          onNumero={(n) => onCollega(serie, n)}
+          onAltraSerie={() => setCorreggo(true)}
+        />
+      )}
+
+      {stato === "scegli" && (
+        <>
+          <p className="mt-3 text-lg font-semibold text-ink-bright">{esito.candidate.length > 1 ? "Quale di queste è?" : "È questa?"}</p>
+          <p className="mt-1 text-sm text-ink-muted">Non ne sono sicuro: confermalo tu e me lo ricordo.</p>
+          <Scelta candidate={esito.candidate} numeroIniziale={numero} occupato={occupato} onScelta={onCollega} />
+          <Altrove etichetta="Nessuna di queste" collezione={collezione} numeroIniziale={numero} occupato={occupato} onScelta={onCollega} />
         </>
       )}
 
       {stato === "non_in_collezione" && (
         <>
           <p className="mt-3 text-lg font-semibold text-ink-bright">Non è in collezione</p>
-          <p className="mt-1 text-sm text-ink-muted">Google lo conosce, ma nessuna delle vostre serie ha questo titolo.</p>
-          <Link to={`/cerca?q=${encodeURIComponent(esito.titolo || "")}`} className="mt-3 inline-flex h-11 items-center rounded-card bg-glass-2 px-4 font-semibold text-ink-bright">
-            Aggiungila
+          <p className="mt-1 text-sm text-ink-muted">Nessuna delle vostre serie ha questo titolo.</p>
+          <Link
+            to={`/collezione?nuova=${encodeURIComponent(esito.serieTitolo || esito.titolo || "")}`}
+            className="mt-3 inline-flex h-11 items-center rounded-card bg-glass-2 px-4 font-semibold text-ink-bright"
+          >
+            Aggiungila alla collezione
           </Link>
+          <Altrove etichetta="È una serie che ho già, con un altro titolo" collezione={collezione} numeroIniziale={numero} occupato={occupato} onScelta={onCollega} />
         </>
-      )}
-
-      {stato === "scegli" && (
-        <Scegli
-          titolo="Quale serie è?"
-          candidate={esito.candidate}
-          numeroIniziale={esito.numero}
-          occupato={occupato}
-          onScelta={onCollega}
-        />
       )}
 
       {stato === "non_riconosciuto" && (
         <>
           <p className="mt-1 text-lg font-semibold text-ink-bright">Non conosco questo codice</p>
           <p className="mt-1 text-sm text-ink-muted">
-            {esito.motivo ? "Google adesso non risponde. " : "Google non ha questo volume. "}
+            {esito.periodico
+              ? "È un codice da edicola, non un ISBN: i cataloghi dei libri non lo conoscono."
+              : esito.motivo
+                ? "I cataloghi adesso non rispondono."
+                : "I cataloghi non hanno questo volume."}{" "}
             Dimmi tu che volume è: me lo ricordo per la prossima volta.
           </p>
-          <ScegliLibera collezione={collezione} occupato={occupato} onScelta={onCollega} />
+          {esito.periodico && !esito.aggiunta && (
+            <p className="mt-2 text-xs text-ink-muted">
+              Se accanto al codice ci sono delle cifre piccole, inquadra anche quelle: così ricordo il volume, non solo la serie.
+            </p>
+          )}
+          <CercaSerie collezione={collezione} occupato={occupato} onScelta={onCollega} />
         </>
       )}
 
-      {stato === "codice_non_valido" && <p className="mt-1 text-lg font-semibold text-ember">Questo non sembra un codice di un libro. Riprova.</p>}
+      {stato === "codice_non_valido" && <p className="mt-1 text-lg font-semibold text-ember">Questo non è un codice a barre di un volume. Riprova.</p>}
+
+      {/* Una risposta con la serie può essere sbagliata (un catalogo impreciso, un collegamento fatto di fretta): si corregge da qui. */}
+      {serie && (stato === "ce_l_hai" || stato === "ti_manca" || correggo) && !registrato && (
+        <Correzione
+          aperta={correggo}
+          onApri={() => setCorreggo(true)}
+          collezione={collezione}
+          numeroIniziale={numero}
+          occupato={occupato}
+          collegato={esito.fonte === "collegato"}
+          onScelta={(s, n) => onCollega(s, n, true)}
+          onDimentica={onDimentica}
+        />
+      )}
 
       <button type="button" onClick={onDopo} className="mt-4 h-11 w-full rounded-card bg-glass-2 font-semibold text-ink-bright">
         Scansiona un altro
@@ -336,12 +513,64 @@ function Risposta({ esito, collezione, occupato, registrato, onRegistra, onAnnul
   );
 }
 
-function CampoNumero({ valore, onChange }) {
+function TiManca({ esito, scheda, occupato, onRegistra }) {
+  // Il prezzo di copertina del catalogo, se c'è; altrimenti il campo resta
+  // vuoto e sotto si legge la stima che userà il server (quella della scheda).
+  const [prezzo, setPrezzo] = useState(esito.prezzoCopertina != null ? String(esito.prezzoCopertina).replace(".", ",") : "");
+  const stima = scheda ? (scheda.grezzo?.PrezzoCopertina ? Number(scheda.grezzo.PrezzoCopertina) : scheda.costo) : null;
+  const scrittoMale = prezzo.trim() !== "" && prezzoDa(prezzo) === null;
+
+  return (
+    <>
+      <p className="mt-3 text-lg font-semibold text-brass-300">Ti manca</p>
+      {esito.mancanti > 0 && (
+        <p className="mt-1 text-sm text-ink-muted">
+          {esito.mancanti === 1
+            ? "Prima di questo ne manca un altro della serie."
+            : `Prima di questo ne mancano altri ${esito.mancanti} della serie.`}
+        </p>
+      )}
+
+      <div className="mt-3 flex items-center gap-2">
+        <label htmlFor="prezzo-scansione" className="text-sm text-ink-muted">
+          Pagato
+        </label>
+        <input
+          id="prezzo-scansione"
+          value={prezzo}
+          onChange={(e) => setPrezzo(e.target.value)}
+          inputMode="decimal"
+          autoComplete="off"
+          placeholder={stima ? String(stima).replace(".", ",") : "—"}
+          aria-invalid={scrittoMale}
+          className="h-11 w-24 rounded-card bg-void/40 px-3 text-base text-ink-bright placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-brass-400"
+        />
+        <span className="text-sm text-ink-muted">€</span>
+        <span className="min-w-0 flex-1 text-xs text-ink-muted">
+          {scrittoMale ? "Scrivi il prezzo così: 6,50" : prezzo.trim() === "" ? (stima ? `Vuoto: ${euro(stima)}, il prezzo della scheda` : "Vuoto: senza prezzo") : ""}
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onRegistra(prezzoDa(prezzo))}
+        disabled={occupato || scrittoMale}
+        className="insegna mt-3 h-12 w-full rounded-card font-semibold transition-transform duration-quick active:scale-[0.98] disabled:opacity-50"
+      >
+        {occupato ? "Registro…" : "Registra come comprato"}
+      </button>
+    </>
+  );
+}
+
+function CampoNumero({ valore, onChange, id }) {
   return (
     <input
+      id={id}
       value={valore}
       onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 3))}
       inputMode="numeric"
+      autoComplete="off"
       placeholder="N."
       aria-label="Numero del volume"
       className="h-11 w-16 rounded-card bg-void/40 px-2 text-center text-base text-ink-bright placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-brass-400"
@@ -349,29 +578,64 @@ function CampoNumero({ valore, onChange }) {
   );
 }
 
-/** Le serie fra cui scegliere (più edizioni con lo stesso titolo) + il numero. */
-function Scegli({ titolo, candidate, numeroIniziale, occupato, onScelta }) {
+/** La serie si sa (il codice è della collana), il numero no. */
+function CheVolume({ serie, suggerito, occupato, onNumero, onAltraSerie }) {
+  const [numero, setNumero] = useState(suggerito ? String(suggerito) : "");
+
+  return (
+    <form
+      className="mt-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (numero) onNumero(Number(numero));
+      }}
+    >
+      <p className="text-lg font-semibold text-ink-bright">Che volume è?</p>
+      <p className="mt-1 text-sm text-ink-muted">
+        Questo codice è lo stesso per tutti i numeri di {serie.titolo}.{suggerito ? ` Il prossimo che ti manca è il ${suggerito}.` : ""}
+      </p>
+      <div className="mt-3 flex items-center gap-2">
+        <CampoNumero valore={numero} onChange={setNumero} />
+        <button type="submit" disabled={occupato || !numero} className="insegna h-11 flex-1 rounded-card font-semibold disabled:opacity-50">
+          Controlla
+        </button>
+      </div>
+      <button type="button" onClick={onAltraSerie} className="bersaglio mt-3 text-sm font-medium text-ciano underline underline-offset-4">
+        Non è {serie.titolo}
+      </button>
+    </form>
+  );
+}
+
+function RigaSerie({ serie, occupato, spento, onClick }) {
+  return (
+    <button
+      type="button"
+      disabled={occupato || spento}
+      onClick={onClick}
+      className="flex min-h-12 w-full items-center gap-3 rounded-card bg-glass-2 px-3 py-2 text-left disabled:opacity-50"
+    >
+      <span className="min-w-0 flex-1 font-semibold leading-snug text-ink-bright">{serie.titolo}</span>
+      <span className="shrink-0 text-xs text-ink-muted">{[serie.edizione, serie.editore].filter(Boolean).join(" · ")}</span>
+    </button>
+  );
+}
+
+/** Le serie proposte dal server: si sceglie con un tocco, col numero già scritto se il catalogo lo sapeva. */
+function Scelta({ candidate, numeroIniziale, occupato, onScelta }) {
   const [numero, setNumero] = useState(numeroIniziale ? String(numeroIniziale) : "");
 
   return (
-    <div className="mt-2">
-      <p className="text-lg font-semibold text-ink-bright">{titolo}</p>
-      <div className="mt-2 flex items-center gap-2">
+    <div className="mt-3">
+      <div className="flex items-center gap-2">
         <span className="text-sm text-ink-muted">Volume</span>
         <CampoNumero valore={numero} onChange={setNumero} />
+        {!numero && <span className="text-xs text-ink-muted">Scrivi il numero, poi tocca la serie.</span>}
       </div>
       <ul className="mt-3 space-y-2">
         {candidate.map((s) => (
           <li key={s.id}>
-            <button
-              type="button"
-              disabled={occupato || !numero}
-              onClick={() => onScelta(s, Number(numero))}
-              className="flex min-h-12 w-full items-center gap-3 rounded-card bg-glass-2 px-3 text-left disabled:opacity-50"
-            >
-              <span className="min-w-0 flex-1 truncate font-semibold text-ink-bright">{s.titolo}</span>
-              <span className="text-xs text-ink-muted">{[s.edizione, s.editore].filter(Boolean).join(" · ")}</span>
-            </button>
+            <RigaSerie serie={s} occupato={occupato} spento={!numero} onClick={() => onScelta(s, Number(numero))} />
           </li>
         ))}
       </ul>
@@ -379,10 +643,10 @@ function Scegli({ titolo, candidate, numeroIniziale, occupato, onScelta }) {
   );
 }
 
-/** Cerca fra tutte le serie in collezione, per quando il codice non lo conosce nessuno. */
-function ScegliLibera({ collezione, occupato, onScelta }) {
+/** Cerca fra tutte le serie in collezione. */
+function CercaSerie({ collezione, numeroIniziale, occupato, onScelta }) {
   const [testo, setTesto] = useState("");
-  const [numero, setNumero] = useState("");
+  const [numero, setNumero] = useState(numeroIniziale ? String(numeroIniziale) : "");
 
   const trovate = useMemo(() => {
     const parole = ossoDelTitolo(testo).split(" ").filter(Boolean);
@@ -398,6 +662,7 @@ function ScegliLibera({ collezione, occupato, onScelta }) {
         <input
           value={testo}
           onChange={(e) => setTesto(e.target.value)}
+          autoComplete="off"
           placeholder="Titolo della serie"
           aria-label="Titolo della serie"
           className="h-11 min-w-0 flex-1 rounded-card bg-void/40 px-3 text-base text-ink-bright placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-brass-400"
@@ -407,20 +672,82 @@ function ScegliLibera({ collezione, occupato, onScelta }) {
       <ul className="mt-2 space-y-2">
         {trovate.map((s) => (
           <li key={s.id}>
-            <button
-              type="button"
-              disabled={occupato || !numero}
-              onClick={() => onScelta(s, Number(numero))}
-              className="flex min-h-12 w-full items-center gap-3 rounded-card bg-glass-2 px-3 text-left disabled:opacity-50"
-            >
-              <span className="min-w-0 flex-1 truncate font-semibold text-ink-bright">{s.titolo}</span>
-              <span className="text-xs text-ink-muted">{s.edizione || ""}</span>
-            </button>
+            <RigaSerie serie={s} occupato={occupato} spento={!numero} onClick={() => onScelta(s, Number(numero))} />
           </li>
         ))}
-        {testo && !trovate.length && <li className="text-sm text-ink-muted">Nessuna serie con questo titolo.</li>}
+        {testo.trim() && !trovate.length && <li className="text-sm text-ink-muted">Nessuna serie in collezione con questo titolo.</li>}
       </ul>
-      {!numero && trovate.length > 0 && <p className="mt-2 text-xs text-ink-muted">Scrivi anche il numero del volume.</p>}
+      {!numero && trovate.length > 0 && <p className="mt-2 text-xs text-ink-muted">Scrivi anche il numero del volume, poi tocca la serie.</p>}
     </div>
+  );
+}
+
+/** Un link che apre la ricerca fra le proprie serie, per quando le proposte non bastano. */
+function Altrove({ etichetta, ...resto }) {
+  const [aperto, setAperto] = useState(false);
+
+  return aperto ? (
+    <CercaSerie {...resto} />
+  ) : (
+    <button type="button" onClick={() => setAperto(true)} className="bersaglio mt-3 block text-sm font-medium text-ciano underline underline-offset-4">
+      {etichetta}
+    </button>
+  );
+}
+
+function Correzione({ aperta, onApri, collegato, onDimentica, occupato, ...resto }) {
+  if (!aperta) {
+    return (
+      <button type="button" onClick={onApri} className="bersaglio mt-3 block text-sm font-medium text-ink-muted underline underline-offset-4">
+        Non è questo volume?
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-4 border-t border-hairline pt-3">
+      <p className="text-sm font-semibold text-ink-bright">Che volume è, allora?</p>
+      <CercaSerie occupato={occupato} {...resto} />
+      {collegato && (
+        <button type="button" onClick={onDimentica} disabled={occupato} className="bersaglio mt-3 block text-sm font-medium text-ember underline underline-offset-4 disabled:opacity-50">
+          Dimentica questo codice
+        </button>
+      )}
+    </div>
+  );
+}
+
+const ETICHETTE = {
+  ce_l_hai: { testo: "ce l'hai", stile: "bg-jade/15 text-jade" },
+  ti_manca: { testo: "ti manca", stile: "bg-brass-400/15 text-brass-300" },
+  comprato: { testo: "comprato", stile: "bg-jade/15 text-jade" }
+};
+
+/** Quello che è passato sotto la fotocamera in questa visita: per controllare una pila senza tenere il conto a mente. */
+function Visti({ righe }) {
+  const mancano = righe.filter((r) => r.stato === "ti_manca").length;
+
+  return (
+    <section className="mt-7" aria-label="Volumi scansionati adesso">
+      <h2 className="flex items-baseline justify-between px-1 text-sm font-semibold text-ink-bright">
+        Scansionati adesso
+        <span className="font-normal text-ink-muted">
+          {righe.length} {righe.length === 1 ? "volume" : "volumi"}
+          {mancano > 0 ? `, ${mancano} da prendere` : ""}
+        </span>
+      </h2>
+      <ul className="mt-2 divide-y divide-hairline rounded-card bg-alcove px-3.5">
+        {righe.map((r) => (
+          <li key={r.chiave} className="flex items-center gap-3 py-2.5 text-sm">
+            <span className="min-w-0 flex-1 truncate text-ink-bright">
+              {r.titolo} <span className="font-numeric">{r.numero}</span>
+            </span>
+            <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${ETICHETTE[r.stato]?.stile || "bg-glass-2 text-ink-muted"}`}>
+              {ETICHETTE[r.stato]?.testo || r.stato}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

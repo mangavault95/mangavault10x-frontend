@@ -329,12 +329,20 @@ export const registraAcquisto = (mangaId, { volumi = null, prezzo = null, data =
 /** Il riassunto di un mese di casa (`routes/mese.js`); senza mese, quello scorso. */
 export const getMese = (mese = null) => request(`/api/mese${mese ? `?m=${mese}` : ""}`);
 
-/** Cos'è un codice a barre e a che punto siete (`routes/isbn.js`). Serve l'accesso. */
-export const getIsbn = (codice) => request(`/api/isbn/${encodeURIComponent(codice)}`, { auth: true });
+/**
+ * Cos'è un codice a barre e a che punto siete (`routes/isbn.js`). Serve l'accesso.
+ * `aggiunta` sono le cifre piccole accanto al codice, quando la fotocamera le ha lette.
+ */
+export const getIsbn = (codice, { aggiunta = null } = {}) =>
+  request(`/api/isbn/${encodeURIComponent(codice)}${aggiunta ? `?aggiunta=${encodeURIComponent(aggiunta)}` : ""}`, { auth: true });
 
-/** Ricorda che un codice è il volume N di una serie. */
-export const collegaIsbn = ({ isbn, mangaId, numero }) =>
-  request("/api/isbn/collega", { method: "POST", body: { isbn, mangaId, numero }, auth: true });
+/** Ricorda che un codice è il volume N di una serie; risponde come `getIsbn`. */
+export const collegaIsbn = ({ codice, aggiunta = null, mangaId, numero, cambiaSerie = false }) =>
+  request("/api/isbn/collega", { method: "POST", body: { codice, aggiunta, mangaId, numero, cambiaSerie }, auth: true });
+
+/** Dimentica quello che si sapeva di un codice. */
+export const scollegaIsbn = ({ codice, aggiunta = null }) =>
+  request("/api/isbn/scollega", { method: "POST", body: { codice, aggiunta }, auth: true });
 
 /** L'anno in rassegna di una persona (`routes/rassegna.js`). */
 export const getRassegna = (anno, utente) =>
