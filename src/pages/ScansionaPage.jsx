@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { useCollezione } from "../dati/collezione";
 import { useAccessoProtetto } from "../dati/accesso";
 import { ossoDelTitolo } from "../dati/identita";
+import { useCopertinaVolume } from "../dati/copertineVolumi";
 import { useLettoreCodici } from "../dati/lettoreCodici";
 import { euro, prossimoVolume, totaleDisponibile } from "../dati/serie";
 import { vibra } from "../dati/tatto";
@@ -407,6 +408,12 @@ function Risposta({ esito, collezione, occupato, registrato, onRegistra, onAnnul
   // La scheda della serie com'è in collezione: serve per la stima del prezzo e per il volume che viene dopo.
   const scheda = useMemo(() => (serie ? collezione.find((s) => Number(s.id) === Number(serie.id)) : null), [serie, collezione]);
 
+  // La copertina di QUEL volume, non della serie: prima quella che manda il catalogo per il
+  // codice inquadrato (è il volume che si ha in mano, col suo numero sopra), poi quella del
+  // numero fra le copertine dei volumi che il sito ha già, e solo in fondo quella della serie.
+  const delNumero = useCopertinaVolume(serie?.id ?? null, numero ?? null, serie?.copertina ?? null, 256);
+  const copertina = esito.copertina || delNumero;
+
   const nome = serie ? `${serie.titolo}${numero ? ` ${numero}` : ""}` : esito.titolo;
   const sotto = [serie?.edizione, esito.editore || serie?.editore].filter(Boolean).join(" · ");
 
@@ -414,7 +421,7 @@ function Risposta({ esito, collezione, occupato, registrato, onRegistra, onAnnul
     <section className={`mt-5 rounded-panel border p-4 ${(registrato ? TONI.ce_l_hai : TONI[stato]) || "border-hairline bg-alcove"}`} aria-live="polite">
       {(serie || esito.titolo) && (
         <div className="flex gap-3">
-          <Copertina src={serie?.copertina || esito.copertina} />
+          <Copertina src={copertina} />
           <div className="min-w-0">
             {/* La serie è riconosciuta con certezza: lo si dice in verde, prima di tutto il resto. */}
             {serie && ["ce_l_hai", "ti_manca", "che_volume"].includes(stato) && (
@@ -519,6 +526,16 @@ function Risposta({ esito, collezione, occupato, registrato, onRegistra, onAnnul
       <button type="button" onClick={onDopo} className="mt-4 h-11 w-full rounded-card bg-glass-2 font-semibold text-ink-bright">
         Scansiona un altro
       </button>
+
+      {/* Quello che il catalogo ha risposto, parola per parola: serve a capire perché un numero non è uscito. */}
+      {(esito.grezzo || esito.motivo) && (
+        <details className="mt-3 text-xs text-ink-muted">
+          <summary className="cursor-pointer py-2">Cosa dice il catalogo</summary>
+          <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-words rounded-card bg-void/40 p-3 font-mono text-[11px] leading-relaxed">
+            {JSON.stringify({ codice: esito.codice, fonte: esito.fonte, motivo: esito.motivo, ...esito.grezzo }, null, 1)}
+          </pre>
+        </details>
+      )}
     </section>
   );
 }
