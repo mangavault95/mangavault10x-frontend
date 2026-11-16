@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Bottone } from "./Controlli";
 import { useSessione } from "../dati/sessione";
-import { getUtenti, impostaAccessoBiblioteca } from "../services/api";
+import { creaResetPassword, getUtenti, impostaAccessoBiblioteca } from "../services/api";
 import { coloreLettore } from "../dati/lettori";
 import { dataIt } from "../dati/serie";
 
@@ -29,6 +29,7 @@ export default function AccessoBiblioteca() {
   const [persone, setPersone] = useState(null);
   const [inCorso, setInCorso] = useState(null);
   const [errore, setErrore] = useState(null);
+  const [reset, setReset] = useState(null);
 
   const proprietario = Boolean(utente?.proprietario);
 
@@ -80,6 +81,34 @@ export default function AccessoBiblioteca() {
     }
   }
 
+  async function generaReset(persona) {
+    setInCorso(persona.id);
+    setErrore(null);
+    setReset(null);
+
+    try {
+      const r = await creaResetPassword(persona.id);
+
+      setReset({ nickname: persona.nickname, link: `${window.location.origin}${r.percorso}` });
+    } catch (e) {
+      setErrore(
+        e?.status === 503
+          ? "La migrazione 035 non è ancora stata eseguita su Supabase."
+          : "Non sono riuscito a generare il link."
+      );
+    } finally {
+      setInCorso(null);
+    }
+  }
+
+  async function copiaLink() {
+    try {
+      await navigator.clipboard.writeText(reset.link);
+    } catch {
+      /* il link resta visibile: si copia a mano */
+    }
+  }
+
   return (
     <section
       aria-label="Chi entra in biblioteca"
@@ -99,6 +128,19 @@ export default function AccessoBiblioteca() {
         <p role="alert" className="mt-3 text-sm text-ember">
           {errore}
         </p>
+      )}
+
+      {reset && (
+        <div className="mt-3 rounded-card border border-brass-400/40 bg-brass-400/[0.07] p-4 text-sm">
+          <p className="text-ink-bright">
+            Link per {reset.nickname}: vale <strong>30 minuti</strong>, una volta sola. Mandaglielo
+            tu (non lo rivedrai).
+          </p>
+          <p className="mt-2 break-all font-numeric text-xs text-ink-muted select-all">{reset.link}</p>
+          <Bottone className="mt-3" variante="secondario" onClick={copiaLink}>
+            Copia il link
+          </Bottone>
+        </div>
       )}
 
       {!persone ? (
@@ -140,6 +182,14 @@ export default function AccessoBiblioteca() {
                     : p.biblioteca
                       ? "Togli la biblioteca"
                       : "Dagli la biblioteca"}
+                </Bottone>
+
+                <Bottone
+                  variante="fantasma"
+                  onClick={() => generaReset(p)}
+                  disabled={inCorso === p.id}
+                >
+                  Password dimenticata
                 </Bottone>
               </li>
             );

@@ -610,6 +610,14 @@ export const getRichiesteAccesso = () => request("/api/utenti/richieste", { auth
 
 export const getUtenti = () => request("/api/utenti", { auth: true });
 
+/** Solo il proprietario: genera un link monouso (30 minuti) per chi ha perso la password. */
+export const creaResetPassword = (id) =>
+  request(`/api/utenti/${id}/reset-password`, { method: "POST", auth: true });
+
+/** Chi ha il link sceglie la nuova password. */
+export const resetPassword = (token, password) =>
+  request("/api/utenti/reset-password", { method: "POST", body: { token, password } });
+
 export const decidiAccesso = (id, approva) =>
   request(`/api/utenti/${id}/${approva ? "approva" : "rifiuta"}`, {
     method: "POST",
