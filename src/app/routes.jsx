@@ -37,6 +37,7 @@ const Lettura = lazy(() => import("../pages/LetturaPage"));
 const Statistiche = lazy(() => import("../pages/StatistichePage"));
 const Kachinuki = lazy(() => import("../pages/KachinukiPage"));
 const Partita = lazy(() => import("../pages/PartitaPage"));
+const ResetPassword = lazy(() => import("../pages/ResetPasswordPage"));
 const NonTrovata = lazy(() => import("../pages/NonTrovataPage"));
 
 // La videoteca è un mondo a parte anche nel codice scaricato: chi non
@@ -226,6 +227,7 @@ function ContenutoRotte({ location, idVisto }) {
                 <Routes location={location} key={`${location.pathname}|${idVisto ?? "ospite"}`}>
                   <Route path="/" element={<Adesso />} />
                   <Route path="/gestione" element={<Gestione />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/cerca" element={<Cerca />} />
                   <Route path="/mese" element={<Mese />} />
                   <Route path="/rassegna" element={<Rassegna />} />
