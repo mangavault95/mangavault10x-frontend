@@ -78,6 +78,32 @@ non lo sa, e infatti chiedendo solo quella si sbagliano tutte e due le volte.
   server scritto a mano e citava una colonna `Valutazione` che non esiste
   più.)
 
+## Fatto il 17 novembre 2026
+
+- **I volumi della scheda sono un carosello di copertine** (`ui/serie/CaroselloVolumi.jsx`),
+  al posto del tabellone numerato. Le pastiglie in cima sono filtro e legenda insieme
+  (Tutti, Letti, Da leggere, Mancano — l'ultima solo se manca qualcosa); la fila si apre sul
+  segnalibro, o sul primo volume in casa non letto. Le copertine sono quelle di ogni volume
+  (`useFonteCopertine` in `dati/copertineVolumi.js`, che a differenza di `useCopertinaVolume`
+  non prova a caricarle tutte subito: One Piece sono 110 immagini, qui sono `loading="lazy"`);
+  dove manca, la carta mostra il numero grande. **«Modifica volumi» resta il tabellone**:
+  cento tocchi di fila vogliono una griglia.
+- **Toccare un volume del carosello apre `ui/serie/FoglioVolume.jsx`**: «Leggi da qui»
+  (segnalibro lì e tavolo di lettura), «Segna come letto» / «Togli dai letti», e «Segna letti
+  tutti fino al N» quando c'è da recuperare. Sono le stesse rotte del tavolo di lettura
+  (`addReadingHistory`, `deleteReadingHistoryVolume`, `segnaLettiFinoA`,
+  `saveReadingSession`); le funzioni stanno in `SeriePage`, che ha l'accesso e lo storico.
+  Segnare e togliere hanno l'«Annulla» nell'avviso; «fino al N» no (disfarlo sarebbe una
+  richiesta per volume). Un foglio e non un tocco che scrive subito: la fila si scorre col
+  pollice. Solo per chi può scrivere (non per chi guarda le letture di un altro), e i
+  volumi che non si hanno restano un disegno. Sulle serie droppate il tocco riprende la
+  lettura, come prima.
+  **Provato** nel browser su One Piece, Yu-gi-oh e Berserk (segnalibro al 24, fila
+  centrata lì; foglio aperto sul 26 con «fino al 26 · 3 volumi»), a 375 px e a schermo
+  largo. **NON provato**: le scritture vere (segnare, togliere, «fino al N», «Leggi da qui»)
+  e il loro «Annulla»: servono un accesso e un backend di prova, e dal browser di sviluppo si
+  parla con i dati veri. Neanche il tema chiaro «carta e lilla» né un iPhone vero.
+
 ## Fatto il 14 novembre 2026
 
 - **Le finestre sono finestre.** `ui/Sovrapposizione.jsx` rende `inert` la

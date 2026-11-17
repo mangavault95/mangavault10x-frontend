@@ -17,12 +17,16 @@ import { useAccessoProtetto } from "../dati/accesso";
 import { useSessione } from "../dati/sessione";
 import { coloreDi, nomeDi } from "../dati/lettori";
 import {
+  addReadingHistory,
+  deleteReadingHistoryVolume,
   getReadingSessions,
   getStoricoPerSerie,
   riprendiSerie,
   saveReadingSession,
+  segnaLettiFinoA,
   urlCopertina
 } from "../services/api";
+import { avvisa } from "../dati/avvisi";
 import { generiDiSerie, idDa } from "../dati/generi";
 import useRisorsa from "../dati/useRisorsa";
 import {
@@ -41,6 +45,7 @@ import {
   votoIt
 } from "../dati/serie";
 import { Volumi, AcquistoProssimo } from "../ui/serie/Volumi";
+import FoglioVolume from "../ui/serie/FoglioVolume";
 import { QuotazioneMercato } from "../ui/serie/QuotazioneMercato";
 import { Autori, Etichetta, Dato, SezioneChiudibile, Trama, ScheletroScheda } from "../ui/serie/Pezzi";
 
@@ -117,7 +122,19 @@ export default function SeriePage() {
 
     return (riga?.volumi || []).map(Number);
   }, [storico.dati, id]);
-  const { serie: tutte, ricarica, aggiornaLocale, aggiornaDroppato } = useCollezione();
+  const { serie: tutte, ricarica, aggiornaLocale, aggiornaDroppato, aggiornaLettura } = useCollezione();
+
+  // Il volume aperto nel foglio del carosello, e quale gesto è in corso
+  // ("leggi", "segna", "togli", "fino"). `lettiRef` tiene i volumi letti
+  // di ADESSO: l'«Annulla» di un avviso gira cinque secondi dopo, e una
+  // copia presa al momento dell'avviso li avrebbe vecchi.
+  const [volumeAperto, setVolumeAperto] = useState(null);
+  const [inScrittura, setInScrittura] = useState(null);
+  const lettiRef = useRef(volumiLetti);
+
+  useEffect(() => {
+    lettiRef.current = volumiLetti;
+  }, [volumiLetti]);
 
   // Riprendere una serie droppata scrive due cose sul server: da quando
   // i lettori sono due, scrivere vuol dire dire chi sei.
@@ -254,6 +271,144 @@ export default function SeriePage() {
     } catch {
       // Come in `riprendi`: un tentativo andato a vuoto non merita un
       // banner, il tasto resta lì e si può ripremere.
+    }
+  }
+
+  /* -------------------- Dal carosello: leggere e segnare --------------------
+   *
+   * Toccare un volume apre `FoglioVolume`, e i suoi tre gesti passano da
+   * qui perché è qui che stanno l'accesso (`eseguiProtetto`), lo storico
+   * e la lettura aperta. Sono le stesse rotte del tavolo di lettura
+   * (`LetturaPage`): segnare, togliere, «letti fino al N», segnalibro.
+   *
+   * Si aggiorna dopo che il server ha risposto, non prima: con un
+   * foglio aperto che dice «Segno…» l'attesa si vede, e uno stato
+   * sbagliato da disfare in caso di errore non c'è.
+   */
+  const puoiSegnare = !diUnAltro && !bibliotecaSolaLettura;
+
+  // Lo stato locale dei letti: lo storico che la pagina già tiene (così
+  // la scheda cambia subito) e il conto della collezione (così la
+  // classifica «in lettura» non aspetta di ricaricarsi). Poi `ricarica`
+  // rilegge la verità dal server, come fa il tavolo di lettura.
+  function impostaLetti(nuovi) {
+    const unici = [...new Set(nuovi.map(Number))].sort((a, b) => a - b);
+    const sua = (s) => String(s.manga_id) === String(serie.id);
+
+    storico.setDati((precedenti) => {
+      const righe = precedenti || [];
+      const aggiornata = (s) => ({ ...s, volumi: unici, volumi_letti: unici.length });
+
+      return righe.some(sua)
+        ? righe.map((s) => (sua(s) ? aggiornata(s) : s))
+        : [...righe, { manga_id: serie.id, volumi: unici, volumi_letti: unici.length }];
+    });
+    aggiornaLettura(serie.id, unici.length);
+  }
+
+  async function scriviLetture(gesto, operazione, dopo, messaggioErrore) {
+    setInScrittura(gesto);
+
+    try {
+      await eseguiProtetto(operazione);
+      dopo();
+      storico.ricarica();
+
+      return true;
+    } catch (e) {
+      if (!e?.annullato) avvisa({ testo: messaggioErrore, tono: "errore" });
+
+      return false;
+    } finally {
+      setInScrittura(null);
+    }
+  }
+
+  async function segnaLetto(numero, { silenzioso = false } = {}) {
+    const fatto = await scriviLetture(
+      "segna",
+      () =>
+        addReadingHistory({
+          manga_id: serie.id,
+          titolo: serie.titolo,
+          autore: serie.autore || "",
+          coverurl: serie.copertina || "",
+          volume: numero
+        }),
+      () => impostaLetti([...lettiRef.current, numero]),
+      `Il volume ${numero} non è stato segnato. Riprova fra un attimo.`
+    );
+
+    if (!fatto) return;
+
+    setVolumeAperto(null);
+
+    if (!silenzioso) {
+      avvisa({
+        testo: `Volume ${numero} segnato come letto`,
+        azione: { etichetta: "Annulla", alTocco: () => togliLetto(numero, { silenzioso: true }) }
+      });
+    }
+  }
+
+  async function togliLetto(numero, { silenzioso = false } = {}) {
+    const fatto = await scriviLetture(
+      "togli",
+      () => deleteReadingHistoryVolume(serie.id, numero),
+      () => impostaLetti(lettiRef.current.filter((v) => v !== numero)),
+      `Non sono riuscito a togliere il volume ${numero} dai letti.`
+    );
+
+    if (!fatto) return;
+
+    setVolumeAperto(null);
+
+    if (!silenzioso) {
+      avvisa({
+        testo: `Volume ${numero} tolto dai letti`,
+        azione: { etichetta: "Annulla", alTocco: () => segnaLetto(numero, { silenzioso: true }) }
+      });
+    }
+  }
+
+  // Niente «Annulla» qui: disfare una serie intera vorrebbe dire una
+  // richiesta per volume, e il gesto ha già il suo numero scritto nel foglio.
+  async function segnaFinoA(numero) {
+    const fatto = await scriviLetture(
+      "fino",
+      () => segnaLettiFinoA(serie.id, numero),
+      () => impostaLetti([...lettiRef.current, ...Array.from({ length: numero }, (_, i) => i + 1)]),
+      "Non sono riuscito a segnare i volumi arretrati."
+    );
+
+    if (!fatto) return;
+
+    setVolumeAperto(null);
+    avvisa({ testo: `Letti tutti fino al volume ${numero}` });
+  }
+
+  async function leggiDa(numero) {
+    setInScrittura("leggi");
+
+    try {
+      await eseguiProtetto(() =>
+        saveReadingSession({
+          manga_id: serie.id,
+          titolo: serie.titolo,
+          autore: serie.autore || "",
+          coverurl: serie.copertina || "",
+          volume: numero,
+          volumitotali: serie.totali ?? null
+        })
+      );
+
+      sessioni.ricarica();
+      setVolumeAperto(null);
+      navigate("/lettura");
+    } catch (e) {
+      if (!e?.annullato) avvisa({ testo: "Non sono riuscito ad aprire la lettura. Riprova.", tono: "errore" });
+    } finally {
+      setInScrittura(null);
     }
   }
 
@@ -561,6 +716,10 @@ export default function SeriePage() {
             // …e lo stesso vale per chi in biblioteca sta solo
             // guardando: quello che vede è già di un altro.
             onRiprendi={diUnAltro || bibliotecaSolaLettura ? undefined : riprendi}
+            // Toccare un volume del carosello apre il foglio con leggere e
+            // segnare. Stessa regola di sopra: chi guarda le letture di un
+            // altro non ha niente da scrivere, e il volume resta un disegno.
+            onScegliVolume={puoiSegnare ? setVolumeAperto : undefined}
             di={diUnAltro ? nomeLettore : bibliotecaSolaLettura ? nomeDi(lettori, lettoreVisto) : null}
             // Quali volumi ci sono in casa è in comune, come la collezione:
             // li sistema chiunque abbia la biblioteca, anche guardando le
@@ -600,6 +759,26 @@ export default function SeriePage() {
             scheda precedente. */}
         <TitoliSimili key={serie.id} serie={serie} />
       </div>
+
+      {volumeAperto && puoiSegnare && (
+        <FoglioVolume
+          titoloSerie={serie.titolo}
+          numero={volumeAperto}
+          letto={insiemeLetti.has(volumeAperto)}
+          eCorrente={Number(sessioneAperta?.volume) === volumeAperto}
+          daRecuperare={
+            Array.from({ length: volumeAperto }, (_, i) => i + 1).filter((n) => !insiemeLetti.has(n)).length
+          }
+          inCorso={inScrittura}
+          // Mentre una richiesta è in volo il foglio resta: chiuderlo
+          // vorrebbe dire non vedere l'esito.
+          onChiudere={() => !inScrittura && setVolumeAperto(null)}
+          onLeggi={() => leggiDa(volumeAperto)}
+          onSegna={() => segnaLetto(volumeAperto)}
+          onTogli={() => togliLetto(volumeAperto)}
+          onFinoA={() => segnaFinoA(volumeAperto)}
+        />
+      )}
 
       {autoreAperto && (
         <OpereAutore

@@ -69,6 +69,24 @@ export function indirizzoVolume(fonte, idSerie, numero) {
 }
 
 /**
+ * Tutte le copertine, come sono arrivate (vuote finché non arrivano), da
+ * leggere con `indirizzoVolume`.
+ *
+ * Serve a chi disegna MOLTI volumi insieme (il carosello della scheda, 110
+ * per One Piece): `useCopertinaVolume` per ciascuno farebbe la prova di
+ * caricamento di ogni immagine subito, centodieci richieste prima ancora
+ * che si veda la prima. Qui la prova non c'è: chi usa questa lettura carica
+ * le immagini con `loading="lazy"` e si accorge da solo di quelle rotte.
+ */
+export function useFonteCopertine() {
+  useSyncExternalStore(ascolta, () => versione);
+
+  useEffect(carica, []);
+
+  return dati;
+}
+
+/**
  * La copertina del volume `numero` di una serie, o `ripiego`.
  * `larghezza` è la stessa che userà chi la disegna (vedi `urlCopertina`): la
  * prova di caricamento chiede così lo stesso file, e il browser lo scarica una volta.

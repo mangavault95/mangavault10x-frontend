@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ScaffaleVolumi from "../ScaffaleVolumi";
+import CaroselloVolumi from "./CaroselloVolumi";
 import { Bottone } from "../Controlli";
 import { Sezione } from "../Pagina";
 import Icon from "../../app/Icon";
@@ -29,6 +30,9 @@ export function Volumi({
   letti = [],
   droppata = false,
   onRiprendi,
+  // Il foglio con leggere e segnare (17/11/2026): c'è solo per chi può
+  // scrivere. Su una serie droppata vince `onRiprendi`, che riapre la lettura.
+  onScegliVolume,
   di = null,
   corrente = null,
   modificabile = false,
@@ -104,20 +108,39 @@ export function Volumi({
         <p className="mb-3 text-sm text-brass-300">Tocca i volumi che hai: si accendono e si spengono.</p>
       )}
 
-      {quanti > 0 && (
-        <ScaffaleVolumi
-          totali={quanti}
-          letti={letti}
-          posseduti={numeri}
-          corrente={inModifica ? null : corrente}
-          onSelezionaVolume={inModifica ? tocca : riprendibile ? onRiprendi : undefined}
-          resa="tabellone"
-          riepilogo={false}
-        />
+      {/* Guardando: il carosello di copertine (17/11/2026). Modificando
+          quali volumi si hanno: il tabellone, che per cento tocchi di
+          fila è più comodo di una fila da far scorrere. */}
+      {quanti > 0 &&
+        (inModifica ? (
+          <ScaffaleVolumi
+            totali={quanti}
+            letti={letti}
+            posseduti={numeri}
+            corrente={null}
+            onSelezionaVolume={tocca}
+            resa="tabellone"
+            riepilogo={false}
+          />
+        ) : (
+          <CaroselloVolumi
+            serieId={serie.id}
+            quanti={quanti}
+            letti={letti}
+            posseduti={numeri}
+            corrente={corrente}
+            di={di}
+            onSelezionaVolume={riprendibile ? onRiprendi : onScegliVolume}
+          />
+        ))}
+
+      {typeof onScegliVolume === "function" && !riprendibile && !inModifica && quanti > 0 && (
+        <p className="mt-1 text-xs text-ink-muted">Tocca un volume per leggerlo o segnarlo come letto.</p>
       )}
 
-      {/* La legenda: i tre stati del tabellone, con il conto di ciascuno. */}
-      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-muted">
+      {/* La legenda: i tre stati del tabellone, con il conto di ciascuno.
+          Nel carosello la fanno le pastiglie, con gli stessi conti. */}
+      <ul className={`mt-3 flex-wrap gap-x-4 gap-y-1 text-xs text-ink-muted ${inModifica ? "flex" : "hidden"}`}>
         <li className="flex items-center gap-1.5">
           <span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm border border-brass-400/60 bg-brass-400/25" />
           Letti{di ? ` da ${di}` : ""} <span className="font-numeric">{insiemeLetti.size}</span>
