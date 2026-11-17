@@ -43,9 +43,10 @@ export default function ListaEpisodi({ animeId, episodi, spuntati, puoiScrivere,
   // da sola, invece di tornare indietro con un errore.
   const eseguiProtetto = useAccessoProtetto();
 
+  // Senza accesso la casella NON è spenta: toccarla apre il modulo
+  // d'accesso (`eseguiProtetto`) e, a login fatto, la spunta riparte da
+  // sola. Una casella disabilitata e muta non dice perché non si può.
   async function cambia(numero, giaVisto) {
-    if (!puoiScrivere) return;
-
     setInCorso(numero);
     setErrore(null);
 
@@ -122,7 +123,7 @@ export default function ListaEpisodi({ animeId, episodi, spuntati, puoiScrivere,
                 <input
                   type="checkbox"
                   checked={visto}
-                  disabled={!puoiScrivere || inCorso === ep.numero}
+                  disabled={inCorso === ep.numero}
                   onChange={() => cambia(ep.numero, visto)}
                   className="h-4 w-4 shrink-0 accent-quaderno-blu"
                 />
