@@ -72,7 +72,20 @@ export default function Post({ post, alCambio }) {
   const nascoste = voci.length - visibili.length;
 
   async function metti() {
-    if (!utente || inCorso) return;
+    if (inCorso) return;
+
+    // Senza accesso il cuore non è spento: apre il modulo d'accesso.
+    // A login fatto non si mette da solo (qui non si sa ancora chi sei,
+    // e il conteggio mostrerebbe un cuore senza nome): si tocca di nuovo.
+    if (!utente) {
+      try {
+        await eseguiProtetto(async () => {});
+      } catch {
+        /* accesso annullato: niente da dire */
+      }
+
+      return;
+    }
 
     // Si commuta subito e si rimette a posto solo se il server dice
     // di no: la verità la tiene lui, ma il caso normale è che dica sì.
@@ -186,13 +199,17 @@ export default function Post({ post, alCambio }) {
         <button
           type="button"
           onClick={metti}
-          disabled={!utente}
           aria-pressed={mio}
           // Chi ha messo il cuore, per chi si chiede da chi arriva.
           // Fra tre persone è una domanda che ci si fa.
-          title={cuori.length ? cuori.map((c) => c.nickname).join(", ") : "Nessuno, ancora"}
+          title={
+            !utente
+              ? "Entra per mettere il cuore"
+              : cuori.length
+                ? cuori.map((c) => c.nickname).join(", ")
+                : "Nessuno, ancora"
+          }
           className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors duration-quick
-            disabled:cursor-default disabled:opacity-50
             ${mio ? "text-quaderno-blu" : "text-quaderno-tenue hover:text-quaderno-inchiostro"}`}
         >
           <Icon nome="cuore" dimensione={17} piena={mio} />
