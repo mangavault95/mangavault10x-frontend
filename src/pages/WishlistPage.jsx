@@ -412,6 +412,7 @@ export default function WishlistPage() {
               <RigaSpesa
                 key={`u${u.serie.id}:${u.numero}`}
                 a={`/serie/${u.serie.id}`}
+                idSerie={u.serie.id}
                 copertina={u.copertina}
                 ripiego={u.serie.copertina}
                 titolo={`${u.serie.titolo} ${u.numero}`}

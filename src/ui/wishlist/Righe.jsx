@@ -6,7 +6,7 @@ import Menu from "../Menu";
 import { dopoIlRipiego, urlCopertina } from "../../services/api";
 import Foglio from "../Foglio";
 import { euro, intervalliVolumi, plurale } from "../../dati/serie";
-import { useCopertinaVolume } from "../../dati/copertineVolumi";
+import { useCopertinaVolume, useRipiegoSerie } from "../../dati/copertineVolumi";
 
 /* ==================================================
    I MUCCHI DELLA SPESA
@@ -24,7 +24,9 @@ export function Mucchio({ titolo, children }) {
 /**
  * La copertina del volume, e se non arriva quella della serie: le
  * miniature delle edizioni su AnimeClick a volte non esistono ancora
- * per i volumi appena annunciati.
+ * per i volumi appena annunciati. Chi chiama passa il ripiego solo se
+ * vale (`useRipiegoSerie`): quella della serie è il volume 1, e su un
+ * altro volume è sbagliata.
  */
 function Miniatura({ src, ripiego = null }) {
   const [tentativo, setTentativo] = useState(0);
@@ -45,11 +47,13 @@ function Miniatura({ src, ripiego = null }) {
   );
 }
 
-export function RigaSpesa({ a, copertina, ripiego, titolo, sotto, sottoColore = "text-ink-muted", avviso, prezzo, occupato, inAttesa = false, onAnnulla, onPreso }) {
+export function RigaSpesa({ a, idSerie, copertina, ripiego, titolo, sotto, sottoColore = "text-ink-muted", avviso, prezzo, occupato, inAttesa = false, onAnnulla, onPreso }) {
+  const ripiegoGiusto = useRipiegoSerie(idSerie, ripiego);
+
   return (
     <li className="flex items-center gap-3 py-2.5">
       <Link to={a} className={`flex min-w-0 flex-1 items-center gap-3 transition-opacity duration-quick ${inAttesa ? "opacity-50" : ""}`}>
-        <Miniatura src={copertina} ripiego={ripiego} />
+        <Miniatura src={copertina} ripiego={ripiegoGiusto} />
 
         <div className="min-w-0 flex-1">
           <p className={`line-clamp-2 text-corpo font-semibold leading-snug text-ink-bright ${inAttesa ? "line-through" : ""}`}>{titolo}</p>
@@ -90,7 +94,9 @@ export function CartaMancanti({ serie, numeri, onApri }) {
   return (
     <li>
       <button type="button" onClick={onApri} className="flex w-full items-center gap-3 py-2.5 text-left">
-        <Miniatura src={delVolume} ripiego={serie.copertina} />
+        {/* Niente ripiego qui: `delVolume` è già la copertina del volume, o della serie se di
+            quella serie non si sa ancora niente. Un secondo ripiego rimetterebbe il volume 1. */}
+        <Miniatura src={delVolume} />
 
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-corpo font-semibold leading-snug text-ink-bright">{serie.titolo}</p>
