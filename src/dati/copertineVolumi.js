@@ -1,5 +1,8 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { getCopertineVolumi, urlCopertina } from "../services/api";
+import { ripiegoDelVolume } from "./copertineRipiego";
+
+export { serieConCopertine, ripiegoDelVolume } from "./copertineRipiego";
 
 /*
  * LA COPERTINA DI OGNI VOLUME (14/11/2026)
@@ -10,10 +13,16 @@ import { getCopertineVolumi, urlCopertina } from "../services/api";
  * volta per visita: `{ base, copertine: { [idSerie]: { [numero]: percorso } } }`.
  *
  * Chi mostra «il volume a cui sei arrivato» o «il prossimo da comprare» usa
- * `useCopertinaVolume(idSerie, numero, ripiego)`: se quella del volume non c'è
- * (serie non ancora letta, volume senza immagine) o non si carica, torna il
- * ripiego, cioè la copertina della serie. Non c'è mai un riquadro vuoto in più
- * rispetto a prima.
+ * `useCopertinaVolume(idSerie, numero, ripiego)`.
+ *
+ * Se di quella serie non si sa ancora niente (la lettura di AnimeClick non è
+ * passata) torna il ripiego, cioè la copertina della serie, come prima.
+ *
+ * Se invece la serie ha già le copertine dei suoi volumi e quella di QUESTO volume
+ * manca (AnimeClick non ha ancora la miniatura di un volume appena uscito, o ha
+ * dei buchi: Berserk), non si ripiega: la copertina della serie è quella del volume 1,
+ * e mostrarla sul volume 35 di Rent a Girlfriend è un errore, non un ripiego.
+ * Torna `null` e chi disegna mostra il segnaposto col titolo.
  */
 
 let dati = { base: "", copertine: {} };
@@ -87,7 +96,8 @@ export function useFonteCopertine() {
 }
 
 /**
- * La copertina del volume `numero` di una serie, o `ripiego`.
+ * La copertina del volume `numero` di una serie, o `ripiego` (vedi `ripiegoDelVolume`:
+ * per una serie già letta il ripiego non c'è, e torna `null`).
  * `larghezza` è la stessa che userà chi la disegna (vedi `urlCopertina`): la
  * prova di caricamento chiede così lo stesso file, e il browser lo scarica una volta.
  */
@@ -112,5 +122,17 @@ export function useCopertinaVolume(idSerie, numero, ripiego = null, larghezza = 
     immagine.src = urlCopertina(candidata, larghezza);
   }, [candidata, larghezza]);
 
-  return candidata && !rotte.has(candidata) ? candidata : ripiego;
+  return candidata && !rotte.has(candidata) ? candidata : ripiegoDelVolume(dati, idSerie, ripiego);
+}
+
+/**
+ * Il ripiego per chi disegna un volume con una copertina sua (`copertina`) e ricade
+ * sulla serie solo se manca: la serie vale solo se non ha ancora copertine di volume.
+ */
+export function useRipiegoSerie(idSerie, ripiego = null) {
+  useSyncExternalStore(ascolta, () => versione);
+
+  useEffect(carica, []);
+
+  return ripiegoDelVolume(dati, idSerie, ripiego);
 }
