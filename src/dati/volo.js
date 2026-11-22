@@ -15,8 +15,10 @@
  *
  * Il volo parte da due strade:
  *  - il pulsante «Indietro» della scheda (`tornaIndietroConVolo`);
- *  - il tasto indietro del browser o il gesto di Android/desktop
- *    (`installaVoloIndietro`, che ascolta `popstate`).
+ *  - il tasto indietro del browser (`installaVoloIndietro`, che ascolta
+ *    `popstate`). Dopo un gesto del sistema (scorrere dal bordo su iPhone,
+ *    il gesto indietro di Android) invece no: il sistema ha già la sua
+ *    animazione, e il volo sopra la ripeteva.
  * `inVolo` evita che il pulsante, che provoca a sua volta un `popstate`,
  * ne avvii due.
  *
@@ -203,6 +205,41 @@ function installaVoloIndietro() {
   // router lo riceve di nuovo dentro la transizione, a foto scattata.
   let rilancio = false;
 
+  // IL GESTO DEL SISTEMA HA GIÀ LA SUA ANIMAZIONE (22/11/2026).
+  // Scorrendo dal bordo su iPhone (o col gesto indietro di Android) il sistema fa
+  // scivolare via la scheda e mostra la Collezione sotto il dito; il `popstate` arriva
+  // a gesto finito. Il volo partiva lo stesso: la sua foto «di prima» era la scheda,
+  // che ricompariva per un attimo, e poi la copertina volava. Due ritorni uno dopo
+  // l'altro: il movimento poco fluido. Dopo un gesto del sistema il volo non parte.
+  //
+  // Come si riconosce: `hasUAVisualTransition` sull'evento, dove il browser lo dice;
+  // dove non lo dice (Safari), un tocco partito dal bordo dello schermo ancora in corso
+  // o finito da poco. Il pulsante «Indietro» della scheda non passa di qui e vola sempre.
+  const BORDO_PX = 30;
+  const DOPO_GESTO_MS = 1500;
+  let toccoDalBordo = -Infinity; // Infinity mentre il dito è giù, poi l'istante in cui si è alzato
+
+  const opzioni = { capture: true, passive: true };
+
+  window.addEventListener(
+    "touchstart",
+    (e) => {
+      const x = e.touches?.[0]?.clientX;
+
+      if (x != null && (x <= BORDO_PX || x >= window.innerWidth - BORDO_PX)) toccoDalBordo = Infinity;
+    },
+    opzioni
+  );
+
+  const toccoFinito = () => {
+    if (toccoDalBordo === Infinity) toccoDalBordo = performance.now();
+  };
+
+  window.addEventListener("touchend", toccoFinito, opzioni);
+  window.addEventListener("touchcancel", toccoFinito, opzioni);
+
+  const dopoGestoDelSistema = (e) => e.hasUAVisualTransition === true || performance.now() - toccoDalBordo < DOPO_GESTO_MS;
+
   function alPopstate(e) {
     if (rilancio) return;
 
@@ -210,6 +247,12 @@ function installaVoloIndietro() {
     const arrivo = window.location.pathname;
 
     if (inVolo || ridotto() || !idSerie || arrivo !== "/collezione") return;
+
+    // Il sistema ha già animato il ritorno: il router riceve l'evento così com'è.
+    if (dopoGestoDelSistema(e)) {
+      toccoDalBordo = -Infinity;
+      return;
+    }
 
     e.stopImmediatePropagation();
 
