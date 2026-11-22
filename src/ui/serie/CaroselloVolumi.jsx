@@ -111,7 +111,6 @@ export default function CaroselloVolumi({
           numeri={visibili}
           statoDi={statoDi}
           corrente={corrente}
-          prossimo={prossimo}
           centraSu={attivo === "tutti" ? (corrente ?? prossimo) : null}
           onSelezionaVolume={onSelezionaVolume}
         />
@@ -120,7 +119,7 @@ export default function CaroselloVolumi({
   );
 }
 
-function Binario({ serieId, numeri, statoDi, corrente, prossimo, centraSu, onSelezionaVolume }) {
+function Binario({ serieId, numeri, statoDi, corrente, centraSu, onSelezionaVolume }) {
   const lista = useRef(null);
   const fonte = useFonteCopertine();
   const interattivo = typeof onSelezionaVolume === "function";
@@ -172,7 +171,6 @@ function Binario({ serieId, numeri, statoDi, corrente, prossimo, centraSu, onSel
             fonte={fonte}
             stato={statoDi(n)}
             eCorrente={corrente === n}
-            eProssimo={prossimo === n}
             interattivo={interattivo}
             onSeleziona={onSelezionaVolume}
           />
@@ -197,14 +195,17 @@ function Binario({ serieId, numeri, statoDi, corrente, prossimo, centraSu, onSel
   );
 }
 
-function Carta({ numero, serieId, fonte, stato, eCorrente, eProssimo, interattivo, onSeleziona }) {
+function Carta({ numero, serieId, fonte, stato, eCorrente, interattivo, onSeleziona }) {
   const [rotta, setRotta] = useState(false);
 
   const percorso = stato === "mancante" ? null : indirizzoVolume(fonte, serieId, numero);
   const immagine = percorso && !rotta ? urlCopertina(percorso, 192) : null;
 
-  const inEvidenza = eCorrente || eProssimo;
-  const etichetta = eCorrente ? "Segnalibro" : eProssimo ? "Prossimo" : null;
+  // Solo il segnalibro è in evidenza. «Prossimo» sul volume dopo non serviva: chi sa
+  // dove è arrivato sa qual è il successivo (22/11/2026). Senza segnalibro la fila si
+  // apre comunque sul primo volume da leggere (`centraSu`), senza etichetta.
+  const inEvidenza = eCorrente;
+  const etichetta = eCorrente ? "Segnalibro" : null;
   const descrizione = `Volume ${numero}${eCorrente ? ", segnalibro qui" : DESCRIZIONE_STATO[stato]}`;
 
   // Un volume che non si ha non si legge e non si segna: resta un
