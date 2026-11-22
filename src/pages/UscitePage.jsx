@@ -4,6 +4,7 @@ import useRisorsa from "../dati/useRisorsa";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
 import { euro } from "../dati/serie";
 import { useAccessoProtetto } from "../dati/accesso";
+import { useCopertinaVolume } from "../dati/copertineVolumi";
 import { vibra } from "../dati/tatto";
 import { annullaAcquisti, dopoIlRipiego, getUsciteArchivio, registraAcquisto, urlCopertina } from "../services/api";
 
@@ -256,7 +257,7 @@ function Volume({ u, passato, fattoOra, inConferma, occupato, chiedi, rinuncia, 
     >
       <div className="flex items-center gap-3">
         <Link to={`/serie/${u.serie.id}`} className="flex min-w-0 flex-1 items-center gap-3">
-          <Copertina src={u.copertina || u.serie.copertina} />
+          <Copertina u={u} />
 
           <div className="min-w-0 flex-1">
             <p className="truncate font-display text-base font-bold leading-tight text-ink-bright">
@@ -311,12 +312,20 @@ function Volume({ u, passato, fattoOra, inConferma, occupato, chiedi, rinuncia, 
   );
 }
 
-function Copertina({ src }) {
-  const [rotta, setRotta] = useState(false);
-  const indirizzo = urlCopertina(src, 128);
+/**
+ * La copertina di QUEL volume. Quella che porta la riga (dal calendario di AnimeClick)
+ * vince; poi la copertina del volume (`dati/copertineVolumi`); la copertina della serie,
+ * cioè il volume 1, solo per una serie di cui non si sa ancora nessuna copertina di volume.
+ * Le righe di Fumettologica non hanno copertina: senza questo ripiego compariva sempre il 1.
+ */
+function Copertina({ u }) {
+  const daVolume = useCopertinaVolume(u.serie.id, u.numero, u.serie.copertina, 128);
+  const indirizzo = urlCopertina(u.copertina || daVolume, 128);
+  // L'indirizzo che non si è caricato: se poi ne arriva un altro, si riprova con quello.
+  const [rotta, setRotta] = useState(null);
 
-  return indirizzo && !rotta ? (
-    <img src={indirizzo} alt="" loading="lazy" onError={dopoIlRipiego(() => setRotta(true))} className="h-16 w-11 shrink-0 rounded-lg object-cover" />
+  return indirizzo && rotta !== indirizzo ? (
+    <img src={indirizzo} alt="" loading="lazy" onError={dopoIlRipiego(() => setRotta(indirizzo))} className="h-16 w-11 shrink-0 rounded-lg object-cover" />
   ) : (
     <span aria-hidden="true" className="h-16 w-11 shrink-0 rounded-lg bg-glass-2" />
   );

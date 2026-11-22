@@ -281,7 +281,11 @@ export default function AdessoPage() {
                     <p className="text-micro uppercase text-ink-muted">{u.giornoSettimana}</p>
                     <p className="font-numeric text-lg font-semibold text-ink-bright">{u.giorno}</p>
                   </div>
-                  <Immagine src={u.copertina} alt="" className="h-12 w-8 shrink-0 rounded-md" larghezza={128} />
+                  {u.idSerie ? (
+                    <ImmagineVolume idSerie={u.idSerie} numero={u.numero} propria={u.copertinaPropria} ripiego={u.copertina} alt="" className="h-12 w-8 shrink-0 rounded-md" larghezza={128} />
+                  ) : (
+                    <Immagine src={u.copertina} alt="" className="h-12 w-8 shrink-0 rounded-md" larghezza={128} />
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-ink-bright">{u.titolo}</p>
                     <p className="truncate text-xs text-ink-muted">{u.dettaglio}</p>
@@ -383,6 +387,10 @@ function usciteDellaSettimana(volumi, puntate, anime, adesso) {
         .filter(Boolean)
         .join(" · "),
       copertina: v.copertina || v.serie.copertina,
+      // Per mostrare la copertina di QUEL volume e non quella della serie (il volume 1).
+      idSerie: v.serie.id,
+      numero: v.numero,
+      copertinaPropria: v.copertina || null,
       link: `/serie/${v.serie.id}`,
       nota: v.stato === "prossimo" ? "è il prossimo" : `prima te ne ${v.mancanti === 1 ? "manca 1" : `mancano ${v.mancanti}`}`,
       notaColore: v.stato === "prossimo" ? "text-jade" : "text-ember"
@@ -689,9 +697,13 @@ function RichiamoMese({ adesso }) {
  * copertine che passano dal ridimensionatore, la home restava qualche
  * secondo fatta di rettangoli neri tutti uguali.
  */
-/** La copertina di QUEL volume (letture, prossimo acquisto); se non c'è, quella della serie. */
-function ImmagineVolume({ idSerie, numero, ripiego, larghezza = 256, ...resto }) {
-  const src = useCopertinaVolume(idSerie, numero, ripiego, larghezza);
+/**
+ * La copertina di QUEL volume (letture, prossimo acquisto, uscite); se non c'è, quella della serie.
+ * `propria` è una copertina già nota per questo volume (quella della riga di un'uscita): vince su tutto.
+ */
+function ImmagineVolume({ idSerie, numero, ripiego, propria = null, larghezza = 256, ...resto }) {
+  const daVolume = useCopertinaVolume(idSerie, numero, ripiego, larghezza);
+  const src = propria || daVolume;
 
   return <Immagine key={src} src={src} larghezza={larghezza} {...resto} />;
 }
