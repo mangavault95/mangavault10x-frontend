@@ -4,7 +4,7 @@ import useRisorsa from "../dati/useRisorsa";
 import { CaricamentoElenco, Errore, Vuoto } from "../ui/Stati";
 import { euro } from "../dati/serie";
 import { useAccessoProtetto } from "../dati/accesso";
-import { useCopertinaVolume } from "../dati/copertineVolumi";
+import { useCopertinaVolume, useRipiegoSerie } from "../dati/copertineVolumi";
 import { vibra } from "../dati/tatto";
 import { annullaAcquisti, dopoIlRipiego, getUsciteArchivio, registraAcquisto, urlCopertina } from "../services/api";
 
@@ -313,14 +313,17 @@ function Volume({ u, passato, fattoOra, inConferma, occupato, chiedi, rinuncia, 
 }
 
 /**
- * La copertina di QUEL volume. Quella che porta la riga (dal calendario di AnimeClick)
- * vince; poi la copertina del volume (`dati/copertineVolumi`); la copertina della serie,
- * cioè il volume 1, solo per una serie di cui non si sa ancora nessuna copertina di volume.
- * Le righe di Fumettologica non hanno copertina: senza questo ripiego compariva sempre il 1.
+ * La copertina di QUEL volume, tutte da AnimeClick, in quest'ordine:
+ *   1. quella del volume in `copertine_volumi` (pagina delle edizioni, o scelta a mano);
+ *   2. la miniatura che porta la riga dal calendario (il backend toglie la copertina
+ *      generica della serie, vedi `copertinaDelVolume`);
+ *   3. la copertina della serie (il volume 1), solo per una serie di cui non si sa
+ *      ancora nessuna copertina di volume. Altrimenti il segnaposto.
  */
 function Copertina({ u }) {
-  const daVolume = useCopertinaVolume(u.serie.id, u.numero, u.serie.copertina, 128);
-  const indirizzo = urlCopertina(u.copertina || daVolume, 128);
+  const daVolume = useCopertinaVolume(u.serie.id, u.numero, null, 128);
+  const serie = useRipiegoSerie(u.serie.id, u.serie.copertina);
+  const indirizzo = urlCopertina(daVolume || u.copertina || serie, 128);
   // L'indirizzo che non si è caricato: se poi ne arriva un altro, si riprova con quello.
   const [rotta, setRotta] = useState(null);
 

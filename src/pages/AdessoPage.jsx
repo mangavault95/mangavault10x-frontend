@@ -5,7 +5,7 @@ import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
 import { useSessione } from "../dati/sessione";
 import { useAccessoProtetto } from "../dati/accesso";
-import { useCopertinaVolume } from "../dati/copertineVolumi";
+import { useCopertinaVolume, useRipiegoSerie } from "../dati/copertineVolumi";
 import { chiudibile, euro, fraseMancanti, prossimoVolume, tettoLettura, volumiMancanti } from "../dati/serie";
 import {
   addReadingHistory,
@@ -699,11 +699,14 @@ function RichiamoMese({ adesso }) {
  */
 /**
  * La copertina di QUEL volume (letture, prossimo acquisto, uscite); se non c'è, quella della serie.
- * `propria` è una copertina già nota per questo volume (quella della riga di un'uscita): vince su tutto.
+ * `propria` è una copertina del volume che porta la riga (la miniatura di un'uscita dal calendario):
+ * viene dopo quella di `copertine_volumi` e prima della serie, che vale solo se della serie non si
+ * conosce nessuna copertina di volume.
  */
 function ImmagineVolume({ idSerie, numero, ripiego, propria = null, larghezza = 256, ...resto }) {
-  const daVolume = useCopertinaVolume(idSerie, numero, ripiego, larghezza);
-  const src = propria || daVolume;
+  const daVolume = useCopertinaVolume(idSerie, numero, null, larghezza);
+  const serie = useRipiegoSerie(idSerie, ripiego);
+  const src = daVolume || propria || serie;
 
   return <Immagine key={src} src={src} larghezza={larghezza} {...resto} />;
 }
