@@ -469,6 +469,20 @@ export const enrichManga = (titolo, autore) =>
   request("/api/manga/enrich", { method: "POST", body: { titolo, autore } });
 
 /**
+ * I manga di AnimeClick che somigliano a un titolo, col titolo con cui
+ * sono usciti in Italia. È quello che manca ad AniList: «Arcobaleno di
+ * spezie» lì è «Niji-iro Togarashi».
+ *
+ * `segnale` annulla la richiesta della lettera prima, come per gli anime.
+ */
+export const cercaMangaAnimeClick = (titolo, segnale) =>
+  request(`/api/manga/animeclick/cerca?titolo=${encodeURIComponent(titolo)}`, { signal: segnale });
+
+/** Autori, generi, volumi, trama e copertina di una scheda di AnimeClick. */
+export const getSchedaMangaAnimeClick = (animeclickId) =>
+  request(`/api/manga/animeclick/${animeclickId}`);
+
+/**
  * I titoli che i lettori italiani accostano a una serie, letti da
  * AnimeClick.
  *
