@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Copertina from "../Copertina";
 import { Bottone } from "../Controlli";
-import { enrichManga } from "../../services/api";
+import { cercaMangaAnimeClick, enrichManga, getSchedaMangaAnimeClick } from "../../services/api";
 import { cercaFuori } from "../../bibliotecario/esterni";
 
 /* ==================================================
@@ -139,17 +139,53 @@ export function ModuloDesiderio({ valori, onSalva, onAnnulla }) {
   const cambia = (chiave) => (e) =>
     setCampi((precedenti) => ({ ...precedenti, [chiave]: e.target.value }));
 
+  // I campi già scritti a mano non vengono sovrascritti: quello che hai
+  // deciso tu vale più di quello che trova l'automatismo.
+  function riempi({ autori, coverurl, trama, generi, volumitotali }) {
+    setCampi((precedenti) => ({
+      ...precedenti,
+      autori: precedenti.autori || autori || "",
+      coverurl: precedenti.coverurl || coverurl || "",
+      trama: precedenti.trama || trama || "",
+      generi: precedenti.generi || generi || "",
+      volumitotali: precedenti.volumitotali || volumitotali || ""
+    }));
+  }
+
+  // La scheda di AnimeClick è già in italiano e sotto il titolo con cui
+  // la serie è uscita qui: autori, generi e trama arrivano così, e non
+  // serve il traduttore.
+  async function daAnimeClick(animeclickId, copertinaRicerca) {
+    const scheda = await getSchedaMangaAnimeClick(animeclickId);
+
+    riempi({
+      autori: scheda.autori?.join(", "),
+      coverurl: scheda.copertina || copertinaRicerca,
+      trama: scheda.trama,
+      generi: scheda.generi?.join(", "),
+      volumitotali: scheda.volumi
+    });
+  }
+
   /**
    * Compila da solo copertina, trama, generi e numero di volumi
-   * partendo dal titolo. È lo stesso servizio usato per la collezione:
-   * AniList per le immagini, Google Books per i dati d'edizione.
+   * partendo dal titolo. La fonte è AnimeClick, che tiene le serie col
+   * titolo italiano: «Arcobaleno di spezie» di Adachi su AniList è
+   * «Niji-iro Togarashi» e col titolo italiano non si trovava.
    *
-   * Titolo e autore passati esplicitamente quando arrivano da un
-   * suggerimento scelto in tendina: leggerli da `campi` in quel momento
-   * darebbe un valore ancora vecchio, perché l'aggiornamento dello
+   * Se AnimeClick non risponde si ripiega sul servizio della collezione
+   * (AniList per le immagini, Google Books per i dati d'edizione). Se
+   * risponde ma non conosce il titolo no: AniList non lo conoscerebbe
+   * meglio, e un'altra ricerca darebbe solo un omonimo.
+   *
+   * `animeclickId` c'è quando il titolo arriva da un suggerimento scelto
+   * in tendina: la serie è già identificata, e rifare la ricerca per
+   * titolo rischierebbe di prendere un'altra. Titolo e autore passati
+   * esplicitamente per lo stesso motivo di sempre: leggerli da `campi` in
+   * quel momento darebbe un valore vecchio, perché l'aggiornamento dello
    * stato che li ha appena impostati non si è ancora applicato.
    */
-  async function compila(titoloScelto, autoreScelto) {
+  async function compila(titoloScelto, autoreScelto, animeclickId, copertinaRicerca) {
     const titolo = (titoloScelto ?? campi.titolo).trim();
     if (!titolo) return;
 
@@ -157,21 +193,47 @@ export function ModuloDesiderio({ valori, onSalva, onAnnulla }) {
     setAvviso(null);
 
     try {
+      let id = animeclickId;
+      let copertina = copertinaRicerca;
+      let animeclickRisponde = true;
+
+      if (!id) {
+        try {
+          const candidati = await cercaMangaAnimeClick(titolo);
+
+          id = candidati[0]?.animeclickId;
+          copertina = candidati[0]?.copertina;
+        } catch {
+          animeclickRisponde = false;
+        }
+      }
+
+      if (id) {
+        try {
+          await daAnimeClick(id, copertina);
+          return;
+        } catch {
+          animeclickRisponde = false;
+        }
+      }
+
+      if (animeclickRisponde) {
+        setAvviso("Non ho trovato niente per questo titolo. Compila a mano.");
+        return;
+      }
+
       const dati = await enrichManga(titolo, autoreScelto ?? campi.autori);
 
       if (dati?.error) {
         setAvviso("Non ho trovato niente per questo titolo. Compila a mano.");
       } else {
-        // I campi già scritti a mano non vengono sovrascritti: quello
-        // che hai deciso tu vale più di quello che trova l'automatismo.
-        setCampi((precedenti) => ({
-          ...precedenti,
-          autori: precedenti.autori || dati.autore || "",
-          coverurl: precedenti.coverurl || dati.coverurl || "",
-          trama: precedenti.trama || dati.trama || "",
-          generi: precedenti.generi || dati.genere || "",
-          volumitotali: precedenti.volumitotali || dati.volumitotali || ""
-        }));
+        riempi({
+          autori: dati.autore,
+          coverurl: dati.coverurl,
+          trama: dati.trama,
+          generi: dati.genere,
+          volumitotali: dati.volumitotali
+        });
       }
     } catch {
       setAvviso("Il servizio non ha risposto. Riprova fra poco.");
@@ -196,12 +258,33 @@ export function ModuloDesiderio({ valori, onSalva, onAnnulla }) {
     }
 
     let annullato = false;
+    const richiesta = new AbortController();
 
     setCercandoSuggerimenti(true);
 
     const timeout = setTimeout(async () => {
       try {
-        const risultati = await cercaFuori(testo, 5);
+        let risultati;
+
+        try {
+          const candidati = await cercaMangaAnimeClick(testo, richiesta.signal);
+
+          risultati = candidati.slice(0, 5).map((c) => ({
+            fonte: "animeclick",
+            idEsterno: c.animeclickId,
+            titolo: c.titolo,
+            autore: null,
+            anno: c.anno,
+            copertina: c.copertina
+          }));
+        } catch (e) {
+          if (e?.name === "AbortError") return;
+
+          // AnimeClick non risponde (o Render si sta svegliando): meglio
+          // i titoli di AniList che una tendina vuota.
+          risultati = await cercaFuori(testo, 5);
+        }
+
         if (!annullato) setSuggerimenti(risultati);
       } catch {
         if (!annullato) setSuggerimenti([]);
@@ -212,6 +295,7 @@ export function ModuloDesiderio({ valori, onSalva, onAnnulla }) {
 
     return () => {
       annullato = true;
+      richiesta.abort();
       clearTimeout(timeout);
     };
   }, [campi.titolo, campi.id]);
@@ -220,7 +304,12 @@ export function ModuloDesiderio({ valori, onSalva, onAnnulla }) {
     setMostraSuggerimenti(false);
     setSuggerimenti([]);
     setCampi((precedenti) => ({ ...precedenti, titolo: risultato.titolo }));
-    compila(risultato.titolo, risultato.autore);
+
+    if (risultato.fonte === "animeclick") {
+      compila(risultato.titolo, undefined, risultato.idEsterno, risultato.copertina);
+    } else {
+      compila(risultato.titolo, risultato.autore);
+    }
   }
 
   const tendinaAperta =
@@ -281,7 +370,7 @@ export function ModuloDesiderio({ valori, onSalva, onAnnulla }) {
               {tendinaAperta && (
                 <ul className="absolute z-10 mt-1.5 w-full overflow-hidden rounded-card border border-soft bg-glass-3 shadow-raised backdrop-blur-xl">
                   {cercandoSuggerimenti && suggerimenti.length === 0 && (
-                    <li className="px-3.5 py-2.5 text-sm text-ink-muted">Cerco su AniList…</li>
+                    <li className="px-3.5 py-2.5 text-sm text-ink-muted">Cerco su AnimeClick…</li>
                   )}
 
                   {suggerimenti.map((r) => (
@@ -301,8 +390,8 @@ export function ModuloDesiderio({ valori, onSalva, onAnnulla }) {
                           <span className="block truncate text-sm font-medium text-ink-bright">
                             {r.titolo}
                           </span>
-                          {r.autore && (
-                            <span className="block truncate text-xs text-ink-muted">{r.autore}</span>
+                          {(r.autore || r.anno) && (
+                            <span className="block truncate text-xs text-ink-muted">{r.autore || r.anno}</span>
                           )}
                         </span>
                       </button>
