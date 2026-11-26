@@ -402,6 +402,9 @@ export const registraAcquisto = (mangaId, { volumi = null, prezzo = null, data =
   });
 
 /** Il riassunto di un mese di casa (`routes/mese.js`); senza mese, quello scorso. */
+/** Puntate viste, volumi letti e spesa degli ultimi sette giorni (la riga della domenica sera). */
+export const getSettimana = () => request("/api/settimana");
+
 export const getMese = (mese = null) => request(`/api/mese${mese ? `?m=${mese}` : ""}`);
 
 /**
