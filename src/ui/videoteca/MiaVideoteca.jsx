@@ -12,6 +12,7 @@ import {
   votaAnime
 } from "../../services/api";
 import { useAccessoProtetto } from "../../dati/accesso";
+import NewBadge from "../NewBadge";
 import { formatEpisodio } from "./formati";
 
 /**
@@ -353,12 +354,9 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
   const percento = uscite > 0 ? Math.min(100, Math.round((ultimo / uscite) * 100)) : null;
 
   const dove = ultimo ? `Sei ${formatEpisodio(ultimo, anime.tagli, { prep: "a" })}` : "Da cominciare";
-  const stato =
-    nuovi > 0
-      ? `${nuovi} ${nuovi === 1 ? "nuovo" : "nuovi"}`
-      : anime.prossima_uscita
-        ? `in pari · ${GIORNO_ORA.format(new Date(anime.prossima_uscita))}`
-        : "in pari";
+  const stato = anime.prossima_uscita
+    ? `in pari · ${GIORNO_ORA.format(new Date(anime.prossima_uscita))}`
+    : "in pari";
 
   return (
     <div className="flex gap-3.5 rounded-card bg-alcove p-3.5">
@@ -373,7 +371,7 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
               {anime.titolo}
             </Link>
             <p className="mt-0.5 text-fine text-ink-muted">
-              {dove} · <span className={nuovi > 0 ? "font-semibold text-novita" : ""}>{stato}</span>
+              {dove} · {nuovi > 0 ? <NewBadge count={nuovi} /> : stato}
             </p>
           </div>
 

@@ -6,6 +6,7 @@ import { useCollezione } from "../dati/collezione";
 import { useSessione } from "../dati/sessione";
 import { useAccessoProtetto } from "../dati/accesso";
 import { useCopertinaVolume, useRipiegoSerie } from "../dati/copertineVolumi";
+import NewBadge from "../ui/NewBadge";
 import { formatEpisodio } from "../ui/videoteca/formati";
 import { chiudibile, euro, fraseMancanti, prossimoVolume, tettoLettura, volumiMancanti } from "../dati/serie";
 import {
@@ -232,9 +233,7 @@ export default function AdessoPage() {
                 <Link to={`/videoteca/${a.id}`} className="group block focus-visible:outline-none">
                   <div className="relative">
                     <Immagine src={a.cover_url} alt="" className="aspect-[2/3] w-32 rounded-card" />
-                    <span className="absolute left-2 top-2 rounded-md border border-novita/40 bg-void/80 px-1.5 py-0.5 font-numeric text-xs font-medium text-novita backdrop-blur">
-                      {a.nuovi} {a.nuovi === 1 ? "nuovo" : "nuovi"}
-                    </span>
+                    <NewBadge count={a.nuovi} variant="overlay" className="absolute left-2 top-2" />
                   </div>
                   <p className="mt-2 line-clamp-2 text-sm font-semibold leading-tight text-ink-bright">{a.titolo}</p>
                   <p className="mt-0.5 text-fine text-ink-muted">Riprendi {formatEpisodio(a.prossimo, a.tagli, { prep: "da" })}</p>
