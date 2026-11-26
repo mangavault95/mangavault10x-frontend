@@ -26,6 +26,8 @@ import {
   prossimoVolume
 } from "../dati/serie";
 import { RigaSerie } from "../ui/collezione/RigaSerie";
+import { SegnoLegenda } from "../ui/StatoSerie";
+import { STATI_SERIE } from "../dati/statoSerie";
 import { ModuloNuovaSerie } from "../ui/collezione/ModuloNuovaSerie";
 
 /**
@@ -662,9 +664,12 @@ export default function CollezionePage() {
         {/* Cosa vuol dire il colore dell'anello, detto una volta sola:
             prima si leggeva solo se lo si sapeva già. */}
         <p className="flex flex-wrap items-center gap-x-3.5 gap-y-1 px-1 text-micro text-ink-muted sm:px-0">
-          <span className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border-2 border-jade" />Completa</span>
-          <span className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border-2 border-lapis" />In pari con le uscite</span>
-          <span className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border-2 border-ember" />Mancano volumi</span>
+          {["completa", "in-pari", "mancano"].map((s) => (
+            <span key={s} className="flex items-center gap-1.5">
+              <SegnoLegenda stato={s} />
+              {STATI_SERIE[s].nome}
+            </span>
+          ))}
         </p>
       </div>
 

@@ -1,5 +1,7 @@
 import { Link } from "react-router";
 import { dopoIlRipiego, urlCopertina } from "../../services/api";
+import { GlifoStato } from "../StatoSerie";
+import { statoDi } from "../../dati/statoSerie";
 import { prossimoVolume, totaleDisponibile, volumiMancanti, votoDi, votoIt } from "../../dati/serie";
 
 /* ==================================================
@@ -54,13 +56,14 @@ export function RigaSerie({ serie, lettore, occupata, onPreso }) {
               {totale ? `/${totale}` : ""}
             </span>{" "}
             vol.
+            <GlifoStato stato={statoDi(serie)} className="ml-1.5" />
             {completa && (
-              <span className="ml-1.5 font-medium text-jade">
+              <span className="ml-1 font-medium text-jade">
                 {serie.stato === "conclusa" ? "completa" : "in pari"}
               </span>
             )}
             {mancanti > 0 && (
-              <span className="ml-1.5 font-medium text-ember">ne mancano {mancanti}</span>
+              <span className="ml-1 font-medium text-ember">ne mancano {mancanti}</span>
             )}
             {serie.editore && <span> · {serie.editore}</span>}
           </p>
