@@ -74,7 +74,7 @@ export default function NotifichePush({ className = "" }) {
         {stato === STATI.DISATTIVO && (
           <>
             <p className="text-sm text-ink">
-              Ti avviso quando esce una puntata delle serie che stai guardando, e la mattina con quelle di oggi.
+              Ti avviso quando esce una puntata delle serie che stai guardando, la mattina con quelle di oggi, e la sera prima per i volumi che escono domani.
             </p>
 
             <button
