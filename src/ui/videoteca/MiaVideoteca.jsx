@@ -240,7 +240,7 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
             ))}
           </Elenco>
           {daVedere.length > 6 && (
-            <Link to="/videoteca/io/tutto" className="mt-2 block px-1 text-sm font-medium text-brass-300 hover:underline">
+            <Link to="/videoteca/io/tutto" className="mt-2 block px-1 text-sm font-medium text-link hover:underline">
               Le altre {daVedere.length - 6} in «Tutti i titoli»
             </Link>
           )}
@@ -260,7 +260,7 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
             ))}
           </Elenco>
           {viste.length > 10 && (
-            <Link to="/videoteca/io/tutto" className="mt-2 block px-1 text-sm font-medium text-brass-300 hover:underline">
+            <Link to="/videoteca/io/tutto" className="mt-2 block px-1 text-sm font-medium text-link hover:underline">
               Tutte le {viste.length} viste
             </Link>
           )}
@@ -383,7 +383,7 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
               {anime.titolo}
             </Link>
             <p className="mt-0.5 text-fine text-ink-muted">
-              {dove} · <span className={nuovi > 0 ? "font-semibold text-brass-300" : ""}>{stato}</span>
+              {dove} · <span className={nuovi > 0 ? "font-semibold text-novita" : ""}>{stato}</span>
             </p>
           </div>
 
@@ -399,7 +399,7 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
 
         {percento !== null && (
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-bright/[0.08]">
-            <div className="h-full rounded-full bg-viola" style={{ width: `${percento}%` }} />
+            <div className="h-full rounded-full bg-progresso" style={{ width: `${percento}%` }} />
           </div>
         )}
 
@@ -409,7 +409,7 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
             onClick={onVisto}
             disabled={occupato}
             className={`mt-3 h-10 w-full truncate rounded-card px-3 text-sm font-semibold transition-transform duration-quick active:scale-[0.98] disabled:opacity-60 ${
-              principale ? "insegna" : "border border-viola/40 bg-glass-2 text-ink-bright hover:bg-viola/10"
+              principale ? "insegna" : "border border-brass-400/50 bg-glass-2 text-brass-300 hover:bg-brass-400/10"
             }`}
           >
             {occupato ? "Segno…" : `Visto l'${etichettaEp(prossimo, anime.tagli)}`}

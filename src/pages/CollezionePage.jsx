@@ -771,7 +771,7 @@ export default function CollezionePage() {
                 className="scroll-mt-28"
               >
                 <h2 className="mb-3 flex items-center gap-3 px-1 sm:px-0">
-                  <span className="font-pixel text-2xl leading-none text-viola">{g.lettera}</span>
+                  <span className="font-pixel text-2xl leading-none text-brass-300">{g.lettera}</span>
                   <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-[rgb(var(--c-riga))] to-transparent" />
                 </h2>
 

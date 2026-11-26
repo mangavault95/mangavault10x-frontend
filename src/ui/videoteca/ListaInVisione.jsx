@@ -161,7 +161,7 @@ export default function ListaInVisione({ righe, setRighe, ricarica, puoiScrivere
         <button
           type="button"
           onClick={() => setEspansa((e) => !e)}
-          className="text-sm font-semibold text-quaderno-blu hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu"
+          className="text-sm font-semibold text-link hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link"
         >
           {espansa ? "Mostra meno" : `Mostra tutte (${inVisione.length})`}
         </button>

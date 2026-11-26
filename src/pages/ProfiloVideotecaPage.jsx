@@ -277,7 +277,7 @@ function Numeri({ statistiche, base }) {
 
         <Link
           to={`${base}/numeri`}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-quaderno-blu hover:underline"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-link hover:underline"
         >
           Tutti i numeri
           <Icon nome="avanti" dimensione={14} />

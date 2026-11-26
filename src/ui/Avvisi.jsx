@@ -60,7 +60,7 @@ export default function Avvisi() {
             togliAvviso(avviso.id);
             alTocco?.();
           }}
-          className="min-h-11 shrink-0 rounded-lg px-3 text-sm font-bold text-ciano focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ciano"
+          className="min-h-11 shrink-0 rounded-lg px-3 text-sm font-bold text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ciano"
         >
           {avviso.azione.etichetta}
         </button>

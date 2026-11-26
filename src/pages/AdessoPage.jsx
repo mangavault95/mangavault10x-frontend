@@ -231,7 +231,7 @@ export default function AdessoPage() {
                 <Link to={`/videoteca/${a.id}`} className="group block focus-visible:outline-none">
                   <div className="relative">
                     <Immagine src={a.cover_url} alt="" className="aspect-[2/3] w-32 rounded-card" />
-                    <span className="absolute left-2 top-2 rounded-md border border-viola/40 bg-void/80 px-1.5 py-0.5 font-numeric text-xs font-medium text-viola backdrop-blur">
+                    <span className="absolute left-2 top-2 rounded-md border border-novita/40 bg-void/80 px-1.5 py-0.5 font-numeric text-xs font-medium text-novita backdrop-blur">
                       {a.nuovi} {a.nuovi === 1 ? "nuovo" : "nuovi"}
                     </span>
                   </div>
@@ -561,7 +561,7 @@ function Sezione({ titolo, kana, link, children }) {
           {kana && <span aria-hidden="true" className="kana font-pixel text-xs font-normal text-ink-faint">{kana}</span>}
         </h2>
         {link && (
-          <Link to={link.a} className="bersaglio text-sm font-medium text-ciano hover:underline">
+          <Link to={link.a} className="bersaglio text-sm font-medium text-link hover:underline">
             {link.testo}
           </Link>
         )}

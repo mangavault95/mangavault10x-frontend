@@ -267,7 +267,7 @@ export default function ScansionaPage() {
     <div className="mx-auto w-full max-w-xl px-5 pb-10 pt-6">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink-bright">Scansiona</h1>
-        <Link to="/cerca" className="bersaglio text-sm font-medium text-ciano hover:underline">
+        <Link to="/cerca" className="bersaglio text-sm font-medium text-link hover:underline">
           Cerca a mano
         </Link>
       </div>
@@ -625,7 +625,7 @@ function CheVolume({ serie, scheda, daEdicola, suggerito, occupato, onNumero, on
 
       <Numeri titolo={serie.titolo} scheda={scheda} suggerito={suggerito} occupato={occupato} onNumero={onNumero} />
 
-      <button type="button" onClick={onAltraSerie} className="bersaglio mt-3 text-sm font-medium text-ciano underline underline-offset-4">
+      <button type="button" onClick={onAltraSerie} className="bersaglio mt-3 text-sm font-medium text-link underline underline-offset-4">
         Non è {serie.titolo}
       </button>
     </div>
@@ -725,7 +725,7 @@ function Scelta({ candidate, collezione, numeroIniziale, occupato, onScelta }) {
       <div className="mt-3">
         <p className="text-sm text-ink-bright">
           <span className="font-semibold">{scelta.titolo}</span>: che numero è?{" "}
-          <button type="button" onClick={() => setScelta(null)} className="bersaglio font-medium text-ciano underline underline-offset-4">
+          <button type="button" onClick={() => setScelta(null)} className="bersaglio font-medium text-link underline underline-offset-4">
             Cambia serie
           </button>
         </p>
@@ -774,7 +774,7 @@ function CercaSerie({ collezione, numeroIniziale, chiediNumero = false, occupato
         <p className="text-sm text-ink-bright">
           <span className="font-semibold">{scelta.titolo}</span>
           {scelta.edizione ? ` · ${scelta.edizione}` : ""}: che numero è?{" "}
-          <button type="button" onClick={() => setScelta(null)} className="bersaglio font-medium text-ciano underline underline-offset-4">
+          <button type="button" onClick={() => setScelta(null)} className="bersaglio font-medium text-link underline underline-offset-4">
             Cambia serie
           </button>
         </p>
@@ -822,7 +822,7 @@ function Altrove({ etichetta, ...resto }) {
   return aperto ? (
     <CercaSerie {...resto} />
   ) : (
-    <button type="button" onClick={() => setAperto(true)} className="bersaglio mt-3 block text-sm font-medium text-ciano underline underline-offset-4">
+    <button type="button" onClick={() => setAperto(true)} className="bersaglio mt-3 block text-sm font-medium text-link underline underline-offset-4">
       {etichetta}
     </button>
   );
