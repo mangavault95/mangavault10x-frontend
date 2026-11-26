@@ -219,7 +219,32 @@ const TRACCIATI = {
    * chiuso: chiusa fino in fondo, a diciotto pixel, la busta diventa
    * un rettangolo con una riga storta dentro.
    */
-  busta: "M4.5 5.5h15a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2zM3 6.7l9 5.8 9-5.8"
+  busta: "M4.5 5.5h15a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2zM3 6.7l9 5.8 9-5.8",
+
+  /**
+   * Due cursori su due righe: le impostazioni.
+   *
+   * Non l'ingranaggio, che è già della Gestione (`settings`): nel foglio
+   * «Tu» le due voci stanno una sopra l'altra, e con la stessa icona
+   * sarebbero indistinguibili prima ancora di leggere.
+   */
+  regolazioni: "M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6",
+
+  /** Un trattino: togliere uno (volumi, copie…). Il fratello di `plus`. */
+  meno: "M5 12h14",
+
+  /**
+   * Una scintilla a quattro punte e una piccola accanto: «compila da solo».
+   *
+   * Dice «lo faccio io» senza dire come, ed è il segno che ha preso ogni
+   * comando di completamento automatico: il pubblico lo legge prima della
+   * parola.
+   */
+  scintilla:
+    "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z",
+
+  /** Un'uscita da una porta: «Esci». */
+  uscita: "M9 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H9M16 8l4 4-4 4M20 12H9"
 };
 
 export default function Icon({ nome, dimensione = 20, className = "", piena = false, ...resto }) {

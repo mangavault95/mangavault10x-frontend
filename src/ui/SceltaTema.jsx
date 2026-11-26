@@ -5,8 +5,9 @@ import { accentoDi, kanaDi, scegliAccento, scegliKana, scegliTema, temaDi } from
 /**
  * L'aspetto: le impostazioni di come si vede il sito.
  *
- * Sta in due posti — il foglio «Tu» del telefono e il menu del proprio
- * nome su schermo largo — e quindi è un componente solo: due copie degli
+ * Sta in due posti — la pagina Impostazioni (che sul telefono si apre dal
+ * foglio «Tu») e il menu del proprio nome su schermo largo — e quindi è un
+ * componente solo: due copie degli
  * stessi interruttori finirebbero per dire cose diverse.
  *
  * Tre scelte, ricordate per persona (vedi `dati/tema.js`): la modalità,

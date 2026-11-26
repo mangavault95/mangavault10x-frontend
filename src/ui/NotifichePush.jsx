@@ -8,9 +8,9 @@ import { STATI, attivaPush, disattivaPush, statoPush } from "../dati/push";
  * la consegna la prima volta, ed è stato tolto a cose funzionanti. La rotta
  * `POST /api/push/prova` del backend resta, per le prove a mano.)
  *
- * Sta accanto a `SceltaTema`, negli stessi due posti (il foglio «Tu» del
- * telefono e il menu del proprio nome su schermo largo), e solo per chi è
- * entrato: una notifica ha un destinatario.
+ * Sta accanto a `SceltaTema`, negli stessi due posti (la pagina Impostazioni
+ * e il menu del proprio nome su schermo largo), e solo per chi è entrato: una
+ * notifica ha un destinatario.
  *
  * Non compare affatto se il server non ha le chiavi, o se il browser non sa
  * ricevere notifiche: un interruttore che non può funzionare è peggio di

@@ -266,6 +266,22 @@ export const SEZIONE_GESTIONE = {
   icona: "settings"
 };
 
+// Le preferenze di chi guarda: tema, palette, kanji, notifiche (26/11/2026).
+//
+// Fino a oggi stavano dentro il foglio «Tu» del telefono, in mezzo a chi sei
+// e alle pagine da aprire: il foglio era più alto dello schermo e le tre
+// cose — preferenze, pagine, uscita — si leggevano come una sola. Adesso
+// hanno una pagina loro, con un indirizzo, e dal foglio resta una riga.
+// Su schermo largo non cambia niente: lì le stesse scelte stanno nel menu
+// del proprio nome (`Identita`).
+export const SEZIONE_IMPOSTAZIONI = {
+  id: "impostazioni",
+  percorso: "/impostazioni",
+  etichetta: "Impostazioni",
+  descrizione: "Aspetto, kanji, notifiche",
+  icona: "regolazioni"
+};
+
 /** Le voci di un mondo, nell'ordine in cui stanno in barra. */
 export function sezioniDi(mondo) {
   return SEZIONI.filter((s) => s.mondo === mondo);
@@ -365,6 +381,7 @@ export function titoloPer(percorso) {
   if (percorso.startsWith("/uscite")) return "Uscite e spesa · MangaVault";
 
   if (percorso.startsWith("/gestione")) return "Gestione · MangaVault";
+  if (percorso.startsWith("/impostazioni")) return "Impostazioni · MangaVault";
 
   const sezione = SEZIONI.find((s) => s.percorso === percorso);
 
