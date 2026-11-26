@@ -8,6 +8,8 @@ import { useCollezione } from "../../dati/collezione";
 import { eliminaManga, enrichManga, setCopertinaVolume, updateManga } from "../../services/api";
 import { ricaricaCopertineVolumi, useCopertinaVolume } from "../../dati/copertineVolumi";
 import { CATEGORIE, ETICHETTE_STATO } from "../../dati/serie";
+import { idLettera, letteraDi } from "../../dati/lettere";
+import IndiceLettere from "../IndiceLettere";
 
 /**
  * I manga: dove si correggono le schede della collezione.
@@ -56,6 +58,23 @@ export default function GestioneManga() {
     );
   }, [ordinate, ricercaTesto, soloDaFinire]);
 
+  // L'elenco a capitoli, come la rubrica: una lettera, le sue schede. Si
+  // cambia capitolo quando cambia la lettera e non per gruppi calcolati
+  // prima — vedi `letteraDi`.
+  const gruppi = useMemo(() => {
+    const capitoli = [];
+
+    for (const s of visibili) {
+      const lettera = letteraDi(s.titolo);
+      const ultimo = capitoli[capitoli.length - 1];
+
+      if (ultimo?.lettera === lettera) ultimo.serie.push(s);
+      else capitoli.push({ lettera, serie: [s] });
+    }
+
+    return capitoli;
+  }, [visibili]);
+
   const selezionata = serie.find((s) => String(s.id) === String(selezionataId)) || null;
 
   if (errore) return <Errore errore={errore} riprova={ricarica} />;
@@ -94,7 +113,11 @@ export default function GestioneManga() {
           ))}
         </div>
 
-        <div className="panel-scrollbar max-h-[32rem] overflow-y-auto rounded-card bg-alcove lg:max-h-[calc(100dvh-18rem)]">
+        {/* Sul telefono l'elenco scorre con la pagina: una scatola con la
+            sua barra dentro la pagina erano due scorrimenti uno nell'altro,
+            e il pollice non sa quale dei due sta muovendo. Il riquadro
+            scorrevole c'è solo dove l'elenco sta accanto alla scheda. */}
+        <div className="panel-scrollbar rounded-card bg-alcove lg:max-h-[calc(100dvh-18rem)] lg:overflow-y-auto">
           {inCorso && !serie.length ? (
             <p className="px-4 py-6 text-sm text-ink-muted">Carico le schede…</p>
           ) : visibili.length === 0 ? (
@@ -102,32 +125,39 @@ export default function GestioneManga() {
               {soloDaFinire ? "Nessuna scheda da finire: è tutto a posto." : "Nessuna scheda con questo nome."}
             </p>
           ) : (
-            <ul>
-              {visibili.map((s) => (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelezionataId(s.id)}
-                    aria-current={String(s.id) === String(selezionataId) ? "true" : undefined}
-                    className={`flex w-full items-center gap-3 border-b border-hairline px-4 py-3 text-left transition-colors duration-quick last:border-b-0 ${
-                      String(s.id) === String(selezionataId)
-                        ? "bg-brass-400/10 text-brass-300"
-                        : "text-ink hover:bg-glass-2 hover:text-ink-bright"
-                    }`}
-                  >
-                    <span className="min-w-0 flex-1 truncate text-sm">{s.titolo}</span>
+            gruppi.map((g) => (
+              <section key={g.lettera} id={idLettera(g.lettera)}>
+                <h3
+                  aria-hidden="true"
+                  className="sticky top-[env(safe-area-inset-top,0px)] z-[1] rounded-t-card bg-alcove px-4 pb-1 pt-3 font-numeric text-micro font-semibold tracking-[0.14em] text-brass-300 lg:top-0"
+                >
+                  {g.lettera}
+                </h3>
 
-                    {daFinire(s) && (
-                      <span className="shrink-0 rounded-full bg-brass-400/15 px-2 py-0.5 text-micro font-medium text-brass-300">
-                        da finire
-                      </span>
-                    )}
-                  </button>
-                </li>
-              ))}
-            </ul>
+                <ul>
+                  {g.serie.map((s) => (
+                    <li key={s.id}>
+                      <RigaScheda
+                        serie={s}
+                        scelta={String(s.id) === String(selezionataId)}
+                        onScegli={() => setSelezionataId(s.id)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))
           )}
         </div>
+
+        {/* L'indice A–Z, solo dove l'elenco è a tutta pagina e solo quando
+            c'è davvero da saltare: con una ricerca o un filtro acceso le
+            lettere sarebbero poche e cambierebbero a ogni tasto. */}
+        {!selezionata && !ricercaTesto && !soloDaFinire && gruppi.length > 4 && (
+          <div className="lg:hidden">
+            <IndiceLettere lettere={gruppi.map((g) => g.lettera)} />
+          </div>
+        )}
       </div>
 
       {/* ---------- Scheda ---------- */}
@@ -193,6 +223,73 @@ export default function GestioneManga() {
  * mano: lo tiene aggiornato da solo il controllo settimanale.
  */
 const daFinire = (s) => !s.trama || !s.editore || (s.stato !== "in_corso" && !s.totali);
+
+/**
+ * Cosa manca a una scheda, in parole: «trama», «editore», «totale».
+ *
+ * È la stessa regola di `daFinire` ma dice QUALE: un'etichetta «da finire»
+ * costringeva ad aprire ogni scheda per scoprire cosa mancasse, e su un
+ * telefono, dove non c'è un passaggio del mouse a spiegarlo, non c'era altro
+ * modo di saperlo.
+ */
+function cosaManca(s) {
+  const manca = [];
+
+  if (!s.trama) manca.push("trama");
+  if (!s.editore) manca.push("editore");
+  if (s.stato !== "in_corso" && !s.totali) manca.push("totale");
+
+  return manca;
+}
+
+/**
+ * Una riga dell'elenco: copertina, titolo, una riga di numeri e — se
+ * qualcosa manca — cosa.
+ *
+ * La copertina serve a riconoscere la scheda a colpo d'occhio: fra duecento
+ * titoli, molti dei quali con lo stesso nome e un'edizione diversa, è la
+ * cosa che si riconosce prima.
+ */
+function RigaScheda({ serie, scelta, onScegli }) {
+  const manca = cosaManca(serie);
+
+  const dettaglio = [
+    serie.posseduti != null ? `${serie.posseduti}${serie.totali ? `/${serie.totali}` : ""} vol.` : null,
+    serie.editore
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <button
+      type="button"
+      onClick={onScegli}
+      aria-current={scelta ? "true" : undefined}
+      className={`flex w-full items-center gap-3 border-b border-hairline py-2.5 pl-4 pr-10 text-left transition-colors duration-quick last:border-b-0 lg:pr-4 ${
+        scelta ? "bg-brass-400/10 text-brass-300" : "text-ink hover:bg-glass-2 hover:text-ink-bright"
+      }`}
+    >
+      <span className="w-10 shrink-0">
+        <Copertina src={serie.copertina} alt="" inclina={false} />
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold">{serie.titolo}</span>
+
+        {dettaglio && <span className="block truncate text-xs text-ink-muted">{dettaglio}</span>}
+
+        {manca.length > 0 && (
+          <span className="mt-1 inline-block rounded-md bg-brass-400/15 px-2 py-0.5 font-numeric text-micro font-medium text-brass-300">
+            manca {manca[0]}
+            {manca.length > 1 ? ` +${manca.length - 1}` : ""}
+          </span>
+        )}
+      </span>
+
+      <Icon nome="back" dimensione={16} className="shrink-0 rotate-180 text-ink-muted" />
+    </button>
+  );
+}
 
 /* ==================================================
    MODULO DI UNA SCHEDA
@@ -284,6 +381,12 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
     }));
   };
 
+  // Per i contatori (+ e −), che non hanno un evento da leggere.
+  const imposta = (chiave, valore) => {
+    setStato(null);
+    setCampi((precedenti) => ({ ...precedenti, [chiave]: valore }));
+  };
+
   async function salva(e) {
     e.preventDefault();
 
@@ -324,6 +427,22 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
       setSalvando(false);
     }
   }
+
+  // I campi che «Completa dai dati online» sa riempire, con il nome che
+  // hanno per chi legge. Sono quelli di `compila` qui sotto: se se ne
+  // aggiunge uno là, va scritto anche qui.
+  const vuoti = [
+    ["autore", "autore"],
+    ["disegnatore", "disegnatore"],
+    ["editore", "editore"],
+    ["genere", "generi"],
+    ["coverurl", "copertina"],
+    ["trama", "trama"],
+    ["volumitotali", "totale"],
+    ["statoSerie", "stato"]
+  ]
+    .filter(([chiave]) => !campi[chiave])
+    .map(([, nome]) => nome);
 
   /** Ricompila i campi vuoti dalle fonti esterne, senza toccare gli altri. */
   async function compila() {
@@ -374,6 +493,32 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
           </div>
         </div>
 
+        {/* Il completamento automatico sta qui e non nella barra in fondo:
+            nella barra accanto a «Salva» era un secondo bottone pieno, e
+            quando «Salva» è spento (cioè quasi sempre) era l'unico acceso, e
+            sembrava lui il comando principale. Dice anche cosa riempirà. */}
+        <button
+          type="button"
+          onClick={compila}
+          disabled={compilando || vuoti.length === 0}
+          className="flex w-full items-center gap-3 rounded-card bg-brass-400/10 px-4 py-3 text-left transition-colors duration-quick hover:bg-brass-400/15
+            disabled:pointer-events-none disabled:bg-glass-1 disabled:opacity-70
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+        >
+          <span aria-hidden="true" className="text-brass-300">
+            <Icon nome="scintilla" dimensione={22} />
+          </span>
+
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-ink-bright">
+              {compilando ? "Cerco…" : "Completa dai dati online"}
+            </span>
+            <span className="block text-xs text-ink-muted">
+              {vuoti.length === 0 ? "Nessun campo vuoto" : `Compila solo i campi vuoti: ${vuoti.join(", ")}`}
+            </span>
+          </span>
+        </button>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <CampoTesto etichetta="Editore" valore={campi.editore} onChange={cambia("editore")} />
 
@@ -397,22 +542,23 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
           </label>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
-          <CampoTesto
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+          <Contatore
             etichetta="Posseduti"
-            tipo="number"
-            inputMode="numeric"
-            min="0"
             valore={campi.volumiposseduti}
-            onChange={cambia("volumiposseduti")}
+            onCambia={(v) => imposta("volumiposseduti", v)}
+            // «Completa» solo quando il totale è noto e raggiunto: per una
+            // serie in corso il totale è 0 o vuoto, e non si completa mai.
+            segno={
+              Number(campi.volumitotali) > 0 && Number(campi.volumiposseduti) >= Number(campi.volumitotali)
+                ? "Completa"
+                : null
+            }
           />
-          <CampoTesto
+          <Contatore
             etichetta="Totali"
-            tipo="number"
-            inputMode="numeric"
-            min="0"
             valore={campi.volumitotali}
-            onChange={cambia("volumitotali")}
+            onCambia={(v) => imposta("volumitotali", v)}
           />
           <CampoTesto
             etichetta="Prezzo €"
@@ -422,6 +568,7 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
             min="0"
             valore={campi.costo}
             onChange={cambia("costo")}
+            className="col-span-2 sm:col-span-1"
           />
         </div>
 
@@ -434,7 +581,10 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
             value={campi.trama}
             onChange={cambia("trama")}
             rows={5}
-            className="w-full rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm leading-relaxed text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
+            // Cresce con il testo: una trama lunga non si legge dentro cinque
+            // righe con una barra dentro la scheda, che a sua volta scorre.
+            style={{ fieldSizing: "content" }}
+            className="w-full min-h-32 rounded-card border border-hairline bg-glass-1 px-3.5 py-2.5 text-sm leading-relaxed text-ink-bright outline-none transition-colors duration-quick hover:border-soft focus:border-brass-400/60"
           />
         </label>
 
@@ -537,10 +687,6 @@ function Scheda({ serie, tutteLeSerie, onSalvata, onEliminata }) {
           <div className="flex flex-wrap items-center gap-2 rounded-card border border-hairline bg-shelf/95 p-2.5 shadow-raised backdrop-blur-xl">
             <Bottone type="submit" disabled={salvando || !sporco}>
               {salvando ? "Salvo…" : "Salva"}
-            </Bottone>
-
-            <Bottone type="button" variante="secondario" onClick={compila} disabled={compilando}>
-              {compilando ? "Cerco…" : "Compila i vuoti"}
             </Bottone>
 
             <p
@@ -760,6 +906,65 @@ function Eliminazione({ serie, onEliminata }) {
         >
           Lascia stare
         </Bottone>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Un numero di volumi con il − e il + ai lati.
+ *
+ * Posseduti e Totali si correggono di uno alla volta («ho comprato il 14»),
+ * e su un telefono la tastiera numerica per aggiungere un'unità è più
+ * lenta del tocco. Il campo resta scrivibile per i salti grandi.
+ */
+function Contatore({ etichetta, valore, onCambia, segno = null }) {
+  const n = valore === "" || valore == null ? null : Number(valore);
+
+  const bottone =
+    "grid h-11 place-items-center text-brass-300 transition-colors duration-quick hover:bg-glass-2 active:bg-glass-3 " +
+    "disabled:pointer-events-none disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-400";
+
+  return (
+    <div className="block">
+      <span className="mb-1.5 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-ink-muted">
+        {etichetta}
+        {segno && (
+          <span className="rounded-md bg-brass-400/15 px-1.5 py-0.5 font-numeric text-micro font-semibold tracking-[0.06em] text-brass-300">
+            {segno}
+          </span>
+        )}
+      </span>
+
+      <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center overflow-hidden rounded-card border border-hairline bg-glass-1 transition-colors duration-quick focus-within:border-brass-400/60 hover:border-soft">
+        <button
+          type="button"
+          aria-label={`Diminuisci: ${etichetta.toLowerCase()}`}
+          disabled={!n}
+          onClick={() => onCambia(String(Math.max(0, (n ?? 0) - 1)))}
+          className={bottone}
+        >
+          <Icon nome="meno" dimensione={18} />
+        </button>
+
+        <input
+          type="number"
+          inputMode="numeric"
+          min="0"
+          aria-label={etichetta}
+          value={valore ?? ""}
+          onChange={(e) => onCambia(e.target.value)}
+          className="w-full min-w-0 bg-transparent px-1 py-2.5 text-center font-numeric text-sm text-ink-bright outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        />
+
+        <button
+          type="button"
+          aria-label={`Aumenta: ${etichetta.toLowerCase()}`}
+          onClick={() => onCambia(String((n ?? 0) + 1))}
+          className={bottone}
+        >
+          <Icon nome="plus" dimensione={18} />
+        </button>
       </div>
     </div>
   );

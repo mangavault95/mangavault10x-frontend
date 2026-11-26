@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router";
 import { useSessione } from "../dati/sessione";
 import { ModuloAccesso } from "../dati/AccessoProvider";
 import { Bottone } from "../ui/Controlli";
+import Icon from "../app/Icon";
 import GestioneManga from "../ui/gestione/GestioneManga";
 import GestioneAnime from "../ui/gestione/GestioneAnime";
 import RichiesteAccesso from "../ui/RichiesteAccesso";
@@ -18,12 +19,20 @@ import CopiaDati from "../ui/gestione/CopiaDati";
  * questa cosa» doveva prima indovinare quale delle due, e se sbagliava
  * trovava una pagina che non c'entrava.
  *
- * Adesso è una pagina con quattro linguette:
+ * Adesso è una pagina con quattro sezioni, in due gruppi (26/11/2026):
  *
  *   Manga    le schede della collezione: titolo, volumi, prezzo, trama
  *   Anime    le serie: stagioni da unire, manga collegato, serie da togliere
- *   Accessi  chi ha chiesto di entrare e chi c'è già (solo il proprietario)
- *   Copia    scarica una copia dei dati (solo il proprietario)
+ *
+ *   Sistema (solo il proprietario)
+ *   Accessi  chi ha chiesto di entrare e chi c'è già
+ *   Copia    scarica una copia dei dati
+ *
+ * Il gruppo «Sistema» non sta più nella stessa fila di Manga e Anime: le
+ * prime due si usano ogni giorno per correggere quello che c'è, le altre
+ * due amministrano il sito, e quattro linguette della stessa forma dicevano
+ * che erano la stessa cosa. Da Manga e Anime si arriva al Sistema da un
+ * tasto in cima; dentro, una freccia riporta alla Gestione.
  *
  * La linguetta sta nell'indirizzo (`?sezione=anime`), così i vecchi
  * indirizzi `/admin` e `/videoteca/gestione` — che ora rimandano qui —
@@ -33,6 +42,9 @@ import CopiaDati from "../ui/gestione/CopiaDati";
  * corregge niente (le scritture sono di qualcuno). Chi è entrato ma non
  * ha la biblioteca vede solo gli anime, che sono suoi.
  */
+
+const PRINCIPALI = ["manga", "anime"];
+const DI_SISTEMA = ["accessi", "copia"];
 
 const SEZIONI = [
   { id: "manga", etichetta: "Manga", sommario: "Correggi le schede della collezione." },
@@ -90,23 +102,66 @@ export default function GestionePage() {
     );
   }
 
+  const inSistema = DI_SISTEMA.includes(attiva.id);
+  const gruppo = disponibili.filter((s) => (inSistema ? DI_SISTEMA : PRINCIPALI).includes(s.id));
+  const primaria = disponibili.find((s) => PRINCIPALI.includes(s.id));
+
+  // Il numero delle richieste sta sul tasto «Sistema» e su «Accessi»: è
+  // l'unica cosa di tutta la Gestione che aspetta una risposta da una
+  // persona vera, e non deve poter passare inosservata.
+  const pallino = (
+    <span
+      aria-label={`${richieste.length} in attesa`}
+      className="inline-grid h-5 min-w-5 place-items-center rounded-full bg-ember px-1.5 align-middle font-numeric text-micro font-bold text-void"
+    >
+      {richieste.length}
+    </span>
+  );
+
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pb-8 pt-5 sm:px-6">
-      <h1 className="font-display text-[2.1rem] font-extrabold leading-none tracking-tight text-ink-bright">
-        Gestione
-      </h1>
+      {inSistema && primaria && (
+        <button
+          type="button"
+          onClick={() => vai(primaria.id)}
+          className="-ml-1 mb-1 inline-flex min-h-11 items-center gap-1 rounded-card pr-3 text-sm font-medium text-ink-muted transition-colors duration-quick hover:text-ink-bright
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+        >
+          <Icon nome="back" dimensione={20} />
+          Gestione
+        </button>
+      )}
+
+      <div className="flex items-start justify-between gap-3">
+        <h1 className="font-display text-[2.1rem] font-extrabold leading-none tracking-tight text-ink-bright">
+          {inSistema ? "Sistema" : "Gestione"}
+        </h1>
+
+        {proprietario && !inSistema && (
+          <button
+            type="button"
+            onClick={() => vai(DI_SISTEMA[0])}
+            className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-hairline bg-alcove px-4 text-sm font-semibold text-ink-bright transition-colors duration-quick hover:border-soft
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+          >
+            <Icon nome="settings" dimensione={16} />
+            Sistema
+            {richieste.length > 0 && pallino}
+          </button>
+        )}
+      </div>
+
       <p className="mt-2 text-sm text-ink-muted">{attiva.sommario}</p>
 
-      {/* Le linguette. Il numero delle richieste sta su «Accessi»: è
-          l'unica cosa di tutta la Gestione che aspetta una risposta da
-          una persona vera, e non deve poter passare inosservata. */}
+      {/* Le linguette del gruppo in cui si è: Manga e Anime, oppure
+          Accessi e Copia. */}
       <div
         role="tablist"
-        aria-label="Sezioni della gestione"
+        aria-label={inSistema ? "Sezioni del sistema" : "Sezioni della gestione"}
         className="mt-5 grid gap-1 rounded-card bg-alcove p-1"
-        style={{ gridTemplateColumns: `repeat(${disponibili.length}, minmax(0, 1fr))` }}
+        style={{ gridTemplateColumns: `repeat(${gruppo.length}, minmax(0, 1fr))` }}
       >
-        {disponibili.map((s) => {
+        {gruppo.map((s) => {
           const accesa = s.id === attiva.id;
 
           return (
@@ -122,14 +177,7 @@ export default function GestionePage() {
             >
               {s.etichetta}
 
-              {s.id === "accessi" && richieste.length > 0 && (
-                <span
-                  aria-label={`${richieste.length} in attesa`}
-                  className="ml-1.5 inline-grid h-5 min-w-5 place-items-center rounded-full bg-ember px-1.5 align-middle font-numeric text-micro font-bold text-void"
-                >
-                  {richieste.length}
-                </span>
-              )}
+              {s.id === "accessi" && richieste.length > 0 && <span className="ml-1.5">{pallino}</span>}
             </button>
           );
         })}

@@ -29,6 +29,7 @@ const Mese = lazy(() => import("../pages/MesePage"));
 const Rassegna = lazy(() => import("../pages/RassegnaPage"));
 const Scansiona = lazy(() => import("../pages/ScansionaPage"));
 const Gestione = lazy(() => import("../pages/GestionePage"));
+const Impostazioni = lazy(() => import("../pages/ImpostazioniPage"));
 const Collezione = lazy(() => import("../pages/CollezionePage"));
 const Serie = lazy(() => import("../pages/SeriePage"));
 const Wishlist = lazy(() => import("../pages/WishlistPage"));
@@ -227,6 +228,7 @@ function ContenutoRotte({ location, idVisto }) {
                 <Routes location={location} key={`${location.pathname}|${idVisto ?? "ospite"}`}>
                   <Route path="/" element={<Adesso />} />
                   <Route path="/gestione" element={<Gestione />} />
+                  <Route path="/impostazioni" element={<Impostazioni />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/cerca" element={<Cerca />} />
                   <Route path="/mese" element={<Mese />} />

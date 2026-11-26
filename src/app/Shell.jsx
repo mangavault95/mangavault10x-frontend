@@ -19,6 +19,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import {
   SCHEDE,
   SEZIONE_GESTIONE,
+  SEZIONE_IMPOSTAZIONI,
   eAttiva,
   mondoDi,
   schedaDi,
@@ -29,13 +30,12 @@ import Icon from "./Icon";
 import Bibliotecario from "../bibliotecario/Bibliotecario";
 import Identita from "../ui/Identita";
 import { useSessione } from "../dati/sessione";
-import SceltaTema from "../ui/SceltaTema";
-import NotifichePush from "../ui/NotifichePush";
 import Avvisi from "../ui/Avvisi";
 import Conferme from "../ui/Conferme";
 import Foglio from "../ui/Foglio";
 import TiraPerAggiornare from "../ui/TiraPerAggiornare";
 import { ripristino } from "../dati/paginaViva";
+import { chiedi } from "../dati/conferme";
 
 /*
  * Due pezzi della videoteca che la cornice ospita ma che non servono per
@@ -101,8 +101,10 @@ export default function Shell({ children }) {
   const scheda = schedaDi(location.pathname);
   const tuAperto = apertoSu === location.pathname;
   const veste = VESTE;
-  // In Gestione la linguetta «Tu» resta accesa: ci si arriva da lì.
-  const inGestione = location.pathname.startsWith(SEZIONE_GESTIONE.percorso);
+  // In Gestione e in Impostazioni la linguetta «Tu» resta accesa: ci si arriva da lì.
+  const inTu =
+    location.pathname.startsWith(SEZIONE_GESTIONE.percorso) ||
+    location.pathname.startsWith(SEZIONE_IMPOSTAZIONI.percorso);
 
   /**
    * «Aggiungi una serie», raggiungibile da ovunque nella videoteca.
@@ -279,9 +281,9 @@ export default function Shell({ children }) {
           type="button"
           onClick={() => setApertoSu(tuAperto ? null : location.pathname)}
           aria-expanded={tuAperto}
-          aria-label="Tu: account, tema e gestione"
+          aria-label="Tu: account, impostazioni e gestione"
           className={`relative flex min-h-[3.5rem] flex-1 flex-col items-center justify-center gap-1 transition-colors duration-quick ${
-            tuAperto || inGestione ? veste.tabAttiva : veste.tabInerte
+            tuAperto || inTu ? veste.tabAttiva : veste.tabInerte
           }`}
         >
           <span className="relative">
@@ -299,7 +301,7 @@ export default function Shell({ children }) {
           <span className="text-micro font-medium tracking-wide">Tu</span>
           {/* La stessa riga del kana delle altre linguette, o «Tu» starebbe
               più in basso di tutte. */}
-          <span aria-hidden="true" className={`kana -mt-1 h-3 font-pixel text-kana leading-3 ${tuAperto || inGestione ? "opacity-70" : "invisible"}`}>
+          <span aria-hidden="true" className={`kana -mt-1 h-3 font-pixel text-kana leading-3 ${tuAperto || inTu ? "opacity-70" : "invisible"}`}>
             あなた
           </span>
         </button>
@@ -521,98 +523,159 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
 /**
  * Il foglio che si apre da «Tu».
  *
- * Chi sei e la porta per entrare; il tema, che da quando ce n'è uno a
- * testa si può anche scegliere a mano; e le cose che non si aprono ogni
- * giorno: il riassunto del mese e la Gestione, che da mobile devono
- * restare raggiungibili senza scrivere l'indirizzo a mano ma non
- * meritano una linguetta.
+ * Tre cose, in quest'ordine: chi sei, le pagine da aprire, e come ti
+ * vedi. Fino al 26/11/2026 il tema, la palette, i kanji e le notifiche
+ * stavano qui dentro, fra il nome e le pagine: il foglio era più alto dello
+ * schermo e i controlli, che si toccano una volta ogni tanto, stavano sopra
+ * le pagine, che si aprono ogni giorno. Adesso le preferenze hanno la loro
+ * pagina (`/impostazioni`) e qui ne resta una riga.
+ *
+ * «Esci» sta in fondo e chiede conferma: era sulla riga del nome, alla
+ * stessa altezza di tutto il resto, e si toccava per sbaglio.
  */
 function FoglioTu({ richieste, chiudi }) {
   const { utente, esci } = useSessione();
 
-  // Due voci sole. La sala in 3D non c'è più (05/10/2026) e le due
-  // Gestioni sono una: dentro, tre linguette (Manga, Anime, Accessi).
+  // Le pagine, in un solo riquadro e con la stessa forma: titolo, una riga
+  // che dice cosa si trova, e il segno che si apre una pagina.
   const voci = [
-    { id: "mese", percorso: "/mese", etichetta: "Il vostro mese", icona: "calendario" },
-    ...(annoAperto() ? [{ id: "rassegna", percorso: `/rassegna?anno=${annoAperto()}`, etichetta: `Anno in rassegna ${annoAperto()}`, icona: "calendario" }] : []),
-    { id: "uscite", percorso: "/uscite", etichetta: "Uscite e spesa", icona: "uscite" },
-    { ...SEZIONE_GESTIONE, descrizione: "Correggi schede, stagioni e accessi" }
+    {
+      id: "mese",
+      percorso: "/mese",
+      etichetta: "Il vostro mese",
+      descrizione: "Cosa avete letto, comprato e guardato",
+      icona: "calendario"
+    },
+    ...(annoAperto()
+      ? [
+          {
+            id: "rassegna",
+            percorso: `/rassegna?anno=${annoAperto()}`,
+            etichetta: `Anno in rassegna ${annoAperto()}`,
+            descrizione: "L'anno in poche pagine",
+            icona: "calendario"
+          }
+        ]
+      : []),
+    {
+      id: "uscite",
+      percorso: "/uscite",
+      etichetta: "Uscite e spesa",
+      descrizione: "Cosa esce questo mese e cosa hai preso",
+      icona: "uscite"
+    },
+    // Le due Gestioni sono una (05/10/2026): dentro, Manga e Anime, e il
+    // «Sistema» (accessi e copia) per chi è il padrone di casa.
+    { ...SEZIONE_GESTIONE, descrizione: "Correggi schede, stagioni, accessi e copie" }
   ];
+
+  async function uscire() {
+    chiudi();
+
+    const si = await chiedi({
+      titolo: "Vuoi uscire?",
+      testo: "Per rientrare dovrai accedere di nuovo su questo dispositivo.",
+      conferma: "Esci",
+      pericolo: true
+    });
+
+    if (si) esci();
+  }
 
   return (
     // Dal 13/11/2026 è il foglio di tutti (`ui/Foglio.jsx`): si trascina
     // giù per chiuderlo, come gli altri. Il titolo c'è ma non si vede —
     // lo dice già la linguetta da cui si apre.
     <Foglio titolo="Tu" titoloNascosto onChiudere={chiudi} className="md:hidden">
+      {/* Chi sei, e la porta per diventare qualcuno. */}
+      <div className="mb-3 flex items-center gap-3 px-1 py-1.5">
+        {utente ? (
+          <>
+            <span
+              aria-hidden="true"
+              className={`grid h-11 w-11 shrink-0 place-items-center rounded-full font-display text-lg font-bold ${VESTE.acceso}`}
+            >
+              {(utente.nickname || "?").trim().charAt(0).toUpperCase()}
+            </span>
 
-        {/* Chi sei, e la porta per diventare qualcuno. */}
-        <div className="mb-3 flex items-center gap-3 rounded-card bg-shelf px-3 py-2.5">
-          {utente ? (
-            <>
-              <span
-                aria-hidden="true"
-                className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-sm font-semibold ${VESTE.acceso}`}
-              >
-                {(utente.nickname || "?").trim().charAt(0).toUpperCase()}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-display text-lg font-semibold leading-tight text-ink-bright">
+                {utente.nickname}
               </span>
-
-              <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                Sei <span className="font-semibold">{utente.nickname}</span>
+              <span className="block text-xs text-ink-muted">
+                {utente.proprietario ? "Padrone di casa" : "Lettore"}
               </span>
+            </span>
+          </>
+        ) : (
+          <>
+            <Identita compatto />
 
-              <button
-                type="button"
-                onClick={() => {
-                  chiudi();
-                  esci();
-                }}
-                className="shrink-0 rounded-card px-3 py-2 text-sm font-medium opacity-70"
-              >
-                Esci
-              </button>
-            </>
-          ) : (
-            <>
-              <Identita compatto />
+            <span className="min-w-0 flex-1 text-sm font-medium">Entra o registrati</span>
+          </>
+        )}
+      </div>
 
-              <span className="min-w-0 flex-1 text-sm font-medium">Entra o registrati</span>
-            </>
-          )}
-        </div>
+      <ul className="overflow-hidden rounded-card bg-shelf">
+        {voci.map((voce) => (
+          <li key={voce.id} className="border-b border-hairline last:border-b-0">
+            <RigaTu voce={voce} chiudi={chiudi} badge={voce.id === SEZIONE_GESTIONE.id ? richieste : 0} />
+          </li>
+        ))}
+      </ul>
 
-        {/* Notte o Giorno (02/11/2026). Anche per chi non è entrato: la
-            scelta si ricorda sul suo dispositivo. */}
-        <SceltaTema className="mb-3" />
+      {/* Le preferenze sono una pagina, non una riga di controlli: nel
+          foglio ne resta l'ingresso, in un riquadro suo perché non è
+          una delle pagine di sopra — è il modo in cui le vedi. */}
+      <ul className="mt-3 overflow-hidden rounded-card bg-shelf">
+        <li>
+          <RigaTu voce={SEZIONE_IMPOSTAZIONI} chiudi={chiudi} />
+        </li>
+      </ul>
 
-        {/* Le notifiche (26/11/2026): per chi è entrato, perché hanno un destinatario. */}
-        {utente && <NotifichePush className="mb-3" />}
-
-        <ul className="flex flex-col">
-          {voci.map((voce) => (
-            <li key={voce.id}>
-              <Link
-                to={voce.percorso}
-                onClick={chiudi}
-                className={`flex items-center gap-3 rounded-card px-3 py-3 ${VESTE.voceInerte}`}
-              >
-                <Icon nome={voce.icona} dimensione={20} />
-
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium">{voce.etichetta}</span>
-                  {voce.descrizione && (
-                    <span className="block text-xs font-normal text-ink-muted">{voce.descrizione}</span>
-                  )}
-                </span>
-
-                {voce.id === SEZIONE_GESTIONE.id && richieste > 0 && (
-                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ember px-1.5 font-numeric text-micro font-bold text-void">
-                    {richieste}
-                  </span>
-                )}
-              </Link>
-            </li>
-          ))}
-        </ul>
+      {utente && (
+        <button
+          type="button"
+          onClick={uscire}
+          className="mt-3 flex min-h-12 w-full items-center gap-3 rounded-card px-4 text-sm font-medium text-ember transition-colors duration-quick hover:bg-ember/10
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
+        >
+          <Icon nome="uscita" dimensione={20} />
+          Esci
+        </button>
+      )}
     </Foglio>
+  );
+}
+
+/** Una pagina da aprire dal foglio «Tu»: icona, titolo, cosa c'è dentro, freccia. */
+function RigaTu({ voce, chiudi, badge = 0 }) {
+  return (
+    <Link
+      to={voce.percorso}
+      onClick={chiudi}
+      className={`flex min-h-[3.75rem] items-center gap-3.5 px-4 py-2.5 ${VESTE.voceInerte}
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-400`}
+    >
+      <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brass-400/12 text-brass-400">
+        <Icon nome={voce.icona} dimensione={20} />
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="block text-[0.95rem] font-semibold text-ink-bright">{voce.etichetta}</span>
+        {voce.descrizione && <span className="block text-xs font-normal text-ink-muted">{voce.descrizione}</span>}
+      </span>
+
+      {badge > 0 && (
+        <span
+          aria-label={`${badge} in attesa`}
+          className="grid h-5 min-w-5 place-items-center rounded-full bg-ember px-1.5 font-numeric text-micro font-bold text-void"
+        >
+          {badge}
+        </span>
+      )}
+
+      <Icon nome="back" dimensione={18} className="shrink-0 rotate-180 text-ink-muted" />
+    </Link>
   );
 }
