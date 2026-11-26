@@ -163,3 +163,39 @@ export function formatEpisodio(numero, tagli, { assoluto = false, prep = null } 
 
   return `${(stagione ? DAVANTI_A_ST : DAVANTI_A_EP)[prep]}${corpo}`;
 }
+
+/**
+ * Quanti giorni di CALENDARIO (italiano) sono passati da `quando`.
+ *
+ * Giorni di calendario e non di 24 ore: la puntata vista alle 23 di ieri sera,
+ * guardata alle 8 di stamattina, è «ieri» e non «oggi», anche se sono passate
+ * nove ore. Il fuso è quello di Roma, come il resto del sito.
+ */
+export function giorniFa(quando, adesso = new Date()) {
+  const t = new Date(quando);
+
+  if (Number.isNaN(t.getTime())) return null;
+
+  const giorno = (d) => {
+    const [a, m, g] = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Rome" }).format(d).split("-").map(Number);
+
+    return Date.UTC(a, m - 1, g);
+  };
+
+  return Math.round((giorno(adesso) - giorno(t)) / 86400000);
+}
+
+/** «oggi», «ieri», «3 giorni fa», «2 settimane fa», «un mese fa», «4 mesi fa». */
+export function quantoFa(quando, adesso = new Date()) {
+  const giorni = giorniFa(quando, adesso);
+
+  if (giorni === null) return null;
+  if (giorni <= 0) return "oggi";
+  if (giorni === 1) return "ieri";
+  if (giorni < 14) return `${giorni} giorni fa`;
+  if (giorni < 30) return `${Math.floor(giorni / 7)} settimane fa`;
+
+  const mesi = Math.floor(giorni / 30);
+
+  return mesi === 1 ? "un mese fa" : `${mesi} mesi fa`;
+}
