@@ -19,6 +19,7 @@ import {
   getUsciteManga,
   getVideoteca,
   segnaEpisodio,
+  togliEpisodio,
   updateReadingSession,
   urlCopertina
 } from "../services/api";
@@ -168,9 +169,28 @@ export default function AdessoPage() {
     setInCorso(`anime:${a.id}`);
 
     try {
-      await eseguiProtetto(() => segnaEpisodio(a.id, a.prossimo));
+      const numero = a.prossimo;
+
+      await eseguiProtetto(() => segnaEpisodio(a.id, numero));
       videoteca.ricarica();
       calendario.ricarica();
+
+      // Come il «+1» dei volumi: un tocco che scrive si può disfare (P3-01).
+      avvisa({
+        testo: `${a.titolo}, ${formatEpisodio(numero, a.tagli)} segnata`,
+        azione: {
+          etichetta: "Annulla",
+          alTocco: async () => {
+            try {
+              await eseguiProtetto(() => togliEpisodio(a.id, numero));
+              videoteca.ricarica();
+              calendario.ricarica();
+            } catch (errore) {
+              if (!errore?.annullato) avvisa({ testo: "Non sono riuscito ad annullarlo: riprova.", tono: "errore" });
+            }
+          }
+        }
+      });
     } catch (e) {
       if (!e?.annullato) setProblema("La puntata non è stata segnata. Riprova fra un attimo.");
     } finally {
