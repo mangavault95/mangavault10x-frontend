@@ -68,15 +68,27 @@ export class ApiError extends Error {
 /** L'evento che avvisa il sito quando il server non riconosce più l'accesso. */
 export const SESSIONE_CADUTA = "mangavault:sessione-caduta";
 
-async function request(path, { method = "GET", body, auth = false, signal } = {}) {
+async function request(path, { method = "GET", body, signal } = {}) {
   const headers = {};
 
   if (body !== undefined) headers["Content-Type"] = "application/json";
 
-  if (auth) {
-    const token = getToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
+  // Il token parte SEMPRE, se c'è, e non solo dove `auth` è vero.
+  //
+  // Prima le letture pubbliche (la videoteca, il calendario, le letture)
+  // non lo mandavano: chi leggeva si dichiarava con `?utente=<id>` e il
+  // server si fidava. Dal 26/11/2026 il server legge `?utente=` solo per
+  // chi ha un token firmato — era un buco: bastava un numero per leggere
+  // la videoteca di chiunque — e senza il token un utente entrato che non
+  // sia il proprietario riceverebbe i dati del proprietario.
+  //
+  // L'opzione `auth: true` che le chiamate scrivono ancora è rimasta come
+  // documentazione («questa ha senso solo con un accesso») ma non cambia
+  // niente: un token vecchio sulle rotte pubbliche il server lo ignora, non
+  // lo respinge.
+  const token = getToken();
+
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   let res;
 
