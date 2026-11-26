@@ -507,7 +507,7 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
         type="button"
         onClick={aggiungi}
         aria-label="Aggiungi un titolo"
-        className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full insegna transition-transform duration-quick active:scale-95 md:hidden
+        className="tondo-fisso fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full insegna transition-transform duration-quick active:scale-95 md:hidden
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf"
       >
         <Icon nome="plus" dimensione={24} />

@@ -733,7 +733,7 @@ export default function CollezionePage() {
           type="button"
           onClick={() => setModaleAperto(true)}
           aria-label="Aggiungi una serie"
-          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full insegna transition-transform duration-quick active:scale-90
+          className="tondo-fisso fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full insegna transition-transform duration-quick active:scale-90
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf md:hidden"
         >
           <Icon nome="plus" dimensione={24} />

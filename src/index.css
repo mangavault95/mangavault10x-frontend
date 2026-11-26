@@ -81,6 +81,12 @@
 
   --barra: rgb(236 234 244 / 0.16);
 
+  /* Le misure del telefono (P1-04): la barra in basso, il tondo (+) che le
+     sta sopra, e il respiro fra l'ultimo elemento e il tondo. */
+  --bottom-nav-height: 3.5rem;
+  --fab-size: 3.5rem;
+  --fab-distanza: 1.25rem; /* dalla barra al tondo: 4.75rem − 3.5rem */
+
   color-scheme: dark;
 }
 
@@ -797,5 +803,19 @@ html.tema-fluido *::after {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Il tondo (+) fisso copre l'ultima riga della lista (P1-04). Le pagine
+   che lo hanno lo segnano con `.tondo-fisso`, e il contenuto che lo
+   contiene (`<main>`) si allunga quanto serve per poterci scorrere
+   SOPRA: barra + tondo + respiro + area sicura. Solo sul telefono, dove
+   il tondo esiste (`md:hidden`). */
+@media (max-width: 767.98px) {
+  main:has(.tondo-fisso) {
+    padding-bottom: calc(
+      var(--bottom-nav-height) + var(--fab-distanza) + var(--fab-size) + 1.5rem +
+        env(safe-area-inset-bottom, 0px)
+    );
   }
 }
