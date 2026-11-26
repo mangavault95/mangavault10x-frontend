@@ -60,7 +60,7 @@ function conti(a) {
   return { uscite, ultimo, totale, prossimo: ultimo + 1, nuovi: Math.max(0, uscite - ultimo) };
 }
 
-export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
+export default function MiaVideoteca({ righe, setRighe, ricarica }) {
   const [inGestione, setInGestione] = useState(null);
   const [occupato, setOccupato] = useState(null);
   const [problema, setProblema] = useState(null);
@@ -281,17 +281,6 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
             </ul>
           </details>
         ))}
-
-      {persona?.nickname && (
-        <p className="text-center text-sm">
-          <Link
-            to={`/videoteca/chi/${encodeURIComponent(persona.nickname)}`}
-            className="text-ink-muted underline-offset-4 hover:text-ink-bright hover:underline"
-          >
-            Il tuo profilo pubblico, quello che vedono gli altri
-          </Link>
-        </p>
-      )}
     </div>
   );
 }

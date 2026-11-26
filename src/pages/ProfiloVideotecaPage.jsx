@@ -114,7 +114,6 @@ export default function ProfiloVideotecaPage() {
         righe={videoteca.dati}
         setRighe={videoteca.setDati}
         ricarica={videoteca.ricarica}
-        persona={persona}
       />
     );
   }
