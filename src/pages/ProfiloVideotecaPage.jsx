@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import { Link, useParams } from "react-router";
 import useRisorsa from "../dati/useRisorsa";
 import { useSessione } from "../dati/sessione";
-import { paginaDi, tesserine } from "../dati/cineforum";
+import { paginaDi, tesserine, vedeLeSerieDi } from "../dati/cineforum";
 import { raggruppa } from "../dati/videoteca";
 import {
   getIoVideoteca,
@@ -71,9 +71,11 @@ export default function ProfiloVideotecaPage() {
   // chi si sta guardando: `/api/anime?utente=3`. Non c'è una rotta
   // nuova apposta perché non c'è niente di nuovo da leggere — è la
   // stessa videoteca, di un'altra persona.
+  const vedeLeSerie = vedeLeSerieDi(utente, persona);
+
   const videoteca = useRisorsa(
     useCallback(() => getVideoteca(persona?.id), [persona?.id]),
-    { attivo: Boolean(persona?.id) }
+    { attivo: Boolean(persona?.id) && vedeLeSerie }
   );
 
   const persone = useRisorsa(getPersone, { chiave: "persone" });
@@ -150,6 +152,17 @@ export default function ProfiloVideotecaPage() {
 
           <Numeri statistiche={statistiche} base={base} />
 
+          {persona && !vedeLeSerie && (
+            <Scheda className="px-5 py-6 text-center">
+              <p className="font-display text-base font-semibold text-quaderno-inchiostro">
+                Le serie di {persona.nickname} le vede chi è entrato
+              </p>
+              <p className="mx-auto mt-1.5 max-w-md text-sm text-quaderno-tenue">
+                Il profilo e i numeri sono pubblici; copertine, voti e preferiti no.
+              </p>
+            </Scheda>
+          )}
+
           {/* Solo sulla propria pagina: «in visione» per questo sito
               vuol dire sempre «le tue puntate pronte da segnare», e su
               quella di un altro non c'è niente da spuntare — vedere le
@@ -166,7 +179,7 @@ export default function ProfiloVideotecaPage() {
 
           {/* Sulla propria pagina «in visione» è già la lista di sopra, con
               i tasti per segnare le puntate: qui serve a chi guarda. */}
-          {!mia && inVisione.length > 0 && (
+          {vedeLeSerie && !mia && inVisione.length > 0 && (
             <Fila
               titolo="In visione"
               quante={inVisione.length}
@@ -179,6 +192,8 @@ export default function ProfiloVideotecaPage() {
             </Fila>
           )}
 
+          {vedeLeSerie && (
+            <>
           <Fila
             titolo="Serie"
             quante={soloSerie.length}
@@ -228,6 +243,8 @@ export default function ProfiloVideotecaPage() {
               </>
             )}
           </Fila>
+            </>
+          )}
         </div>
       )}
     </PaginaVideoteca>

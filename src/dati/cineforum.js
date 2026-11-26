@@ -346,6 +346,18 @@ export function giornoPerEsteso(giorno) {
 export const paginaDi = (nickname) => `/videoteca/chi/${encodeURIComponent(nickname)}`;
 
 /**
+ * Si possono mostrare le serie di questa persona a chi guarda?
+ *
+ * Dal 26/11/2026 il server legge `?utente=` solo per chi è entrato: chi non
+ * lo è riceve sempre la videoteca del proprietario, qualunque id chieda.
+ * Su una pagina di UN ALTRO, la richiesta tornerebbe con le copertine del
+ * proprietario sotto il nome sbagliato. Quindi le serie di una persona le
+ * vede chi è entrato; chi no vede solo quelle del proprietario. Il profilo
+ * (nome, faccia, numeri) resta pubblico.
+ */
+export const vedeLeSerieDi = (utente, persona) => Boolean(utente) || Boolean(persona?.proprietario);
+
+/**
  * Un confronto fra due persone.
  *
  * Due soprannomi nell'indirizzo e non «io contro lui»: un confronto è
