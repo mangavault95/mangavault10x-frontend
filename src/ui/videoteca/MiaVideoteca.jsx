@@ -13,6 +13,7 @@ import {
   votaAnime
 } from "../../services/api";
 import { useAccessoProtetto } from "../../dati/accesso";
+import { avvisa } from "../../dati/avvisi";
 import NewBadge from "../NewBadge";
 import { formatEpisodio } from "./formati";
 
@@ -121,8 +122,17 @@ export default function MiaVideoteca({ righe, setRighe, ricarica }) {
     }
   }
 
-  const visto = (a, numero = a.prossimo, fino = false) =>
-    agisci(
+  // Ogni gesto che scrive si può disfare (P3-01): l'avviso «Annulla» dura
+  // cinque secondi e riporta la riga com'era. Il «fino al N» no: disfarlo
+  // sarebbero N richieste, e il foglio ⋮ ha già «non l'ho visto».
+  const visto = (a, numero = a.prossimo, fino = false) => {
+    const prima = {
+      ultimo_visto: a.ultimo_visto,
+      episodi_visti: a.episodi_visti,
+      ultima_attivita: a.ultima_attivita
+    };
+
+    return agisci(
       `ep:${a.id}`,
       async () => {
         await segnaEpisodio(a.id, numero, { fino });
@@ -131,19 +141,62 @@ export default function MiaVideoteca({ righe, setRighe, ricarica }) {
           episodi_visti: fino ? numero : Number(a.episodi_visti || 0) + 1,
           ultima_attivita: new Date().toISOString()
         });
+
+        if (fino) return;
+
+        avvisa({
+          testo: `${a.titolo}, ${formatEpisodio(numero, a.tagli)} segnata`,
+          azione: {
+            etichetta: "Annulla",
+            alTocco: () =>
+              agisci(
+                `ep:${a.id}`,
+                async () => {
+                  await togliEpisodio(a.id, numero);
+                  cambiaRiga(a.id, prima);
+                },
+                `Non sono riuscito ad annullare la puntata di ${a.titolo}.`
+              )
+          }
+        });
       },
       `La puntata di ${a.titolo} non è stata segnata.`
     );
+  };
 
-  const nonVisto = (a) =>
-    agisci(
+  const nonVisto = (a) => {
+    const numero = a.ultimo;
+    const prima = {
+      ultimo_visto: a.ultimo_visto,
+      episodi_visti: a.episodi_visti,
+      ultima_attivita: a.ultima_attivita
+    };
+
+    return agisci(
       `ep:${a.id}`,
       async () => {
-        await togliEpisodio(a.id, a.ultimo);
+        await togliEpisodio(a.id, numero);
         cambiaRiga(a.id, { ultimo_visto: a.ultimo - 1 || null, ultima_attivita: new Date().toISOString() });
+
+        avvisa({
+          testo: `${a.titolo}, ${formatEpisodio(numero, a.tagli)} tolta dalle viste`,
+          azione: {
+            etichetta: "Annulla",
+            alTocco: () =>
+              agisci(
+                `ep:${a.id}`,
+                async () => {
+                  await segnaEpisodio(a.id, numero);
+                  cambiaRiga(a.id, prima);
+                },
+                `Non sono riuscito a rimettere la puntata di ${a.titolo}.`
+              )
+          }
+        });
       },
       `Non sono riuscito a togliere la puntata di ${a.titolo}.`
     );
+  };
 
   const stato = (a, nuovo) =>
     agisci(
