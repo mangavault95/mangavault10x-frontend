@@ -70,10 +70,23 @@ export default function AdessoPage() {
 
   const anime = useMemo(() => animeInVisione(videoteca.dati), [videoteca.dati]);
 
-  // Da riprendere: la serie con la puntata non vista uscita più di
-  // recente. È quella di cui si ha voglia stasera; le altre aspettano
-  // nella fila sotto.
+  // Da riprendere: l'ULTIMA serie che hai toccato (puntata segnata o stato
+  // cambiato, `ultima_attivita`) fra quelle che hanno ancora puntate da
+  // vedere. È quella a cui stavi dietro: segnata una puntata resta lì finché
+  // ce ne sono, e finite quelle passa alla successiva. Prima era la serie
+  // con la puntata uscita più di recente, che poteva essere una che non
+  // guardavi da settimane.
+  //
+  // Senza la data (backend non ancora aggiornato, o serie mai toccate) vale
+  // la regola di prima: la puntata non vista uscita più di recente.
   const daRiprendere = useMemo(() => {
+    const toccata = (a) => (a.ultima_attivita ? new Date(a.ultima_attivita).getTime() : 0);
+    const recente = anime
+      .filter((a) => a.nuovi > 0)
+      .sort((a, b) => toccata(b) - toccata(a))[0];
+
+    if (recente && toccata(recente) > 0) return recente;
+
     const perId = new Map(anime.map((a) => [Number(a.id), a]));
 
     const candidate = (calendario.dati || [])
@@ -285,7 +298,7 @@ export default function AdessoPage() {
         <Sezione titolo="Da guardare" kana="見る" link={{ a: "/videoteca/io", testo: "Vedi tutto", descrizione: "anime da guardare" }}>
           <ul className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
             {daGuardare.slice(0, 10).map((a) => (
-              <li key={a.id} className="w-32 shrink-0">
+              <li key={a.id} className="relative w-32 shrink-0">
                 <Link to={`/videoteca/${a.id}`} className="group block focus-visible:outline-none">
                   <div className="relative">
                     <Immagine src={a.cover_url} alt="" className="aspect-[2/3] w-32 rounded-card" />
@@ -294,6 +307,26 @@ export default function AdessoPage() {
                   <p className="mt-2 line-clamp-2 text-sm font-semibold leading-tight text-ink-bright">{a.titolo}</p>
                   <p className="mt-0.5 text-fine text-ink-muted">Riprendi {formatEpisodio(a.prossimo, a.tagli, { prep: "da" })}</p>
                 </Link>
+
+                {/* Il ✓ sta fuori dal link (un bottone dentro un link naviga):
+                    sul bordo basso della copertina, che è alta 192 px. Stesso
+                    gesto e stesso «Annulla» di «Sto guardando». */}
+                <button
+                  type="button"
+                  onClick={() => vistoProssimo(a)}
+                  disabled={inCorso === `anime:${a.id}`}
+                  aria-label={`Segna come visto: ${formatEpisodio(a.prossimo, a.tagli)} di ${a.titolo}`}
+                  title={`Segna come visto: ${formatEpisodio(a.prossimo, a.tagli)}`}
+                  className="absolute right-1.5 top-[8.875rem] grid h-11 w-11 place-items-center rounded-full border border-brass-400/60 bg-void/80 text-brass-300 backdrop-blur transition-all duration-quick hover:bg-brass-400/10 active:scale-90 disabled:opacity-60"
+                >
+                  {inCorso === `anime:${a.id}` ? (
+                    <span aria-hidden="true" className="font-numeric text-sm">…</span>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  )}
+                </button>
               </li>
             ))}
           </ul>
