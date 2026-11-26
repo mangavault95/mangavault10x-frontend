@@ -70,9 +70,17 @@ export default function MiaVideoteca({ righe, setRighe, ricarica }) {
 
   const perStato = (stato) => tutte.filter((a) => a.stato_visione === stato);
 
-  // Prima chi ha puntate nuove, dalla più vicina a essere in pari; poi
-  // quelle in pari, dalla prossima uscita.
+  // Prima quello che si sta guardando davvero: l'ultima serie toccata (puntata
+  // spuntata o stato cambiato, `ultima_attivita` dal backend) in cima. A parità,
+  // o se la data manca (backend non ancora aggiornato), l'ordine di prima: chi ha
+  // puntate nuove, dalla più vicina a essere in pari; poi chi è in pari, dalla
+  // prossima uscita.
   const guardando = perStato("in_visione").sort((a, b) => {
+    const ta = a.ultima_attivita ? new Date(a.ultima_attivita).getTime() : 0;
+    const tb = b.ultima_attivita ? new Date(b.ultima_attivita).getTime() : 0;
+
+    if (ta !== tb) return tb - ta;
+
     if (a.nuovi > 0 !== b.nuovi > 0) return a.nuovi > 0 ? -1 : 1;
     if (a.nuovi > 0) return a.nuovi - b.nuovi;
 
@@ -118,7 +126,11 @@ export default function MiaVideoteca({ righe, setRighe, ricarica }) {
       `ep:${a.id}`,
       async () => {
         await segnaEpisodio(a.id, numero, { fino });
-        cambiaRiga(a.id, { ultimo_visto: numero, episodi_visti: fino ? numero : Number(a.episodi_visti || 0) + 1 });
+        cambiaRiga(a.id, {
+          ultimo_visto: numero,
+          episodi_visti: fino ? numero : Number(a.episodi_visti || 0) + 1,
+          ultima_attivita: new Date().toISOString()
+        });
       },
       `La puntata di ${a.titolo} non è stata segnata.`
     );
@@ -128,7 +140,7 @@ export default function MiaVideoteca({ righe, setRighe, ricarica }) {
       `ep:${a.id}`,
       async () => {
         await togliEpisodio(a.id, a.ultimo);
-        cambiaRiga(a.id, { ultimo_visto: a.ultimo - 1 || null });
+        cambiaRiga(a.id, { ultimo_visto: a.ultimo - 1 || null, ultima_attivita: new Date().toISOString() });
       },
       `Non sono riuscito a togliere la puntata di ${a.titolo}.`
     );
