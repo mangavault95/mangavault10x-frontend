@@ -250,7 +250,7 @@ export default function AdessoPage() {
       )}
 
       {daGuardare.length > 0 && (
-        <Sezione titolo="Da guardare" kana="見る" link={{ a: "/videoteca/io", testo: "Tutto" }}>
+        <Sezione titolo="Da guardare" kana="見る" link={{ a: "/videoteca/io", testo: "Vedi tutto", descrizione: "anime da guardare" }}>
           <ul className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
             {daGuardare.slice(0, 10).map((a) => (
               <li key={a.id} className="w-32 shrink-0">
@@ -269,7 +269,7 @@ export default function AdessoPage() {
       )}
 
       {letture.length > 0 && (
-        <Sezione titolo="Continua a leggere" kana="読む" link={{ a: "/lettura", testo: "Tutte" }}>
+        <Sezione titolo="Continua a leggere" kana="読む" link={{ a: "/lettura", testo: "Vedi tutto", descrizione: "letture in corso" }}>
           <LetturaPrincipale lettura={letture[0]} occupato={inCorso === `lettura:${letture[0].mangaId}`} onPiuUno={() => lettoProssimo(letture[0])} />
 
           {letture.length > 1 && (
@@ -296,7 +296,7 @@ export default function AdessoPage() {
       )}
 
       {settimana.length > 0 && (
-        <Sezione titolo="Esce questa settimana" kana="今週" link={{ a: "/uscite", testo: "Tutte le uscite" }}>
+        <Sezione titolo="Esce questa settimana" kana="今週" link={{ a: "/uscite", testo: "Tutte le uscite", descrizione: "volumi e puntate in uscita" }}>
           <ul className="divide-y divide-hairline rounded-card bg-alcove px-3.5">
             {settimana.map((u) => (
               <li key={u.chiave}>
@@ -326,7 +326,7 @@ export default function AdessoPage() {
       )}
 
       {prossimoAcquisto && (
-        <Sezione titolo="Prossimo acquisto" kana="買う" link={{ a: "/wishlist", testo: "Da comprare" }}>
+        <Sezione titolo="Prossimo acquisto" kana="買う" link={{ a: "/wishlist", testo: "Da comprare", descrizione: "la lista dei desideri" }}>
           <Link
             to={`/serie/${prossimoAcquisto.serie.id}`}
             className="flex items-center gap-3.5 rounded-card bg-alcove p-3.5 transition-colors duration-quick active:bg-glass-2"
@@ -586,7 +586,11 @@ function Sezione({ titolo, kana, link, children }) {
           {kana && <span aria-hidden="true" className="kana font-pixel text-xs font-normal text-ink-faint">{kana}</span>}
         </h2>
         {link && (
-          <Link to={link.a} className="bersaglio text-sm font-medium text-link hover:underline">
+          <Link
+            to={link.a}
+            aria-label={link.descrizione ? `${link.testo}: ${link.descrizione}` : undefined}
+            className="bersaglio text-sm font-medium text-link hover:underline"
+          >
             {link.testo}
           </Link>
         )}
