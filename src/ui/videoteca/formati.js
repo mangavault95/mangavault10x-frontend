@@ -114,3 +114,51 @@ export function alNumero(numero) {
 
   return elide ? `all'${n}` : `al ${n}`;
 }
+
+/**
+ * Dove sta la puntata `numero` dentro le stagioni della scheda.
+ *
+ * AnimeClick numera le puntate per SCHEDA, e una scheda può tenere
+ * dentro più stagioni: `tagli` sono i numeri da cui ne comincia una
+ * nuova (vedi la 015 del backend). Senza tagli la scheda è una stagione
+ * sola e `stagione` è null.
+ */
+export function inStagione(numero, tagli) {
+  const t = (tagli || []).map(Number).filter(Boolean).sort((a, b) => a - b);
+
+  if (!t.length) return { stagione: null, episodio: numero };
+
+  const stagione = 1 + t.filter((x) => x <= numero).length;
+  const inizio = stagione === 1 ? 1 : t[stagione - 2];
+
+  return { stagione, episodio: numero - inizio + 1 };
+}
+
+// La preposizione che precede la puntata: davanti a «ep.» si elide
+// («all'ep. 25»), davanti a «St. 3» no («a St. 3 · ep. 2»).
+const DAVANTI_A_EP = { a: "all'", da: "dall'", di: "dell'", l: "l'" };
+const DAVANTI_A_ST = { a: "a ", da: "da ", di: "di ", l: "" };
+
+/**
+ * L'UNICO modo di scrivere una puntata (P1-03): lo usano la home, la
+ * propria videoteca, il calendario e i pulsanti «Visto…». Chi scrive
+ * a mano `"ep. " + n` torna a due numerazioni per la stessa serie.
+ *
+ *   una stagione sola    ep. 25
+ *   più stagioni         St. 3 · ep. 3
+ *   … con l'assoluto     St. 3 · ep. 3 (51)   (`assoluto: true`, dove c'è posto)
+ *
+ * `prep` ("a", "da", "di", "l") antepone la preposizione giusta:
+ * «all'ep. 25» / «a St. 3 · ep. 2», «Visto l'ep. 26» / «Visto St. 3 · ep. 3».
+ */
+export function formatEpisodio(numero, tagli, { assoluto = false, prep = null } = {}) {
+  const { stagione, episodio } = inStagione(Number(numero), tagli);
+
+  const corpo = stagione
+    ? `St. ${stagione} · ep. ${episodio}${assoluto ? ` (${numero})` : ""}`
+    : `ep. ${episodio}`;
+
+  if (!prep) return corpo;
+
+  return `${(stagione ? DAVANTI_A_ST : DAVANTI_A_EP)[prep]}${corpo}`;
+}

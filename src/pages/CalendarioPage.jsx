@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import useRisorsa from "../dati/useRisorsa";
-import { getCalendarioAnime, urlCopertina } from "../services/api";
+import { getCalendarioAnime, getVideoteca, urlCopertina } from "../services/api";
 import PaginaVideoteca, {
   Caricamento,
   Errore,
@@ -9,7 +9,7 @@ import PaginaVideoteca, {
   Scheda,
   Vuoto
 } from "../ui/videoteca/Foglio";
-import { alNumero } from "../ui/videoteca/formati";
+import { formatEpisodio } from "../ui/videoteca/formati";
 
 /** Quanto si guarda indietro e quanto avanti, in giorni. */
 const INDIETRO = 14;
@@ -38,10 +38,17 @@ export default function CalendarioPage() {
     getCalendarioAnime(AVANTI, INDIETRO)
   );
 
-  const { passati, prossimi, daRecuperare } = useMemo(
-    () => raggruppaPerGiorno(dati ?? []),
-    [dati]
-  );
+  // Il calendario non sa in che stagione cade una puntata (i `tagli`
+  // stanno sulla scheda): li prende dalla videoteca, che è la stessa
+  // risorsa della home e arriva dalla cache. Se non arriva, la puntata si
+  // scrive senza stagione, com'era.
+  const videoteca = useRisorsa(() => getVideoteca(), { chiave: "videoteca", persisti: true });
+
+  const { passati, prossimi, daRecuperare } = useMemo(() => {
+    const tagli = new Map((videoteca.dati ?? []).map((a) => [Number(a.id), a.tagli]));
+
+    return raggruppaPerGiorno((dati ?? []).map((u) => ({ ...u, tagli: tagli.get(Number(u.anime_id)) })));
+  }, [dati, videoteca.dati]);
 
   const [recuperoAperto, setRecuperoAperto] = useState(false);
 
@@ -276,8 +283,8 @@ function Uscita({ uscita: u, passato }) {
               timeZone: "Europe/Rome"
             })}
           </span>
-          {" · ep. "}
-          {u.numero}
+          {" · "}
+          {formatEpisodio(u.numero, u.tagli, { assoluto: true })}
           {u.piattaforma ? ` · ${u.piattaforma}` : ""}
         </p>
 
@@ -289,7 +296,7 @@ function Uscita({ uscita: u, passato }) {
           {/* Il numero da solo non dice se sei pronto per guardarlo:
               questo sì. Nel passato lo sostituisce «da recuperare». */}
           {!passato && u.ultimo_visto !== null && Number(u.ultimo_visto) < u.numero - 1 && (
-            <Pillola>sei {alNumero(u.ultimo_visto)}</Pillola>
+            <Pillola>sei {formatEpisodio(u.ultimo_visto, u.tagli, { prep: "a" })}</Pillola>
           )}
         </div>
       </div>

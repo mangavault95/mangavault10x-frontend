@@ -6,6 +6,7 @@ import { useCollezione } from "../dati/collezione";
 import { useSessione } from "../dati/sessione";
 import { useAccessoProtetto } from "../dati/accesso";
 import { useCopertinaVolume, useRipiegoSerie } from "../dati/copertineVolumi";
+import { formatEpisodio } from "../ui/videoteca/formati";
 import { chiudibile, euro, fraseMancanti, prossimoVolume, tettoLettura, volumiMancanti } from "../dati/serie";
 import {
   addReadingHistory,
@@ -236,7 +237,7 @@ export default function AdessoPage() {
                     </span>
                   </div>
                   <p className="mt-2 line-clamp-2 text-sm font-semibold leading-tight text-ink-bright">{a.titolo}</p>
-                  <p className="mt-0.5 text-fine text-ink-muted">Riprendi dall'ep. {a.prossimo}</p>
+                  <p className="mt-0.5 text-fine text-ink-muted">Riprendi {formatEpisodio(a.prossimo, a.tagli, { prep: "da" })}</p>
                 </Link>
               </li>
             ))}
@@ -370,6 +371,7 @@ const FORMATO_ORA = new Intl.DateTimeFormat("it-IT", { hour: "2-digit", minute: 
  */
 function usciteDellaSettimana(volumi, puntate, anime, adesso) {
   const inVisione = new Set(anime.map((a) => Number(a.id)));
+  const taglidi = new Map(anime.map((a) => [Number(a.id), a.tagli]));
   const righe = [];
 
   for (const v of volumi || []) {
@@ -408,7 +410,7 @@ function usciteDellaSettimana(volumi, puntate, anime, adesso) {
       giornoSettimana: FORMATO_GIORNO.format(quando).replace(".", ""),
       giorno: FORMATO_NUMERO.format(quando),
       titolo: p.serie,
-      dettaglio: [p.piattaforma, `ep. ${p.numero}`, FORMATO_ORA.format(quando)].filter(Boolean).join(" · "),
+      dettaglio: [p.piattaforma, formatEpisodio(p.numero, taglidi.get(Number(p.anime_id)), { assoluto: true }), FORMATO_ORA.format(quando)].filter(Boolean).join(" · "),
       copertina: p.cover_url,
       link: `/videoteca/${p.anime_id}`,
       nota: null
@@ -601,7 +603,7 @@ function DaRiprendere({ anime, occupato, onVisto }) {
           </Link>
           <p className="text-sm text-ink">
             {anime.ultimo_visto
-              ? `Sei all'ep. ${anime.ultimo_visto}. ${anime.nuovi === 1 ? "Ne è uscito un altro." : `Ne sono usciti altri ${anime.nuovi}.`}`
+              ? `Sei ${formatEpisodio(anime.ultimo_visto, anime.tagli, { prep: "a" })}. ${anime.nuovi === 1 ? "Ne è uscito un altro." : `Ne sono usciti altri ${anime.nuovi}.`}`
               : `${anime.nuovi} puntate da vedere.`}
           </p>
         </div>
@@ -616,7 +618,7 @@ function DaRiprendere({ anime, occupato, onVisto }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M20 6 9 17l-5-5" />
           </svg>
-          {occupato ? "Segno…" : `Visto l'ep. ${anime.prossimo}`}
+          {occupato ? "Segno…" : `Visto ${formatEpisodio(anime.prossimo, anime.tagli, { prep: "l" })}`}
         </button>
       </div>
     </section>

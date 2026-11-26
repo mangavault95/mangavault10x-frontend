@@ -12,6 +12,7 @@ import {
   votaAnime
 } from "../../services/api";
 import { useAccessoProtetto } from "../../dati/accesso";
+import { formatEpisodio } from "./formati";
 
 /**
  * LA MIA VIDEOTECA — rifatta il 04/10/2026 come «In lettura».
@@ -37,7 +38,7 @@ import { useAccessoProtetto } from "../../dati/accesso";
  *
  * Le puntate si contano per SCHEDA, come le conta AnimeClick; quando una
  * scheda tiene dentro più stagioni (i `tagli`, vedi la 015) la riga dice
- * «ep. 1 della st. 2» invece di «ep. 15».
+ * «St. 2 · ep. 1» invece di «ep. 15» (`formatEpisodio`, formati.js).
  */
 
 const GIORNO_ORA = new Intl.DateTimeFormat("it-IT", {
@@ -46,24 +47,6 @@ const GIORNO_ORA = new Intl.DateTimeFormat("it-IT", {
   minute: "2-digit",
   timeZone: "Europe/Rome"
 });
-
-/** Dove sta l'episodio `n` dentro le stagioni della scheda. */
-function inStagione(n, tagli) {
-  const t = (tagli || []).map(Number).filter(Boolean).sort((a, b) => a - b);
-
-  if (!t.length) return { stagione: null, episodio: n };
-
-  const stagione = 1 + t.filter((x) => x <= n).length;
-  const inizio = stagione === 1 ? 1 : t[stagione - 2];
-
-  return { stagione, episodio: n - inizio + 1 };
-}
-
-function etichettaEp(n, tagli) {
-  const { stagione, episodio } = inStagione(n, tagli);
-
-  return stagione ? `ep. ${episodio} della st. ${stagione}` : `ep. ${episodio}`;
-}
 
 /** I numeri di una scheda per chi la guarda. */
 function conti(a) {
@@ -285,7 +268,7 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
             </summary>
             <ul className="divide-y divide-hairline border-t border-hairline px-3.5">
               {g.elenco.map((a) => (
-                <Riga key={a.id} anime={a} sotto={a.ultimo ? `ferma all'${etichettaEp(a.ultimo, a.tagli)}` : "mai cominciata"}>
+                <Riga key={a.id} anime={a} sotto={a.ultimo ? `ferma ${formatEpisodio(a.ultimo, a.tagli, { prep: "a" })}` : "mai cominciata"}>
                   <Piccolo onClick={() => stato(a, "in_visione")} disabilitato={occupato === `stato:${a.id}`}>
                     Riprendi
                   </Piccolo>
@@ -362,7 +345,7 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
   const { ultimo, nuovi, totale, prossimo, uscite } = anime;
   const percento = totale ? Math.min(100, Math.round((ultimo / totale) * 100)) : null;
 
-  const dove = ultimo ? `Sei all'${etichettaEp(ultimo, anime.tagli)}` : "Da cominciare";
+  const dove = ultimo ? `Sei ${formatEpisodio(ultimo, anime.tagli, { prep: "a" })}` : "Da cominciare";
   const stato =
     nuovi > 0
       ? `${nuovi} ${nuovi === 1 ? "nuovo" : "nuovi"}`
@@ -412,7 +395,7 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
               principale ? "insegna" : "border border-brass-400/50 bg-glass-2 text-brass-300 hover:bg-brass-400/10"
             }`}
           >
-            {occupato ? "Segno…" : `Visto l'${etichettaEp(prossimo, anime.tagli)}`}
+            {occupato ? "Segno…" : `Visto ${formatEpisodio(prossimo, anime.tagli, { prep: "l" })}`}
           </button>
         ) : (
           <p className="mt-2.5 text-xs text-ink-muted">
@@ -451,7 +434,7 @@ function FoglioAnime({ anime, onChiudi, onVota, onFinoA, onNonVisto, onStato }) 
   const voci = [
     anime.ultimo > 0 && {
       chiave: "nonvisto",
-      etichetta: `L'${etichettaEp(anime.ultimo, anime.tagli)} non l'ho visto`,
+      etichetta: `${formatEpisodio(anime.ultimo, anime.tagli, { prep: "l" }).replace(/^l'/, "L'")} non l'ho visto`,
       descrizione: "Toglie l'ultima puntata segnata.",
       azione: onNonVisto
     },
@@ -479,7 +462,7 @@ function FoglioAnime({ anime, onChiudi, onVota, onFinoA, onNonVisto, onStato }) 
             <div className="min-w-0 flex-1">
               <p className="truncate font-display text-lg font-bold text-ink-bright">{anime.titolo}</p>
               <p className="text-sm text-ink-muted">
-                {anime.ultimo ? `Sei all'${etichettaEp(anime.ultimo, anime.tagli)}` : "Non ancora cominciata"}
+                {anime.ultimo ? `Sei ${formatEpisodio(anime.ultimo, anime.tagli, { prep: "a" })}` : "Non ancora cominciata"}
                 {anime.totale ? ` di ${anime.totale}` : ""}
               </p>
             </div>
