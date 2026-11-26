@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { STATI, attivaPush, disattivaPush, provaPush, statoPush } from "../dati/push";
+import { STATI, attivaPush, disattivaPush, statoPush } from "../dati/push";
 
 /**
  * Le notifiche: un interruttore per questo dispositivo.
+ *
+ * (Il tasto «Invia una prova» c'è stato fino al 26/11/2026: serviva a provare
+ * la consegna la prima volta, ed è stato tolto a cose funzionanti. La rotta
+ * `POST /api/push/prova` del backend resta, per le prove a mano.)
  *
  * Sta accanto a `SceltaTema`, negli stessi due posti (il foglio «Tu» del
  * telefono e il menu del proprio nome su schermo largo), e solo per chi è
@@ -92,25 +96,14 @@ export default function NotifichePush({ className = "" }) {
           <>
             <p className="text-sm text-ink">Notifiche attive su questo dispositivo.</p>
 
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={occupato}
-                onClick={() => esegui(provaPush, "Prova inviata: dovrebbe arrivare fra un attimo.")}
-                className={`${bottone} bg-glass-2 text-ink-bright`}
-              >
-                Invia una prova
-              </button>
-
-              <button
-                type="button"
-                disabled={occupato}
-                onClick={() => esegui(disattivaPush, "Notifiche spente su questo dispositivo.")}
-                className={`${bottone} border border-hairline text-ink-muted`}
-              >
-                Disattiva
-              </button>
-            </div>
+            <button
+              type="button"
+              disabled={occupato}
+              onClick={() => esegui(disattivaPush, "Notifiche spente su questo dispositivo.")}
+              className={`${bottone} border border-hairline text-ink-muted`}
+            >
+              Disattiva
+            </button>
           </>
         )}
 

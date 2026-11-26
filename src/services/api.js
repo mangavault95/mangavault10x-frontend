@@ -569,7 +569,6 @@ export const iscriviPush = (sottoscrizione) =>
 export const annullaPush = (endpoint) =>
   request("/api/push/sottoscrivi", { method: "DELETE", body: { endpoint }, auth: true });
 
-export const provaPush = () => request("/api/push/prova", { method: "POST", body: {}, auth: true });
 
 /* ---- La faccia e lo striscione ----
 
