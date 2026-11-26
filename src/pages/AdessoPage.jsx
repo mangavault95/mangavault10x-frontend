@@ -8,7 +8,7 @@ import { useAccessoProtetto } from "../dati/accesso";
 import { avvisa } from "../dati/avvisi";
 import { useCopertinaVolume, useRipiegoSerie } from "../dati/copertineVolumi";
 import NewBadge from "../ui/NewBadge";
-import { formatEpisodio } from "../ui/videoteca/formati";
+import { formatEpisodio, quandoBreve } from "../ui/videoteca/formati";
 import { chiudibile, euro, fraseMancanti, prossimoVolume, tettoLettura, volumiMancanti } from "../dati/serie";
 import {
   addReadingHistory,
@@ -82,6 +82,18 @@ export default function AdessoPage() {
 
     return candidate.length ? perId.get(Number(candidate[0].anime_id)) : anime.find((a) => a.nuovi > 0) || null;
   }, [anime, calendario.dati, adesso]);
+
+  // La prossima puntata in uscita della serie da riprendere, dal calendario:
+  // riempie la riga sotto il titolo della card grande (P3-06).
+  const proxPuntata = useMemo(() => {
+    if (!daRiprendere) return null;
+
+    return (
+      (calendario.dati || [])
+        .filter((e) => Number(e.anime_id) === Number(daRiprendere.id) && new Date(e.uscita_italia).getTime() > adesso)
+        .sort((a, b) => new Date(a.uscita_italia) - new Date(b.uscita_italia))[0] || null
+    );
+  }, [daRiprendere, calendario.dati, adesso]);
 
   // Prima le serie con una puntata uscita da poco, dalla più fresca;
   // poi gli arretrati, da quello più vicino a essere in pari. Ordinate
@@ -246,7 +258,7 @@ export default function AdessoPage() {
       {caricamentoIniziale && <CaricamentoHome lento={lento} />}
 
       {daRiprendere && (
-        <DaRiprendere anime={daRiprendere} occupato={inCorso === `anime:${daRiprendere.id}`} onVisto={() => vistoProssimo(daRiprendere)} />
+        <DaRiprendere anime={daRiprendere} prossima={proxPuntata} occupato={inCorso === `anime:${daRiprendere.id}`} onVisto={() => vistoProssimo(daRiprendere)} />
       )}
 
       {daGuardare.length > 0 && (
@@ -600,7 +612,7 @@ function Sezione({ titolo, kana, link, children }) {
   );
 }
 
-function DaRiprendere({ anime, occupato, onVisto }) {
+function DaRiprendere({ anime, prossima, occupato, onVisto }) {
   return (
     <section className="relative mx-4 mt-5 overflow-hidden rounded-panel border border-brass-400/25 bg-alcove shadow-raised">
       {/* La copertina stessa, sfocata, fa da fondo: la card prende il
@@ -623,7 +635,9 @@ function DaRiprendere({ anime, occupato, onVisto }) {
         <Link to={`/videoteca/${anime.id}`} className="shrink-0">
           <Immagine src={anime.cover_url} alt={`Copertina di ${anime.titolo}`} className="h-[156px] w-[108px] rounded-card shadow-float" />
         </Link>
-        <div className="flex min-w-0 flex-col gap-1.5">
+        {/* Il testo sta al centro della copertina (P3-06): prima restava
+            attaccato in alto e sotto si apriva un blocco vuoto. */}
+        <div className="flex min-w-0 flex-col justify-center gap-1.5">
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-brass-300">Da riprendere</p>
           <Link to={`/videoteca/${anime.id}`} className="font-display text-[1.4rem] font-bold leading-tight text-ink-bright">
             {anime.titolo}
@@ -633,6 +647,12 @@ function DaRiprendere({ anime, occupato, onVisto }) {
               ? `Sei ${formatEpisodio(anime.ultimo_visto, anime.tagli, { prep: "a" })}. ${anime.nuovi === 1 ? "Ne è uscito un altro." : `Ne sono usciti altri ${anime.nuovi}.`}`
               : `${anime.nuovi} puntate da vedere.`}
           </p>
+          {prossima && (
+            <p className="text-fine text-ink-muted">
+              Prossima uscita: {formatEpisodio(prossima.numero, anime.tagli)}, {quandoBreve(prossima.uscita_italia)}
+              {prossima.piattaforma ? ` · ${prossima.piattaforma}` : ""}
+            </p>
+          )}
         </div>
       </div>
       <div className="relative px-4 pb-4">

@@ -154,9 +154,10 @@ const DAVANTI_A_ST = { a: "a ", da: "da ", di: "di ", l: "" };
 export function formatEpisodio(numero, tagli, { assoluto = false, prep = null } = {}) {
   const { stagione, episodio } = inStagione(Number(numero), tagli);
 
+  // Spazi che non vanno a capo: «ep. / 3» su due righe non si legge.
   const corpo = stagione
-    ? `St. ${stagione} · ep. ${episodio}${assoluto ? ` (${numero})` : ""}`
-    : `ep. ${episodio}`;
+    ? `St.\u00a0${stagione} · ep.\u00a0${episodio}${assoluto ? `\u00a0(${numero})` : ""}`
+    : `ep.\u00a0${episodio}`;
 
   if (!prep) return corpo;
 
