@@ -8,6 +8,7 @@ import { useAccessoProtetto } from "../dati/accesso";
 import { avvisa } from "../dati/avvisi";
 import { useCopertinaVolume, useRipiegoSerie } from "../dati/copertineVolumi";
 import NewBadge from "../ui/NewBadge";
+import { eOraDellaSettimana } from "../dati/settimana";
 import { formatEpisodio, quandoBreve } from "../ui/videoteca/formati";
 import { chiudibile, euro, fraseMancanti, prossimoVolume, tettoLettura, volumiMancanti } from "../dati/serie";
 import {
@@ -16,6 +17,7 @@ import {
   dopoIlRipiego,
   getCalendarioAnime,
   getReadingSessions,
+  getSettimana,
   getUsciteManga,
   getVideoteca,
   segnaEpisodio,
@@ -67,6 +69,10 @@ export default function AdessoPage() {
   // L'istante di riferimento, preso una volta all'apertura: «uscito» e
   // «in arrivo» non devono cambiare idea a ogni ridisegno.
   const [adesso] = useState(() => Date.now());
+
+  // «La tua settimana»: si chiede solo quando si mostra (domenica sera, lunedì mattina).
+  const mostraSettimana = eOraDellaSettimana(adesso);
+  const settimanaViva = useRisorsa(() => getSettimana(), { chiave: "settimana", attivo: mostraSettimana });
 
   const anime = useMemo(() => animeInVisione(videoteca.dati), [videoteca.dati]);
 
@@ -265,6 +271,8 @@ export default function AdessoPage() {
       <Testata nome={utente?.nickname} />
 
       <RichiamoMese adesso={adesso} />
+
+      {mostraSettimana && <RigaSettimana dati={settimanaViva.dati} />}
 
       {problema && (
         <p role="alert" className="mx-4 mt-4 rounded-card border border-ember/30 bg-ember/10 px-4 py-3 text-sm text-ember">
@@ -766,6 +774,35 @@ function LetturaPrincipale({ lettura, occupato, onPiuUno }) {
         <span aria-hidden="true" className="font-sans text-micro font-medium leading-none">{eUltimo ? "finito" : "letto"}</span>
       </button>
     </div>
+  );
+}
+
+/**
+ * «La tua settimana»: una riga sola, con solo quello che c'è. Se la settimana è
+ * stata vuota non si disegna niente: una riga di zeri non è una notizia.
+ */
+function RigaSettimana({ dati }) {
+  if (!dati) return null;
+
+  const pezzi = [];
+
+  if (dati.puntate > 0) {
+    pezzi.push(
+      `${dati.puntate} ${dati.puntate === 1 ? "puntata vista" : "puntate viste"}` +
+        (dati.serie > 1 ? ` di ${dati.serie} serie` : "")
+    );
+  }
+
+  if (dati.letti > 0) pezzi.push(`${dati.letti} ${dati.letti === 1 ? "volume letto" : "volumi letti"}`);
+  if (dati.spesa > 0) pezzi.push(`${euro(dati.spesa)}\u00a0spesi`);
+
+  if (pezzi.length === 0) return null;
+
+  return (
+    <section aria-label="La tua settimana" className="mx-4 mt-4 rounded-card border border-hairline bg-alcove/60 px-4 py-3">
+      <p className="text-micro font-semibold uppercase tracking-[0.14em] text-ink-muted">La tua settimana</p>
+      <p className="mt-1 text-sm text-ink-bright">{pezzi.join(" · ")}</p>
+    </section>
   );
 }
 

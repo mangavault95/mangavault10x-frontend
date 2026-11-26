@@ -15,7 +15,7 @@ import {
 import { useAccessoProtetto } from "../../dati/accesso";
 import { avvisa } from "../../dati/avvisi";
 import NewBadge from "../NewBadge";
-import { formatEpisodio } from "./formati";
+import { formatEpisodio, giorniFa, quantoFa } from "./formati";
 
 /**
  * LA MIA VIDEOTECA — rifatta il 04/10/2026 come «In lettura».
@@ -60,6 +60,9 @@ function conti(a) {
   return { uscite, ultimo, totale, prossimo: ultimo + 1, nuovi: Math.max(0, uscite - ultimo) };
 }
 
+/** Dopo quanti giorni senza toccarla una serie «in visione» è ferma. */
+const FERME_DOPO_GIORNI = 30;
+
 export default function MiaVideoteca({ righe, setRighe, ricarica }) {
   const [inGestione, setInGestione] = useState(null);
   const [occupato, setOccupato] = useState(null);
@@ -98,8 +101,14 @@ export default function MiaVideoteca({ righe, setRighe, ricarica }) {
   // «Sto guardando» in due: prima quello che ha una puntata pronta, poi quello
   // già in pari (richiudibile). L'ordine di `guardando` resta quello per ultima
   // attività dentro ciascun gruppo.
-  const pronte = guardando.filter((a) => a.nuovi > 0);
-  const inPari = guardando.filter((a) => a.nuovi === 0);
+  //
+  // Ferme da più di 30 giorni (`ultima_attivita`): escono dalle due liste e
+  // stanno in fondo, con «Metti in pausa» e «Continua». Senza la data (backend
+  // vecchio, serie mai toccata) non si può dire che sono ferme: restano dove sono.
+  const ferme = guardando.filter((a) => a.ultima_attivita && giorniFa(a.ultima_attivita) >= FERME_DOPO_GIORNI);
+  const attive = guardando.filter((a) => !ferme.includes(a));
+  const pronte = attive.filter((a) => a.nuovi > 0);
+  const inPari = attive.filter((a) => a.nuovi === 0);
   const inPausa = perStato("in_pausa");
   const mollate = perStato("droppata");
 
@@ -211,6 +220,36 @@ export default function MiaVideoteca({ righe, setRighe, ricarica }) {
       `Non sono riuscito a cambiare lo stato di ${a.titolo}.`
     );
 
+  /**
+   * «Continua»: sì, la sto ancora guardando. Reimposta «in visione», e il
+   * server aggiorna la data di ultima modifica: la serie esce dalle ferme senza
+   * segnare puntate che non ho visto.
+   */
+  const continua = (a) =>
+    agisci(
+      `stato:${a.id}`,
+      async () => {
+        await impostaVisione(a.id, "in_visione");
+        cambiaRiga(a.id, { stato_visione: "in_visione", ultima_attivita: new Date().toISOString() });
+      },
+      `Non sono riuscito ad aggiornare ${a.titolo}.`
+    );
+
+  const mettiInPausa = (a) =>
+    agisci(
+      `stato:${a.id}`,
+      async () => {
+        await impostaVisione(a.id, "in_pausa");
+        cambiaRiga(a.id, { stato_visione: "in_pausa" });
+
+        avvisa({
+          testo: `${a.titolo} messa in pausa`,
+          azione: { etichetta: "Annulla", alTocco: () => continua(a) }
+        });
+      },
+      `Non sono riuscito a mettere in pausa ${a.titolo}.`
+    );
+
   const vota = (a, voto) =>
     agisci(
       `voto:${a.id}`,
@@ -251,6 +290,7 @@ export default function MiaVideoteca({ righe, setRighe, ricarica }) {
       <Sezione titolo="Sto guardando" conto={guardando.length}>
         {guardando.length ? (
           <div className="space-y-5">
+            {attive.length > 0 && (
             <div>
               <h3 className="mb-2 flex items-baseline gap-2 px-1 text-sm font-semibold text-ink-bright">
                 Da vedere adesso
@@ -276,6 +316,7 @@ export default function MiaVideoteca({ righe, setRighe, ricarica }) {
                 </p>
               )}
             </div>
+            )}
 
             {/* In pari: richiudibile. Aperta da sola solo quando sopra non c'è
                 niente, così la lista non sembra vuota. */}
@@ -304,6 +345,32 @@ export default function MiaVideoteca({ righe, setRighe, ricarica }) {
                   ))}
                 </ul>
               </details>
+            )}
+
+            {/* Ferme da un po': in fondo, perché non sono quello che guardi stasera. */}
+            {ferme.length > 0 && (
+              <div className="rounded-card border border-dashed border-hairline p-3">
+                <h3 className="flex items-baseline gap-2 px-1 text-sm font-semibold text-ink-bright">
+                  Ferme da più di {FERME_DOPO_GIORNI} giorni
+                  <span className="font-numeric text-xs font-normal text-ink-muted">{ferme.length}</span>
+                </h3>
+                <p className="mb-2 mt-1 px-1 text-xs text-ink-muted">
+                  Le metti in pausa senza perdere il punto in cui eri, o dici che le stai ancora guardando.
+                </p>
+
+                <ul className="grid grid-cols-1 gap-1.5">
+                  {ferme.map((a) => (
+                    <li key={a.id}>
+                      <RigaFerma
+                        anime={a}
+                        occupato={occupato === `stato:${a.id}`}
+                        onPausa={() => mettiInPausa(a)}
+                        onContinua={() => continua(a)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         ) : (
@@ -483,6 +550,12 @@ function RigaGuardando({ anime, occupato, onVisto, onGestisci }) {
           {dove} · {nuovi > 0 ? <NewBadge count={nuovi} /> : stato}
         </p>
 
+        {/* Quando l'hai toccata l'ultima volta. La colonna di testo è più bassa
+            della copertina (80 px), quindi una riga in più non allunga la card. */}
+        {anime.ultima_attivita && quantoFa(anime.ultima_attivita) && (
+          <p className="text-micro text-ink-muted">Ultima volta: {quantoFa(anime.ultima_attivita)}</p>
+        )}
+
         {percento !== null && (
           <div
             role="progressbar"
@@ -515,6 +588,44 @@ function RigaGuardando({ anime, occupato, onVisto, onGestisci }) {
           )}
         </button>
       )}
+    </div>
+  );
+}
+
+/** Una serie ferma da un po': dove eri, da quanto, e le due scelte. */
+function RigaFerma({ anime, occupato, onPausa, onContinua }) {
+  const copertina = urlCopertina(anime.cover_url, 128);
+  const dove = anime.ultimo ? `Eri ${formatEpisodio(anime.ultimo, anime.tagli, { prep: "a" })}` : "Mai cominciata";
+
+  const bottone =
+    "min-h-11 flex-1 rounded-card px-3 text-sm font-semibold transition-transform duration-quick active:scale-95 disabled:opacity-60 " +
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400";
+
+  return (
+    <div className="rounded-card bg-alcove p-2">
+      <div className="flex items-center gap-2.5">
+        <Link to={`/videoteca/${anime.id}`} aria-hidden="true" tabIndex={-1} className="h-14 w-10 shrink-0 overflow-hidden rounded-md bg-glass-2">
+          {copertina && <img src={copertina} alt="" loading="lazy" className="h-full w-full object-cover" />}
+        </Link>
+
+        <div className="min-w-0 flex-1">
+          <Link to={`/videoteca/${anime.id}`} className="block truncate font-semibold text-ink-bright">
+            {anime.titolo}
+          </Link>
+          <p className="text-fine leading-snug text-ink-muted">
+            {dove} · ultima volta {quantoFa(anime.ultima_attivita)}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-2 flex gap-2">
+        <button type="button" disabled={occupato} onClick={onPausa} className={`${bottone} bg-glass-2 text-ink-bright`}>
+          Metti in pausa
+        </button>
+        <button type="button" disabled={occupato} onClick={onContinua} className={`${bottone} border border-brass-400/60 text-brass-300`}>
+          Continua
+        </button>
+      </div>
     </div>
   );
 }
