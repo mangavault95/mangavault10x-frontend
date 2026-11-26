@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { segnaEpisodio, urlCopertina } from "../../services/api";
 import { useAccessoProtetto } from "../../dati/accesso";
 import { Bottone, Progresso, Scheda } from "./Foglio";
-import { quandoBreve } from "./formati";
+import { formatEpisodio, quandoBreve } from "./formati";
 
 /**
  * Cosa si sta guardando adesso, dentro la propria pagina.
@@ -129,7 +129,7 @@ export default function ListaInVisione({ righe, setRighe, ricarica, puoiScrivere
 
                   <p className="mb-1.5 text-xs text-quaderno-tenue">
                     {anime.pronto
-                      ? `Il prossimo è l'episodio ${anime.prossimo}`
+                      ? `Il prossimo è ${formatEpisodio(anime.prossimo, anime.tagli)}`
                       : anime.prossima_uscita
                         ? `In pari — il ${anime.prossimo_episodio} esce ${quandoBreve(anime.prossima_uscita)}`
                         : "In pari con quello che è uscito"}
@@ -149,7 +149,7 @@ export default function ListaInVisione({ righe, setRighe, ricarica, puoiScrivere
                   onClick={() => spunta(anime)}
                   disabled={segnando === anime.id}
                 >
-                  {segnando === anime.id ? "Segno…" : `Ho visto il ${anime.prossimo}`}
+                  {segnando === anime.id ? "Segno…" : `Visto ${formatEpisodio(anime.prossimo, anime.tagli, { prep: "l" })}`}
                 </Bottone>
               )}
             </Scheda>
@@ -161,7 +161,7 @@ export default function ListaInVisione({ righe, setRighe, ricarica, puoiScrivere
         <button
           type="button"
           onClick={() => setEspansa((e) => !e)}
-          className="text-sm font-semibold text-quaderno-blu hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quaderno-blu"
+          className="text-sm font-semibold text-link hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-link"
         >
           {espansa ? "Mostra meno" : `Mostra tutte (${inVisione.length})`}
         </button>

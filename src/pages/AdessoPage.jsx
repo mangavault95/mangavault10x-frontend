@@ -5,10 +5,14 @@ import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
 import { useSessione } from "../dati/sessione";
 import { useAccessoProtetto } from "../dati/accesso";
+import { avvisa } from "../dati/avvisi";
 import { useCopertinaVolume, useRipiegoSerie } from "../dati/copertineVolumi";
+import NewBadge from "../ui/NewBadge";
+import { formatEpisodio, quandoBreve } from "../ui/videoteca/formati";
 import { chiudibile, euro, fraseMancanti, prossimoVolume, tettoLettura, volumiMancanti } from "../dati/serie";
 import {
   addReadingHistory,
+  deleteReadingHistoryVolume,
   dopoIlRipiego,
   getCalendarioAnime,
   getReadingSessions,
@@ -78,6 +82,18 @@ export default function AdessoPage() {
 
     return candidate.length ? perId.get(Number(candidate[0].anime_id)) : anime.find((a) => a.nuovi > 0) || null;
   }, [anime, calendario.dati, adesso]);
+
+  // La prossima puntata in uscita della serie da riprendere, dal calendario:
+  // riempie la riga sotto il titolo della card grande (P3-06).
+  const proxPuntata = useMemo(() => {
+    if (!daRiprendere) return null;
+
+    return (
+      (calendario.dati || [])
+        .filter((e) => Number(e.anime_id) === Number(daRiprendere.id) && new Date(e.uscita_italia).getTime() > adesso)
+        .sort((a, b) => new Date(a.uscita_italia) - new Date(b.uscita_italia))[0] || null
+    );
+  }, [daRiprendere, calendario.dati, adesso]);
 
   // Prima le serie con una puntata uscita da poco, dalla più fresca;
   // poi gli arretrati, da quello più vicino a essere in pari. Ordinate
@@ -182,6 +198,28 @@ export default function AdessoPage() {
       });
 
       sessioni.ricarica();
+
+      // Un tocco che scrive deve potersi disfare (P3-01): si toglie il
+      // volume dallo storico e il segnalibro torna dov'era.
+      avvisa({
+        testo: `Vol. ${l.volume} segnato come letto`,
+        azione: {
+          etichetta: "Annulla",
+          alTocco: async () => {
+            try {
+              await eseguiProtetto(async () => {
+                await deleteReadingHistoryVolume(l.mangaId, l.volume);
+
+                if (!eUltimo) await updateReadingSession(l.mangaId, l.volume);
+              });
+
+              sessioni.ricarica();
+            } catch (errore) {
+              if (!errore?.annullato) avvisa({ testo: "Non sono riuscito ad annullarlo: riprova.", tono: "errore" });
+            }
+          }
+        }
+      });
     } catch (e) {
       if (!e?.annullato) setProblema("Il volume non è stato registrato. Riprova fra un attimo.");
     } finally {
@@ -220,23 +258,21 @@ export default function AdessoPage() {
       {caricamentoIniziale && <CaricamentoHome lento={lento} />}
 
       {daRiprendere && (
-        <DaRiprendere anime={daRiprendere} occupato={inCorso === `anime:${daRiprendere.id}`} onVisto={() => vistoProssimo(daRiprendere)} />
+        <DaRiprendere anime={daRiprendere} prossima={proxPuntata} occupato={inCorso === `anime:${daRiprendere.id}`} onVisto={() => vistoProssimo(daRiprendere)} />
       )}
 
       {daGuardare.length > 0 && (
-        <Sezione titolo="Da guardare" kana="見る" link={{ a: "/videoteca/io", testo: "Tutto" }}>
+        <Sezione titolo="Da guardare" kana="見る" link={{ a: "/videoteca/io", testo: "Vedi tutto", descrizione: "anime da guardare" }}>
           <ul className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
             {daGuardare.slice(0, 10).map((a) => (
               <li key={a.id} className="w-32 shrink-0">
                 <Link to={`/videoteca/${a.id}`} className="group block focus-visible:outline-none">
                   <div className="relative">
                     <Immagine src={a.cover_url} alt="" className="aspect-[2/3] w-32 rounded-card" />
-                    <span className="absolute left-2 top-2 rounded-md border border-viola/40 bg-void/80 px-1.5 py-0.5 font-numeric text-xs font-medium text-viola backdrop-blur">
-                      {a.nuovi} {a.nuovi === 1 ? "nuovo" : "nuovi"}
-                    </span>
+                    <NewBadge count={a.nuovi} variant="overlay" className="absolute left-2 top-2" />
                   </div>
                   <p className="mt-2 line-clamp-2 text-sm font-semibold leading-tight text-ink-bright">{a.titolo}</p>
-                  <p className="mt-0.5 text-fine text-ink-muted">Riprendi dall'ep. {a.prossimo}</p>
+                  <p className="mt-0.5 text-fine text-ink-muted">Riprendi {formatEpisodio(a.prossimo, a.tagli, { prep: "da" })}</p>
                 </Link>
               </li>
             ))}
@@ -245,7 +281,7 @@ export default function AdessoPage() {
       )}
 
       {letture.length > 0 && (
-        <Sezione titolo="Continua a leggere" kana="読む" link={{ a: "/lettura", testo: "Tutte" }}>
+        <Sezione titolo="Continua a leggere" kana="読む" link={{ a: "/lettura", testo: "Vedi tutto", descrizione: "letture in corso" }}>
           <LetturaPrincipale lettura={letture[0]} occupato={inCorso === `lettura:${letture[0].mangaId}`} onPiuUno={() => lettoProssimo(letture[0])} />
 
           {letture.length > 1 && (
@@ -272,7 +308,7 @@ export default function AdessoPage() {
       )}
 
       {settimana.length > 0 && (
-        <Sezione titolo="Esce questa settimana" kana="今週" link={{ a: "/uscite", testo: "Tutte le uscite" }}>
+        <Sezione titolo="Esce questa settimana" kana="今週" link={{ a: "/uscite", testo: "Tutte le uscite", descrizione: "volumi e puntate in uscita" }}>
           <ul className="divide-y divide-hairline rounded-card bg-alcove px-3.5">
             {settimana.map((u) => (
               <li key={u.chiave}>
@@ -302,7 +338,7 @@ export default function AdessoPage() {
       )}
 
       {prossimoAcquisto && (
-        <Sezione titolo="Prossimo acquisto" kana="買う" link={{ a: "/wishlist", testo: "Da comprare" }}>
+        <Sezione titolo="Prossimo acquisto" kana="買う" link={{ a: "/wishlist", testo: "Da comprare", descrizione: "la lista dei desideri" }}>
           <Link
             to={`/serie/${prossimoAcquisto.serie.id}`}
             className="flex items-center gap-3.5 rounded-card bg-alcove p-3.5 transition-colors duration-quick active:bg-glass-2"
@@ -370,6 +406,7 @@ const FORMATO_ORA = new Intl.DateTimeFormat("it-IT", { hour: "2-digit", minute: 
  */
 function usciteDellaSettimana(volumi, puntate, anime, adesso) {
   const inVisione = new Set(anime.map((a) => Number(a.id)));
+  const taglidi = new Map(anime.map((a) => [Number(a.id), a.tagli]));
   const righe = [];
 
   for (const v of volumi || []) {
@@ -408,7 +445,7 @@ function usciteDellaSettimana(volumi, puntate, anime, adesso) {
       giornoSettimana: FORMATO_GIORNO.format(quando).replace(".", ""),
       giorno: FORMATO_NUMERO.format(quando),
       titolo: p.serie,
-      dettaglio: [p.piattaforma, `ep. ${p.numero}`, FORMATO_ORA.format(quando)].filter(Boolean).join(" · "),
+      dettaglio: [p.piattaforma, formatEpisodio(p.numero, taglidi.get(Number(p.anime_id)), { assoluto: true }), FORMATO_ORA.format(quando)].filter(Boolean).join(" · "),
       copertina: p.cover_url,
       link: `/videoteca/${p.anime_id}`,
       nota: null
@@ -476,7 +513,7 @@ function Testata({ nome }) {
 
   return (
     <header className="px-5 pb-1 pt-6">
-      <p className="flex items-center gap-2 font-numeric text-micro uppercase tracking-[0.14em] text-ink-muted">
+      <p className="flex items-center gap-2 text-micro font-medium uppercase tracking-[0.14em] text-ink">
         {oggi}
         <span aria-hidden="true" className="kana font-pixel normal-case tracking-normal text-ink-faint">
           {KANJI_GIORNO[new Date().getDay()]}
@@ -561,7 +598,11 @@ function Sezione({ titolo, kana, link, children }) {
           {kana && <span aria-hidden="true" className="kana font-pixel text-xs font-normal text-ink-faint">{kana}</span>}
         </h2>
         {link && (
-          <Link to={link.a} className="bersaglio text-sm font-medium text-ciano hover:underline">
+          <Link
+            to={link.a}
+            aria-label={link.descrizione ? `${link.testo}: ${link.descrizione}` : undefined}
+            className="bersaglio text-sm font-medium text-link hover:underline"
+          >
             {link.testo}
           </Link>
         )}
@@ -571,7 +612,7 @@ function Sezione({ titolo, kana, link, children }) {
   );
 }
 
-function DaRiprendere({ anime, occupato, onVisto }) {
+function DaRiprendere({ anime, prossima, occupato, onVisto }) {
   return (
     <section className="relative mx-4 mt-5 overflow-hidden rounded-panel border border-brass-400/25 bg-alcove shadow-raised">
       {/* La copertina stessa, sfocata, fa da fondo: la card prende il
@@ -594,16 +635,24 @@ function DaRiprendere({ anime, occupato, onVisto }) {
         <Link to={`/videoteca/${anime.id}`} className="shrink-0">
           <Immagine src={anime.cover_url} alt={`Copertina di ${anime.titolo}`} className="h-[156px] w-[108px] rounded-card shadow-float" />
         </Link>
-        <div className="flex min-w-0 flex-col gap-1.5">
+        {/* Il testo sta al centro della copertina (P3-06): prima restava
+            attaccato in alto e sotto si apriva un blocco vuoto. */}
+        <div className="flex min-w-0 flex-col justify-center gap-1.5">
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-brass-300">Da riprendere</p>
           <Link to={`/videoteca/${anime.id}`} className="font-display text-[1.4rem] font-bold leading-tight text-ink-bright">
             {anime.titolo}
           </Link>
           <p className="text-sm text-ink">
             {anime.ultimo_visto
-              ? `Sei all'ep. ${anime.ultimo_visto}. ${anime.nuovi === 1 ? "Ne è uscito un altro." : `Ne sono usciti altri ${anime.nuovi}.`}`
+              ? `Sei ${formatEpisodio(anime.ultimo_visto, anime.tagli, { prep: "a" })}. ${anime.nuovi === 1 ? "Ne è uscito un altro." : `Ne sono usciti altri ${anime.nuovi}.`}`
               : `${anime.nuovi} puntate da vedere.`}
           </p>
+          {prossima && (
+            <p className="text-fine text-ink-muted">
+              Prossima uscita: {formatEpisodio(prossima.numero, anime.tagli)}, {quandoBreve(prossima.uscita_italia)}
+              {prossima.piattaforma ? ` · ${prossima.piattaforma}` : ""}
+            </p>
+          )}
         </div>
       </div>
       <div className="relative px-4 pb-4">
@@ -616,13 +665,16 @@ function DaRiprendere({ anime, occupato, onVisto }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M20 6 9 17l-5-5" />
           </svg>
-          {occupato ? "Segno…" : `Visto l'ep. ${anime.prossimo}`}
+          {occupato ? "Segno…" : `Visto ${formatEpisodio(anime.prossimo, anime.tagli, { prep: "l" })}`}
         </button>
       </div>
     </section>
   );
 }
 
+// Il «+1» sta solo sulla carta grande, ed è una regola (P3-01): le due
+// carte piccole accanto sono link alla serie e tutta la loro larghezza serve
+// a farle toccare; per segnare un volume da lì si apre la scheda.
 function LetturaPrincipale({ lettura, occupato, onPiuUno }) {
   const percentuale = lettura.massimo ? Math.round(((lettura.volume - 1) / lettura.massimo) * 100) : null;
   const eUltimo = lettura.massimo ? lettura.volume >= lettura.massimo : false;
@@ -637,7 +689,7 @@ function LetturaPrincipale({ lettura, occupato, onPiuUno }) {
           {lettura.titolo}
         </Link>
         <p className="mt-0.5 text-fine text-ink-muted">
-          Stai leggendo il vol. <span className="font-numeric text-ink-bright">{lettura.volume}</span>
+          Stai leggendo il vol. {lettura.volume}
           {lettura.massimo ? ` di ${lettura.massimo}` : ""}
         </p>
         {percentuale !== null && (
@@ -650,10 +702,15 @@ function LetturaPrincipale({ lettura, occupato, onPiuUno }) {
         type="button"
         onClick={onPiuUno}
         disabled={occupato}
-        aria-label={eUltimo ? `Finito ${lettura.titolo}` : `Finito il volume ${lettura.volume}, passa al ${lettura.volume + 1}`}
-        className="grid h-14 w-14 shrink-0 place-items-center rounded-[1.1rem] border border-brass-400/50 font-numeric text-lg font-bold text-brass-300 transition-all duration-quick hover:bg-brass-400/10 active:scale-90 disabled:opacity-60"
+        aria-label={
+          eUltimo
+            ? `Segna come letto il vol. ${lettura.volume}, l'ultimo di ${lettura.titolo}`
+            : `Segna come letto il vol. ${lettura.volume}`
+        }
+        className="flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[1.1rem] border border-brass-400/50 font-numeric text-brass-300 transition-all duration-quick hover:bg-brass-400/10 active:scale-90 disabled:opacity-60"
       >
-        {eUltimo ? "✓" : "+1"}
+        <span aria-hidden="true" className="text-lg font-bold leading-none">{eUltimo ? "✓" : "+1"}</span>
+        <span aria-hidden="true" className="font-sans text-micro font-medium leading-none">{eUltimo ? "finito" : "letto"}</span>
       </button>
     </div>
   );

@@ -497,7 +497,7 @@ export default function AnimePage() {
             {stagioni.find((s) => s.manga_id) && (
               <Link
                 to={`/serie/${stagioni.find((s) => s.manga_id).manga_id}`}
-                className="block pt-1 text-sm font-medium text-quaderno-blu hover:underline"
+                className="block pt-1 text-sm font-medium text-link hover:underline"
               >
                 Il manga è in collezione →
               </Link>

@@ -36,7 +36,7 @@ export default function Fila({ titolo, quante, tutto, vuoto, children, azione })
         {tutto && (
           <Link
             to={tutto}
-            className="bersaglio inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-quaderno-blu hover:underline"
+            className="bersaglio inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-link hover:underline"
           >
             Vedi tutto
             <Icon nome="avanti" dimensione={15} />

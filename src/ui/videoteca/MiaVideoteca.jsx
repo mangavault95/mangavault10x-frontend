@@ -5,6 +5,7 @@ import Copertina from "../Copertina";
 import Foglio from "../Foglio";
 import Stelle from "./Stelle";
 import {
+  urlCopertina,
   impostaVisione,
   segnaEpisodio,
   togliEpisodio,
@@ -12,6 +13,8 @@ import {
   votaAnime
 } from "../../services/api";
 import { useAccessoProtetto } from "../../dati/accesso";
+import NewBadge from "../NewBadge";
+import { formatEpisodio } from "./formati";
 
 /**
  * LA MIA VIDEOTECA — rifatta il 04/10/2026 come «In lettura».
@@ -37,7 +40,7 @@ import { useAccessoProtetto } from "../../dati/accesso";
  *
  * Le puntate si contano per SCHEDA, come le conta AnimeClick; quando una
  * scheda tiene dentro più stagioni (i `tagli`, vedi la 015) la riga dice
- * «ep. 1 della st. 2» invece di «ep. 15».
+ * «St. 2 · ep. 1» invece di «ep. 15» (`formatEpisodio`, formati.js).
  */
 
 const GIORNO_ORA = new Intl.DateTimeFormat("it-IT", {
@@ -46,24 +49,6 @@ const GIORNO_ORA = new Intl.DateTimeFormat("it-IT", {
   minute: "2-digit",
   timeZone: "Europe/Rome"
 });
-
-/** Dove sta l'episodio `n` dentro le stagioni della scheda. */
-function inStagione(n, tagli) {
-  const t = (tagli || []).map(Number).filter(Boolean).sort((a, b) => a - b);
-
-  if (!t.length) return { stagione: null, episodio: n };
-
-  const stagione = 1 + t.filter((x) => x <= n).length;
-  const inizio = stagione === 1 ? 1 : t[stagione - 2];
-
-  return { stagione, episodio: n - inizio + 1 };
-}
-
-function etichettaEp(n, tagli) {
-  const { stagione, episodio } = inStagione(n, tagli);
-
-  return stagione ? `ep. ${episodio} della st. ${stagione}` : `ep. ${episodio}`;
-}
 
 /** I numeri di una scheda per chi la guarda. */
 function conti(a) {
@@ -75,7 +60,7 @@ function conti(a) {
   return { uscite, ultimo, totale, prossimo: ultimo + 1, nuovi: Math.max(0, uscite - ultimo) };
 }
 
-export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
+export default function MiaVideoteca({ righe, setRighe, ricarica }) {
   const [inGestione, setInGestione] = useState(null);
   const [occupato, setOccupato] = useState(null);
   const [problema, setProblema] = useState(null);
@@ -85,9 +70,17 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
 
   const perStato = (stato) => tutte.filter((a) => a.stato_visione === stato);
 
-  // Prima chi ha puntate nuove, dalla più vicina a essere in pari; poi
-  // quelle in pari, dalla prossima uscita.
+  // Prima quello che si sta guardando davvero: l'ultima serie toccata (puntata
+  // spuntata o stato cambiato, `ultima_attivita` dal backend) in cima. A parità,
+  // o se la data manca (backend non ancora aggiornato), l'ordine di prima: chi ha
+  // puntate nuove, dalla più vicina a essere in pari; poi chi è in pari, dalla
+  // prossima uscita.
   const guardando = perStato("in_visione").sort((a, b) => {
+    const ta = a.ultima_attivita ? new Date(a.ultima_attivita).getTime() : 0;
+    const tb = b.ultima_attivita ? new Date(b.ultima_attivita).getTime() : 0;
+
+    if (ta !== tb) return tb - ta;
+
     if (a.nuovi > 0 !== b.nuovi > 0) return a.nuovi > 0 ? -1 : 1;
     if (a.nuovi > 0) return a.nuovi - b.nuovi;
 
@@ -96,6 +89,9 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
 
   const viste = perStato("completa");
   const daVotare = viste.filter((a) => a.voto == null);
+  // Niente numeri di posizione (P2-03): con tanti 5,0 a pari merito
+  // l'ordine è alfabetico, e «1, 2, 3…» avrebbe fatto credere in una
+  // classifica che non c'è. Il voto e l'ordine bastano.
   const classifica = viste
     .filter((a) => a.voto != null)
     .sort((a, b) => Number(b.voto) - Number(a.voto) || a.titolo.localeCompare(b.titolo, "it"));
@@ -130,7 +126,11 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
       `ep:${a.id}`,
       async () => {
         await segnaEpisodio(a.id, numero, { fino });
-        cambiaRiga(a.id, { ultimo_visto: numero, episodi_visti: fino ? numero : Number(a.episodi_visti || 0) + 1 });
+        cambiaRiga(a.id, {
+          ultimo_visto: numero,
+          episodi_visti: fino ? numero : Number(a.episodi_visti || 0) + 1,
+          ultima_attivita: new Date().toISOString()
+        });
       },
       `La puntata di ${a.titolo} non è stata segnata.`
     );
@@ -140,7 +140,7 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
       `ep:${a.id}`,
       async () => {
         await togliEpisodio(a.id, a.ultimo);
-        cambiaRiga(a.id, { ultimo_visto: a.ultimo - 1 || null });
+        cambiaRiga(a.id, { ultimo_visto: a.ultimo - 1 || null, ultima_attivita: new Date().toISOString() });
       },
       `Non sono riuscito a togliere la puntata di ${a.titolo}.`
     );
@@ -194,12 +194,11 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
       {/* ═══════════ STO GUARDANDO ═══════════ */}
       <Sezione titolo="Sto guardando" conto={guardando.length}>
         {guardando.length ? (
-          <ul className="grid grid-cols-1 gap-2.5">
-            {guardando.map((a, i) => (
+          <ul className="grid grid-cols-1 gap-1.5">
+            {guardando.map((a) => (
               <li key={a.id}>
                 <RigaGuardando
                   anime={a}
-                  principale={i === 0 && a.nuovi > 0}
                   occupato={occupato === `ep:${a.id}`}
                   onVisto={() => visto(a)}
                   onGestisci={() => setInGestione(a.id)}
@@ -240,7 +239,7 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
             ))}
           </Elenco>
           {daVedere.length > 6 && (
-            <Link to="/videoteca/io/tutto" className="mt-2 block px-1 text-sm font-medium text-brass-300 hover:underline">
+            <Link to="/videoteca/io/tutto" className="mt-2 block px-1 text-sm font-medium text-link hover:underline">
               Le altre {daVedere.length - 6} in «Tutti i titoli»
             </Link>
           )}
@@ -251,8 +250,8 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
       {classifica.length > 0 && (
         <Sezione titolo="Viste" conto={viste.length}>
           <Elenco>
-            {classifica.slice(0, 10).map((a, i) => (
-              <Riga key={a.id} anime={a} posizione={i + 1} sotto={a.tipo === "film" ? "Film" : null}>
+            {classifica.slice(0, 10).map((a) => (
+              <Riga key={a.id} anime={a} sotto={a.tipo === "film" ? "Film" : null}>
                 <span className="shrink-0 font-numeric text-sm font-semibold text-ink-bright">
                   {String(a.voto).replace(".", ",")} <span className="text-brass-400">★</span>
                 </span>
@@ -260,7 +259,7 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
             ))}
           </Elenco>
           {viste.length > 10 && (
-            <Link to="/videoteca/io/tutto" className="mt-2 block px-1 text-sm font-medium text-brass-300 hover:underline">
+            <Link to="/videoteca/io/tutto" className="mt-2 block px-1 text-sm font-medium text-link hover:underline">
               Tutte le {viste.length} viste
             </Link>
           )}
@@ -285,7 +284,7 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
             </summary>
             <ul className="divide-y divide-hairline border-t border-hairline px-3.5">
               {g.elenco.map((a) => (
-                <Riga key={a.id} anime={a} sotto={a.ultimo ? `ferma all'${etichettaEp(a.ultimo, a.tagli)}` : "mai cominciata"}>
+                <Riga key={a.id} anime={a} sotto={a.ultimo ? `ferma ${formatEpisodio(a.ultimo, a.tagli, { prep: "a" })}` : "mai cominciata"}>
                   <Piccolo onClick={() => stato(a, "in_visione")} disabilitato={occupato === `stato:${a.id}`}>
                     Riprendi
                   </Piccolo>
@@ -294,17 +293,6 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
             </ul>
           </details>
         ))}
-
-      {persona?.nickname && (
-        <p className="text-center text-sm">
-          <Link
-            to={`/videoteca/chi/${encodeURIComponent(persona.nickname)}`}
-            className="text-ink-muted underline-offset-4 hover:text-ink-bright hover:underline"
-          >
-            Il tuo profilo pubblico, quello che vedono gli altri
-          </Link>
-        </p>
-      )}
     </div>
   );
 }
@@ -329,10 +317,9 @@ function Elenco({ children }) {
   return <ul className="divide-y divide-hairline rounded-card bg-alcove px-3.5">{children}</ul>;
 }
 
-function Riga({ anime, sotto, posizione, children }) {
+function Riga({ anime, sotto, children }) {
   return (
     <li className="flex items-center gap-3 py-2.5">
-      {posizione ? <span className="w-5 shrink-0 text-right font-numeric text-xs text-ink-muted">{posizione}</span> : null}
       <Link to={`/videoteca/${anime.id}`} className="w-9 shrink-0">
         <Copertina src={anime.cover_url} alt="" inclina={false} />
       </Link>
@@ -358,68 +345,96 @@ function Piccolo({ onClick, disabilitato, children }) {
   );
 }
 
-function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
-  const { ultimo, nuovi, totale, prossimo, uscite } = anime;
-  const percento = totale ? Math.min(100, Math.round((ultimo / totale) * 100)) : null;
+/**
+ * Una serie in «Sto guardando» (P2-04): compatta, perché è la lista che
+ * si apre ogni giorno e con la card alta se ne vedevano tre e mezza per
+ * schermata. Copertina 56×80, titolo, riga di stato, barra sottile; a
+ * destra il tondo ✓ (44×44) che segna la prossima puntata. Il bottone a
+ * tutta larghezza resta solo nella hero «Da riprendere» della Home.
+ *
+ * Tutti i tondi ✓ sono uguali: una regola, non un caso (prima solo la
+ * prima card aveva il pulsante pieno, senza un motivo che si capisse).
+ */
+function RigaGuardando({ anime, occupato, onVisto, onGestisci }) {
+  const { ultimo, nuovi, prossimo, uscite } = anime;
 
-  const dove = ultimo ? `Sei all'${etichettaEp(ultimo, anime.tagli)}` : "Da cominciare";
-  const stato =
-    nuovi > 0
-      ? `${nuovi} ${nuovi === 1 ? "nuovo" : "nuovi"}`
-      : anime.prossima_uscita
-        ? `in pari · ${GIORNO_ORA.format(new Date(anime.prossima_uscita))}`
-        : "in pari";
+  // La barra dice una cosa sola: quante delle puntate USCITE hai visto
+  // (P1-02). Prima era `ultimo ÷ episodi_totali`: contro il totale
+  // dichiarato dalla scheda, che spesso è la lunghezza della stagione, e
+  // «7 nuovi» stava accanto a una barra quasi piena. Stessa unità del
+  // «N nuovi» (puntate della scheda, numero assoluto), quindi con nuovi > 0
+  // non arriva mai al 100%. Se le uscite non si sanno, niente barra.
+  const percento = uscite > 0 ? Math.min(100, Math.round((ultimo / uscite) * 100)) : null;
+
+  const dove = ultimo ? `Sei ${formatEpisodio(ultimo, anime.tagli, { prep: "a" })}` : "Da cominciare";
+  const stato = anime.prossima_uscita
+    ? `in pari · ${GIORNO_ORA.format(new Date(anime.prossima_uscita))}`
+    : uscite
+      ? "in pari"
+      : "nessuna puntata uscita";
+  const copertina = urlCopertina(anime.cover_url, 128);
+  const prossima = formatEpisodio(prossimo, anime.tagli);
 
   return (
-    <div className="flex gap-3.5 rounded-card bg-alcove p-3.5">
-      <Link to={`/videoteca/${anime.id}`} className="w-[3.25rem] shrink-0 self-start">
-        <Copertina src={anime.cover_url} alt="" inclina={false} />
+    <div className="flex items-center gap-2.5 rounded-card bg-alcove p-2">
+      <Link to={`/videoteca/${anime.id}`} aria-hidden="true" tabIndex={-1} className="h-20 w-14 shrink-0 overflow-hidden rounded-lg bg-glass-2">
+        {copertina && <img src={copertina} alt="" loading="lazy" className="h-full w-full object-cover" />}
       </Link>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-start gap-2">
-          <div className="min-w-0 flex-1">
-            <Link to={`/videoteca/${anime.id}`} className="block truncate font-semibold text-ink-bright">
-              {anime.titolo}
-            </Link>
-            <p className="mt-0.5 text-fine text-ink-muted">
-              {dove} · <span className={nuovi > 0 ? "font-semibold text-brass-300" : ""}>{stato}</span>
-            </p>
-          </div>
+        <div className="flex items-center gap-1">
+          <Link to={`/videoteca/${anime.id}`} className="min-w-0 flex-1 truncate font-semibold text-ink-bright">
+            {anime.titolo}
+          </Link>
 
+          {/* L'icona resta da 18 px, l'area che si tocca è 44×44: i
+              margini negativi la fanno sporgere senza allungare la riga. */}
           <button
             type="button"
             onClick={onGestisci}
-            aria-label={`Gestisci ${anime.titolo}: voto, salti, pausa e altro`}
-            className="-mr-1 -mt-1 bersaglio grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-muted transition-colors duration-quick hover:bg-glass-2 hover:text-ink-bright"
+            aria-label={`Altre azioni per ${anime.titolo}`}
+            className="-my-3 -mr-1.5 grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink-muted transition-colors duration-quick hover:bg-glass-2 hover:text-ink-bright"
           >
             <Icon nome="puntini" dimensione={18} />
           </button>
         </div>
 
+        <p className="text-fine leading-snug text-ink-muted">
+          {dove} · {nuovi > 0 ? <NewBadge count={nuovi} /> : stato}
+        </p>
+
         {percento !== null && (
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-bright/[0.08]">
-            <div className="h-full rounded-full bg-viola" style={{ width: `${percento}%` }} />
+          <div
+            role="progressbar"
+            aria-label={`Visti ${ultimo} episodi su ${uscite} usciti`}
+            aria-valuemin={0}
+            aria-valuenow={ultimo}
+            aria-valuemax={uscite}
+            className="mt-1.5 h-1 overflow-hidden rounded-full bg-ink-bright/[0.08]"
+          >
+            <div className="h-full rounded-full bg-progresso" style={{ width: `${percento}%` }} />
           </div>
         )}
-
-        {nuovi > 0 ? (
-          <button
-            type="button"
-            onClick={onVisto}
-            disabled={occupato}
-            className={`mt-3 h-10 w-full truncate rounded-card px-3 text-sm font-semibold transition-transform duration-quick active:scale-[0.98] disabled:opacity-60 ${
-              principale ? "insegna" : "border border-viola/40 bg-glass-2 text-ink-bright hover:bg-viola/10"
-            }`}
-          >
-            {occupato ? "Segno…" : `Visto l'${etichettaEp(prossimo, anime.tagli)}`}
-          </button>
-        ) : (
-          <p className="mt-2.5 text-xs text-ink-muted">
-            {uscite ? `Hai visto tutte le ${uscite} uscite.` : "Non è ancora uscita nessuna puntata."}
-          </p>
-        )}
       </div>
+
+      {nuovi > 0 && (
+        <button
+          type="button"
+          onClick={onVisto}
+          disabled={occupato}
+          aria-label={`Segna come visto: ${prossima}`}
+          title={`Segna come visto: ${prossima}`}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-brass-400/60 text-brass-300 transition-all duration-quick hover:bg-brass-400/10 active:scale-90 disabled:opacity-60"
+        >
+          {occupato ? (
+            <span aria-hidden="true" className="font-numeric text-sm">…</span>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          )}
+        </button>
+      )}
     </div>
   );
 }
@@ -451,7 +466,7 @@ function FoglioAnime({ anime, onChiudi, onVota, onFinoA, onNonVisto, onStato }) 
   const voci = [
     anime.ultimo > 0 && {
       chiave: "nonvisto",
-      etichetta: `L'${etichettaEp(anime.ultimo, anime.tagli)} non l'ho visto`,
+      etichetta: `${formatEpisodio(anime.ultimo, anime.tagli, { prep: "l" }).replace(/^l'/, "L'")} non l'ho visto`,
       descrizione: "Toglie l'ultima puntata segnata.",
       azione: onNonVisto
     },
@@ -479,7 +494,7 @@ function FoglioAnime({ anime, onChiudi, onVota, onFinoA, onNonVisto, onStato }) 
             <div className="min-w-0 flex-1">
               <p className="truncate font-display text-lg font-bold text-ink-bright">{anime.titolo}</p>
               <p className="text-sm text-ink-muted">
-                {anime.ultimo ? `Sei all'${etichettaEp(anime.ultimo, anime.tagli)}` : "Non ancora cominciata"}
+                {anime.ultimo ? `Sei ${formatEpisodio(anime.ultimo, anime.tagli, { prep: "a" })}` : "Non ancora cominciata"}
                 {anime.totale ? ` di ${anime.totale}` : ""}
               </p>
             </div>

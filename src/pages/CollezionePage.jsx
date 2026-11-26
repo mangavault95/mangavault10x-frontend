@@ -26,6 +26,8 @@ import {
   prossimoVolume
 } from "../dati/serie";
 import { RigaSerie } from "../ui/collezione/RigaSerie";
+import { SegnoLegenda } from "../ui/StatoSerie";
+import { STATI_SERIE } from "../dati/statoSerie";
 import { ModuloNuovaSerie } from "../ui/collezione/ModuloNuovaSerie";
 
 /**
@@ -623,7 +625,7 @@ export default function CollezionePage() {
           <div
             role="group"
             aria-label="Stato"
-            className="no-scrollbar -ml-0 flex min-w-0 flex-1 gap-1.5 overflow-x-auto"
+            className="no-scrollbar sfuma-destra -ml-0 flex min-w-0 flex-1 gap-1.5 overflow-x-auto pr-6"
           >
             {scorciatoie.map((f) => {
               const accesa = f.id === filtroAttivo;
@@ -662,9 +664,12 @@ export default function CollezionePage() {
         {/* Cosa vuol dire il colore dell'anello, detto una volta sola:
             prima si leggeva solo se lo si sapeva già. */}
         <p className="flex flex-wrap items-center gap-x-3.5 gap-y-1 px-1 text-micro text-ink-muted sm:px-0">
-          <span className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border-2 border-jade" />Completa</span>
-          <span className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border-2 border-lapis" />In pari con le uscite</span>
-          <span className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border-2 border-ember" />Mancano volumi</span>
+          {["completa", "in-pari", "mancano"].map((s) => (
+            <span key={s} className="flex items-center gap-1.5">
+              <SegnoLegenda stato={s} />
+              {STATI_SERIE[s].nome}
+            </span>
+          ))}
         </p>
       </div>
 
@@ -733,7 +738,7 @@ export default function CollezionePage() {
           type="button"
           onClick={() => setModaleAperto(true)}
           aria-label="Aggiungi una serie"
-          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full insegna transition-transform duration-quick active:scale-90
+          className="tondo-fisso fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full insegna transition-transform duration-quick active:scale-90
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf md:hidden"
         >
           <Icon nome="plus" dimensione={24} />
@@ -771,7 +776,7 @@ export default function CollezionePage() {
                 className="scroll-mt-28"
               >
                 <h2 className="mb-3 flex items-center gap-3 px-1 sm:px-0">
-                  <span className="font-pixel text-2xl leading-none text-viola">{g.lettera}</span>
+                  <span className="font-pixel text-2xl leading-none text-brass-300">{g.lettera}</span>
                   <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-[rgb(var(--c-riga))] to-transparent" />
                 </h2>
 

@@ -9,6 +9,8 @@ import { useTieniPremuto } from "./tocco";
 import { useCollezione } from "../dati/collezione";
 import { useSessione } from "../dati/sessione";
 import { coloreDi } from "../dati/lettori";
+import { GlifoStato } from "./StatoSerie";
+import { statoDi } from "../dati/statoSerie";
 import {
   completamento,
   totaleDisponibile,
@@ -165,6 +167,7 @@ export default function CartaSerie({
 
   const tono =
     pct === null ? "ignoto" : pct < 100 ? "parziale" : serie.stato === "conclusa" ? "conclusa" : "in-pari";
+  const stato = statoDi(serie);
   const etichettaAnello =
     pct === null
       ? `${serie.titolo}: in corso, volumi totali non ancora noti`
@@ -203,6 +206,7 @@ export default function CartaSerie({
 
         <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-full bg-void/85 p-1">
           <AnelloCompletamento pct={pct} tono={tono} etichetta={etichettaAnello} />
+          <GlifoStato stato={stato} className="text-micro" />
           {mancanti > 0 && (
             <span className="pr-1 font-numeric text-micro font-medium text-ember">−{mancanti}</span>
           )}
@@ -299,15 +303,8 @@ export default function CartaSerie({
           <span className="whitespace-nowrap">
             {serie.posseduti}
             {mancanti > 0 && totale ? `/${totale}` : " vol."}
-            {mancanti === 0 && serie.stato === "conclusa" && (
-              <span className="ml-1.5 text-jade">✓</span>
-            )}
-            {mancanti === 0 && serie.stato !== "conclusa" && (
-              <span title="In pari con le uscite" className="ml-1.5 text-lapis">
-                ✓
-              </span>
-            )}
-            {mancanti > 0 && <span className="ml-1.5 text-ember/80">−{mancanti}</span>}
+            <GlifoStato stato={stato} className="ml-1.5" />
+            {mancanti > 0 && <span className="ml-0.5 text-ember/80">−{mancanti}</span>}
           </span>
         </p>
       </div>

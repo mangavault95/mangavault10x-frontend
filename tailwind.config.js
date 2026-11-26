@@ -88,6 +88,21 @@ export default {
         ambra: v("c-ambra"), // prezzi e voti
         viola: v("c-viola"), // il mondo degli anime
 
+        // ---- Ruoli (26/11/2026) ----
+        // Quattro ruoli, ognuno con UN colore in tutta l'app. Sono alias
+        // dei token qui sopra: i componenti scrivono il ruolo, e se un
+        // giorno un ruolo cambia colore si cambia solo questa riga.
+        //
+        //   azione     «cosa faccio adesso»: pulsanti pieni e tondo (+) →
+        //              `.insegna` (index.css), l'accento della persona
+        //   progresso  «a che punto sono»: barre e anelli di stato
+        //   link       «vai a vedere»: ogni link testuale di navigazione
+        //   novita     «c'è qualcosa di nuovo»: i badge e i testi «N nuovi»
+        azione: v("c-brass-400"),
+        progresso: v("c-viola"),
+        link: v("c-ciano"),
+        novita: v("c-brass-300"),
+
         // ---- I lettori ----
         // Chi ha scritto una nota si riconosce dal colore, non dal nome
         // letto ogni volta. Sono tenuti volutamente FUORI dai semantici

@@ -491,7 +491,7 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
         <button
           type="button"
           onClick={aggiungi}
-          className="mb-2 hidden shrink-0 items-center gap-1.5 rounded-full border border-viola/60 px-3.5 py-2 text-sm font-semibold text-ink-bright transition-colors duration-quick hover:bg-viola/10 active:scale-95 md:inline-flex
+          className="mb-2 hidden shrink-0 items-center gap-1.5 rounded-full border border-brass-400/60 px-3.5 py-2 text-sm font-semibold text-ink-bright transition-colors duration-quick hover:bg-brass-400/10 active:scale-95 md:inline-flex
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
         >
           <Icon nome="plus" dimensione={16} />
@@ -501,13 +501,13 @@ function Sottosezioni({ scheda, percorso, aggiungi }) {
     </nav>
 
     {/* Sul telefono «Aggiungi» è il tondo in basso a destra, lo stesso
-        della Collezione — viola, il colore del mondo degli anime. */}
+        della Collezione — l'azione principale ha lo stesso colore ovunque. */}
     {aggiungi && (
       <button
         type="button"
         onClick={aggiungi}
         aria-label="Aggiungi un titolo"
-        className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full bg-viola text-void shadow-[0_8px_30px_-8px_rgb(var(--c-viola)/0.7)] transition-transform duration-quick active:scale-95 md:hidden
+        className="tondo-fisso fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-sticky grid h-14 w-14 place-items-center rounded-full insegna transition-transform duration-quick active:scale-95 md:hidden
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-shelf"
       >
         <Icon nome="plus" dimensione={24} />
