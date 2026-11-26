@@ -625,7 +625,7 @@ export default function CollezionePage() {
           <div
             role="group"
             aria-label="Stato"
-            className="no-scrollbar -ml-0 flex min-w-0 flex-1 gap-1.5 overflow-x-auto"
+            className="no-scrollbar sfuma-destra -ml-0 flex min-w-0 flex-1 gap-1.5 overflow-x-auto pr-6"
           >
             {scorciatoie.map((f) => {
               const accesa = f.id === filtroAttivo;
