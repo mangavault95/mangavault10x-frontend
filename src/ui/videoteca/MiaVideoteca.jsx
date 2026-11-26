@@ -342,8 +342,15 @@ function Piccolo({ onClick, disabilitato, children }) {
 }
 
 function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
-  const { ultimo, nuovi, totale, prossimo, uscite } = anime;
-  const percento = totale ? Math.min(100, Math.round((ultimo / totale) * 100)) : null;
+  const { ultimo, nuovi, prossimo, uscite } = anime;
+
+  // La barra dice una cosa sola: quante delle puntate USCITE hai visto
+  // (P1-02). Prima era `ultimo ÷ episodi_totali`: contro il totale
+  // dichiarato dalla scheda, che spesso è la lunghezza della stagione, e
+  // «7 nuovi» stava accanto a una barra quasi piena. Stessa unità del
+  // «N nuovi» (puntate della scheda, numero assoluto), quindi con nuovi > 0
+  // non arriva mai al 100%. Se le uscite non si sanno, niente barra.
+  const percento = uscite > 0 ? Math.min(100, Math.round((ultimo / uscite) * 100)) : null;
 
   const dove = ultimo ? `Sei ${formatEpisodio(ultimo, anime.tagli, { prep: "a" })}` : "Da cominciare";
   const stato =
@@ -381,7 +388,14 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
         </div>
 
         {percento !== null && (
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-bright/[0.08]">
+          <div
+            role="progressbar"
+            aria-label={`Visti ${ultimo} episodi su ${uscite} usciti`}
+            aria-valuemin={0}
+            aria-valuenow={ultimo}
+            aria-valuemax={uscite}
+            className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-bright/[0.08]"
+          >
             <div className="h-full rounded-full bg-progresso" style={{ width: `${percento}%` }} />
           </div>
         )}
