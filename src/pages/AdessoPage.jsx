@@ -501,7 +501,7 @@ function Testata({ nome }) {
 
   return (
     <header className="px-5 pb-1 pt-6">
-      <p className="flex items-center gap-2 text-micro font-medium uppercase tracking-[0.14em] text-ink-muted">
+      <p className="flex items-center gap-2 text-micro font-medium uppercase tracking-[0.14em] text-ink">
         {oggi}
         <span aria-hidden="true" className="kana font-pixel normal-case tracking-normal text-ink-faint">
           {KANJI_GIORNO[new Date().getDay()]}
