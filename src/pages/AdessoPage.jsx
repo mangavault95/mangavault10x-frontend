@@ -501,7 +501,7 @@ function Testata({ nome }) {
 
   return (
     <header className="px-5 pb-1 pt-6">
-      <p className="flex items-center gap-2 font-numeric text-micro uppercase tracking-[0.14em] text-ink-muted">
+      <p className="flex items-center gap-2 text-micro font-medium uppercase tracking-[0.14em] text-ink-muted">
         {oggi}
         <span aria-hidden="true" className="kana font-pixel normal-case tracking-normal text-ink-faint">
           {KANJI_GIORNO[new Date().getDay()]}
@@ -665,7 +665,7 @@ function LetturaPrincipale({ lettura, occupato, onPiuUno }) {
           {lettura.titolo}
         </Link>
         <p className="mt-0.5 text-fine text-ink-muted">
-          Stai leggendo il vol. <span className="font-numeric text-ink-bright">{lettura.volume}</span>
+          Stai leggendo il vol. {lettura.volume}
           {lettura.massimo ? ` di ${lettura.massimo}` : ""}
         </p>
         {percentuale !== null && (
