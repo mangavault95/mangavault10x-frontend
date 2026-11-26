@@ -80,6 +80,9 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
 
   const viste = perStato("completa");
   const daVotare = viste.filter((a) => a.voto == null);
+  // Niente numeri di posizione (P2-03): con tanti 5,0 a pari merito
+  // l'ordine è alfabetico, e «1, 2, 3…» avrebbe fatto credere in una
+  // classifica che non c'è. Il voto e l'ordine bastano.
   const classifica = viste
     .filter((a) => a.voto != null)
     .sort((a, b) => Number(b.voto) - Number(a.voto) || a.titolo.localeCompare(b.titolo, "it"));
@@ -235,8 +238,8 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
       {classifica.length > 0 && (
         <Sezione titolo="Viste" conto={viste.length}>
           <Elenco>
-            {classifica.slice(0, 10).map((a, i) => (
-              <Riga key={a.id} anime={a} posizione={i + 1} sotto={a.tipo === "film" ? "Film" : null}>
+            {classifica.slice(0, 10).map((a) => (
+              <Riga key={a.id} anime={a} sotto={a.tipo === "film" ? "Film" : null}>
                 <span className="shrink-0 font-numeric text-sm font-semibold text-ink-bright">
                   {String(a.voto).replace(".", ",")} <span className="text-brass-400">★</span>
                 </span>
@@ -313,10 +316,9 @@ function Elenco({ children }) {
   return <ul className="divide-y divide-hairline rounded-card bg-alcove px-3.5">{children}</ul>;
 }
 
-function Riga({ anime, sotto, posizione, children }) {
+function Riga({ anime, sotto, children }) {
   return (
     <li className="flex items-center gap-3 py-2.5">
-      {posizione ? <span className="w-5 shrink-0 text-right font-numeric text-xs text-ink-muted">{posizione}</span> : null}
       <Link to={`/videoteca/${anime.id}`} className="w-9 shrink-0">
         <Copertina src={anime.cover_url} alt="" inclina={false} />
       </Link>
