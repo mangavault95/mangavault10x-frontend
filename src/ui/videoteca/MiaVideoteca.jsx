@@ -32,7 +32,6 @@ import { formatEpisodio } from "./formati";
  *                  Il resto (voto, salti, pausa, molla, finita) sta nel
  *                  foglio dietro i tre puntini.
  *   Da votare      le viste senza voto, con le stelle sulla riga.
- *   Da vedere      la lista d'attesa, con «Inizia».
  *   Viste          la classifica, prime dieci.
  *   In pausa, Mollate   chiuse in fondo, con «Riprendi».
  *
@@ -96,7 +95,11 @@ export default function MiaVideoteca({ righe, setRighe, ricarica }) {
   const classifica = viste
     .filter((a) => a.voto != null)
     .sort((a, b) => Number(b.voto) - Number(a.voto) || a.titolo.localeCompare(b.titolo, "it"));
-  const daVedere = perStato("da_vedere");
+  // «Sto guardando» in due: prima quello che ha una puntata pronta, poi quello
+  // già in pari (richiudibile). L'ordine di `guardando` resta quello per ultima
+  // attività dentro ciascun gruppo.
+  const pronte = guardando.filter((a) => a.nuovi > 0);
+  const inPari = guardando.filter((a) => a.nuovi === 0);
   const inPausa = perStato("in_pausa");
   const mollate = perStato("droppata");
 
@@ -247,21 +250,65 @@ export default function MiaVideoteca({ righe, setRighe, ricarica }) {
       {/* ═══════════ STO GUARDANDO ═══════════ */}
       <Sezione titolo="Sto guardando" conto={guardando.length}>
         {guardando.length ? (
-          <ul className="grid grid-cols-1 gap-1.5">
-            {guardando.map((a) => (
-              <li key={a.id}>
-                <RigaGuardando
-                  anime={a}
-                  occupato={occupato === `ep:${a.id}`}
-                  onVisto={() => visto(a)}
-                  onGestisci={() => setInGestione(a.id)}
-                />
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-5">
+            <div>
+              <h3 className="mb-2 flex items-baseline gap-2 px-1 text-sm font-semibold text-ink-bright">
+                Da vedere adesso
+                <span className="font-numeric text-xs font-normal text-ink-muted">{pronte.length}</span>
+              </h3>
+
+              {pronte.length ? (
+                <ul className="grid grid-cols-1 gap-1.5">
+                  {pronte.map((a) => (
+                    <li key={a.id}>
+                      <RigaGuardando
+                        anime={a}
+                        occupato={occupato === `ep:${a.id}`}
+                        onVisto={() => visto(a)}
+                        onGestisci={() => setInGestione(a.id)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="rounded-card bg-alcove px-4 py-4 text-sm text-ink-muted">
+                  Niente da vedere adesso: sei in pari con tutto.
+                </p>
+              )}
+            </div>
+
+            {/* In pari: richiudibile. Aperta da sola solo quando sopra non c'è
+                niente, così la lista non sembra vuota. */}
+            {inPari.length > 0 && (
+              <details open={pronte.length === 0} className="group">
+                <summary className="mb-2 flex min-h-11 cursor-pointer list-none items-center justify-between px-1 text-sm font-semibold text-ink-bright">
+                  <span className="flex items-baseline gap-2">
+                    In pari
+                    <span className="font-numeric text-xs font-normal text-ink-muted">{inPari.length}</span>
+                  </span>
+                  <span aria-hidden="true" className="text-ink-muted transition-transform duration-quick group-open:rotate-180">
+                    ▾
+                  </span>
+                </summary>
+
+                <ul className="grid grid-cols-1 gap-1.5">
+                  {inPari.map((a) => (
+                    <li key={a.id}>
+                      <RigaGuardando
+                        anime={a}
+                        occupato={occupato === `ep:${a.id}`}
+                        onVisto={() => visto(a)}
+                        onGestisci={() => setInGestione(a.id)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
         ) : (
           <p className="rounded-card bg-alcove px-4 py-5 text-sm text-ink-muted">
-            Niente in visione. Dai «Da vedere» qui sotto, o con «Aggiungi» in alto.
+            Niente in visione. Aggiungi un titolo con «Aggiungi», o riprendine uno da «Tutti i titoli».
           </p>
         )}
       </Sezione>
@@ -276,26 +323,6 @@ export default function MiaVideoteca({ righe, setRighe, ricarica }) {
               </Riga>
             ))}
           </Elenco>
-        </Sezione>
-      )}
-
-      {/* ═══════════ DA VEDERE ═══════════ */}
-      {daVedere.length > 0 && (
-        <Sezione titolo="Da vedere" conto={daVedere.length}>
-          <Elenco>
-            {daVedere.slice(0, 6).map((a) => (
-              <Riga key={a.id} anime={a} sotto={a.tipo === "film" ? "Film" : a.uscite ? `${a.uscite} puntate` : "Non ancora uscito"}>
-                <Piccolo onClick={() => stato(a, "in_visione")} disabilitato={occupato === `stato:${a.id}`}>
-                  Inizia
-                </Piccolo>
-              </Riga>
-            ))}
-          </Elenco>
-          {daVedere.length > 6 && (
-            <Link to="/videoteca/io/tutto" className="mt-2 block px-1 text-sm font-medium text-link hover:underline">
-              Le altre {daVedere.length - 6} in «Tutti i titoli»
-            </Link>
-          )}
         </Sezione>
       )}
 
