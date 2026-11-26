@@ -4,7 +4,7 @@ import IndiceLettere from "../ui/IndiceLettere";
 import { idLettera, letteraDi } from "../dati/lettere";
 import useRisorsa from "../dati/useRisorsa";
 import { useSessione } from "../dati/sessione";
-import { paginaDi } from "../dati/cineforum";
+import { paginaDi, vedeLeSerieDi } from "../dati/cineforum";
 import { corrisponde, raggruppa } from "../dati/videoteca";
 import {
   getIoVideoteca,
@@ -124,9 +124,12 @@ export default function ElencoVideotecaPage() {
 
   const persona = profilo.dati?.utente ?? null;
 
+  // Chi non è entrato non può chiedere le serie di un altro (vedi `vedeLeSerieDi`).
+  const vedeLeSerie = vedeLeSerieDi(utente, persona);
+
   const { dati, errore, inCorso, ricarica, setDati } = useRisorsa(
     useCallback(() => getVideoteca(persona?.id), [persona?.id]),
-    { attivo: Boolean(persona?.id) }
+    { attivo: Boolean(persona?.id) && vedeLeSerie }
   );
 
   const mia = Boolean(utente && persona && utente.id === persona.id);
@@ -248,6 +251,17 @@ export default function ElencoVideotecaPage() {
         : tipo === "film"
           ? "Film"
           : "Tutti i titoli";
+
+  if (persona && !vedeLeSerie) {
+    return (
+      <PaginaVideoteca occhiello={persona.nickname} titolo="Tutti i titoli">
+        <Vuoto
+          titolo={`Le serie di ${persona.nickname} le vede chi è entrato`}
+          sommario="Il profilo e i numeri sono pubblici; copertine, voti e preferiti no."
+        />
+      </PaginaVideoteca>
+    );
+  }
 
   return (
     <PaginaVideoteca
