@@ -1,4 +1,4 @@
-import { annullaPush, getChiavePush, iscriviPush, provaPush } from "../services/api";
+import { annullaPush, getChiavePush, iscriviPush } from "../services/api";
 
 /**
  * Le notifiche push dall'app installata.
@@ -133,4 +133,3 @@ export async function disattivaPush() {
   await sottoscrizione.unsubscribe();
 }
 
-export { provaPush };
