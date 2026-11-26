@@ -5,12 +5,14 @@ import useRisorsa from "../dati/useRisorsa";
 import { useCollezione } from "../dati/collezione";
 import { useSessione } from "../dati/sessione";
 import { useAccessoProtetto } from "../dati/accesso";
+import { avvisa } from "../dati/avvisi";
 import { useCopertinaVolume, useRipiegoSerie } from "../dati/copertineVolumi";
 import NewBadge from "../ui/NewBadge";
 import { formatEpisodio } from "../ui/videoteca/formati";
 import { chiudibile, euro, fraseMancanti, prossimoVolume, tettoLettura, volumiMancanti } from "../dati/serie";
 import {
   addReadingHistory,
+  deleteReadingHistoryVolume,
   dopoIlRipiego,
   getCalendarioAnime,
   getReadingSessions,
@@ -184,6 +186,28 @@ export default function AdessoPage() {
       });
 
       sessioni.ricarica();
+
+      // Un tocco che scrive deve potersi disfare (P3-01): si toglie il
+      // volume dallo storico e il segnalibro torna dov'era.
+      avvisa({
+        testo: `Vol. ${l.volume} segnato come letto`,
+        azione: {
+          etichetta: "Annulla",
+          alTocco: async () => {
+            try {
+              await eseguiProtetto(async () => {
+                await deleteReadingHistoryVolume(l.mangaId, l.volume);
+
+                if (!eUltimo) await updateReadingSession(l.mangaId, l.volume);
+              });
+
+              sessioni.ricarica();
+            } catch (errore) {
+              if (!errore?.annullato) avvisa({ testo: "Non sono riuscito ad annullarlo: riprova.", tono: "errore" });
+            }
+          }
+        }
+      });
     } catch (e) {
       if (!e?.annullato) setProblema("Il volume non è stato registrato. Riprova fra un attimo.");
     } finally {
@@ -624,6 +648,9 @@ function DaRiprendere({ anime, occupato, onVisto }) {
   );
 }
 
+// Il «+1» sta solo sulla carta grande, ed è una regola (P3-01): le due
+// carte piccole accanto sono link alla serie e tutta la loro larghezza serve
+// a farle toccare; per segnare un volume da lì si apre la scheda.
 function LetturaPrincipale({ lettura, occupato, onPiuUno }) {
   const percentuale = lettura.massimo ? Math.round(((lettura.volume - 1) / lettura.massimo) * 100) : null;
   const eUltimo = lettura.massimo ? lettura.volume >= lettura.massimo : false;
@@ -651,10 +678,15 @@ function LetturaPrincipale({ lettura, occupato, onPiuUno }) {
         type="button"
         onClick={onPiuUno}
         disabled={occupato}
-        aria-label={eUltimo ? `Finito ${lettura.titolo}` : `Finito il volume ${lettura.volume}, passa al ${lettura.volume + 1}`}
-        className="grid h-14 w-14 shrink-0 place-items-center rounded-[1.1rem] border border-brass-400/50 font-numeric text-lg font-bold text-brass-300 transition-all duration-quick hover:bg-brass-400/10 active:scale-90 disabled:opacity-60"
+        aria-label={
+          eUltimo
+            ? `Segna come letto il vol. ${lettura.volume}, l'ultimo di ${lettura.titolo}`
+            : `Segna come letto il vol. ${lettura.volume}`
+        }
+        className="flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[1.1rem] border border-brass-400/50 font-numeric text-brass-300 transition-all duration-quick hover:bg-brass-400/10 active:scale-90 disabled:opacity-60"
       >
-        {eUltimo ? "✓" : "+1"}
+        <span aria-hidden="true" className="text-lg font-bold leading-none">{eUltimo ? "✓" : "+1"}</span>
+        <span aria-hidden="true" className="font-sans text-micro font-medium leading-none">{eUltimo ? "finito" : "letto"}</span>
       </button>
     </div>
   );
