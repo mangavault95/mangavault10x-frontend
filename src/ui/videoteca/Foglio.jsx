@@ -231,6 +231,20 @@ export function Caricamento({ testo = "Un momento…" }) {
 }
 
 export function Errore({ errore, riprova }) {
+  // 401 sulle pagine degli altri (26/11/2026): non è un guasto, è che serve
+  // un accesso. Niente «Riprova»: riprovando la risposta sarebbe la stessa.
+  if (errore?.status === 401) {
+    return (
+      <Scheda className="px-6 py-10 text-center">
+        <p className="font-display text-lg font-semibold text-quaderno-inchiostro">Serve l'accesso</p>
+
+        <p className="mx-auto mt-2 max-w-md text-sm text-quaderno-tenue">
+          Le pagine degli altri le vede chi è entrato.
+        </p>
+      </Scheda>
+    );
+  }
+
   return (
     <Scheda className="px-6 py-10 text-center">
       <p className="font-display text-lg font-semibold text-quaderno-inchiostro">
