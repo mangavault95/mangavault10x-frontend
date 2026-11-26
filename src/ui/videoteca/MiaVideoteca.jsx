@@ -5,6 +5,7 @@ import Copertina from "../Copertina";
 import Foglio from "../Foglio";
 import Stelle from "./Stelle";
 import {
+  urlCopertina,
   impostaVisione,
   segnaEpisodio,
   togliEpisodio,
@@ -181,12 +182,11 @@ export default function MiaVideoteca({ righe, setRighe, ricarica, persona }) {
       {/* ═══════════ STO GUARDANDO ═══════════ */}
       <Sezione titolo="Sto guardando" conto={guardando.length}>
         {guardando.length ? (
-          <ul className="grid grid-cols-1 gap-2.5">
-            {guardando.map((a, i) => (
+          <ul className="grid grid-cols-1 gap-1.5">
+            {guardando.map((a) => (
               <li key={a.id}>
                 <RigaGuardando
                   anime={a}
-                  principale={i === 0 && a.nuovi > 0}
                   occupato={occupato === `ep:${a.id}`}
                   onVisto={() => visto(a)}
                   onGestisci={() => setInGestione(a.id)}
@@ -344,7 +344,17 @@ function Piccolo({ onClick, disabilitato, children }) {
   );
 }
 
-function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
+/**
+ * Una serie in «Sto guardando» (P2-04): compatta, perché è la lista che
+ * si apre ogni giorno e con la card alta se ne vedevano tre e mezza per
+ * schermata. Copertina 56×80, titolo, riga di stato, barra sottile; a
+ * destra il tondo ✓ (44×44) che segna la prossima puntata. Il bottone a
+ * tutta larghezza resta solo nella hero «Da riprendere» della Home.
+ *
+ * Tutti i tondi ✓ sono uguali: una regola, non un caso (prima solo la
+ * prima card aveva il pulsante pieno, senza un motivo che si capisse).
+ */
+function RigaGuardando({ anime, occupato, onVisto, onGestisci }) {
   const { ultimo, nuovi, prossimo, uscite } = anime;
 
   // La barra dice una cosa sola: quante delle puntate USCITE hai visto
@@ -358,34 +368,39 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
   const dove = ultimo ? `Sei ${formatEpisodio(ultimo, anime.tagli, { prep: "a" })}` : "Da cominciare";
   const stato = anime.prossima_uscita
     ? `in pari · ${GIORNO_ORA.format(new Date(anime.prossima_uscita))}`
-    : "in pari";
+    : uscite
+      ? "in pari"
+      : "nessuna puntata uscita";
+  const copertina = urlCopertina(anime.cover_url, 128);
+  const prossima = formatEpisodio(prossimo, anime.tagli);
 
   return (
-    <div className="flex gap-3.5 rounded-card bg-alcove p-3.5">
-      <Link to={`/videoteca/${anime.id}`} className="w-[3.25rem] shrink-0 self-start">
-        <Copertina src={anime.cover_url} alt="" inclina={false} />
+    <div className="flex items-center gap-2.5 rounded-card bg-alcove p-2">
+      <Link to={`/videoteca/${anime.id}`} aria-hidden="true" tabIndex={-1} className="h-20 w-14 shrink-0 overflow-hidden rounded-lg bg-glass-2">
+        {copertina && <img src={copertina} alt="" loading="lazy" className="h-full w-full object-cover" />}
       </Link>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-start gap-2">
-          <div className="min-w-0 flex-1">
-            <Link to={`/videoteca/${anime.id}`} className="block truncate font-semibold text-ink-bright">
-              {anime.titolo}
-            </Link>
-            <p className="mt-0.5 text-fine text-ink-muted">
-              {dove} · {nuovi > 0 ? <NewBadge count={nuovi} /> : stato}
-            </p>
-          </div>
+        <div className="flex items-center gap-1">
+          <Link to={`/videoteca/${anime.id}`} className="min-w-0 flex-1 truncate font-semibold text-ink-bright">
+            {anime.titolo}
+          </Link>
 
+          {/* L'icona resta da 18 px, l'area che si tocca è 44×44: i
+              margini negativi la fanno sporgere senza allungare la riga. */}
           <button
             type="button"
             onClick={onGestisci}
-            aria-label={`Gestisci ${anime.titolo}: voto, salti, pausa e altro`}
-            className="-mr-1 -mt-1 bersaglio grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-muted transition-colors duration-quick hover:bg-glass-2 hover:text-ink-bright"
+            aria-label={`Altre azioni per ${anime.titolo}`}
+            className="-my-3 -mr-1.5 grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink-muted transition-colors duration-quick hover:bg-glass-2 hover:text-ink-bright"
           >
             <Icon nome="puntini" dimensione={18} />
           </button>
         </div>
+
+        <p className="text-fine leading-snug text-ink-muted">
+          {dove} · {nuovi > 0 ? <NewBadge count={nuovi} /> : stato}
+        </p>
 
         {percento !== null && (
           <div
@@ -394,29 +409,31 @@ function RigaGuardando({ anime, principale, occupato, onVisto, onGestisci }) {
             aria-valuemin={0}
             aria-valuenow={ultimo}
             aria-valuemax={uscite}
-            className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-bright/[0.08]"
+            className="mt-1.5 h-1 overflow-hidden rounded-full bg-ink-bright/[0.08]"
           >
             <div className="h-full rounded-full bg-progresso" style={{ width: `${percento}%` }} />
           </div>
         )}
-
-        {nuovi > 0 ? (
-          <button
-            type="button"
-            onClick={onVisto}
-            disabled={occupato}
-            className={`mt-3 h-10 w-full truncate rounded-card px-3 text-sm font-semibold transition-transform duration-quick active:scale-[0.98] disabled:opacity-60 ${
-              principale ? "insegna" : "border border-brass-400/50 bg-glass-2 text-brass-300 hover:bg-brass-400/10"
-            }`}
-          >
-            {occupato ? "Segno…" : `Visto ${formatEpisodio(prossimo, anime.tagli, { prep: "l" })}`}
-          </button>
-        ) : (
-          <p className="mt-2.5 text-xs text-ink-muted">
-            {uscite ? `Hai visto tutte le ${uscite} uscite.` : "Non è ancora uscita nessuna puntata."}
-          </p>
-        )}
       </div>
+
+      {nuovi > 0 && (
+        <button
+          type="button"
+          onClick={onVisto}
+          disabled={occupato}
+          aria-label={`Segna come visto: ${prossima}`}
+          title={`Segna come visto: ${prossima}`}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-brass-400/60 text-brass-300 transition-all duration-quick hover:bg-brass-400/10 active:scale-90 disabled:opacity-60"
+        >
+          {occupato ? (
+            <span aria-hidden="true" className="font-numeric text-sm">…</span>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          )}
+        </button>
+      )}
     </div>
   );
 }
