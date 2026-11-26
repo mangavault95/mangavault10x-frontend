@@ -30,6 +30,7 @@ import Bibliotecario from "../bibliotecario/Bibliotecario";
 import Identita from "../ui/Identita";
 import { useSessione } from "../dati/sessione";
 import SceltaTema from "../ui/SceltaTema";
+import NotifichePush from "../ui/NotifichePush";
 import Avvisi from "../ui/Avvisi";
 import Conferme from "../ui/Conferme";
 import Foglio from "../ui/Foglio";
@@ -582,6 +583,9 @@ function FoglioTu({ richieste, chiudi }) {
         {/* Notte o Giorno (02/11/2026). Anche per chi non è entrato: la
             scelta si ricorda sul suo dispositivo. */}
         <SceltaTema className="mb-3" />
+
+        {/* Le notifiche (26/11/2026): per chi è entrato, perché hanno un destinatario. */}
+        {utente && <NotifichePush className="mb-3" />}
 
         <ul className="flex flex-col">
           {voci.map((voce) => (

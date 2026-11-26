@@ -223,3 +223,68 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 });
+
+/**
+ * Le notifiche push (26/11/2026).
+ *
+ * Il server (`services/push.js` nel backend) manda un JSON cifrato con
+ * `{ titolo, corpo, url, tag, silenzioso }` e il browser sveglia questo file
+ * anche con l'app chiusa. Si DEVE mostrare una notifica a ogni push: iOS e
+ * Chrome tolgono il permesso a chi riceve messaggi senza mostrarli
+ * (`userVisibleOnly`).
+ *
+ * `tag` fa sostituire una notifica con la successiva della stessa puntata
+ * invece di impilarne due. `silenzioso` è la notte: il sistema può non far
+ * suonare (iOS lo ignora e decide da sé).
+ */
+self.addEventListener("push", (e) => {
+  let dati;
+
+  try {
+    dati = e.data ? e.data.json() : {};
+  } catch {
+    dati = { corpo: e.data ? e.data.text() : "" };
+  }
+
+  e.waitUntil(
+    self.registration.showNotification(dati.titolo || "MangaVault", {
+      body: dati.corpo || "",
+      icon: "/icona-192.png",
+      tag: dati.tag || undefined,
+      silent: Boolean(dati.silenzioso),
+      data: { url: dati.url || "/" }
+    })
+  );
+});
+
+/**
+ * Toccare la notifica apre (o porta avanti) l'app sulla pagina giusta.
+ *
+ * L'indirizzo arriva dal server, ma si accetta solo se è di questo stesso sito:
+ * un messaggio non deve poter aprire un indirizzo altrui dall'app.
+ */
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+
+  let destinazione = new URL("/", self.location.origin);
+
+  try {
+    const richiesta = new URL(e.notification.data?.url || "/", self.location.origin);
+
+    if (richiesta.origin === self.location.origin) destinazione = richiesta;
+  } catch {
+    // indirizzo storto: si apre la home
+  }
+
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((finestre) => {
+      for (const finestra of finestre) {
+        if (new URL(finestra.url).origin === self.location.origin && "focus" in finestra) {
+          return finestra.navigate(destinazione.href).then((f) => (f || finestra).focus());
+        }
+      }
+
+      return self.clients.openWindow(destinazione.href);
+    })
+  );
+});

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ModuloAccesso } from "../dati/AccessoProvider";
 import SceltaTema from "./SceltaTema";
+import NotifichePush from "./NotifichePush";
 import { useSessione } from "../dati/sessione";
 
 /**
@@ -125,6 +126,8 @@ export default function Identita({ compatto = false, mondo = "biblioteca" }) {
             {/* Su schermo largo il foglio «Tu» non c'è: l'interruttore
                 del tema sta qui, nel menu del proprio nome. */}
             <SceltaTema className="mt-3" />
+
+            <NotifichePush className="mt-3" />
 
             <button
               type="button"

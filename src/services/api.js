@@ -557,6 +557,20 @@ export const registrazione = ({ username, nickname, password }) =>
 /** I soprannomi di chi può votare, per scrivere "Voto Nicer". */
 export const getLettori = () => request("/api/utenti/pubblici");
 
+/* ---- Le notifiche push (26/11/2026) ----
+   La chiave pubblica è aperta; il resto vuole un accesso. Se il server non ha
+   le chiavi risponde 404 e l'interruttore non compare (vedi `dati/push.js`). */
+
+export const getChiavePush = () => request("/api/push/chiave");
+
+export const iscriviPush = (sottoscrizione) =>
+  request("/api/push/sottoscrivi", { method: "POST", body: sottoscrizione, auth: true });
+
+export const annullaPush = (endpoint) =>
+  request("/api/push/sottoscrivi", { method: "DELETE", body: { endpoint }, auth: true });
+
+export const provaPush = () => request("/api/push/prova", { method: "POST", body: {}, auth: true });
+
 /* ---- La faccia e lo striscione ----
 
    Le immagini di profilo NON viaggiano dentro il JSON: hanno un
